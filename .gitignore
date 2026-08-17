@@ -1,0 +1,14 @@
+# Fichiers systeme
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editeurs
+.vscode/
+.idea/
+*.swp
+*~
+
+# Rien d'autre a ignorer : le site n'a ni dependances, ni etape de build,
+# ni dossier genere. Les PDF sources et les images sont volontairement
+# versionnes — ce sont les originaux des etudes de cas.
