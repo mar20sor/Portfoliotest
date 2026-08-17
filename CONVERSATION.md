@@ -107,31 +107,71 @@ n'ont que la version française : en anglais, ces figures portent une mention
 les nommer `constraints-2-mapping-en.png` etc., puis remplacer `frOnly: true` par
 `altImage: 'nom-du-fichier-en'` dans `content.js`.
 
-### 3.6 Couleurs
+### 3.6 Couleurs — thème repris de Figma (session 2)
 
-Le bleu et le jaune exacts n'ont **pas pu être récupérés** (la CSS de Webflow
-n'est pas accessible, le lien Figma non plus). Les valeurs actuelles sont une
-reconstitution :
+Le site a été rebasculé sur la maquette `Portfolio_Explorations`, nœud
+`2309:3835`. Les valeurs viennent de `get_design_context`, elles ne sont pas
+approximées :
 
 ```css
---blue:   #2350D8;
---yellow: #FFCB3D;
+--blue: #2078F0;   /* fond de tout le site */
+--lime: #BEF007;   /* accent du héros */
 ```
 
-**Elles sont en haut de `css/styles.css` et pilotent tout le site, affiches SVG
-comprises.** Remplacez ces deux lignes par les hex du Figma et rien d'autre n'est
-à toucher.
+**Elles sont en haut de `css/styles.css` et pilotent tout, affiches SVG
+comprises.** Le fichier Figma d'origine (`figma.com/site/…`) était un fichier
+**Figma Sites**, un type que le MCP Figma ne sait pas lire — d'où la copie dans
+un fichier Design classique.
 
-### 3.7 Contrastes corrigés en cours de route
+### 3.7 Contraste : écart WCAG assumé
 
-Trois échecs WCAG AA détectés et corrigés par la mesure, pas à l'œil :
+Mesures de la palette Figma :
 
-| Élément | Avant | Après |
-|---|---|---|
-| `--ink-faint` (sur-titres, nav latérale) | `#8B94AB`, 2,93:1 | `#656F8B`, 4,83:1 |
-| Texte d'aide du portail | blanc 42 %, 3,99:1 | blanc 46 %, 4,53:1 |
+| Paire | Ratio | Seuil AA | Verdict |
+|---|---|---|---|
+| Blanc sur `#2078F0` | 4,19:1 | 4,5:1 (texte courant) | échec |
+| Blanc sur `#2078F0` | 4,19:1 | 3:1 (≥ 24 px) | passe |
+| Lime sur `#2078F0` | 3,13:1 | 3:1 (héros 32 px) | passe |
+| Bleu sur pastille blanche | 4,19:1 | 4,5:1 | échec |
 
-Toutes les paires du site sont désormais ≥ 4,5:1.
+Le héros et les titres de cartes passent. La navigation, les étiquettes et les
+légendes — tout ce qui est en 16 px — sont en dessous du seuil.
+
+**C'est une décision explicite de Mar : la fidélité à la maquette prime sur la
+conformité.** Consignée ici une fois, pas rappelée ailleurs.
+
+Si l'arbitrage change un jour : `#1571EF` rend l'ensemble conforme (blanc
+4,53:1, lime 3,37:1) en abaissant la luminosité de 2 %, à teinte et saturation
+identiques. Une seule ligne à changer.
+
+### 3.8 Police Raleway — la seule requête externe
+
+La maquette impose Raleway ; aucune police système ne s'en approche. Elle n'a
+pas pu être téléchargée pour être auto-hébergée (le proxy du bac à sable bloque
+`fonts.gstatic.com` comme le reste), donc elle est chargée depuis Google Fonts,
+avec `preconnect` et `display=swap`.
+
+Deux conséquences : c'est la seule requête réseau externe du site, ce qui
+contredit l'exigence initiale de tout charger en une fois ; et la CSP a dû être
+assouplie pour autoriser `fonts.googleapis.com` et `fonts.gstatic.com`.
+
+**Pour revenir à zéro requête externe :** télécharger les 4 graisses (300, 400,
+500, 600) en `.woff2`, les poser dans `site/assets/fonts/`, remplacer la balise
+`<link>` par des règles `@font-face`, et retirer les deux autorisations Google
+de la CSP. La marche à suivre est aussi en commentaire dans `index.html`.
+
+### 3.9 Ce que la maquette a apporté d'autre
+
+- **Copie du héros reprise mot pour mot** en anglais, puis traduite. Elle
+  mentionne **Gekko**, un employeur absent de toutes les sources — affiché
+  souligné mais sans lien, faute de projet associé.
+- **Les cartes utilisent désormais de vraies captures** (dernière figure du cas)
+  plutôt que l'affiche SVG générée, pour les trois cas Petal.
+- **L'image de la carte 1 de la maquette** (une animation exportée depuis
+  jitter.video) n'a pas pu être récupérée : les URLs d'assets Figma sont
+  bloquées par le proxy. La carte utilise la maquette finale du cas à la place.
+- Les titres de cartes acceptent `**du gras**` façon Markdown, pour mettre en
+  valeur les chiffres comme dans la maquette (« de **24 à 9** »).
 
 ---
 
