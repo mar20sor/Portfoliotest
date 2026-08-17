@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<!--
+  ===========================================================================
+  index.html — LE SEUL FICHIER HTML DU SITE
+  ---------------------------------------------------------------------------
+  Le site est une SPA (Single Page Application) : il n'existe qu'une page
+  HTML. Quand vous cliquez sur un lien, JavaScript remplace le contenu de
+  <main> au lieu de demander une nouvelle page au serveur. C'est ce qui
+  permet des transitions fluides et zero temps de chargement apres l'arrivee.
+
+  Ce fichier ne contient donc presque pas de contenu : il pose la COQUILLE
+  (loader, formulaire du prenom, en-tete, main vide, pied de page) et laisse
+  js/app.js remplir le reste a partir de js/content.js.
+  ===========================================================================
+-->
+<html lang="fr">
+<head>
+  <!-- charset en premier : indispensable pour que les accents s'affichent -->
+  <meta charset="utf-8">
+
+  <!-- viewport : sans cette ligne, les telephones simulent un ecran de bureau
+       et affichent le site en tout petit. C'est la base du responsive. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- theme-color colore la barre d'adresse du navigateur sur mobile -->
+  <meta name="theme-color" content="#0B1B3A">
+
+  <title>Marvin Sorhaindo — Designer produit</title>
+  <meta name="description" content="Portfolio de Marvin Sorhaindo, designer produit à Montréal. Trois ans de SaaS santé : planification hospitalière, synchronisation de données cliniques, refontes web.">
+
+  <!-- Open Graph : ce qui s'affiche quand le lien est partage sur LinkedIn -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Marvin Sorhaindo — Designer produit">
+  <meta property="og:description" content="Trois ans de SaaS santé. Vingt-quatre règles de planification ramenées à neuf.">
+
+  <!--
+    SECURITE — Content Security Policy.
+    Cette ligne interdit au navigateur d'executer du JavaScript qui ne
+    viendrait pas de ce site ('self'). Si quelqu'un parvenait a injecter
+    <script src="https://mechant.com/x.js"> dans la page, le navigateur
+    refuserait de le charger. C'est notre 2e barriere apres le nettoyage
+    du prenom saisi dans le formulaire (voir app.js, fonction cleanName).
+    'unsafe-inline' est autorise pour les styles seulement, pas pour les scripts.
+  -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'none'; form-action 'none'">
+
+  <!-- Une seule feuille de style, une seule requete reseau -->
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!--
+    PRECHARGEMENT DES POLICES SYSTEME : aucune police n'est telechargee.
+    On utilise la pile de polices native du systeme (voir --font dans le CSS).
+    C'est le choix le plus rapide possible : 0 Ko, 0 requete, 0 clignotement
+    de texte au chargement (ce qu'on appelle le FOUT).
+  -->
+</head>
+
+<body data-lang="fr">
+
+  <!--
+    Lien d'evitement : invisible a la souris, mais le premier element atteint
+    par la touche Tab. Il permet a quelqu'un qui navigue au clavier ou au
+    lecteur d'ecran de sauter la navigation pour aller droit au contenu.
+  -->
+  <a class="skip-link" href="#main" data-i18n="skipToContent">Aller au contenu principal</a>
+
+  <!--
+    ===================== 1. LE LOADER =====================
+    Affiche pendant que les images se preparent. Il est dans le HTML (et non
+    cree en JS) pour etre visible immediatement, avant meme que JavaScript
+    ne demarre. aria-hidden="true" : purement decoratif, les lecteurs
+    d'ecran l'ignorent.
+  -->
+  <div id="loader" class="loader" aria-hidden="true">
+    <div class="loader__mark">
+      <span class="loader__bar"></span>
+    </div>
+  </div>
+
+  <!--
+    ================ 2. LE PORTAIL (formulaire du prenom) ================
+    C'est un vrai <form> : il fonctionne au clavier, la touche Entree valide,
+    et le navigateur gere l'etiquette du champ. On l'intercepte en JS pour
+    l'empecher de recharger la page (voir event 'submit' dans app.js).
+    Aucun attribut action= : le formulaire n'envoie rien, nulle part.
+  -->
+  <div id="gate" class="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title" hidden>
+    <form class="gate__card" id="gate-form" novalidate autocomplete="off">
+      <p class="gate__hi" data-i18n="gateHi">Bonjour !</p>
+      <h1 class="gate__q" id="gate-title" data-i18n="gateQuestion">Je suis Marvin. Comment vous appelez-vous ?</h1>
+
+      <label class="gate__label" for="gate-input" data-i18n="gateLabel">Mon prénom est</label>
+      <input class="gate__input"
+             id="gate-input"
+             name="visitor"
+             type="text"
+             inputmode="text"
+             maxlength="24"
+             autocomplete="off"
+             spellcheck="false"
+             aria-describedby="gate-hint gate-error"
+             placeholder="Votre prénom">
+      <!-- maxlength="24" = premiere limite. app.js re-verifie de toute facon :
+           un attribut HTML se contourne, une verification JS aussi, donc on
+           fait les deux ET on n'insere jamais le texte en tant que HTML. -->
+
+      <p class="gate__error" id="gate-error" role="alert" hidden data-i18n="gateError"></p>
+
+      <div class="gate__actions">
+        <button class="btn btn--primary" type="submit" data-i18n="gateSubmit">Enchanté</button>
+        <button class="btn btn--ghost" type="button" id="gate-skip" data-i18n="gateSkip">Passer cette étape</button>
+      </div>
+
+      <p class="gate__hint" id="gate-hint" data-i18n="gateHint"></p>
+    </form>
+  </div>
+
+  <!--
+    ===================== 3. BARRE DE PROGRESSION =====================
+    Une fine barre en haut de l'ecran qui se remplit a mesure qu'on descend.
+    Demandee dans le cahier des charges : "indiquer a quelle distance de la
+    fin se trouve la position de scroll".
+  -->
+  <div class="progress" id="progress" aria-hidden="true">
+    <div class="progress__fill" id="progress-fill"></div>
+  </div>
+
+  <!--
+    ===================== 4. EN-TETE =====================
+    position: sticky en CSS -> reste visible pendant le defilement.
+  -->
+  <header class="site-head" id="site-head">
+    <a class="brand" href="#/" aria-label="Marvin Sorhaindo, accueil">
+      <span class="brand__mark">mrv</span><span class="brand__mark">srd</span>
+    </a>
+
+    <!-- Bouton hamburger, visible seulement sous 800px (voir media query CSS) -->
+    <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="site-nav">
+      <span class="nav-toggle__box" aria-hidden="true"><i></i><i></i></span>
+      <span class="sr-only" data-i18n="navMenu">Menu</span>
+    </button>
+
+    <nav class="site-nav" id="site-nav" aria-label="Navigation principale">
+      <a href="#/work"  data-nav="work"  data-i18n="navWork">Projets</a>
+      <a href="#/side"  data-nav="side"  data-i18n="navSide">À côté</a>
+      <a href="#/about" data-nav="about" data-i18n="navAbout">À propos</a>
+      <a id="nav-contact" href="mailto:" data-i18n="navContact">Contact</a>
+
+      <!--
+        Selecteur de langue. Deux boutons plutot qu'un <select> : c'est plus
+        rapide a utiliser (un clic au lieu de deux) et l'etat actif est visible.
+        aria-pressed indique au lecteur d'ecran quelle langue est active.
+      -->
+      <div class="lang" role="group" aria-label="Langue / Language">
+        <button type="button" data-setlang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-setlang="en" aria-pressed="false">EN</button>
+      </div>
+    </nav>
+  </header>
+
+  <!--
+    ===================== 5. LIEN RETOUR PERSISTANT =====================
+    Demande dans le cahier des charges : "un lien retour collant, accessible
+    a tout moment". Il n'apparait que sur les pages de detail (app.js ajoute
+    ou retire la classe is-visible).
+  -->
+  <a class="back-link" id="back-link" href="#/" hidden>
+    <span aria-hidden="true">←</span> <span data-i18n="csBack">Retour</span>
+  </a>
+
+  <!--
+    ===================== 6. LE CONTENU =====================
+    Vide au depart. app.js y injecte la page demandee par l'URL.
+    tabindex="-1" permet de deplacer le focus ici lors d'un changement de
+    page, pour que les lecteurs d'ecran annoncent la nouvelle page.
+    aria-live="polite" : les changements sont annonces sans interrompre.
+  -->
+  <main id="main" tabindex="-1"></main>
+
+  <!--
+    ===================== 7. PIED DE PAGE =====================
+    Rempli par app.js pour rester traduisible sans dupliquer le balisage.
+  -->
+  <footer class="site-foot" id="site-foot"></footer>
+
+  <!--
+    type="module" fait trois choses utiles :
+      1. autorise import / export entre nos fichiers JS,
+      2. differe l'execution jusqu'a ce que le HTML soit pret (pas besoin
+         d'attribut defer, ni d'ecouter DOMContentLoaded),
+      3. active le mode strict de JavaScript, qui transforme certaines
+         erreurs silencieuses en vraies erreurs — plus facile a debugger.
+  -->
+  <script type="module" src="js/app.js"></script>
+
+  <!--
+    SANS JAVASCRIPT : le site est une SPA, il ne peut donc rien afficher.
+    Plutot que de laisser une page blanche, on affiche un message et les
+    liens de contact essentiels. C'est le minimum acceptable.
+  -->
+  <noscript>
+    <div class="noscript">
+      <h1>Marvin Sorhaindo — Designer produit</h1>
+      <p>Ce portfolio a besoin de JavaScript pour fonctionner. Vous pouvez me joindre directement :</p>
+      <p>
+        <a href="mailto:hello@marvinsrd.com">hello@marvinsrd.com</a> ·
+        <a href="https://www.linkedin.com/in/marvinsorhaindo">LinkedIn</a>
+      </p>
+    </div>
+  </noscript>
+
+</body>
+</html>
