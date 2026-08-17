@@ -1,0 +1,37 @@
+# Normalisation des fins de ligne.
+#
+# Windows termine ses lignes par CRLF, Linux et macOS par LF. Sans ce fichier,
+# le depot finit par melanger les deux : chaque "git diff" affiche alors des
+# fichiers entierement modifies alors que rien n'a change, et les conflits
+# deviennent illisibles. GitHub Pages, lui, sert du LF.
+#
+# * text=auto  ->  git normalise en LF dans le DEPOT, et restitue les fins de
+#                  ligne natives dans votre dossier de travail. Vous ne voyez
+#                  aucune difference ; le depot reste propre.
+* text=auto eol=lf
+
+# Fichiers explicitement textuels (au cas ou la detection automatique hesite).
+*.html   text eol=lf
+*.css    text eol=lf
+*.js     text eol=lf
+*.md     text eol=lf
+*.json   text eol=lf
+*.svg    text eol=lf
+
+# Fichiers binaires : ne JAMAIS y toucher. Sans ces lignes, git pourrait
+# tenter de "normaliser" une image ou un PDF et le corrompre definitivement.
+*.pdf    binary
+*.png    binary
+*.webp   binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.woff   binary
+*.woff2  binary
+
+# Sur GitHub, marque ces fichiers comme "generes" : ils n'apparaissent plus
+# dans les statistiques de langage du depot et sont replies par defaut dans
+# les diffs. Utile pour que le depot soit identifie comme du JavaScript et
+# non comme une collection de PDF.
+*.pdf    linguist-documentation
