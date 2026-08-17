@@ -515,8 +515,6 @@ function pageCase(project) {
     ${stats ? `<div class="stats">${stats}</div>` : ''}
 
     <div class="cs__cta">
-      ${hasProcess ? `<a class="btn btn--primary" href="${base}#${escapeAttr(c.sections[0].id)}"
-           data-scrollto="${escapeAttr(c.sections[0].id)}">${escapeAttr(d.readFull)} ↓</a>` : ''}
       ${(c.extLinks || []).map(l =>
         `<a class="btn btn--ghost" href="${escapeAttr(l.href)}" target="_blank" rel="noopener noreferrer">
            ${escapeAttr(l.label)} ↗</a>`).join('')}
@@ -571,27 +569,33 @@ function pageCase(project) {
     page.append(body);
   }
 
-  /* --- Pied : le projet suivant ---
-     On tourne dans la liste : apres le dernier, on revient au premier.
-     L'operateur % (modulo) fait ce bouclage en une ligne. */
-  const siblings = PROJECTS.filter(p => p.kind === project.kind);
-  const idx = siblings.findIndex(p => p.slug === project.slug);
-  const next = siblings[(idx + 1) % siblings.length];
-  if (next && next.slug !== project.slug) {
-    const nc = next[state.lang];
+  /* --- Pied : les autres projets ---
+     Trois suggestions plutot qu'une seule : arrive au bas d'une etude de cas,
+     un recruteur qui a aime doit avoir un choix, pas un couloir.
+
+     On pioche dans TOUS les projets, pas seulement ceux de la meme categorie,
+     ce qui garantit d'en trouver trois meme pour les projets "a cote" qui ne
+     sont que deux. L'operateur % (modulo) fait tourner la liste en boucle :
+     apres le dernier, on revient au premier. */
+  const NEXT_COUNT = 3;
+  const others = [];
+  const startAt = PROJECTS.findIndex(p => p.slug === project.slug);
+  for (let i = 1; others.length < NEXT_COUNT && i < PROJECTS.length; i++) {
+    others.push(PROJECTS[(startAt + i) % PROJECTS.length]);
+  }
+
+  if (others.length) {
     const foot = el('div', { class: 'wrap' });
-    foot.insertAdjacentHTML('beforeend', `
-      <div class="cs-next">
-        <p class="kicker cs-next__kicker">${escapeAttr(d.csNext)}</p>
-        <a class="cs-next__link" href="${next.external ? escapeAttr(next.external) : `#/${next.kind}/${next.slug}`}"
-           ${next.external ? 'target="_blank" rel="noopener noreferrer"' : ''}>
-          <div>
-            <h2 class="cs-next__t">${escapeAttr(nc.title)}</h2>
-            <p class="cs-next__s">${emphasize(nc.tagline)}</p>
-          </div>
-          <span class="cs-next__arrow" aria-hidden="true">→</span>
-        </a>
-      </div>`);
+    const box  = el('div', { class: 'cs-next' });
+    box.append(el('p', { class: 'kicker cs-next__kicker', text: d.csNext }));
+
+    // On reutilise la carte de la page d'accueil : meme composant, donc un
+    // seul endroit a maintenir si la carte evolue. Ses couleurs suivent le
+    // theme de la page grace aux variables CSS.
+    const grid = el('div', { class: 'cards cards--next' });
+    others.forEach(p => grid.append(projectCard(p)));
+    box.append(grid);
+    foot.append(box);
     page.append(foot);
   }
 
@@ -726,6 +730,13 @@ function buildFooter() {
    l'identite de la page. On la coupe donc ici (split('#')[0]), sinon la
    route deviendrait "work / constraints#mapping" et ne correspondrait a
    aucun projet — le site afficherait une 404 sur un lien pourtant valide. */
+/* La partie "page" d'un hash, sans son ancre de section.
+   '#/work/constraints#mapping' et '#/work/constraints' donnent la meme cle :
+   c'est ce qui permet de savoir qu'on est reste sur la meme page. */
+function routeKey(hash) {
+  return (hash || '#/').replace(/^#\/?/, '').split('#')[0];
+}
+
 function parseRoute(hash) {
   const routePart = hash.replace(/^#\/?/, '').split('#')[0];
   // filter(Boolean) supprime les cases vides dues aux slashs en trop.
@@ -765,6 +776,15 @@ function render() {
 
   const main = $('#main');
 
+  /* THEME DE LA PAGE.
+     Les etudes de cas passent sur fond blanc : ce sont des pages longues,
+     faites pour etre lues, et le bleu sature fatigue sur cette duree. Le
+     reste du site garde le bleu de la maquette.
+     L'attribut est pose sur <html> et non sur <body> : ainsi la couleur de
+     fond du document lui-meme suit, ce qui evite un liser bleu au rebond de
+     defilement sur mobile. */
+  document.documentElement.dataset.theme = route.name === 'case' ? 'light' : 'brand';
+
   // La fonction qui remplace reellement le contenu.
   const swap = () => {
     main.replaceChildren(node);       // vide puis remplit, en une operation
@@ -776,37 +796,69 @@ function render() {
     main.classList.add('is-entering');
   };
 
+  /* Tout ce qui doit se produire UNE FOIS LE DOM EN PLACE.
+     -------------------------------------------------------------------
+     C'est le point delicat de cette fonction. startViewTransition ne fait
+     pas qu'animer : il DIFFERE l'execution de son callback jusqu'a ce que
+     le navigateur soit pret a photographier l'ancien etat. Le code ecrit
+     juste apres l'appel s'execute donc AVANT que la nouvelle page existe.
+
+     C'est ce qui cassait la navigation laterale des etudes de cas :
+     setupCaseBehaviours() cherchait '.cs-sec' dans un <main> encore vide,
+     n'en trouvait aucune, et sortait aussitot. Ni scroll-spy, ni
+     pourcentage, ni gestionnaire de clic — donc les liens repartaient dans
+     le comportement par defaut et rechargeaient la page.
+
+     La regle a retenir : ne jamais lire le DOM juste apres avoir demande
+     une transition. On regroupe tout ici et on l'appelle au bon moment. */
+  const afterSwap = () => {
+    document.title = title;
+    markActiveNav(route);
+    setupBackLink(route);
+    closeMobileNav();
+
+    // Remonter en haut a chaque changement de page — sauf si l'URL vise une
+    // ancre precise, cas ou l'on doit au contraire descendre jusqu'a elle.
+    const anchor = hash.split('#')[2];
+    if (anchor) scrollToSection(anchor, 'auto');
+    else window.scrollTo({ top: 0, behavior: 'auto' });
+
+    // On deplace le focus sur <main> : sans ca, un lecteur d'ecran continue
+    // d'annoncer l'ancienne page et l'utilisateur clavier repart du debut.
+    main.focus({ preventScroll: true });
+
+    if (route.name === 'case') setupCaseBehaviours();
+    setupScrollProgress();
+  };
+
   // Transition de page. startViewTransition est l'API moderne : le navigateur
   // photographie l'ancien et le nouvel etat et interpole entre les deux.
-  // On verifie sa presence avant de l'appeler, sinon on remplace directement.
+  // `updateCallbackDone` est la promesse tenue une fois le DOM remplace —
+  // c'est notre signal pour lancer afterSwap sans risque.
   if (document.startViewTransition && !prefersReducedMotion()) {
-    document.startViewTransition(swap);
+    document.startViewTransition(swap).updateCallbackDone.then(afterSwap);
   } else {
     swap();
+    afterSwap();
   }
+}
 
-  document.title = title;
-  markActiveNav(route);
-  setupBackLink(route);
-  closeMobileNav();
+/* Fait defiler jusqu'a une section, en tenant compte de l'en-tete collant.
+   scrollIntoView seul placerait le titre sous l'en-tete ; on retire donc sa
+   hauteur du calcul. Regroupe ici parce que trois endroits en ont besoin. */
+function scrollToSection(id, behavior) {
+  const target = document.getElementById(`sec-${id}`);
+  if (!target) return;
+  const y = target.getBoundingClientRect().top + window.scrollY - readHeadHeight() - 24;
+  window.scrollTo({ top: Math.max(0, y), behavior });
+}
 
-  // Remonter en haut a chaque changement de page — sauf si l'URL vise une
-  // ancre precise, cas ou l'on doit au contraire descendre jusqu'a elle.
-  const anchor = hash.split('#')[2];
-  if (anchor) {
-    // requestAnimationFrame attend la prochaine image affichee : a ce
-    // moment la, le DOM est en place et l'element existe vraiment.
-    requestAnimationFrame(() => $(`#sec-${anchor}`)?.scrollIntoView({ block: 'start' }));
-  } else {
-    window.scrollTo({ top: 0, behavior: 'auto' });
-  }
-
-  // On deplace le focus sur <main> : sans ca, un lecteur d'ecran continue
-  // d'annoncer l'ancienne page et l'utilisateur clavier repart du debut.
-  main.focus({ preventScroll: true });
-
-  if (route.name === 'case') setupCaseBehaviours();
-  setupScrollProgress();
+/* Lit la hauteur de l'en-tete depuis le CSS plutot que de la coder en dur.
+   Elle change entre bureau et mobile (82px / 72px) : la lire garantit que le
+   JavaScript et la feuille de style ne peuvent pas se contredire. */
+function readHeadHeight() {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--head-h');
+  return parseInt(v, 10) || 82;
 }
 
 /* Souligne l'entree de menu correspondant a la page affichee. */
@@ -874,9 +926,13 @@ function setupScrollProgress() {
 }
 
 /* ---- 8b. Nav laterale d'etude de cas : scroll-spy + progression ----
-   IntersectionObserver previent quand un element entre ou sort de l'ecran.
-   C'est bien plus efficace que de calculer la position de chaque section a
-   chaque pixel de defilement : le navigateur fait le travail pour nous. */
+   Trois comportements, tous alimentes par un seul ecouteur de defilement :
+     - la section en cours de lecture est surlignee dans la nav ;
+     - la barre et le pourcentage indiquent l'avancement dans le processus ;
+     - un clic sur une entree fait defiler, sans recharger la page.
+
+   ATTENTION : cette fonction lit le DOM. Elle doit donc etre appelee APRES
+   que la page a ete inseree dans <main>, jamais avant (voir render). */
 function setupCaseBehaviours() {
   const links = $$('.cs-nav a[data-spy]');
   const secs  = $$('.cs-sec');
@@ -886,72 +942,95 @@ function setupCaseBehaviours() {
   const pct   = $('#cs-pct');
   const track = $('.cs-nav__track');
 
-  /* --- scroll-spy --- */
+  /* --- scroll-spy : quelle section est en train d'etre lue ? ---
+     Calcul deterministe plutot qu'IntersectionObserver.
+
+     Un observateur regle sur une bande centrale de l'ecran parait elegant,
+     mais il a un angle mort : une section courte, ou la derniere d'une page,
+     peut ne JAMAIS atteindre le milieu de la fenetre — le document cesse de
+     defiler avant. Elle ne s'allume alors jamais.
+
+     La regle ci-dessous n'a pas ce defaut : on prend la derniere section dont
+     le haut est deja passe sous l'en-tete. Il y a donc toujours exactement une
+     section active, et la derniere s'allume forcement en fin de page. */
   const setActive = (id) => links.forEach(a =>
     a.classList.toggle('is-active', a.dataset.spy === id));
 
-  const io = new IntersectionObserver((entries) => {
-    // Plusieurs sections peuvent etre visibles en meme temps. On retient
-    // celle qui occupe le plus de place a l'ecran : c'est celle que le
-    // visiteur est le plus probablement en train de lire.
-    const visible = entries.filter(e => e.isIntersecting)
-                           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-    if (visible[0]) setActive(visible[0].target.id);
-  }, {
-    // rootMargin retrecit la zone de detection : -45% en haut et -45% en bas
-    // laissent une bande centrale. Une section devient donc "active" quand
-    // elle atteint le milieu de l'ecran, pas des qu'elle pointe le nez.
-    rootMargin: '-45% 0px -45% 0px',
-    threshold: [0, 0.25, 0.5, 1]
-  });
-  secs.forEach(s => io.observe(s));
-  addCleanup(() => io.disconnect());   // indispensable : sinon l'observateur survit
+  const updateActive = () => {
+    // La ligne de declenchement : juste sous l'en-tete collant, plus une
+    // marge pour que la section s'allume quand son titre devient lisible.
+    const lineY = readHeadHeight() + 80;
+    let current = secs[0];
+    for (const s of secs) {
+      if (s.getBoundingClientRect().top <= lineY) current = s;
+      else break;                       // les sections sont dans l'ordre du DOM
+    }
+    // Cas particulier du bas de page : si on a atteint le fond, c'est la
+    // derniere section qu'on lit, quoi que dise le calcul precedent.
+    const atBottom = window.innerHeight + window.scrollY
+                     >= document.documentElement.scrollHeight - 2;
+    if (atBottom) current = secs[secs.length - 1];
+    setActive(current.id);
+  };
 
-  /* --- progression dans le processus --- */
+  /* --- progression dans le processus ---
+     Calcul base sur getBoundingClientRect plutot que sur offsetTop.
+     offsetTop est mesure par rapport au premier ancetre positionne, qui peut
+     changer selon la mise en page ; rect.top + scrollY donne toujours une
+     position absolue dans le document, quelle que soit la structure.
+
+     Le trajet va du haut de la premiere section au bas de la derniere, moins
+     une hauteur d'ecran : ainsi le compteur atteint bien 100 % quand la
+     derniere section finit de defiler, et pas une fois qu'on a depasse le
+     pied de page. */
   const first = secs[0], last = secs[secs.length - 1];
   const updateProgress = () => {
-    const start = first.offsetTop;
-    const end   = last.offsetTop + last.offsetHeight - window.innerHeight * 0.6;
-    const span  = Math.max(1, end - start);
-    const p = Math.round(Math.min(100, Math.max(0, ((window.scrollY - start) / span) * 100)));
+    const top    = window.scrollY;
+    const start  = first.getBoundingClientRect().top + top;
+    const end    = last.getBoundingClientRect().bottom + top - window.innerHeight;
+    const span   = Math.max(1, end - start);
+    const p = Math.round(Math.min(100, Math.max(0, ((top - start) / span) * 100)));
     bar.style.width = p + '%';
     pct.textContent = p + '%';
-    // On met aussi a jour aria-valuenow : un lecteur d'ecran peut alors
-    // annoncer la progression, exactement comme la barre le montre a l'oeil.
+    // aria-valuenow permet a un lecteur d'ecran d'annoncer la progression,
+    // exactement comme la barre la montre a l'oeil.
     track.setAttribute('aria-valuenow', String(p));
   };
-  window.addEventListener('scroll', updateProgress, { passive: true });
-  window.addEventListener('resize', updateProgress);
+
+  /* Un seul ecouteur pour les deux calculs. Le defilement se declenche des
+     dizaines de fois par seconde : mieux vaut une fonction qui fait deux
+     choses que deux fonctions qui font la queue.
+     { passive: true } promet au navigateur qu'on n'appellera pas
+     preventDefault() ; il peut alors continuer a defiler sans nous attendre,
+     ce qui garde le scroll fluide sur telephone. */
+  const onScroll = () => { updateActive(); updateProgress(); };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
   addCleanup(() => {
-    window.removeEventListener('scroll', updateProgress);
-    window.removeEventListener('resize', updateProgress);
+    window.removeEventListener('scroll', onScroll);
+    window.removeEventListener('resize', onScroll);
   });
-  updateProgress();
+  onScroll();
 
   /* --- clics sur la nav laterale ---
-     On intercepte pour eviter que le hash de l'ancre n'ecrase le hash de
-     route (ce qui declencherait un changement de page). */
+     On empeche le comportement par defaut : suivre le lien changerait le
+     hash, ce qui rechargerait la page et rejouerait la transition. On fait
+     defiler nous-memes, puis on met l'URL a jour avec replaceState.
+
+     replaceState et non location.hash : il modifie la barre d'adresse SANS
+     declencher l'evenement hashchange. La section reste donc partageable par
+     copier-coller, sans qu'aucun rendu ne soit provoque. */
   links.forEach(a => {
     const onClick = (ev) => {
       ev.preventDefault();
-      const target = document.getElementById(a.dataset.spy);
-      target?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+      const id = a.dataset.spy.replace(/^sec-/, '');
+      scrollToSection(id, prefersReducedMotion() ? 'auto' : 'smooth');
+      setActive(a.dataset.spy);            // retour visuel immediat
+      history.replaceState(null, '', `${location.hash.split('#')[1] ? '#' + location.hash.split('#')[1] : ''}#${id}`);
     };
     a.addEventListener('click', onClick);
     addCleanup(() => a.removeEventListener('click', onClick));
   });
-
-  /* --- bouton "Lire le processus complet" --- */
-  const cta = $('[data-scrollto]');
-  if (cta) {
-    const onCta = (ev) => {
-      ev.preventDefault();
-      document.getElementById(`sec-${cta.dataset.scrollto}`)
-        ?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
-    };
-    cta.addEventListener('click', onCta);
-    addCleanup(() => cta.removeEventListener('click', onCta));
-  }
 }
 
 
@@ -1074,9 +1153,26 @@ function start() {
 
   /* --- Ecouteurs globaux, installes une seule fois --- */
 
-  // hashchange se declenche a chaque changement de la partie apres le #.
-  // C'est le moteur de notre navigation.
-  window.addEventListener('hashchange', render);
+  /* hashchange se declenche a chaque changement de la partie apres le #.
+     C'est le moteur de notre navigation — mais il ne doit PAS redessiner la
+     page quand seule l'ancre de section change.
+
+     Sans ce filtre, passer de #/work/constraints a #/work/constraints#mapping
+     reconstruirait toute l'etude de cas et rejouerait la transition, alors
+     que le visiteur a simplement clique sur une entree de la nav laterale.
+     On compare donc les routes en ignorant l'ancre : si elles sont
+     identiques, on se contente de faire defiler. */
+  let lastRoute = routeKey(location.hash);
+  window.addEventListener('hashchange', () => {
+    const key = routeKey(location.hash);
+    if (key === lastRoute) {
+      const anchor = location.hash.split('#')[2];
+      if (anchor) scrollToSection(anchor, prefersReducedMotion() ? 'auto' : 'smooth');
+      return;                       // meme page : aucun rendu
+    }
+    lastRoute = key;
+    render();
+  });
 
   // Selecteur de langue.
   $$('[data-setlang]').forEach(b =>

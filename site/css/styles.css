@@ -48,16 +48,44 @@
 
   /* ---- NEUTRES --------------------------------------------------------- */
   --white:       #FFFFFF;
-  --ink:         #FFFFFF;   /* le texte courant est blanc sur fond bleu */
+  --deep:        #10233F;   /* bleu tres fonce, pour le texte sur fond blanc */
 
-  /* Voiles construits sur du blanc ou du noir transparent plutot que sur des
-     couleurs fixes : ils restent coherents si le bleu change. */
+  /* ---- LES DEUX THEMES -------------------------------------------------
+     Le site a deux ambiances, et TOUT le reste du fichier ne parle qu'en
+     variables — jamais en couleurs fixes. Basculer une page d'un theme a
+     l'autre revient donc a changer un seul attribut sur <html>, ce que fait
+     app.js a chaque rendu :
+
+       html[data-theme="brand"]  fond bleu, texte blanc   (accueil, listes)
+       html[data-theme="light"]  fond blanc, texte fonce  (etudes de cas)
+
+     Les etudes de cas sont sur fond blanc parce que ce sont des pages
+     longues, faites pour etre lues d'un bout a l'autre. Les valeurs
+     ci-dessous sont celles du theme de marque ; le bloc du theme clair les
+     redefinit juste apres.                                                */
+  --bg:          #2078F0;                /* fond de page */
+  --ink:         #FFFFFF;                /* texte courant */
   --ink-soft:    rgba(255,255,255,.78);  /* texte secondaire */
   --ink-faint:   rgba(255,255,255,.60);  /* legendes, sur-titres */
   --line:        rgba(255,255,255,.24);  /* filets et separateurs */
   --line-soft:   rgba(255,255,255,.14);
   --veil:        rgba(0,0,0,.05);        /* fond de la pilule de navigation */
   --veil-strong: rgba(0,0,0,.12);        /* blocs mis en avant */
+
+  /* --accent porte tout ce qui doit ressortir : barres de progression,
+     section active, chiffres cles, anneau de focus. Lime sur le bleu, bleu
+     sur le blanc — le lime sur blanc serait illisible (1,34:1). */
+  --accent:      #BEF007;
+  --accent-ink:  #16220A;                /* texte pose SUR l'accent */
+
+  /* Les pastilles d'etiquette s'inversent d'un theme a l'autre. */
+  --tag-bg:      #FFFFFF;
+  --tag-fg:      #2078F0;
+
+  /* Le cadre blanc derriere les captures d'ecran. Sur fond blanc il
+     disparaitrait, on lui donne donc un liser. */
+  --frame-bg:    #FFFFFF;
+  --frame-line:  transparent;
 
   /* ---- TYPOGRAPHIE ------------------------------------------------------
      Raleway, imposee par la maquette. La pile de secours evite un saut de
@@ -108,10 +136,43 @@
   --shadow:      0 10px 30px -12px rgba(0,0,0,.35);
   --shadow-lg:   0 24px 60px -20px rgba(0,0,0,.45);
   --head-h:      82px;   /* 16px de texte + 24px de marge haute et basse */
+  --back-h:      38px;   /* hauteur du bouton "Retour", fixe sous l'en-tete */
   --measure:     68ch;   /* largeur de lecture confortable */
 
   /* Courbe d'animation : demarre vite, se pose doucement. */
   --ease: cubic-bezier(.2, .7, .2, 1);
+}
+
+/* ---- LE THEME CLAIR, applique aux etudes de cas ----------------------
+   Ce bloc ne redefinit QUE les couleurs. Typographie, espacements et rayons
+   restent ceux de :root ci-dessus : une etude de cas doit avoir la meme
+   respiration et la meme voix que le reste du site, seulement sur un autre
+   fond. Redeclarer ici les tailles serait le meilleur moyen de les voir
+   diverger a la premiere modification.                                    */
+html[data-theme="light"] {
+  --bg:          #FFFFFF;
+  --ink:         #10233F;
+  /* Ces deux gris sont mes valeurs, pas celles de la maquette : ils sont donc
+     calibres au seuil WCAG AA plutot qu'a l'oeil. */
+  --ink-soft:    #4A5B75;   /* 6,90:1 sur blanc */
+  --ink-faint:   #68778F;   /* 4,54:1 sur blanc */
+  --line:        rgba(16,35,63,.16);
+  --line-soft:   rgba(16,35,63,.09);
+  --veil:        rgba(16,35,63,.04);
+  --veil-strong: rgba(32,120,240,.07);
+
+  --accent:      #2078F0;
+  --accent-ink:  #FFFFFF;
+
+  --tag-bg:      #2078F0;
+  --tag-fg:      #FFFFFF;
+
+  --frame-bg:    #FFFFFF;
+  --frame-line:  rgba(16,35,63,.12);
+
+  /* Ombres plus discretes : sur fond blanc, une ombre marquee salit. */
+  --shadow:      0 8px 24px -12px rgba(16,35,63,.25);
+  --shadow-lg:   0 20px 50px -20px rgba(16,35,63,.30);
 }
 
 
@@ -131,12 +192,12 @@ html {
   /* Evite que l'en-tete collant recouvre le titre vise par un lien d'ancrage. */
   scroll-padding-top: calc(var(--head-h) + var(--s5));
   -webkit-text-size-adjust: 100%;
-  background: var(--blue);   /* evite un flash blanc au rebond de scroll */
+  background: var(--bg);   /* evite un flash de couleur au rebond de scroll */
 }
 
 body {
   margin: 0;
-  background: var(--blue);
+  background: var(--bg);
   color: var(--ink);
   font-family: var(--font);
   font-size: var(--fs-body);
@@ -158,7 +219,7 @@ a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; 
 /* :focus-visible ne s'active qu'au clavier, pas au clic de souris : on garde
    un anneau utile sans le halo parasite a la souris. */
 :focus-visible {
-  outline: 2px solid var(--lime);
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
   border-radius: 4px;
 }
@@ -184,7 +245,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .skip-link {
   position: fixed; top: var(--s3); left: var(--s3); z-index: 200;
   transform: translateY(-160%);
-  background: var(--lime); color: #16220A;
+  background: var(--accent); color: var(--accent-ink);
   padding: var(--s3) var(--s4); border-radius: var(--radius-sm);
   text-decoration: none; font-size: var(--fs-small); font-weight: var(--w-semibold);
   transition: transform .2s var(--ease);
@@ -211,7 +272,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
    isDraft dans content.js. */
 .draft-badge {
   display: inline-flex; align-items: center; gap: var(--s2);
-  background: var(--lime); color: #16220A;
+  background: var(--accent); color: var(--accent-ink);
   font-size: var(--fs-tiny); font-weight: var(--w-semibold);
   text-transform: uppercase; letter-spacing: .08em;
   padding: var(--s1) var(--s3); border-radius: 999px;
@@ -230,10 +291,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 /* Le bouton principal reprend la pastille de la maquette : blanc plein,
    texte bleu. */
-.btn--primary { background: var(--white); color: var(--blue); }
-.btn--primary:hover { background: var(--lime); color: #16220A; transform: translateY(-1px); }
-.btn--ghost { background: transparent; color: var(--white); border-color: var(--line); }
-.btn--ghost:hover { border-color: var(--white); background: rgba(255,255,255,.08); }
+.btn--primary { background: var(--ink); color: var(--bg); }
+.btn--primary:hover { background: var(--accent); color: var(--accent-ink); transform: translateY(-1px); }
+.btn--ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn--ghost:hover { border-color: var(--ink); background: var(--veil); }
 
 
 /* ==========================================================================
@@ -258,7 +319,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .loader__bar {
   display: block; height: 100%; width: 0%;
   background: var(--lime);
-  /* La largeur est pilotee en JS (pourcentage reel d'images chargees), donc
+  /* Loader et portail restent sur le bleu de marque : ils s'affichent
+     avant toute page, donc avant qu'un theme soit choisi.
+     La largeur est pilotee en JS (pourcentage reel d'images chargees), donc
      pas d'animation infinie qui mentirait sur la progression. */
   transition: width .3s var(--ease);
 }
@@ -299,7 +362,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: rgba(0,0,0,.08);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  color: var(--white); font: inherit; font-size: 1.25rem;
+  color: #FFFFFF; font: inherit; font-size: 1.25rem;
   transition: border-color .18s var(--ease), background .18s var(--ease);
 }
 .gate__input::placeholder { color: rgba(255,255,255,.45); }
@@ -314,7 +377,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .gate__error { color: #FFD9D9; font-size: var(--fs-small); margin-top: var(--s2); }
 .gate__actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
 .gate__actions .btn--primary { background: var(--lime); color: #16220A; }
-.gate__actions .btn--primary:hover { background: var(--white); color: var(--blue); }
+.gate__actions .btn--primary:hover { background: #FFFFFF; color: var(--blue); }
 
 .gate__hint {
   margin-top: var(--s6);
@@ -334,7 +397,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .progress__fill {
   height: 100%; width: 0%;
-  background: var(--lime);
+  background: var(--accent);
 }
 
 /* Grille en trois colonnes de largeur egale : la pilule centrale reste
@@ -346,7 +409,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   align-items: center;
   gap: var(--s4);
   padding: var(--s5) var(--gutter);
-  background: var(--blue);
+  background: var(--bg);
   transition: box-shadow .3s var(--ease);
 }
 /* .is-scrolled est ajoutee par app.js des qu'on quitte le haut de page. */
@@ -374,7 +437,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .site-nav a {
   position: relative;
-  text-decoration: none; color: var(--white);
+  text-decoration: none; color: var(--ink);
   font-size: var(--fs-body); font-weight: var(--w-medium);
   line-height: var(--lh-nav); letter-spacing: -0.08px;
   white-space: nowrap;
@@ -387,7 +450,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
    width : transform peut etre delegue au GPU, c'est plus fluide. */
 .site-nav a::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: -6px;
-  height: 2px; background: var(--lime);
+  height: 2px; background: var(--accent);
   transform: scaleX(0); transform-origin: left;
   transition: transform .25s var(--ease);
 }
@@ -406,10 +469,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   color: rgba(255,255,255,.7);
   transition: background .18s var(--ease), color .18s var(--ease);
 }
-.lang button:hover { color: var(--white); }
+.lang button:hover { color: var(--ink); }
 /* aria-pressed sert a la fois de style ET d'information d'accessibilite :
    une seule source de verite, pas de classe en doublon. */
-.lang button[aria-pressed="true"] { background: var(--white); color: var(--blue); }
+.lang button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
 
 /* Bouton hamburger : masque par defaut, affiche en media query mobile. */
 .nav-toggle {
@@ -419,23 +482,31 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-radius: var(--radius-sm); padding: var(--s2) var(--s3);
 }
 .nav-toggle__box { display: grid; gap: 4px; width: 18px; }
-.nav-toggle__box i { display: block; height: 2px; background: var(--white); border-radius: 2px; transition: transform .2s var(--ease); }
+.nav-toggle__box i { display: block; height: 2px; background: var(--ink); border-radius: 2px; transition: transform .2s var(--ease); }
 .nav-toggle[aria-expanded="true"] .nav-toggle__box i:first-child { transform: translateY(3px) rotate(45deg); }
 .nav-toggle[aria-expanded="true"] .nav-toggle__box i:last-child  { transform: translateY(-3px) rotate(-45deg); }
 
-/* ---- Lien retour persistant ---- */
+/* ---- Lien retour persistant ----
+   Place SOUS l'en-tete plutot qu'en bas d'ecran : c'est la que l'oeil cherche
+   un retour, et il ne masque plus le contenu en fin de page. */
 .back-link {
   position: fixed; z-index: 118;
-  left: var(--gutter); bottom: var(--s5);
+  left: var(--gutter);
+  top: calc(var(--head-h) + var(--s3));
   display: inline-flex; align-items: center; gap: var(--s2);
-  padding: var(--s3) var(--s5);
-  background: var(--white); color: var(--blue);
-  border-radius: 999px; box-shadow: var(--shadow);
+  height: var(--back-h);
+  padding-inline: var(--s5);
+  background: var(--veil); color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 999px;
   text-decoration: none; font-size: var(--fs-small); font-weight: var(--w-semibold);
-  transition: transform .2s var(--ease), box-shadow .2s var(--ease);
+  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+  transition: transform .2s var(--ease), background .2s var(--ease);
 }
 .back-link[hidden] { display: none; }
-.back-link:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.back-link:hover { transform: translateX(-3px); background: var(--veil-strong); }
+.back-link span:first-child { transition: transform .2s var(--ease); }
+.back-link:hover span:first-child { transform: translateX(-2px); }
 
 
 /* ==========================================================================
@@ -478,14 +549,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
   max-width: 755px;
 }
 /* Les mots accentues en lime. */
-.hero__statement .accent { color: var(--lime); }
+.hero__statement .accent { color: var(--accent); }
 /* Les employeurs sont soulignes. Ceux qui pointent vers une etude de cas
    sont des <a>, Gekko est un simple <span> : meme rendu, comportement
    different au survol. */
 .hero__statement u,
 .hero__statement a { text-decoration: underline; text-underline-offset: 3px; }
 .hero__statement a { transition: color .18s var(--ease); }
-.hero__statement a:hover { color: var(--lime); }
+.hero__statement a:hover { color: var(--accent); }
 
 /* Le lien vers l'article sur les deux ans : souligne, suivi d'une fleche. */
 .hero__gap {
@@ -495,7 +566,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   text-decoration: underline; text-underline-offset: 4px;
   transition: color .18s var(--ease);
 }
-.hero__gap:hover { color: var(--lime); }
+.hero__gap:hover { color: var(--accent); }
 .hero__gap .arrow {
   display: inline-block; width: 16px; height: 16px;
   font-size: 15px; line-height: 16px; text-align: center;
@@ -563,7 +634,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   text-decoration: underline; text-underline-offset: 4px;
   transition: color .18s var(--ease);
 }
-.card:hover .card__title { color: var(--lime); }
+.card:hover .card__title { color: var(--accent); }
 /* Les chiffres marquants du titre passent en SemiBold, comme dans Figma
    ("...reducing rules from 24 to 9"). */
 .card__title b { font-weight: var(--w-semibold); }
@@ -573,7 +644,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .tag {
   display: inline-flex; align-items: center;
   padding: 4px 8px;
-  background: var(--white); color: var(--blue);
+  background: var(--tag-bg); color: var(--tag-fg);
   border-radius: var(--radius-tag);
   font-size: var(--fs-body); font-weight: var(--w-semibold);
   line-height: 1.35; white-space: nowrap;
@@ -587,8 +658,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cs { padding-bottom: var(--s9); }
 
 /* ---- 8a. L'en-tete : la partie "30 secondes" ----
-   Tout ce qu'un recruteur presse doit lire tient ici, avant le premier scroll. */
-.cs__head { padding-block: var(--s7) var(--s6); }
+   Tout ce qu'un recruteur presse doit lire tient ici, avant le premier scroll.
+   La marge haute degage le bouton "Retour", qui est fixe au-dessus. */
+.cs__head { padding-block: calc(var(--back-h) + var(--s6)) var(--s6); }
 .cs__client { font-size: var(--fs-body); margin-bottom: var(--s2); color: var(--ink-soft); }
 .cs__title { font-size: var(--fs-h1); font-weight: var(--w-medium); margin-bottom: var(--s4); }
 .cs__tagline {
@@ -618,11 +690,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* Le resultat est mis en avant par un voile sombre et un filet lime. */
 .pair__out {
   background: var(--veil-strong);
-  border-left: 3px solid var(--lime);
+  border-left: 3px solid var(--accent);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   padding: var(--s5);
 }
-.pair__out p { color: var(--white); }
+.pair__out p { color: var(--ink); }
 
 /* Les chiffres marquants : ce que le recruteur retiendra. */
 .stats {
@@ -632,7 +704,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .stat__n {
   font-size: clamp(1.6rem, 3.2vw, 2.2rem); font-weight: var(--w-semibold);
-  line-height: 1.05; color: var(--lime);
+  line-height: 1.05; color: var(--accent);
   /* Aligne les chiffres sur une meme largeur quand plusieurs se suivent. */
   font-variant-numeric: tabular-nums;
   margin-bottom: var(--s2);
@@ -651,10 +723,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .cs-nav {
   position: sticky;
-  top: calc(var(--head-h) + var(--s4));
+  /* L'offset doit degager DEUX choses : l'en-tete collant, et le bouton
+     "Retour" desormais fixe juste en dessous. Sans ce calcul, le titre
+     "LE PROCESSUS" venait coller le filet de l'en-tete.
+     --back-h est la hauteur du bouton retour, declaree plus bas pour que les
+     deux valeurs ne puissent pas diverger. */
+  top: calc(var(--head-h) + var(--back-h) + var(--s6));
   /* Si un jour il y a 20 sections, la nav defile elle-meme au lieu de
      deborder de l'ecran. */
-  max-height: calc(100vh - var(--head-h) - var(--s7));
+  max-height: calc(100vh - var(--head-h) - var(--back-h) - var(--s8));
   overflow-y: auto;
 }
 .cs-nav__title {
@@ -671,18 +748,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-left: 2px solid transparent;
   transition: color .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease);
 }
-.cs-nav a:hover { color: var(--white); background: var(--veil); }
+.cs-nav a:hover { color: var(--ink); background: var(--veil); }
 /* .is-active est posee par app.js via IntersectionObserver : c'est le
    "scroll-spy" qui suit la section actuellement visible. */
 .cs-nav a.is-active {
-  color: var(--lime); background: var(--veil-strong);
-  border-left-color: var(--lime); font-weight: var(--w-semibold);
+  color: var(--accent); background: var(--veil-strong);
+  border-left-color: var(--accent); font-weight: var(--w-semibold);
 }
 .cs-nav__num { font-size: var(--fs-tiny); font-variant-numeric: tabular-nums; opacity: .7; }
 
 .cs-nav__prog { margin-top: var(--s5); }
 .cs-nav__track { height: 3px; background: var(--line-soft); border-radius: 3px; overflow: hidden; }
-.cs-nav__bar { height: 100%; width: 0%; background: var(--lime); border-radius: 3px; }
+.cs-nav__bar { height: 100%; width: 0%; background: var(--accent); border-radius: 3px; }
 .cs-nav__pct { margin-top: var(--s2); font-size: var(--fs-tiny); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
 
 /* ---- 8c. Une section de processus ---- */
@@ -699,7 +776,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
    besoin d'un fond neutre pour ne pas se dissoudre dans le bleu. */
 .figure { margin-block: var(--s6); }
 .figure__frame {
-  background: var(--white);
+  background: var(--frame-bg);
+  border: 1px solid var(--frame-line);
   border-radius: var(--radius);
   padding: var(--s4);
   overflow: hidden;
@@ -716,28 +794,29 @@ button { font: inherit; color: inherit; cursor: pointer; }
   font-style: italic;
 }
 
-/* ---- 8d. Le pied d'etude de cas : projet suivant ---- */
+/* ---- 8d. Le pied d'etude de cas : les autres projets ----
+   Trois cartes plutot qu'un seul lien : arrive au bout d'une lecture longue,
+   le visiteur doit avoir un choix, pas un couloir. */
 .cs-next { margin-top: var(--s8); padding-top: var(--s7); border-top: 1px solid var(--line); }
-.cs-next__kicker { margin-bottom: var(--s4); }
-.cs-next__link {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: var(--s5); padding: var(--s6);
-  background: var(--veil-strong);
-  border-radius: var(--radius); text-decoration: none; color: inherit;
-  transition: transform .25s var(--ease), background .25s var(--ease);
+.cs-next__kicker { margin-bottom: var(--s6); }
+
+/* Trois colonnes serrees, au lieu des deux larges de la page d'accueil.
+   Ce sont des suggestions, pas la vitrine principale. */
+.cards--next {
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: var(--s6) var(--s5);
 }
-.cs-next__link:hover { transform: translateY(-3px); background: rgba(0,0,0,.2); }
-.cs-next__t { font-size: var(--fs-h2); margin-bottom: var(--s2); font-weight: var(--w-medium); }
-.cs-next__s { color: var(--ink-soft); font-size: var(--fs-small); max-width: 46ch; }
-.cs-next__arrow { font-size: 1.6rem; color: var(--lime); flex-shrink: 0; transition: transform .25s var(--ease); }
-.cs-next__link:hover .cs-next__arrow { transform: translateX(6px); }
+.cards--next .card__title { font-size: var(--fs-h3); }
+.cards--next .card__client,
+.cards--next .tag { font-size: var(--fs-small); }
 
 
 /* ==========================================================================
    9. PAGES EDITORIALES (A propos, article sur les deux ans)
    ========================================================================== */
 
-.editorial { padding-block: var(--s7) var(--s9); }
+/* Meme degagement que les etudes de cas : le bouton "Retour" est fixe. */
+.editorial { padding-block: calc(var(--back-h) + var(--s6)) var(--s9); }
 .editorial__title { font-size: var(--fs-h1); font-weight: var(--w-medium); margin-bottom: var(--s4); }
 .editorial__lede {
   font-size: var(--fs-lead); color: var(--ink-soft); font-weight: var(--w-light);
@@ -753,10 +832,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
    rend impossibles a publier par distraction. */
 .todo {
   background: var(--veil-strong);
-  border-left: 3px solid var(--lime);
+  border-left: 3px solid var(--accent);
   padding: var(--s4) var(--s5);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  color: var(--white) !important;
+  color: var(--ink) !important;
   font-size: var(--fs-small); font-style: italic;
 }
 
@@ -779,7 +858,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .foot ul { display: grid; gap: var(--s3); }
 .foot a { color: var(--ink-soft); text-decoration: none; font-size: var(--fs-small); }
-.foot a:hover { color: var(--lime); text-decoration: underline; }
+.foot a:hover { color: var(--accent); text-decoration: underline; }
 .foot__bottom {
   display: flex; flex-wrap: wrap; gap: var(--s4); justify-content: space-between;
   padding-top: var(--s5); border-top: 1px solid var(--line-soft);
@@ -818,10 +897,22 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
 /* --- Sous 1000px : la nav laterale de case study passe au-dessus ------- */
 @media (max-width: 1000px) {
   .cs__body { grid-template-columns: 1fr; }
+
+  /* Le bouton "Retour" repasse dans le flux normal. En reste fixe, il
+     recouvrirait la barre de sections qui vient se coller sous l'en-tete.
+     Il defile donc avec la page sur petit ecran — compromis assume : mieux
+     vaut un bouton qui s'eloigne qu'un bouton qui masque la navigation. */
+  .back-link {
+    position: static;
+    margin: var(--s5) var(--gutter) 0;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  .cs__head, .editorial { padding-top: var(--s6); }
+
   .cs-nav {
     position: sticky; top: var(--head-h);
     max-height: none; z-index: 100;
-    background: var(--blue);
+    background: var(--bg);
     border-bottom: 1px solid var(--line-soft);
     margin-inline: calc(-1 * var(--gutter));
     padding: var(--s3) var(--gutter);
@@ -841,7 +932,7 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
     border-bottom: 2px solid transparent;
     border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   }
-  .cs-nav a.is-active { border-left: 0; border-bottom-color: var(--lime); }
+  .cs-nav a.is-active { border-left: 0; border-bottom-color: var(--accent); }
   .cs-nav__pct { display: none; }
 }
 
@@ -861,7 +952,7 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
     position: fixed; inset: var(--head-h) 0 auto 0;
     flex-direction: column; align-items: stretch; gap: 0;
     padding: var(--s4) var(--gutter) var(--s6);
-    background: var(--blue);
+    background: var(--bg);
     border-radius: 0;
     border-bottom: 1px solid var(--line);
     box-shadow: var(--shadow-lg);
@@ -874,7 +965,7 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
   .site-nav.is-open { transform: translateY(0); visibility: visible; }
   .site-nav a { padding-block: var(--s4); border-bottom: 1px solid var(--line-soft); font-size: 1.05rem; opacity: 1; }
   .site-nav a::after { display: none; }
-  .site-nav a[aria-current="page"] { color: var(--lime); }
+  .site-nav a[aria-current="page"] { color: var(--accent); }
 
   .pair { grid-template-columns: 1fr; }
   .foot__grid { grid-template-columns: 1fr 1fr; }
@@ -931,4 +1022,4 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
 /* Le message affiche si JavaScript est desactive. */
 .noscript { padding: var(--s8) var(--gutter); max-width: 620px; margin-inline: auto; }
 .noscript h1 { font-size: var(--fs-h1); margin-bottom: var(--s4); }
-.noscript a { color: var(--lime); }
+.noscript a { color: var(--accent); }
