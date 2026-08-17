@@ -1,6 +1,10 @@
 /* ==========================================================================
    styles.css — TOUTE l'apparence du site
    --------------------------------------------------------------------------
+   Theme repris de la maquette Figma "Portfolio_Explorations" (noeud 2309:3835).
+   Les valeurs de couleur, de taille et d'espacement viennent directement du
+   fichier Figma : elles ne sont pas approximees.
+
    Organisation du fichier, de haut en bas :
      1. Variables (couleurs, espacements, typo)  <- MODIFIEZ ICI EN PRIORITE
      2. Remise a zero et reglages de base
@@ -8,7 +12,7 @@
      4. Loader et portail du prenom
      5. En-tete, navigation, barre de progression
      6. Page d'accueil
-     7. Cartes de projet et affiches
+     7. Cartes de projet
      8. Pages d'etude de cas (+ navigation laterale collante)
      9. Pages editoriales (A propos, article)
     10. Pied de page
@@ -27,76 +31,86 @@
    ========================================================================== */
 :root {
 
-  /* ---- COULEURS DE MARQUE ----------------------------------------------
-     >>> LES DEUX LIGNES A AJUSTER SI LES TEINTES EXACTES DIFFERENT <<<
-     Le cahier des charges demande "le meme bleu, le meme jaune en accent".
-     Ces valeurs sont une reconstitution : remplacez les deux hex ci-dessous
-     par ceux de votre Figma et tout le site suit automatiquement.        */
-  --blue:        #2350D8;   /* bleu principal : liens, boutons, accents forts */
-  --yellow:      #FFCB3D;   /* jaune accent : surlignage, details, hover      */
+  /* ---- COULEURS DE MARQUE, RELEVEES DANS FIGMA -------------------------
+     Ces deux valeurs sont exactement celles de la maquette. Tout le reste
+     du fichier en decoule.
 
-  /* Declinaisons derivees des deux couleurs ci-dessus */
-  --blue-deep:   #0B1B3A;   /* presque noir bleute : le texte principal */
-  --blue-mid:    #1B3AA0;   /* bleu fonce : survol des liens */
-  --blue-wash:   #EDF2FE;   /* bleu tres pale : fonds de bloc */
-  --blue-line:   #C9D8FA;   /* bleu pale : bordures */
-  --yellow-wash: #FFF6DC;   /* jaune tres pale : fonds de citation */
+     NOTE DE CONFORMITE (decision assumee, documentee une seule fois) :
+     le blanc sur ce bleu donne un contraste de 4,19:1, et le vert lime
+     3,13:1. Le seuil WCAG AA pour du texte courant est 4,5:1. Le texte de
+     32 px du heros passe (seuil 3:1 pour les grandes tailles), mais les
+     libelles de 16 px — navigation, etiquettes, pastilles — sont en dessous.
+     C'est un choix esthetique explicite : la fidelite a la maquette prime.
+     Si vous changez d'avis, #1571EF rend tout conforme en assombrissant la
+     luminosite de 2 %, a teinte et saturation identiques.                */
+  --blue:        #2078F0;   /* fond de tout le site */
+  --lime:        #BEF007;   /* accent : mots surlignes dans le heros */
 
   /* ---- NEUTRES --------------------------------------------------------- */
-  --paper:       #FCFBF8;   /* fond de page, blanc casse legerement chaud */
-  --paper-2:     #F5F3EE;   /* fond alterne */
   --white:       #FFFFFF;
-  --ink:         #16223D;   /* texte courant */
-  --ink-soft:    #5A6683;   /* texte secondaire, legendes */
-  /* --ink-faint sert aux sur-titres, legendes et libelles de la nav laterale.
-     Ce sont de VRAIS textes, pas de la decoration : ils doivent donc atteindre
-     4.5:1 de contraste (WCAG AA). La teinte d'origine (#8B94AB) plafonnait a
-     2.93:1 ; celle-ci garde exactement la meme couleur (bleu-gris a 223 deg)
-     en descendant la luminosite. Verifiee sur les DEUX fonds du site :
-     4.83:1 sur --paper, 4.51:1 sur --paper-2 (le pied de page). */
-  --ink-faint:   #656F8B;   /* texte discret, mais toujours lisible */
-  --line:        #E4E0D6;   /* filets et separateurs */
+  --ink:         #FFFFFF;   /* le texte courant est blanc sur fond bleu */
+
+  /* Voiles construits sur du blanc ou du noir transparent plutot que sur des
+     couleurs fixes : ils restent coherents si le bleu change. */
+  --ink-soft:    rgba(255,255,255,.78);  /* texte secondaire */
+  --ink-faint:   rgba(255,255,255,.60);  /* legendes, sur-titres */
+  --line:        rgba(255,255,255,.24);  /* filets et separateurs */
+  --line-soft:   rgba(255,255,255,.14);
+  --veil:        rgba(0,0,0,.05);        /* fond de la pilule de navigation */
+  --veil-strong: rgba(0,0,0,.12);        /* blocs mis en avant */
 
   /* ---- TYPOGRAPHIE ------------------------------------------------------
-     Aucune police n'est telechargee : on utilise celles deja installees sur
-     la machine du visiteur. Zero requete reseau, zero clignotement de texte
-     au chargement, et le site se sent "native" sur chaque systeme.        */
-  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-          'Helvetica Neue', Arial, sans-serif;
-  --font-serif: ui-serif, Georgia, 'Times New Roman', serif;
+     Raleway, imposee par la maquette. La pile de secours evite un saut de
+     mise en page si le telechargement echoue : Trebuchet MS a des largeurs
+     de caracteres proches de Raleway.                                     */
+  --font: 'Raleway', 'Trebuchet MS', -apple-system, BlinkMacSystemFont,
+          'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 
-  /* Echelle typographique fluide.
-     clamp(min, valeur-souhaitee, max) = "jamais plus petit que min, jamais
-     plus grand que max, et entre les deux ca s'adapte a la largeur d'ecran".
-     vw = 1% de la largeur de la fenetre. C'est ce qui rend le site
-     responsive SANS ecrire de media query pour chaque taille de texte.  */
-  --fs-display: clamp(2.4rem, 6.2vw, 4.6rem);
-  --fs-h1:      clamp(1.9rem, 4.4vw, 3.1rem);
-  --fs-h2:      clamp(1.4rem, 2.6vw, 1.95rem);
-  --fs-h3:      clamp(1.1rem, 1.7vw, 1.3rem);
-  --fs-lead:    clamp(1.06rem, 1.7vw, 1.3rem);
-  --fs-body:    1.02rem;
-  --fs-small:   0.875rem;
-  --fs-tiny:    0.78rem;
+  /* Graisses utilisees dans la maquette. Les nommer evite les nombres
+     magiques disperses dans le fichier. */
+  --w-light:    300;
+  --w-regular:  400;
+  --w-medium:   500;
+  --w-semibold: 600;
+
+  /* Echelle typographique. Les tailles de reference viennent de Figma :
+     16 px pour l'interface, 24 px pour les sous-titres, 32 px pour le heros.
+     clamp(min, souhaite, max) = "jamais plus petit que min, jamais plus grand
+     que max, et fluide entre les deux". vw = 1% de la largeur de fenetre.
+     C'est ce qui rend le site responsive SANS media query par taille.     */
+  --fs-hero:    clamp(1.55rem, 3.1vw, 2rem);      /* 32px de la maquette */
+  --fs-h1:      clamp(1.6rem, 3.4vw, 2.25rem);
+  --fs-h2:      clamp(1.25rem, 2.2vw, 1.5rem);    /* 24px */
+  --fs-h3:      1.125rem;
+  --fs-lead:    clamp(1.05rem, 1.6vw, 1.25rem);
+  --fs-body:    1rem;                             /* 16px */
+  --fs-small:   0.9375rem;
+  --fs-tiny:    0.8125rem;
+
+  /* Interlignes releves dans Figma */
+  --lh-nav:  1.45;
+  --lh-body: 1.6;
 
   /* ---- ESPACEMENTS -----------------------------------------------------
-     Une echelle limitee (au lieu de valeurs libres) garde le rythme
-     vertical coherent d'une page a l'autre.                              */
+     Echelle limitee : garde le rythme vertical coherent d'une page a l'autre.
+     Les valeurs cles de la maquette : 8, 16, 24, 40, 80.                  */
   --s1: 0.25rem;  --s2: 0.5rem;   --s3: 0.75rem;  --s4: 1rem;
-  --s5: 1.5rem;   --s6: 2rem;     --s7: 3rem;     --s8: 4rem;
-  --s9: 6rem;     --s10: 8rem;
+  --s5: 1.5rem;   --s6: 2rem;     --s7: 3rem;     --s8: 5rem;
+  --s9: 7rem;
+  --gutter: clamp(1.5rem, 6.25vw, 5rem);   /* 80px sur large ecran */
 
   /* ---- DIVERS ---------------------------------------------------------- */
-  --radius:    14px;
-  --radius-sm: 8px;
-  --shadow:    0 1px 2px rgba(11,27,58,.05), 0 8px 28px -12px rgba(11,27,58,.18);
-  --shadow-lg: 0 2px 4px rgba(11,27,58,.05), 0 24px 60px -20px rgba(11,27,58,.25);
-  --head-h:    64px;              /* hauteur de l'en-tete, reutilisee ailleurs */
-  --measure:   68ch;              /* largeur de lecture confortable (~68 caracteres) */
+  --radius-pill: 40px;   /* la pilule de navigation */
+  --radius-tag:  20px;   /* les etiquettes */
+  --radius:      14px;
+  --radius-sm:   8px;
+  --shadow:      0 10px 30px -12px rgba(0,0,0,.35);
+  --shadow-lg:   0 24px 60px -20px rgba(0,0,0,.45);
+  --head-h:      82px;   /* 16px de texte + 24px de marge haute et basse */
+  --measure:     68ch;   /* largeur de lecture confortable */
 
-  /* Courbe d'animation. Un ease-out prononce donne une impression de
-     reactivite : le mouvement demarre vite et se pose doucement. */
+  /* Courbe d'animation : demarre vite, se pose doucement. */
   --ease: cubic-bezier(.2, .7, .2, 1);
 }
 
@@ -106,63 +120,50 @@
    ========================================================================== */
 
 /* box-sizing: border-box -> la largeur declaree inclut padding et bordure.
-   Sans ca, une boite de 200px avec 20px de padding mesure 240px, et tous
-   les calculs de mise en page deviennent penibles. */
+   Sans ca, une boite de 200px avec 20px de padding mesure 240px. */
 *, *::before, *::after { box-sizing: border-box; }
 
-/* Marges par defaut du navigateur supprimees sur les elements de texte :
-   on prefere gerer tous les espacements nous-memes. */
 h1,h2,h3,h4,p,figure,blockquote,dl,dd,ul,ol { margin: 0; }
 ul,ol { padding: 0; list-style: none; }
 
 html {
-  /* scroll-behavior: smooth -> les liens d'ancrage glissent au lieu de sauter.
-     Attention : desactive plus bas pour les personnes sensibles au mouvement. */
   scroll-behavior: smooth;
-  /* scroll-padding-top evite que l'en-tete collant recouvre le titre vise
-     quand on clique sur un lien d'ancrage. */
+  /* Evite que l'en-tete collant recouvre le titre vise par un lien d'ancrage. */
   scroll-padding-top: calc(var(--head-h) + var(--s5));
   -webkit-text-size-adjust: 100%;
+  background: var(--blue);   /* evite un flash blanc au rebond de scroll */
 }
 
 body {
   margin: 0;
-  background: var(--paper);
+  background: var(--blue);
   color: var(--ink);
   font-family: var(--font);
   font-size: var(--fs-body);
-  line-height: 1.65;
-  /* Ces deux lignes affinent le rendu des lettres sur ecrans Retina. */
+  font-weight: var(--w-regular);
+  line-height: var(--lh-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* text-wrap: pretty evite les "orphelins" (un mot seul en fin de paragraphe).
-     Ignore par les navigateurs qui ne le connaissent pas : sans risque. */
+  /* Evite les "orphelins" (un mot seul en fin de paragraphe). */
   text-wrap: pretty;
 }
 
-/* Quand le loader ou le portail est affiche, on bloque le defilement
-   du fond pour que le visiteur ne scrolle pas "derriere" la modale. */
+/* Quand le loader ou le portail est affiche, on bloque le defilement du fond. */
 body.is-locked { overflow: hidden; }
 
-img, picture, svg { display: block; max-width: 100%; height: auto; }
+img, picture, svg, video { display: block; max-width: 100%; height: auto; }
 
-a { color: var(--blue); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-a:hover { color: var(--blue-mid); }
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 
-/* Cible de focus visible. :focus-visible ne s'active qu'au clavier, pas au
-   clic de souris — on garde donc un anneau utile sans le "halo" parasite. */
+/* :focus-visible ne s'active qu'au clavier, pas au clic de souris : on garde
+   un anneau utile sans le halo parasite a la souris. */
 :focus-visible {
-  outline: 2px solid var(--blue);
+  outline: 2px solid var(--lime);
   outline-offset: 3px;
   border-radius: 4px;
 }
 
-/* Titres : line-height serre et lettres legerement rapprochees.
-   Sur les grandes tailles, l'espacement par defaut parait trop lache. */
-h1,h2,h3 { line-height: 1.15; letter-spacing: -0.02em; font-weight: 620; }
-
-/* text-wrap: balance repartit un titre court sur des lignes de longueur
-   proche, au lieu de laisser une derniere ligne d'un seul mot. */
+h1,h2,h3 { line-height: 1.2; font-weight: var(--w-medium); }
 h1,h2 { text-wrap: balance; }
 
 button { font: inherit; color: inherit; cursor: pointer; }
@@ -172,53 +173,46 @@ button { font: inherit; color: inherit; cursor: pointer; }
    3. UTILITAIRES
    ========================================================================== */
 
-/* Visible pour les lecteurs d'ecran, invisible a l'oeil.
-   On ne met PAS display:none : cela retirerait le texte de l'arbre
-   d'accessibilite, donc les lecteurs d'ecran ne le liraient plus. */
+/* Visible pour les lecteurs d'ecran, invisible a l'oeil. On ne met PAS
+   display:none, qui retirerait le texte de l'arbre d'accessibilite. */
 .sr-only {
   position: absolute; width: 1px; height: 1px;
   padding: 0; margin: -1px; overflow: hidden;
   clip-path: inset(50%); white-space: nowrap; border: 0;
 }
 
-/* Lien d'evitement : hors ecran, ramene a la vue des qu'il recoit le focus. */
 .skip-link {
   position: fixed; top: var(--s3); left: var(--s3); z-index: 200;
   transform: translateY(-160%);
-  background: var(--blue); color: #fff;
+  background: var(--lime); color: #16220A;
   padding: var(--s3) var(--s4); border-radius: var(--radius-sm);
-  text-decoration: none; font-size: var(--fs-small); font-weight: 600;
+  text-decoration: none; font-size: var(--fs-small); font-weight: var(--w-semibold);
   transition: transform .2s var(--ease);
 }
-.skip-link:focus { transform: translateY(0); color: #fff; }
+.skip-link:focus { transform: translateY(0); }
 
-/* Conteneur : largeur maximale + marges laterales fluides.
-   margin-inline gere gauche+droite d'un coup et respecte les langues
-   ecrites de droite a gauche. */
+/* Conteneur : marges laterales fluides valant 80px sur grand ecran,
+   exactement comme la maquette. */
 .wrap {
-  width: 100%; max-width: 1080px;
+  width: 100%; max-width: 1280px;
   margin-inline: auto;
-  padding-inline: clamp(var(--s5), 5vw, var(--s8));
+  padding-inline: var(--gutter);
 }
-.wrap--narrow { max-width: 760px; }
+.wrap--narrow { max-width: 860px; }
 
-/* Filet de separation discret entre grandes sections. */
-.rule { height: 1px; background: var(--line); border: 0; margin: 0; }
+.rule { height: 1px; background: var(--line-soft); border: 0; margin: 0; }
 
-/* Petite etiquette en capitales, utilisee pour les sur-titres. */
 .kicker {
   font-size: var(--fs-tiny); text-transform: uppercase;
-  letter-spacing: .14em; font-weight: 700; color: var(--ink-faint);
+  letter-spacing: .14em; font-weight: var(--w-semibold); color: var(--ink-faint);
 }
 
-/* Badge "brouillon" : signale les textes a relire. A supprimer une fois
-   les contenus valides (retirer isDraft dans content.js suffit). */
+/* Badge "brouillon" : signale les textes a relire. Disparait en retirant
+   isDraft dans content.js. */
 .draft-badge {
   display: inline-flex; align-items: center; gap: var(--s2);
-  background: var(--yellow-wash);
-  border: 1px dashed #D9A800;
-  color: #6B4E00;
-  font-size: var(--fs-tiny); font-weight: 700;
+  background: var(--lime); color: #16220A;
+  font-size: var(--fs-tiny); font-weight: var(--w-semibold);
   text-transform: uppercase; letter-spacing: .08em;
   padding: var(--s1) var(--s3); border-radius: 999px;
 }
@@ -229,15 +223,17 @@ button { font: inherit; color: inherit; cursor: pointer; }
   gap: var(--s2);
   padding: var(--s3) var(--s5);
   border-radius: 999px; border: 1px solid transparent;
-  font-size: var(--fs-small); font-weight: 620;
+  font-size: var(--fs-small); font-weight: var(--w-semibold);
   text-decoration: none; white-space: nowrap;
   transition: background .18s var(--ease), color .18s var(--ease),
               border-color .18s var(--ease), transform .18s var(--ease);
 }
-.btn--primary { background: var(--blue); color: #fff; }
-.btn--primary:hover { background: var(--blue-mid); color: #fff; transform: translateY(-1px); }
-.btn--ghost { background: transparent; color: var(--ink-soft); border-color: var(--line); }
-.btn--ghost:hover { color: var(--ink); border-color: var(--ink-faint); background: var(--white); }
+/* Le bouton principal reprend la pastille de la maquette : blanc plein,
+   texte bleu. */
+.btn--primary { background: var(--white); color: var(--blue); }
+.btn--primary:hover { background: var(--lime); color: #16220A; transform: translateY(-1px); }
+.btn--ghost { background: transparent; color: var(--white); border-color: var(--line); }
+.btn--ghost:hover { border-color: var(--white); background: rgba(255,255,255,.08); }
 
 
 /* ==========================================================================
@@ -247,41 +243,36 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .loader {
   position: fixed; inset: 0; z-index: 150;
   display: grid; place-items: center;
-  background: var(--blue-deep);
+  background: var(--blue);
   transition: opacity .5s var(--ease), visibility .5s;
 }
-/* .is-done est ajoutee par app.js quand les images sont pretes.
-   visibility:hidden (et pas seulement opacity:0) retire l'element du flux
-   de clics : sans ca, un calque invisible bloquerait la souris. */
+/* visibility:hidden (et pas seulement opacity:0) retire l'element du flux de
+   clics : sans ca, un calque invisible bloquerait la souris. */
 .loader.is-done { opacity: 0; visibility: hidden; }
 
 .loader__mark {
   width: 168px; height: 2px;
-  background: rgba(255,255,255,.18);
+  background: rgba(255,255,255,.22);
   border-radius: 2px; overflow: hidden;
 }
 .loader__bar {
   display: block; height: 100%; width: 0%;
-  background: var(--yellow);
-  /* La largeur est pilotee en JS (pourcentage reel d'images chargees),
-     donc pas d'animation infinie qui mentirait sur la progression. */
+  background: var(--lime);
+  /* La largeur est pilotee en JS (pourcentage reel d'images chargees), donc
+     pas d'animation infinie qui mentirait sur la progression. */
   transition: width .3s var(--ease);
 }
 
 .gate {
   position: fixed; inset: 0; z-index: 140;
   display: grid; place-items: center;
-  padding: var(--s5);
-  background: var(--blue-deep);
-  /* Un degrade tres discret pour eviter l'aplat parfaitement plat. */
-  background-image: radial-gradient(120% 80% at 50% 0%, #122A57 0%, #0B1B3A 60%);
+  padding: var(--gutter);
+  background: var(--blue);
 }
 .gate[hidden] { display: none; }
 
 .gate__card {
-  width: 100%; max-width: 520px;
-  text-align: left;
-  /* Animation d'entree : le formulaire monte legerement en apparaissant. */
+  width: 100%; max-width: 620px;
   animation: rise .6s var(--ease) both;
 }
 @keyframes rise {
@@ -289,48 +280,47 @@ button { font: inherit; color: inherit; cursor: pointer; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.gate__hi { color: var(--yellow); font-weight: 700; margin-bottom: var(--s2); }
+/* Le portail reprend la typographie du heros : meme accueil, meme voix. */
+.gate__hi {
+  font-size: var(--fs-h2); font-weight: var(--w-regular);
+  margin-bottom: var(--s4);
+}
 .gate__q {
-  color: #fff; font-size: var(--fs-h1); margin-bottom: var(--s6);
-  /* white-space: pre-line respecte le \n present dans le texte de content.js,
-     ce qui permet de forcer la coupure de ligne sans balise <br>. */
-  white-space: pre-line;
+  font-size: var(--fs-hero); font-weight: var(--w-light);
+  margin-bottom: var(--s7);
+  white-space: pre-line;   /* respecte le \n present dans content.js */
 }
 .gate__label {
-  display: block; color: rgba(255,255,255,.62);
+  display: block; color: var(--ink-soft);
   font-size: var(--fs-small); margin-bottom: var(--s2);
 }
 .gate__input {
   width: 100%; padding: var(--s4);
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(0,0,0,.08);
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  color: #fff; font: inherit; font-size: 1.15rem;
+  color: var(--white); font: inherit; font-size: 1.25rem;
   transition: border-color .18s var(--ease), background .18s var(--ease);
 }
-.gate__input::placeholder { color: rgba(255,255,255,.34); }
+.gate__input::placeholder { color: rgba(255,255,255,.45); }
 .gate__input:focus {
   outline: none;
-  border-color: var(--yellow);
-  background: rgba(255,255,255,.1);
+  border-color: var(--lime);
+  background: rgba(0,0,0,.14);
 }
 /* .is-invalid est posee par app.js quand le prenom ne passe pas le filtre. */
-.gate__input.is-invalid { border-color: #FF8A8A; }
+.gate__input.is-invalid { border-color: #FFC7C7; }
 
-.gate__error { color: #FFB4B4; font-size: var(--fs-small); margin-top: var(--s2); }
+.gate__error { color: #FFD9D9; font-size: var(--fs-small); margin-top: var(--s2); }
 .gate__actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
-.gate__actions .btn--primary { background: var(--yellow); color: var(--blue-deep); }
-.gate__actions .btn--primary:hover { background: #FFD966; color: var(--blue-deep); }
-.gate__actions .btn--ghost { color: rgba(255,255,255,.6); border-color: rgba(255,255,255,.2); }
-.gate__actions .btn--ghost:hover { color: #fff; background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.4); }
+.gate__actions .btn--primary { background: var(--lime); color: #16220A; }
+.gate__actions .btn--primary:hover { background: var(--white); color: var(--blue); }
 
 .gate__hint {
-  margin-top: var(--s5);
-  /* 46% et pas 42% : en dessous, le contraste sur le fond bleu nuit tombe
-     a 3.99:1 et passe sous le seuil WCAG AA. */
-  color: rgba(255,255,255,.46);
+  margin-top: var(--s6);
+  color: var(--ink-faint);
   font-size: var(--fs-tiny); line-height: 1.5;
-  max-width: 42ch;
+  max-width: 46ch;
 }
 
 
@@ -344,196 +334,250 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .progress__fill {
   height: 100%; width: 0%;
-  background: linear-gradient(90deg, var(--blue), var(--yellow));
-  /* transform-origin + scaleX serait plus performant, mais width suffit ici
-     et reste plus lisible. La valeur est ecrite par app.js a chaque scroll. */
+  background: var(--lime);
 }
 
+/* Grille en trois colonnes de largeur egale : la pilule centrale reste
+   optiquement centree quels que soient le nom et le selecteur de langue. */
 .site-head {
   position: sticky; top: 0; z-index: 120;
-  height: var(--head-h);
-  display: flex; align-items: center; gap: var(--s5);
-  padding-inline: clamp(var(--s4), 5vw, var(--s8));
-  /* Fond semi-transparent + flou : le contenu reste devine dessous.
-     -webkit- necessaire pour Safari. */
-  background: color-mix(in srgb, var(--paper) 82%, transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid transparent;
-  transition: border-color .3s var(--ease);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s5) var(--gutter);
+  background: var(--blue);
+  transition: box-shadow .3s var(--ease);
 }
-/* .is-scrolled est ajoutee par app.js des qu'on quitte le haut de page :
-   la bordure n'apparait donc que quand elle est utile a separer. */
-.site-head.is-scrolled { border-bottom-color: var(--line); }
+/* .is-scrolled est ajoutee par app.js des qu'on quitte le haut de page. */
+.site-head.is-scrolled { box-shadow: 0 1px 0 var(--line-soft); }
 
 .brand {
-  display: grid; line-height: 1;
-  font-weight: 800; font-size: 0.82rem; letter-spacing: .04em;
-  text-decoration: none; color: var(--ink);
-  text-transform: lowercase;
+  justify-self: start;
+  font-size: var(--fs-body); font-weight: var(--w-medium);
+  line-height: var(--lh-nav); letter-spacing: -0.08px;
+  text-decoration: none; white-space: nowrap;
 }
-.brand__mark:last-child { color: var(--blue); }
 
-.site-nav { display: flex; align-items: center; gap: var(--s5); margin-left: auto; }
+/* LA PILULE. Valeurs exactes de Figma : fond noir a 5 %, flou d'arriere-plan
+   de 35px, rayon 40px, ecart de 40px, padding 16px/40px.
+   backdrop-filter floute ce qui se trouve DERRIERE l'element : la pilule
+   laisse donc deviner le contenu qui defile dessous. */
+.site-nav {
+  justify-self: center;
+  display: flex; align-items: center; gap: 40px;
+  padding: 16px 40px;
+  background: var(--veil);
+  -webkit-backdrop-filter: blur(35px);
+  backdrop-filter: blur(35px);
+  border-radius: var(--radius-pill);
+}
 .site-nav a {
   position: relative;
-  text-decoration: none; color: var(--ink-soft);
-  font-size: var(--fs-small); font-weight: 550;
-  padding-block: var(--s2);
-  transition: color .18s var(--ease);
+  text-decoration: none; color: var(--white);
+  font-size: var(--fs-body); font-weight: var(--w-medium);
+  line-height: var(--lh-nav); letter-spacing: -0.08px;
+  white-space: nowrap;
+  opacity: .82;
+  transition: opacity .18s var(--ease);
 }
-.site-nav a:hover { color: var(--ink); }
+.site-nav a:hover { opacity: 1; }
 
-/* Soulignement jaune de la page courante. On l'anime en scaleX plutot qu'en
-   width : le navigateur peut deleguer transform au GPU, c'est plus fluide. */
+/* Soulignement lime de la page courante. On anime en scaleX plutot qu'en
+   width : transform peut etre delegue au GPU, c'est plus fluide. */
 .site-nav a::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: 0;
-  height: 2px; background: var(--yellow);
+  content: ''; position: absolute; left: 0; right: 0; bottom: -6px;
+  height: 2px; background: var(--lime);
   transform: scaleX(0); transform-origin: left;
   transition: transform .25s var(--ease);
 }
-.site-nav a[aria-current="page"] { color: var(--ink); }
+.site-nav a[aria-current="page"] { opacity: 1; }
 .site-nav a[aria-current="page"]::after { transform: scaleX(1); }
 
-.lang { display: flex; gap: 2px; padding: 3px; background: var(--paper-2); border-radius: 999px; }
+.lang {
+  justify-self: end;
+  display: flex; gap: 2px; padding: 3px;
+  background: var(--veil); border-radius: 999px;
+}
 .lang button {
   border: 0; background: transparent; border-radius: 999px;
-  padding: 4px var(--s3);
-  font-size: var(--fs-tiny); font-weight: 700; letter-spacing: .04em;
-  color: var(--ink-faint);
+  padding: 5px var(--s3);
+  font-size: var(--fs-tiny); font-weight: var(--w-semibold); letter-spacing: .04em;
+  color: rgba(255,255,255,.7);
   transition: background .18s var(--ease), color .18s var(--ease);
 }
-.lang button:hover { color: var(--ink); }
-/* aria-pressed="true" sert a la fois de style ET d'information
-   d'accessibilite : une seule source de verite, pas de classe en doublon. */
-.lang button[aria-pressed="true"] { background: var(--white); color: var(--blue); box-shadow: var(--shadow); }
+.lang button:hover { color: var(--white); }
+/* aria-pressed sert a la fois de style ET d'information d'accessibilite :
+   une seule source de verite, pas de classe en doublon. */
+.lang button[aria-pressed="true"] { background: var(--white); color: var(--blue); }
 
 /* Bouton hamburger : masque par defaut, affiche en media query mobile. */
 .nav-toggle {
   display: none;
-  margin-left: auto;
-  border: 1px solid var(--line); background: var(--white);
+  justify-self: end;
+  border: 1px solid var(--line); background: var(--veil);
   border-radius: var(--radius-sm); padding: var(--s2) var(--s3);
 }
 .nav-toggle__box { display: grid; gap: 4px; width: 18px; }
-.nav-toggle__box i { display: block; height: 2px; background: var(--ink); border-radius: 2px; transition: transform .2s var(--ease); }
+.nav-toggle__box i { display: block; height: 2px; background: var(--white); border-radius: 2px; transition: transform .2s var(--ease); }
 .nav-toggle[aria-expanded="true"] .nav-toggle__box i:first-child { transform: translateY(3px) rotate(45deg); }
 .nav-toggle[aria-expanded="true"] .nav-toggle__box i:last-child  { transform: translateY(-3px) rotate(-45deg); }
 
 /* ---- Lien retour persistant ---- */
 .back-link {
   position: fixed; z-index: 118;
-  left: clamp(var(--s4), 5vw, var(--s8));
-  bottom: var(--s5);
+  left: var(--gutter); bottom: var(--s5);
   display: inline-flex; align-items: center; gap: var(--s2);
   padding: var(--s3) var(--s5);
-  background: var(--white); color: var(--ink);
-  border: 1px solid var(--line); border-radius: 999px;
-  box-shadow: var(--shadow);
-  text-decoration: none; font-size: var(--fs-small); font-weight: 600;
-  transition: transform .2s var(--ease), box-shadow .2s var(--ease), opacity .2s var(--ease);
+  background: var(--white); color: var(--blue);
+  border-radius: 999px; box-shadow: var(--shadow);
+  text-decoration: none; font-size: var(--fs-small); font-weight: var(--w-semibold);
+  transition: transform .2s var(--ease), box-shadow .2s var(--ease);
 }
 .back-link[hidden] { display: none; }
-.back-link:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); color: var(--ink); }
+.back-link:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 
 
 /* ==========================================================================
    6. PAGE D'ACCUEIL
+   --------------------------------------------------------------------------
+   Le heros fait 400px de haut dans la maquette, contenu centre verticalement,
+   avec 80px de marge laterale. min-height plutot que height : si la phrase
+   passe sur cinq lignes en francais, le bloc grandit au lieu de deborder.
    ========================================================================== */
 
-.hero { padding-block: clamp(var(--s7), 9vh, var(--s9)) var(--s8); }
+.hero {
+  display: flex; flex-direction: column; justify-content: center;
+  min-height: 400px;
+  padding-block: var(--s7);
+}
+.hero__text { display: flex; flex-direction: column; gap: var(--s5); }
 
-/* Le "Bonjour Prenom" personnalise. */
+/* "Hey [prenom], nice to meet you!" — 24px Regular, le prenom en SemiBold. */
 .hero__hello {
-  display: inline-flex; align-items: baseline; gap: .4ch;
-  font-size: var(--fs-h2); font-weight: 600;
-  color: var(--ink-soft);
-  margin-bottom: var(--s4);
+  font-size: var(--fs-h2);
+  font-weight: var(--w-regular);
 }
-.hero__hello b {
-  color: var(--ink); font-weight: 700;
-  /* Surlignage jaune : un degrade fixe sur la moitie basse du texte.
-     Plus discret qu'un fond plein, et ca survit au retour a la ligne. */
-  background: linear-gradient(transparent 62%, var(--yellow) 62%);
-  padding-inline: 2px;
+.hero__hello b { font-weight: var(--w-semibold); }
+
+.hero__block { display: flex; flex-direction: column; gap: var(--s5); }
+.hero__lines { display: flex; flex-direction: column; gap: var(--s2); }
+
+/* "I'm Marvin" — 32px Light. */
+.hero__name {
+  font-size: var(--fs-hero);
+  font-weight: var(--w-light);
+  line-height: 1.25;
 }
 
-.hero__kicker { margin-bottom: var(--s5); }
-
-.hero__lead {
-  font-size: var(--fs-lead); line-height: 1.6;
-  max-width: var(--measure);
-  margin-bottom: var(--s4);
+/* La phrase principale — 32px Medium, largeur bloquee a 755px dans Figma. */
+.hero__statement {
+  font-size: var(--fs-hero);
+  font-weight: var(--w-medium);
+  line-height: 1.25;
+  max-width: 755px;
 }
-.hero__lead:last-of-type { color: var(--ink-soft); margin-bottom: var(--s6); }
+/* Les mots accentues en lime. */
+.hero__statement .accent { color: var(--lime); }
+/* Les employeurs sont soulignes. Ceux qui pointent vers une etude de cas
+   sont des <a>, Gekko est un simple <span> : meme rendu, comportement
+   different au survol. */
+.hero__statement u,
+.hero__statement a { text-decoration: underline; text-underline-offset: 3px; }
+.hero__statement a { transition: color .18s var(--ease); }
+.hero__statement a:hover { color: var(--lime); }
 
-/* Lien vers l'article sur les deux ans. Traite comme un objet a part :
-   c'est un aveu volontaire, il doit se voir sans crier. */
+/* Le lien vers l'article sur les deux ans : souligne, suivi d'une fleche. */
 .hero__gap {
-  display: inline-flex; align-items: center; gap: var(--s3);
-  padding: var(--s3) var(--s5);
-  background: var(--white);
-  border: 1px solid var(--line); border-left: 3px solid var(--yellow);
-  border-radius: var(--radius-sm);
-  text-decoration: none; color: var(--ink);
-  font-size: var(--fs-small); font-weight: 600;
-  transition: transform .2s var(--ease), box-shadow .2s var(--ease);
+  display: inline-flex; align-items: center; gap: 3px;
+  align-self: flex-start;
+  font-size: var(--fs-body); font-weight: var(--w-medium);
+  text-decoration: underline; text-underline-offset: 4px;
+  transition: color .18s var(--ease);
 }
-.hero__gap:hover { transform: translateX(3px); box-shadow: var(--shadow); color: var(--ink); }
-.hero__gap span:last-child { color: var(--blue); }
+.hero__gap:hover { color: var(--lime); }
+.hero__gap .arrow {
+  display: inline-block; width: 16px; height: 16px;
+  font-size: 15px; line-height: 16px; text-align: center;
+  text-decoration: none;
+  transition: transform .2s var(--ease);
+}
+.hero__gap:hover .arrow { transform: translate(2px, -2px); }
 
+/* Les sections de la page d'accueil. 80px de respiration verticale. */
 .section { padding-block: var(--s8); }
 .section__head { margin-bottom: var(--s6); }
-.section__head h2 { font-size: var(--fs-h1); margin-bottom: var(--s3); }
+.section__head h1,
+.section__head h2 { font-size: var(--fs-h1); margin-bottom: var(--s3); font-weight: var(--w-medium); }
 .section__head p { color: var(--ink-soft); max-width: var(--measure); }
 
 
 /* ==========================================================================
-   7. CARTES DE PROJET ET AFFICHES
+   7. CARTES DE PROJET
+   --------------------------------------------------------------------------
+   La maquette n'encadre pas les cartes : l'image est posee directement sur le
+   bleu, le texte dessous. Deux colonnes, 80px d'ecart.
    ========================================================================== */
 
-/* Grille auto-adaptative : "autant de colonnes de 320px minimum que possible".
-   auto-fit + minmax remplace une dizaine de media queries. */
 .cards {
-  display: grid; gap: var(--s5);
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  display: grid;
+  gap: var(--s8) var(--s8);
+  /* Deux colonnes tant que la place le permet, une seule ensuite.
+     auto-fit + minmax remplace une dizaine de media queries. */
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
 }
 
 .card {
-  display: flex; flex-direction: column;
-  background: var(--white);
-  border: 1px solid var(--line); border-radius: var(--radius);
-  overflow: hidden; text-decoration: none; color: inherit;
-  transition: transform .28s var(--ease), box-shadow .28s var(--ease),
-              border-color .28s var(--ease);
-}
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--blue-line);
-  color: inherit;
+  display: flex; flex-direction: column; gap: var(--s4);
+  text-decoration: none; color: inherit;
 }
 
-/* L'affiche du projet : un SVG genere en JS, donc leger et net a toute taille.
-   aspect-ratio garantit que toutes les cartes ont la meme hauteur d'image
-   sans avoir a fixer une hauteur en pixels. */
-.card__poster { aspect-ratio: 16 / 10; overflow: hidden; background: var(--blue-wash); }
-.card__poster svg { width: 100%; height: 100%; }
+/* aspect-ratio releve dans Figma (1280/1072). Il garantit que toutes les
+   vignettes ont la meme hauteur sans fixer de pixels. */
+.card__media {
+  aspect-ratio: 1280 / 1072;
+  overflow: hidden;
+  background: rgba(0,0,0,.12);
+  border-radius: var(--radius-sm);
+}
+.card__media img,
+.card__media svg {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform .5s var(--ease);
+}
+.card:hover .card__media img,
+.card:hover .card__media svg { transform: scale(1.03); }
 
-.card__body { padding: var(--s5); display: flex; flex-direction: column; flex: 1; gap: var(--s3); }
-.card__meta { display: flex; align-items: center; gap: var(--s3); font-size: var(--fs-tiny); color: var(--ink-faint); }
-.card__meta .dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; }
-.card__title { font-size: var(--fs-h3); }
-.card__tagline { color: var(--ink-soft); font-size: var(--fs-small); flex: 1; }
+.card__body { display: flex; flex-direction: column; gap: var(--s4); }
+.card__title-block { display: flex; flex-direction: column; gap: var(--s2); }
+
+/* Le nom du client, 16px Regular. */
+.card__client { font-size: var(--fs-body); font-weight: var(--w-regular); }
+
+/* Le titre du cas, 24px Regular souligne. */
+.card__title {
+  font-size: var(--fs-h2);
+  font-weight: var(--w-regular);
+  line-height: 1.3;
+  text-decoration: underline; text-underline-offset: 4px;
+  transition: color .18s var(--ease);
+}
+.card:hover .card__title { color: var(--lime); }
+/* Les chiffres marquants du titre passent en SemiBold, comme dans Figma
+   ("...reducing rules from 24 to 9"). */
+.card__title b { font-weight: var(--w-semibold); }
+
+/* Les etiquettes : pastilles blanches, texte bleu, 8px d'ecart. */
 .card__tags { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .tag {
-  font-size: var(--fs-tiny); padding: 2px var(--s3);
-  background: var(--blue-wash); color: var(--blue-mid);
-  border-radius: 999px; white-space: nowrap;
+  display: inline-flex; align-items: center;
+  padding: 4px 8px;
+  background: var(--white); color: var(--blue);
+  border-radius: var(--radius-tag);
+  font-size: var(--fs-body); font-weight: var(--w-semibold);
+  line-height: 1.35; white-space: nowrap;
 }
-.card__more { font-size: var(--fs-small); font-weight: 620; color: var(--blue); display: inline-flex; gap: var(--s2); }
-.card__more .arrow { transition: transform .2s var(--ease); }
-.card:hover .card__more .arrow { transform: translateX(4px); }
 
 
 /* ==========================================================================
@@ -545,11 +589,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* ---- 8a. L'en-tete : la partie "30 secondes" ----
    Tout ce qu'un recruteur presse doit lire tient ici, avant le premier scroll. */
 .cs__head { padding-block: var(--s7) var(--s6); }
-.cs__client { color: var(--blue); font-weight: 700; font-size: var(--fs-small); margin-bottom: var(--s2); }
-.cs__title { font-size: var(--fs-display); margin-bottom: var(--s4); }
+.cs__client { font-size: var(--fs-body); margin-bottom: var(--s2); color: var(--ink-soft); }
+.cs__title { font-size: var(--fs-h1); font-weight: var(--w-medium); margin-bottom: var(--s4); }
 .cs__tagline {
   font-size: var(--fs-lead); color: var(--ink-soft);
   max-width: var(--measure); margin-bottom: var(--s6);
+  font-weight: var(--w-light);
 }
 
 /* La fiche d'identite : role, duree, equipe, outils. */
@@ -560,22 +605,24 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-block: 1px solid var(--line);
   margin-bottom: var(--s7);
 }
-.gist dt { font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: .1em; color: var(--ink-faint); font-weight: 700; margin-bottom: var(--s1); }
+.gist dt {
+  font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: .1em;
+  color: var(--ink-faint); font-weight: var(--w-semibold); margin-bottom: var(--s1);
+}
 .gist dd { font-size: var(--fs-small); }
 
-/* Problem / Outcome cote a cote : la structure narrative minimale. */
+/* Probleme / Resultat cote a cote : la structure narrative minimale. */
 .pair { display: grid; gap: var(--s6); grid-template-columns: 1fr 1fr; margin-bottom: var(--s7); }
-.pair > div > h2 { font-size: var(--fs-h3); margin-bottom: var(--s3); }
-.pair > div > p { color: var(--ink-soft); }
-/* Le resultat est mis en avant : fond bleu pale, filet a gauche. */
+.pair h2 { font-size: var(--fs-h3); margin-bottom: var(--s3); font-weight: var(--w-semibold); }
+.pair p { color: var(--ink-soft); }
+/* Le resultat est mis en avant par un voile sombre et un filet lime. */
 .pair__out {
-  background: var(--blue-wash);
-  border-left: 3px solid var(--blue);
+  background: var(--veil-strong);
+  border-left: 3px solid var(--lime);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   padding: var(--s5);
 }
-.pair__out h2 { color: var(--blue-mid); }
-.pair__out p { color: var(--ink); }
+.pair__out p { color: var(--white); }
 
 /* Les chiffres marquants : ce que le recruteur retiendra. */
 .stats {
@@ -584,10 +631,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   margin-bottom: var(--s7);
 }
 .stat__n {
-  font-size: clamp(1.7rem, 3.4vw, 2.4rem); font-weight: 700;
-  letter-spacing: -.03em; line-height: 1.05; color: var(--ink);
-  /* font-variant-numeric aligne les chiffres sur une meme largeur :
-     utile quand plusieurs nombres se suivent. */
+  font-size: clamp(1.6rem, 3.2vw, 2.2rem); font-weight: var(--w-semibold);
+  line-height: 1.05; color: var(--lime);
+  /* Aligne les chiffres sur une meme largeur quand plusieurs se suivent. */
   font-variant-numeric: tabular-nums;
   margin-bottom: var(--s2);
 }
@@ -595,27 +641,27 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .cs__cta { display: flex; flex-wrap: wrap; gap: var(--s3); }
 
-/* ---- 8b. Le corps : nav laterale collante + sections ----
-   Grille a deux colonnes. La colonne de gauche (nav) reste collee pendant
-   que la droite defile. Sous 1000px, la grille passe a une seule colonne
-   (voir media query). */
+/* ---- 8b. Le corps : nav laterale collante + sections ---- */
 .cs__body {
   display: grid;
   grid-template-columns: 190px minmax(0, 1fr);
-  gap: clamp(var(--s6), 5vw, var(--s9));
+  gap: clamp(var(--s6), 5vw, var(--s8));
   align-items: start;
 }
 
 .cs-nav {
   position: sticky;
-  top: calc(var(--head-h) + var(--s5));
-  /* max-height + overflow : si un jour il y a 20 sections, la nav defile
-     elle-meme au lieu de deborder de l'ecran. */
+  top: calc(var(--head-h) + var(--s4));
+  /* Si un jour il y a 20 sections, la nav defile elle-meme au lieu de
+     deborder de l'ecran. */
   max-height: calc(100vh - var(--head-h) - var(--s7));
   overflow-y: auto;
 }
-.cs-nav__title { font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: .1em; color: var(--ink-faint); font-weight: 700; margin-bottom: var(--s4); }
-.cs-nav ol { display: grid; gap: 2px; counter-reset: step; }
+.cs-nav__title {
+  font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: .1em;
+  color: var(--ink-faint); font-weight: var(--w-semibold); margin-bottom: var(--s4);
+}
+.cs-nav ol { display: grid; gap: 2px; }
 .cs-nav a {
   display: flex; align-items: baseline; gap: var(--s3);
   padding: var(--s2) var(--s3);
@@ -625,36 +671,35 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-left: 2px solid transparent;
   transition: color .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease);
 }
-.cs-nav a:hover { color: var(--ink); background: var(--paper-2); }
+.cs-nav a:hover { color: var(--white); background: var(--veil); }
 /* .is-active est posee par app.js via IntersectionObserver : c'est le
    "scroll-spy" qui suit la section actuellement visible. */
 .cs-nav a.is-active {
-  color: var(--blue); background: var(--blue-wash);
-  border-left-color: var(--blue); font-weight: 620;
+  color: var(--lime); background: var(--veil-strong);
+  border-left-color: var(--lime); font-weight: var(--w-semibold);
 }
 .cs-nav__num { font-size: var(--fs-tiny); font-variant-numeric: tabular-nums; opacity: .7; }
 
-/* Indicateur de progression verticale, sous la nav. */
 .cs-nav__prog { margin-top: var(--s5); }
-.cs-nav__track { height: 3px; background: var(--line); border-radius: 3px; overflow: hidden; }
-.cs-nav__bar { height: 100%; width: 0%; background: var(--blue); border-radius: 3px; }
+.cs-nav__track { height: 3px; background: var(--line-soft); border-radius: 3px; overflow: hidden; }
+.cs-nav__bar { height: 100%; width: 0%; background: var(--lime); border-radius: 3px; }
 .cs-nav__pct { margin-top: var(--s2); font-size: var(--fs-tiny); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
 
 /* ---- 8c. Une section de processus ---- */
-.cs-sec { padding-block: 0 var(--s8); }
-/* scroll-margin-top decale la cible d'ancrage pour que le titre ne finisse
-   pas cache sous l'en-tete collant. */
-.cs-sec { scroll-margin-top: calc(var(--head-h) + var(--s5)); }
-.cs-sec__title { font-size: var(--fs-h2); margin-bottom: var(--s4); }
-.cs-sec p { max-width: var(--measure); margin-bottom: var(--s4); }
+.cs-sec {
+  padding-block: 0 var(--s8);
+  /* Decale la cible d'ancrage pour que le titre ne finisse pas sous l'en-tete. */
+  scroll-margin-top: calc(var(--head-h) + var(--s4));
+}
+.cs-sec__title { font-size: var(--fs-h2); margin-bottom: var(--s4); font-weight: var(--w-medium); }
+.cs-sec p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }
 .cs-sec p:last-child { margin-bottom: 0; }
 
-/* Les visuels extraits des PDF. Fond bleu pale pour que les maquettes
-   claires ne "flottent" pas sur le fond de page. */
+/* Les visuels extraits des PDF. Cadre blanc : les maquettes claires ont
+   besoin d'un fond neutre pour ne pas se dissoudre dans le bleu. */
 .figure { margin-block: var(--s6); }
 .figure__frame {
-  background: var(--blue-wash);
-  border: 1px solid var(--blue-line);
+  background: var(--white);
   border-radius: var(--radius);
   padding: var(--s4);
   overflow: hidden;
@@ -662,19 +707,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .figure img { border-radius: var(--radius-sm); }
 .figure figcaption {
   margin-top: var(--s3);
-  font-size: var(--fs-small); color: var(--ink-soft);
+  font-size: var(--fs-small); color: var(--ink-faint);
   line-height: 1.5; max-width: var(--measure);
 }
-/* Note "visuel annote en francais" sur les figures dont il n'existe pas
-   de version anglaise. Honnete plutot que cache. */
 .figure__note {
   display: inline-block; margin-top: var(--s2);
   font-size: var(--fs-tiny); color: var(--ink-faint);
   font-style: italic;
 }
-
-/* Liens vers les dossiers externes (Notion, Slides...). */
-.ext-links { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s6); }
 
 /* ---- 8d. Le pied d'etude de cas : projet suivant ---- */
 .cs-next { margin-top: var(--s8); padding-top: var(--s7); border-top: 1px solid var(--line); }
@@ -682,14 +722,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cs-next__link {
   display: flex; align-items: center; justify-content: space-between;
   gap: var(--s5); padding: var(--s6);
-  background: var(--white); border: 1px solid var(--line);
+  background: var(--veil-strong);
   border-radius: var(--radius); text-decoration: none; color: inherit;
-  transition: transform .25s var(--ease), box-shadow .25s var(--ease), border-color .25s var(--ease);
+  transition: transform .25s var(--ease), background .25s var(--ease);
 }
-.cs-next__link:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--blue-line); color: inherit; }
-.cs-next__t { font-size: var(--fs-h2); margin-bottom: var(--s2); }
+.cs-next__link:hover { transform: translateY(-3px); background: rgba(0,0,0,.2); }
+.cs-next__t { font-size: var(--fs-h2); margin-bottom: var(--s2); font-weight: var(--w-medium); }
 .cs-next__s { color: var(--ink-soft); font-size: var(--fs-small); max-width: 46ch; }
-.cs-next__arrow { font-size: 1.6rem; color: var(--blue); flex-shrink: 0; transition: transform .25s var(--ease); }
+.cs-next__arrow { font-size: 1.6rem; color: var(--lime); flex-shrink: 0; transition: transform .25s var(--ease); }
 .cs-next__link:hover .cs-next__arrow { transform: translateX(6px); }
 
 
@@ -698,25 +738,26 @@ button { font: inherit; color: inherit; cursor: pointer; }
    ========================================================================== */
 
 .editorial { padding-block: var(--s7) var(--s9); }
-.editorial__title { font-size: var(--fs-display); margin-bottom: var(--s4); }
+.editorial__title { font-size: var(--fs-h1); font-weight: var(--w-medium); margin-bottom: var(--s4); }
 .editorial__lede {
-  font-size: var(--fs-lead); color: var(--ink-soft);
+  font-size: var(--fs-lead); color: var(--ink-soft); font-weight: var(--w-light);
   max-width: var(--measure); margin-bottom: var(--s7);
   padding-bottom: var(--s6); border-bottom: 1px solid var(--line);
 }
 .editorial__block { margin-bottom: var(--s7); }
-.editorial__block h2 { font-size: var(--fs-h2); margin-bottom: var(--s4); }
-.editorial__block p { max-width: var(--measure); margin-bottom: var(--s4); }
+.editorial__block h2 { font-size: var(--fs-h2); margin-bottom: var(--s4); font-weight: var(--w-medium); }
+.editorial__block p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }
 .editorial__block p:last-child { margin-bottom: 0; }
 
-/* Les crochets [A COMPLETER] sont mis en evidence en jaune par app.js
-   pour qu'ils soient impossibles a oublier avant publication. */
+/* Les paragraphes entre crochets sont des consignes de redaction. Le lime les
+   rend impossibles a publier par distraction. */
 .todo {
-  background: var(--yellow-wash);
-  border-left: 3px solid var(--yellow);
+  background: var(--veil-strong);
+  border-left: 3px solid var(--lime);
   padding: var(--s4) var(--s5);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  color: #6B4E00; font-size: var(--fs-small); font-style: italic;
+  color: var(--white) !important;
+  font-size: var(--fs-small); font-style: italic;
 }
 
 
@@ -724,21 +765,24 @@ button { font: inherit; color: inherit; cursor: pointer; }
    10. PIED DE PAGE
    ========================================================================== */
 
-.site-foot { border-top: 1px solid var(--line); background: var(--paper-2); padding-block: var(--s8) var(--s6); }
+.site-foot { border-top: 1px solid var(--line-soft); padding-block: var(--s8) var(--s6); }
 .foot__grid {
   display: grid; gap: var(--s6);
   grid-template-columns: 1.5fr 1fr 1fr;
   margin-bottom: var(--s7);
 }
-.foot__name { font-size: var(--fs-h2); margin-bottom: var(--s3); }
+.foot__name { font-size: var(--fs-h2); margin-bottom: var(--s3); font-weight: var(--w-medium); }
 .foot__note { color: var(--ink-soft); font-size: var(--fs-small); max-width: 34ch; margin-bottom: var(--s4); }
-.foot h3 { font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: .1em; color: var(--ink-faint); margin-bottom: var(--s4); }
+.foot h3 {
+  font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: .1em;
+  color: var(--ink-faint); margin-bottom: var(--s4); font-weight: var(--w-semibold);
+}
 .foot ul { display: grid; gap: var(--s3); }
 .foot a { color: var(--ink-soft); text-decoration: none; font-size: var(--fs-small); }
-.foot a:hover { color: var(--blue); text-decoration: underline; }
+.foot a:hover { color: var(--lime); text-decoration: underline; }
 .foot__bottom {
   display: flex; flex-wrap: wrap; gap: var(--s4); justify-content: space-between;
-  padding-top: var(--s5); border-top: 1px solid var(--line);
+  padding-top: var(--s5); border-top: 1px solid var(--line-soft);
   font-size: var(--fs-tiny); color: var(--ink-faint);
 }
 
@@ -746,23 +790,20 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* ==========================================================================
    11. TRANSITIONS DE PAGE
    --------------------------------------------------------------------------
-   Le cahier des charges demande "des transitions en passant d'une page a
-   l'autre". Deux mecanismes, du plus moderne au plus compatible :
-     - si le navigateur connait l'API View Transitions, app.js l'utilise et
-       le navigateur anime le fondu tout seul (regles @view-transition
-       ci-dessous) ;
-     - sinon, on retombe sur une simple animation CSS sur <main>.
+   Deux mecanismes, du plus moderne au plus compatible :
+     - si le navigateur connait l'API View Transitions, app.js l'utilise et le
+       navigateur anime le fondu tout seul ;
+     - sinon, on retombe sur l'animation CSS ci-dessous.
    ========================================================================== */
 
-/* Chemin de secours : joue a chaque injection de page par app.js. */
 @keyframes pageIn {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 main.is-entering { animation: pageIn .38s var(--ease) both; }
 
-/* Chemin moderne. ::view-transition-* sont des pseudo-elements generes par
-   le navigateur pendant la transition ; on ne fait que regler leur duree. */
+/* ::view-transition-* sont des pseudo-elements generes par le navigateur
+   pendant la transition ; on ne fait que regler leur duree. */
 ::view-transition-old(root),
 ::view-transition-new(root) { animation-duration: .3s; }
 
@@ -770,9 +811,8 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
 /* ==========================================================================
    12. RESPONSIVE
    --------------------------------------------------------------------------
-   Le site est concu "mobile-first dans l'esprit" : la plupart des reglages
-   ci-dessus s'adaptent seuls grace a clamp() et auto-fit. Il ne reste donc
-   que trois vrais points de rupture, la ou la STRUCTURE doit changer.
+   La plupart des reglages s'adaptent seuls grace a clamp() et auto-fit. Il ne
+   reste que les points ou la STRUCTURE doit changer.
    ========================================================================== */
 
 /* --- Sous 1000px : la nav laterale de case study passe au-dessus ------- */
@@ -781,38 +821,48 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
   .cs-nav {
     position: sticky; top: var(--head-h);
     max-height: none; z-index: 100;
-    background: color-mix(in srgb, var(--paper) 92%, transparent);
-    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--line);
-    margin-inline: calc(-1 * clamp(var(--s5), 5vw, var(--s8)));
-    padding: var(--s3) clamp(var(--s5), 5vw, var(--s8));
+    background: var(--blue);
+    border-bottom: 1px solid var(--line-soft);
+    margin-inline: calc(-1 * var(--gutter));
+    padding: var(--s3) var(--gutter);
   }
   .cs-nav__title { display: none; }
   /* La liste devient une barre horizontale defilante. */
   .cs-nav ol {
     display: flex; gap: var(--s2);
     overflow-x: auto;
-    /* scrollbar-width: none masque la barre de defilement (Firefox). */
-    scrollbar-width: none;
-    /* scroll-snap fait que chaque element s'aligne proprement. */
-    scroll-snap-type: x proximity;
+    scrollbar-width: none;              /* masque la barre (Firefox) */
+    scroll-snap-type: x proximity;      /* chaque element s'aligne proprement */
   }
   .cs-nav ol::-webkit-scrollbar { display: none; }
   .cs-nav li { scroll-snap-align: start; }
-  .cs-nav a { white-space: nowrap; border-left: 0; border-bottom: 2px solid transparent; border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
-  .cs-nav a.is-active { border-left: 0; border-bottom-color: var(--blue); }
-  .cs-nav__prog { margin-top: var(--s3); }
+  .cs-nav a {
+    white-space: nowrap; border-left: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  }
+  .cs-nav a.is-active { border-left: 0; border-bottom-color: var(--lime); }
   .cs-nav__pct { display: none; }
 }
 
-/* --- Sous 800px : navigation principale repliee en menu ---------------- */
-@media (max-width: 800px) {
+/* --- Sous 860px : la pilule ne tient plus, on replie la navigation ----- */
+@media (max-width: 860px) {
+  :root { --head-h: 72px; }
+
+  /* On repasse en flex : avec une grille a deux colonnes et trois elements
+     restants (marque, langue, bouton menu), le troisieme serait renvoye a la
+     ligne. En flex, les trois tiennent sur une seule rangee, la marque calee
+     a gauche et le reste pousse a droite par margin-left:auto. */
+  .site-head { display: flex; align-items: center; gap: var(--s3); padding-block: var(--s4); }
+  .brand { margin-right: auto; }
   .nav-toggle { display: block; }
+
   .site-nav {
     position: fixed; inset: var(--head-h) 0 auto 0;
     flex-direction: column; align-items: stretch; gap: 0;
-    margin: 0; padding: var(--s4) clamp(var(--s4), 5vw, var(--s6)) var(--s6);
-    background: var(--paper);
+    padding: var(--s4) var(--gutter) var(--s6);
+    background: var(--blue);
+    border-radius: 0;
     border-bottom: 1px solid var(--line);
     box-shadow: var(--shadow-lg);
     /* Ferme par defaut : on le sort de l'ecran plutot que display:none,
@@ -822,24 +872,24 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
     transition: transform .3s var(--ease), visibility .3s;
   }
   .site-nav.is-open { transform: translateY(0); visibility: visible; }
-  .site-nav a { padding-block: var(--s4); border-bottom: 1px solid var(--line); font-size: 1.05rem; }
+  .site-nav a { padding-block: var(--s4); border-bottom: 1px solid var(--line-soft); font-size: 1.05rem; opacity: 1; }
   .site-nav a::after { display: none; }
-  .site-nav a[aria-current="page"] { color: var(--blue); }
-  .lang { margin-top: var(--s5); align-self: flex-start; }
+  .site-nav a[aria-current="page"] { color: var(--lime); }
 
   .pair { grid-template-columns: 1fr; }
   .foot__grid { grid-template-columns: 1fr 1fr; }
   .cs-next__link { flex-direction: column; align-items: flex-start; }
 }
 
-/* --- Sous 520px : les petits ecrans ----------------------------------- */
-@media (max-width: 520px) {
-  :root { --head-h: 56px; }
+/* --- Sous 560px : les petits ecrans ----------------------------------- */
+@media (max-width: 560px) {
+  .hero { min-height: 0; padding-block: var(--s6) var(--s7); }
   .foot__grid { grid-template-columns: 1fr; }
   .gist { grid-template-columns: 1fr 1fr; }
   .back-link { left: 50%; transform: translateX(-50%); bottom: var(--s4); }
   .back-link:hover { transform: translateX(-50%) translateY(-2px); }
   .figure__frame { padding: var(--s2); }
+  .cards { gap: var(--s7); }
 }
 
 
@@ -847,10 +897,10 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
    13. PREFERENCES UTILISATEUR
    ========================================================================== */
 
-/* Certaines personnes ressentent des nausees ou des vertiges avec les
-   animations (troubles vestibulaires). Le systeme d'exploitation permet de
-   demander "moins de mouvement" ; on respecte ce reglage. Ce n'est pas une
-   option esthetique, c'est une exigence d'accessibilite (WCAG 2.3.3). */
+/* Certaines personnes ressentent nausees ou vertiges avec les animations
+   (troubles vestibulaires). Le systeme permet de demander "moins de
+   mouvement" ; on respecte ce reglage. Ce n'est pas une option esthetique,
+   c'est une exigence d'accessibilite (WCAG 2.3.3). */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {
@@ -858,23 +908,27 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
   }
-  /* On garde tout de meme les barres de progression, qui informent
-     plutot qu'elles ne decorent. */
+  /* On garde les barres de progression, qui informent plutot qu'elles ne
+     decorent. */
   .progress__fill, .cs-nav__bar, .loader__bar { transition-duration: .2s !important; }
 }
 
-/* Impression : un recruteur imprime parfois un portfolio. On retire tout
-   ce qui n'a pas de sens sur papier. */
+/* Impression : un recruteur imprime parfois un portfolio. On repasse en noir
+   sur blanc, sans quoi la page consommerait une cartouche entiere. */
 @media print {
   .site-head, .site-nav, .back-link, .progress, .cs-nav,
-  .loader, .gate, .cs__cta, .cs-next, .skip-link { display: none !important; }
-  body { background: #fff; color: #000; font-size: 11pt; }
-  .figure__frame { border: 1px solid #ccc; background: #fff; }
+  .loader, .gate, .cs__cta, .cs-next, .skip-link, .lang { display: none !important; }
+  html, body { background: #fff !important; color: #000 !important; font-size: 11pt; }
+  .cs-sec p, .editorial__block p, .stat__l, .cs__tagline { color: #000 !important; }
+  .stat__n { color: #000 !important; }
+  .tag { border: 1px solid #000; color: #000 !important; background: none !important; }
+  .figure__frame { border: 1px solid #ccc; }
   a { color: #000; text-decoration: underline; }
   /* On imprime la destination des liens, sinon ils sont inutiles sur papier. */
   .cs-sec a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; color: #555; }
 }
 
 /* Le message affiche si JavaScript est desactive. */
-.noscript { padding: var(--s8) var(--s6); max-width: 620px; margin-inline: auto; }
+.noscript { padding: var(--s8) var(--gutter); max-width: 620px; margin-inline: auto; }
 .noscript h1 { font-size: var(--fs-h1); margin-bottom: var(--s4); }
+.noscript a { color: var(--lime); }

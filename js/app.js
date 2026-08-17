@@ -150,8 +150,8 @@ function applyStaticI18n() {
   const d = t();
   $$('[data-i18n]').forEach(node => {
     const value = d[node.dataset.i18n];
-    // On ignore les fonctions (comme helloVisitor) : elles ont besoin d'un
-    // argument, donc elles sont appelees a la main la ou on en a besoin.
+    // On ignore tout ce qui n'est pas une chaine : certaines entrees sont des
+    // fonctions ou des tableaux, et sont utilisees a la main la ou il faut.
     if (typeof value === 'string') node.textContent = value;
   });
 
@@ -199,16 +199,18 @@ function setLang(lang) {
        site change aussi les affiches, sans regenerer un seul fichier.
    ========================================================================== */
 
-/* Sept variantes, pour que deux projets voisins ne se ressemblent pas.
-   Chaque entree definit un fond et une couleur de trait. */
+/* Sept variantes construites sur les DEUX couleurs de la maquette (#2078F0 et
+   #BEF007) plus le blanc. On alterne fond sombre, fond blanc et fond lime pour
+   que deux projets voisins ne se ressemblent pas, sans jamais introduire de
+   teinte etrangere a la charte. */
 const ACCENTS = {
-  a: { bg: '#0B1B3A', fg: '#FFCB3D', sub: 'rgba(255,255,255,.5)' },
-  b: { bg: '#2350D8', fg: '#FFFFFF', sub: 'rgba(255,255,255,.62)' },
-  c: { bg: '#EDF2FE', fg: '#2350D8', sub: '#5A6683' },
-  d: { bg: '#FFCB3D', fg: '#0B1B3A', sub: 'rgba(11,27,58,.62)' },
-  e: { bg: '#16223D', fg: '#FFFFFF', sub: 'rgba(255,255,255,.5)' },
-  f: { bg: '#1B3AA0', fg: '#FFCB3D', sub: 'rgba(255,255,255,.6)' },
-  g: { bg: '#F5F3EE', fg: '#16223D', sub: '#8B94AB' }
+  a: { bg: '#0C4CA8', fg: '#BEF007', sub: 'rgba(255,255,255,.66)' },
+  b: { bg: '#2078F0', fg: '#FFFFFF', sub: 'rgba(255,255,255,.72)' },
+  c: { bg: '#FFFFFF', fg: '#2078F0', sub: 'rgba(32,120,240,.7)'  },
+  d: { bg: '#BEF007', fg: '#16220A', sub: 'rgba(22,34,10,.66)'   },
+  e: { bg: '#08306B', fg: '#FFFFFF', sub: 'rgba(255,255,255,.6)' },
+  f: { bg: '#0C4CA8', fg: '#FFFFFF', sub: 'rgba(255,255,255,.66)'},
+  g: { bg: '#FFFFFF', fg: '#0C4CA8', sub: 'rgba(12,76,168,.7)'   }
 };
 
 /* Les motifs geometriques. Chacun raconte quelque chose du projet :
@@ -297,23 +299,51 @@ function escapeAttr(s) {
 
 /* ---- 5a. Le "Bonjour Prenom" -------------------------------------------
    La seule fonction du fichier qui manipule une donnee venue du visiteur.
-   Elle construit deux noeuds de texte separes, et le prenom est pose avec
+   La maquette place le prenom AU MILIEU de la phrase : "Hey [prenom], nice to
+   meet you!". On assemble donc trois morceaux, et le prenom est pose avec
    textContent. Meme si state.visitor contenait du HTML, il s'afficherait
    comme du texte brut. */
 function renderHello() {
+  const d = t();
   const wrap = el('p', { class: 'hero__hello' });
   if (state.visitor) {
-    wrap.append(document.createTextNode(t().helloVisitor('') + ' '));
+    wrap.append(document.createTextNode(d.helloBefore + ' '));
     const strong = el('b');
-    strong.textContent = state.visitor;   // <- l'insertion sure
-    wrap.append(strong);
+    strong.textContent = state.visitor;      // <- l'insertion sure
+    wrap.append(strong, document.createTextNode(d.helloAfter));
   } else {
-    wrap.textContent = t().helloVisitor('');
+    wrap.textContent = d.helloAnon;
   }
   return wrap;
 }
 
-/* ---- 5b. Une carte de projet ---- */
+/* ---- 5a bis. La phrase du heros ----------------------------------------
+   Parcourt les morceaux definis dans content.js et fabrique l'element qui
+   correspond au role de chacun. Tout passe par textContent : la ponctuation
+   typographique (guillemets, apostrophes courbes) ne peut donc rien casser. */
+function renderStatement(lines) {
+  const box = el('p', { class: 'hero__statement' });
+  lines.forEach((segments, i) => {
+    segments.forEach(seg => {
+      let node;
+      if (seg.to)          node = el('a', { href: seg.to });
+      else if (seg.u)      node = el('u');
+      else if (seg.accent) node = el('span', { class: 'accent' });
+      else                 node = document.createTextNode(seg.t);
+
+      if (node.nodeType !== 3) node.textContent = seg.t;
+      box.append(node);
+    });
+    // Retour a la ligne entre chaque phrase, sauf apres la derniere.
+    if (i < lines.length - 1) box.append(el('br'));
+  });
+  return box;
+}
+
+/* ---- 5b. Une carte de projet -------------------------------------------
+   Structure calquee sur la maquette : le visuel, puis le nom du client, puis
+   le titre souligne, puis les etiquettes. Pas de cadre autour de la carte :
+   l'image est posee directement sur le bleu. */
 function projectCard(p) {
   const c = p[state.lang];
   const href = p.external ? p.external : `#/${p.kind}/${p.slug}`;
@@ -326,43 +356,86 @@ function projectCard(p) {
     // la page ouverte d'acceder a la notre via window.opener : c'est une
     // faille classique, et l'attribut la ferme.
     target: isExt ? '_blank' : null,
-    rel: isExt ? 'noopener noreferrer' : null
+    rel: isExt ? 'noopener noreferrer' : null,
+    'aria-label': `${c.title} — ${c.client}`
   });
 
   card.innerHTML = `
-    <div class="card__poster">${posterSVG(p)}</div>
+    <div class="card__media">${cardMedia(p)}</div>
     <div class="card__body">
-      <div class="card__meta">
-        <span>${escapeAttr(c.client)}</span><span class="dot"></span><span>${escapeAttr(p.year)}</span>
+      <div class="card__title-block">
+        <p class="card__client">${escapeAttr(c.client)}</p>
+        <p class="card__title">${emphasize(c.tagline)}</p>
       </div>
-      <h3 class="card__title">${escapeAttr(c.title)}</h3>
-      <p class="card__tagline">${escapeAttr(c.tagline)}</p>
       <ul class="card__tags">${c.tags.map(x => `<li class="tag">${escapeAttr(x)}</li>`).join('')}</ul>
-      <span class="card__more">${escapeAttr(isExt ? t().seeProject : t().seeMore)}
-        <span class="arrow" aria-hidden="true">→</span></span>
     </div>`;
   return card;
 }
 
-/* ---- 5c. La page d'accueil ---- */
+/* Choisit le visuel d'une carte.
+   Si le projet possede des figures extraites des PDF, on prend la DERNIERE
+   qui en a une : c'est presque toujours l'ecran final, donc le plus parlant.
+   Sinon on retombe sur l'affiche SVG generee. */
+function cardMedia(p) {
+  const sections = p[state.lang].sections || [];
+  const withImage = sections.filter(s => s.image);
+  const last = withImage[withImage.length - 1];
+  if (!last) return posterSVG(p);
+
+  const base = `assets/img/${last.image}`;
+  return `<picture>
+      <source srcset="${base}.webp" type="image/webp">
+      <img src="${base}.png" alt="" loading="lazy" decoding="async">
+    </picture>`;
+  // alt="" volontairement vide : l'image est decorative ici, le lien porte
+  // deja son propre aria-label. Un alt redondant ferait lire deux fois la
+  // meme chose au lecteur d'ecran.
+}
+
+/* Met en gras ce qui est encadre par des doubles asterisques, comme en
+   Markdown : "de **24 a 9**" -> "de <b>24 a 9</b>".
+   L'echappement a lieu AVANT le remplacement : le texte est donc neutralise,
+   et seules les balises <b> que nous fabriquons nous-memes subsistent. */
+function emphasize(str) {
+  return escapeAttr(str).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+}
+
+/* ---- 5c. La page d'accueil ----
+   Reproduit la maquette : un heros de 400px cale au centre, puis la grille
+   des projets. Le bloc de texte du heros est entierement construit par le
+   code (pas de gabarit HTML), parce qu'il melange du contenu variable — le
+   prenom du visiteur — a des liens et des mots accentues. */
 function pageHome() {
   const d = t(), h = HERO[state.lang];
   const page = el('div');
 
+  /* --- Le heros --- */
   const hero = el('section', { class: 'hero' });
   const wrap = el('div', { class: 'wrap' });
-  wrap.append(renderHello());                      // d'abord le bonjour personnalise
-  wrap.insertAdjacentHTML('beforeend', `
-    <p class="kicker hero__kicker">${escapeAttr(d.heroKicker)}</p>
-    <p class="hero__lead">${escapeAttr(h.lead)}</p>
-    <p class="hero__lead">${escapeAttr(h.lead2)}</p>
-    <a class="hero__gap" href="#/gap">
-      <span>${escapeAttr(h.gapLink)}</span><span aria-hidden="true">→</span>
-    </a>`);
-  hero.append(wrap);
-  page.append(hero, el('hr', { class: 'rule' }));
+  const text = el('div', { class: 'hero__text' });
 
-  // Les deux listes de projets, filtrees par `kind`.
+  const block = el('div', { class: 'hero__block' });
+  const lines = el('div', { class: 'hero__lines' });
+  lines.append(el('p', { class: 'hero__name', text: h.name }));
+  lines.append(renderStatement(h.statement));
+
+  // Le lien vers l'article sur les deux ans, avec sa fleche.
+  // La maquette utilise une icone SVG exportee ; elle n'etait pas
+  // telechargeable, on utilise donc le caractere fleche, masque aux lecteurs
+  // d'ecran puisqu'il n'apporte rien a l'oral.
+  const gap = el('a', { class: 'hero__gap', href: '#/gap' });
+  gap.append(
+    el('span', { text: h.gapLink }),
+    el('span', { class: 'arrow', 'aria-hidden': 'true', text: '↗' })
+  );
+
+  block.append(lines, gap);
+  text.append(renderHello(), block);
+  wrap.append(text);
+  hero.append(wrap);
+  page.append(hero);
+
+  /* --- Les deux listes de projets, filtrees par `kind` --- */
   for (const kind of ['work', 'side']) {
     const list = PROJECTS.filter(p => p.kind === kind);
     const sec = el('section', { class: 'section', id: kind });
@@ -377,7 +450,6 @@ function pageHome() {
     w.append(grid);
     sec.append(w);
     page.append(sec);
-    if (kind === 'work') page.append(el('hr', { class: 'rule' }));
   }
   return page;
 }
@@ -426,7 +498,7 @@ function pageCase(project) {
     ${c.isDraft ? `<p style="margin-bottom:var(--s4)"><span class="draft-badge">${escapeAttr(d.draftBadge)}</span></p>` : ''}
     <p class="cs__client">${escapeAttr(c.client)}</p>
     <h1 class="cs__title">${escapeAttr(c.title)}</h1>
-    <p class="cs__tagline">${escapeAttr(c.tagline)}</p>
+    <p class="cs__tagline">${emphasize(c.tagline)}</p>
 
     <dl class="gist">
       <div><dt>${escapeAttr(d.csRole)}</dt><dd>${escapeAttr(c.gist.role)}</dd></div>
@@ -515,7 +587,7 @@ function pageCase(project) {
            ${next.external ? 'target="_blank" rel="noopener noreferrer"' : ''}>
           <div>
             <h2 class="cs-next__t">${escapeAttr(nc.title)}</h2>
-            <p class="cs-next__s">${escapeAttr(nc.tagline)}</p>
+            <p class="cs-next__s">${emphasize(nc.tagline)}</p>
           </div>
           <span class="cs-next__arrow" aria-hidden="true">→</span>
         </a>

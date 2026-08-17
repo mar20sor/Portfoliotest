@@ -23,7 +23,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- theme-color colore la barre d'adresse du navigateur sur mobile -->
-  <meta name="theme-color" content="#0B1B3A">
+  <meta name="theme-color" content="#2078F0">
 
   <title>Marvin Sorhaindo — Designer produit</title>
   <meta name="description" content="Portfolio de Marvin Sorhaindo, designer produit à Montréal. Trois ans de SaaS santé : planification hospitalière, synchronisation de données cliniques, refontes web.">
@@ -42,18 +42,49 @@
     du prenom saisi dans le formulaire (voir app.js, fonction cleanName).
     'unsafe-inline' est autorise pour les styles seulement, pas pour les scripts.
   -->
+  <!--
+    Deux exceptions ont ete ajoutees pour Google Fonts (voir le bloc police
+    juste en dessous) : fonts.googleapis.com pour la feuille de style, et
+    fonts.gstatic.com pour les fichiers .woff2 eux-memes. Ce sont les seules
+    origines externes autorisees par tout le site.
+  -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'none'; form-action 'none'">
-
-  <!-- Une seule feuille de style, une seule requete reseau -->
-  <link rel="stylesheet" href="css/styles.css">
+        content="default-src 'self';
+                 img-src 'self' data:;
+                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+                 font-src 'self' https://fonts.gstatic.com;
+                 script-src 'self';
+                 base-uri 'none';
+                 form-action 'none'">
 
   <!--
-    PRECHARGEMENT DES POLICES SYSTEME : aucune police n'est telechargee.
-    On utilise la pile de polices native du systeme (voir --font dans le CSS).
-    C'est le choix le plus rapide possible : 0 Ko, 0 requete, 0 clignotement
-    de texte au chargement (ce qu'on appelle le FOUT).
+    LA POLICE : Raleway, imposee par la maquette Figma.
+    C'est une grotesque geometrique tres reconnaissable ; aucune police
+    systeme ne s'en approche, il faut donc la telecharger.
+
+    preconnect ouvre la connexion aux serveurs de Google AVANT que le
+    navigateur ne decouvre qu'il en a besoin, ce qui economise un aller-retour
+    reseau. crossorigin est obligatoire sur le second : les polices sont
+    servies en mode anonyme et la connexion doit correspondre.
+
+    display=swap affiche immediatement le texte dans une police de secours,
+    puis bascule sur Raleway une fois chargee. Sans cette option, le texte
+    resterait invisible jusqu'a 3 secondes.
+
+    >>> A FAIRE PLUS TARD : auto-heberger la police <<<
+    Cette balise est la seule requete externe du site et contredit l'exigence
+    de depart ("tout charger une fois, le plus vite possible"). Pour la
+    supprimer : telecharger les 4 graisses en .woff2, les placer dans
+    assets/fonts/, remplacer ce lien par des regles @font-face dans le CSS,
+    et retirer les deux autorisations Google de la CSP ci-dessus.
   -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600&display=swap">
+
+  <!-- Une seule feuille de style pour tout le site -->
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 
 <body data-lang="fr">
@@ -130,12 +161,17 @@
     ===================== 4. EN-TETE =====================
     position: sticky en CSS -> reste visible pendant le defilement.
   -->
+  <!--
+    Structure calquee sur la maquette : le nom a gauche, la pilule de
+    navigation centree, le selecteur de langue a droite. Les trois zones sont
+    des colonnes de grille de largeur egale, ce qui garantit que la pilule
+    reste OPTIQUEMENT centree meme si le nom ou le selecteur changent de
+    largeur (en passant de FR a EN, par exemple).
+  -->
   <header class="site-head" id="site-head">
-    <a class="brand" href="#/" aria-label="Marvin Sorhaindo, accueil">
-      <span class="brand__mark">mrv</span><span class="brand__mark">srd</span>
-    </a>
+    <a class="brand" href="#/" aria-label="Marvin Sorhaindo, accueil">Marvin S.</a>
 
-    <!-- Bouton hamburger, visible seulement sous 800px (voir media query CSS) -->
+    <!-- Bouton hamburger, visible seulement sous 860px (voir media query CSS) -->
     <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="site-nav">
       <span class="nav-toggle__box" aria-hidden="true"><i></i><i></i></span>
       <span class="sr-only" data-i18n="navMenu">Menu</span>
@@ -146,17 +182,17 @@
       <a href="#/side"  data-nav="side"  data-i18n="navSide">À côté</a>
       <a href="#/about" data-nav="about" data-i18n="navAbout">À propos</a>
       <a id="nav-contact" href="mailto:" data-i18n="navContact">Contact</a>
-
-      <!--
-        Selecteur de langue. Deux boutons plutot qu'un <select> : c'est plus
-        rapide a utiliser (un clic au lieu de deux) et l'etat actif est visible.
-        aria-pressed indique au lecteur d'ecran quelle langue est active.
-      -->
-      <div class="lang" role="group" aria-label="Langue / Language">
-        <button type="button" data-setlang="fr" aria-pressed="true">FR</button>
-        <button type="button" data-setlang="en" aria-pressed="false">EN</button>
-      </div>
     </nav>
+
+    <!--
+      Selecteur de langue. Deux boutons plutot qu'un <select> : c'est plus
+      rapide a utiliser (un clic au lieu de deux) et l'etat actif est visible.
+      aria-pressed indique au lecteur d'ecran quelle langue est active.
+    -->
+    <div class="lang" role="group" aria-label="Langue / Language">
+      <button type="button" data-setlang="fr" aria-pressed="true">FR</button>
+      <button type="button" data-setlang="en" aria-pressed="false">EN</button>
+    </div>
   </header>
 
   <!--

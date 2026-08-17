@@ -57,8 +57,12 @@ export const UI = {
     navHome: 'Accueil', navMenu: 'Menu', navClose: 'Fermer',
 
     // --- Page d'accueil ---
-    helloVisitor: (n) => n ? `Bonjour ${n}` : 'Bonjour',
-    heroKicker: 'Designer produit · Montréal',
+    // La salutation encadre le prénom : "Bonjour <b>Marie</b>, enchanté !"
+    // Deux morceaux séparés plutôt qu'une chaîne à trous, pour que le prénom
+    // soit inséré en tant que TEXTE et jamais en tant que HTML (voir app.js).
+    helloBefore: 'Bonjour',
+    helloAfter: ', enchanté !',
+    helloAnon: 'Bonjour, enchanté !',
     workTitle: 'Projets',
     workIntro: 'Trois ans de SaaS santé, plus quelques terrains de jeu. Chaque étude de cas se lit en 30 secondes ; le détail est là si vous voulez creuser.',
     sideTitle: 'À côté',
@@ -113,8 +117,9 @@ export const UI = {
     navWork: 'Work', navSide: 'Side quests', navAbout: 'About', navContact: 'Contact',
     navHome: 'Home', navMenu: 'Menu', navClose: 'Close',
 
-    helloVisitor: (n) => n ? `Hello ${n}` : 'Hello',
-    heroKicker: 'Product designer · Montréal',
+    helloBefore: 'Hey',
+    helloAfter: ', nice to meet you!',
+    helloAnon: 'Hey, nice to meet you!',
     workTitle: 'Work',
     workIntro: 'Three years of healthcare SaaS, plus a few playgrounds. Every case study reads in 30 seconds; the detail is there if you want to dig.',
     sideTitle: 'Side quests',
@@ -155,15 +160,66 @@ export const UI = {
    Volontairement court : c'est la premiere chose lue, et un recruteur
    decide en quelques secondes s'il continue.
    -------------------------------------------------------------------------- */
+/* La phrase du héros est décrite comme une LISTE DE MORCEAUX plutôt que comme
+   une chaîne de caractères contenant du HTML. Chaque morceau porte son rôle :
+
+     { t: '...' }                  texte simple
+     { t: '...', accent: true }    mot mis en avant, en vert lime
+     { t: '...', to: '#/work/x' }  lien interne vers une étude de cas
+     { t: '...', u: true }         simplement souligné, sans lien
+
+   Pourquoi ce détour ? Parce qu'app.js peut alors construire chaque morceau
+   avec createElement et textContent. Aucune chaîne de contenu ne traverse
+   innerHTML, donc aucune apostrophe ou caractère spécial ne peut casser la
+   page — et une éventuelle balise se retrouverait affichée telle quelle
+   plutôt qu'interprétée. Ajouter une ligne = ajouter un tableau ici. */
 export const HERO = {
   fr: {
-    lead: 'Je suis designer produit. Pendant trois ans, chez Petal, j’ai travaillé sur des outils qu’utilisent des gestionnaires d’hôpitaux au Québec — des interfaces où une mauvaise case cochée décale le planning d’un service entier.',
-    lead2: 'Ce que je fais de mieux : prendre un système que personne ne comprend plus, le démonter, et le rendre paramétrable par quelqu’un qui n’a pas trois heures à y consacrer. Vingt-quatre règles ramenées à neuf, par exemple.',
+    name: 'Je suis Marvin',
+    statement: [
+      [
+        { t: 'J’aime « décrypter » des ' },
+        { t: 'flux de travail complexes', accent: true }
+      ],
+      [
+        { t: 'sur des produits ' },
+        { t: 'B2B', accent: true },
+        { t: ' en hypercroissance.' }
+      ],
+      [
+        { t: 'J’ai travaillé chez ' },
+        { t: 'Petal', to: '#/work/constraints' },
+        { t: ', ' },
+        { t: 'Fit-Plans', to: '#/work/fit-plans' },
+        { t: ' et ' },
+        { t: 'Gekko', u: true },
+        { t: '.' }
+      ]
+    ],
     gapLink: 'Pourquoi je n’ai pas travaillé pendant 2 ans'
   },
   en: {
-    lead: 'I’m a product designer. For three years, at Petal, I worked on tools used by hospital managers across Québec — interfaces where one wrong checkbox shifts the schedule of an entire department.',
-    lead2: 'What I do best: take a system nobody understands anymore, pull it apart, and make it configurable by someone who doesn’t have three hours to spare. Twenty-four rules brought down to nine, for instance.',
+    name: 'I’m Marvin',
+    statement: [
+      [
+        { t: 'I like to “decipher” ' },
+        { t: 'complex workflows', accent: true }
+      ],
+      [
+        { t: 'when working on ' },
+        { t: 'B2B', accent: true },
+        { t: ' product in scale-ups.' }
+      ],
+      [
+        { t: 'I previously worked at ' },
+        { t: 'Petal', to: '#/work/constraints' },
+        { t: ', ' },
+        { t: 'Fit-Plans', to: '#/work/fit-plans' },
+        { t: ', and ' },
+        { t: 'Gekko', u: true },
+        { t: '.' }
+      ]
+    ],
     gapLink: 'Why I didn’t work for 2 years'
   }
 };
@@ -194,7 +250,7 @@ export const PROJECTS = [
     fr: {
       title: 'Contraintes de planification',
       client: 'Petal',
-      tagline: 'Vingt-quatre règles de planification ramenées à neuf, et confiées aux utilisateurs.',
+      tagline: 'Refonte d’un moteur de règles de planification, ramenées de **24 à 9**.',
       tags: ['Design système', 'Recherche', 'SaaS santé'],
       gist: { role: 'UX / UI, recherche', duration: '4 mois', team: '1 designer, 1 PM', tools: 'Figma, entretiens' },
       problem: 'Les contraintes sont les règles qui s’appliquent aux disponibilités du personnel pour construire un planning équitable — « un membre ne peut pas faire deux périodes d’affilée », par exemple. Elles étaient paramétrées à la main par les équipes internes de Petal : long, coûteux, et si redondant que plusieurs règles différentes menaient au même résultat. Les agents se trompaient.',
@@ -245,7 +301,7 @@ export const PROJECTS = [
     en: {
       title: 'Scheduling constraints',
       client: 'Petal',
-      tagline: 'Twenty-four scheduling rules brought down to nine, and handed to the people who use them.',
+      tagline: 'Redesigning a rule-making engine, reducing rules from **24 to 9**.',
       tags: ['Systems design', 'Research', 'Healthcare SaaS'],
       gist: { role: 'UX / UI, research', duration: '4 months', team: '1 designer, 1 PM', tools: 'Figma, interviews' },
       problem: 'Constraints are the rules applied to staff availability to build a fair schedule — “a member cannot work two consecutive periods”, for instance. They were configured by hand by Petal’s internal teams: slow, expensive, and so redundant that several different rules led to the same result. Agents made mistakes.',
@@ -302,7 +358,7 @@ export const PROJECTS = [
     fr: {
       title: 'Exclusion de services',
       client: 'Petal',
-      tagline: 'Le design est passé en production, les utilisateurs l’ont mal compris, et nous l’avons corrigé.',
+      tagline: 'Un assistant en **4 étapes**, mis en production, mal compris, puis corrigé.',
       tags: ['Wizard', 'Test utilisateur', 'Itération'],
       gist: { role: 'UX / UI', duration: '3 mois', team: '1 dev, 1 designer, 1 PM, 1 rédacteur technique', tools: 'Figma' },
       problem: 'Dans le HUB — la plateforme qui synchronise les cliniques et hôpitaux du Québec — certains services ne sont plus utilisés ou ne le sont que temporairement, comme une clinique de vaccination saisonnière. Ils faussent les statistiques, mais ne peuvent être supprimés que dans le DME, une procédure lourde pour le personnel médical. Il fallait donc pouvoir les exclure de la synchronisation sans les supprimer — et le faire à l’intérieur d’une modale déjà chargée d’autres étapes.',
@@ -355,7 +411,7 @@ export const PROJECTS = [
     en: {
       title: 'Services exclusion',
       client: 'Petal',
-      tagline: 'The design shipped, users misread it, and we fixed it.',
+      tagline: 'A **4-step** wizard that shipped, was misread, and got fixed.',
       tags: ['Wizard', 'User testing', 'Iteration'],
       gist: { role: 'UX / UI', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer', tools: 'Figma' },
       problem: 'In the HUB — the platform that synchronises clinics and hospitals across Québec — some services are no longer used, or only temporarily, like a seasonal flu clinic. They skew a clinic’s statistics, but can only be deleted in the EMR, which is a heavy procedure for medical staff. So they needed to be excluded from synchronisation without being deleted — inside a modal already carrying several other steps.',
@@ -414,7 +470,7 @@ export const PROJECTS = [
     fr: {
       title: 'Transfert de DME',
       client: 'Petal',
-      tagline: 'Rendre lisible un processus de trois semaines sur lequel l’utilisateur n’a aucune prise.',
+      tagline: 'Rendre lisible un transfert de **3 semaines** sur lequel l’utilisateur n’a aucune prise.',
       tags: ['Processus long', 'Transparence', 'SaaS santé'],
       gist: { role: 'UX / UI', duration: '4 mois', team: '1 designer, 1 PM, 1 rédacteur technique', tools: 'Figma' },
       problem: 'Les cliniques voulaient pouvoir changer de DME dans le HUB. Le processus n’était réalisable que par l’équipe de déploiement, de façon localisée : lourd, d’une à trois semaines voire plus, et obligatoirement mené avec un agent interne mobilisé pour l’occasion. Le gestionnaire à l’origine de la demande, lui, n’avait aucun moyen d’action — mais avait besoin de visibilité.',
@@ -456,7 +512,7 @@ export const PROJECTS = [
     en: {
       title: 'EMR transfer',
       client: 'Petal',
-      tagline: 'Making a three-week process legible when the user has no control over it.',
+      tagline: 'Making a **3-week** transfer legible when the user has no control over it.',
       tags: ['Long-running process', 'Transparency', 'Healthcare SaaS'],
       gist: { role: 'UX / UI', duration: '4 months', team: '1 designer, 1 PM, 1 technical writer', tools: 'Figma' },
       problem: 'Clinics wanted to be able to change EMR inside the HUB. The process could only be run by the deployment team, locally: heavy, one to three weeks or more, and necessarily carried out with an internal agent assigned to it. The manager who requested it had no way to act — but still needed visibility.',
@@ -504,7 +560,7 @@ export const PROJECTS = [
     fr: {
       title: 'Fit-Plans',
       client: 'Fit-Plans, Montréal',
-      tagline: 'Un parcours de commande divisé par deux, pour des clients qui préféraient téléphoner.',
+      tagline: 'Un parcours de commande ramené de **6 étapes à 3**, pour des clients qui téléphonaient.',
       tags: ['Refonte', 'Recherche', 'UI'],
       gist: { role: 'UX, UI, stratégie', duration: 'Mars – août 2020', team: '1 designer, 2 développeurs', tools: 'Figma, Google Analytics' },
       problem: 'Fit-Plans prépare et livre des repas à calories mesurées pour sportifs, à Montréal. Le site avait été conçu par le CEO sur son temps libre et n’avait jamais été une priorité. Résultat : 84 % des clients trouvaient la commande trop compliquée et appelaient directement — une perte de temps pour une équipe déjà réduite.',
@@ -554,7 +610,7 @@ export const PROJECTS = [
     en: {
       title: 'Fit-Plans',
       client: 'Fit-Plans, Montréal',
-      tagline: 'An ordering flow cut in half, for customers who preferred to phone in.',
+      tagline: 'An ordering flow cut from **6 steps to 3**, for customers who preferred to phone in.',
       tags: ['Redesign', 'Research', 'UI'],
       gist: { role: 'UX, UI, strategy', duration: 'March – August 2020', team: '1 designer, 2 developers', tools: 'Figma, Google Analytics' },
       problem: 'Fit-Plans prepares and delivers calorie-accurate meals for sports enthusiasts in Montréal. The site had been built by the CEO in his spare time and had never been a priority. The result: 84% of customers found ordering too complicated and simply called instead — a drain on an already small team.',
@@ -610,7 +666,7 @@ export const PROJECTS = [
     fr: {
       title: 'Soundcloud',
       client: 'Projet d’étude',
-      tagline: '815 réponses et six tests pour comprendre pourquoi personne ne trouve le bouton commentaire.',
+      tagline: '**815 réponses** et 6 tests pour comprendre pourquoi personne ne trouve le bouton commentaire.',
       tags: ['Recherche', 'Test d’utilisabilité', 'UI'],
       gist: { role: 'Recherche, tests, UI', duration: 'Nov. 2019 – nov. 2020', team: '3 designers', tools: 'Figma, Google Forms, Sheets' },
       problem: 'Soundcloud a une fonctionnalité que ses concurrents n’ont pas : commenter un morceau à un instant précis. Encore faut-il la trouver. Nous voulions mesurer l’utilisabilité réelle de la plateforme, puis rendre cette fonctionnalité accessible à quelqu’un qui ouvre le site pour la première fois.',
@@ -653,7 +709,7 @@ export const PROJECTS = [
     en: {
       title: 'Soundcloud',
       client: 'Study project',
-      tagline: '815 responses and six tests to work out why nobody finds the comment button.',
+      tagline: '**815 responses** and 6 tests to work out why nobody finds the comment button.',
       tags: ['Research', 'Usability testing', 'UI'],
       gist: { role: 'Research, testing, UI', duration: 'Nov 2019 – Nov 2020', team: '3 designers', tools: 'Figma, Google Forms, Sheets' },
       problem: 'Soundcloud has a feature its competitors don’t: commenting on a track at a specific moment. You just have to find it first. We wanted to measure the platform’s actual usability, then make that feature reachable for someone opening the site for the first time.',
@@ -702,7 +758,7 @@ export const PROJECTS = [
     fr: {
       title: 'Hoot',
       client: 'Hackathon La Poste × ECV Digital',
-      tagline: 'Une semaine pour concevoir la conciergerie des travailleurs de nuit. Deuxième place.',
+      tagline: '**Une semaine** pour concevoir la conciergerie des travailleurs de nuit. **2ᵉ place**.',
       tags: ['Hackathon', 'Concept', 'UI'],
       gist: { role: 'Idéation, questionnaire, wireframing', duration: '1 semaine', team: '2 UI, 1 UX, 1 dev, 1 PM', tools: 'Figma, Google Forms, ProtoPie' },
       problem: 'La Poste nous demandait d’imaginer la conciergerie de demain. La plupart des acteurs du marché proposent du ménage, de la cuisine ou de la livraison, à des prix plus ou moins accessibles — mais aucun ne s’adresse au travail de nuit. Nous avons choisi cet angle pour nous distinguer.',
@@ -743,7 +799,7 @@ export const PROJECTS = [
     en: {
       title: 'Hoot',
       client: 'La Poste × ECV Digital hackathon',
-      tagline: 'One week to design a concierge service for night workers. Second place.',
+      tagline: '**One week** to design a concierge service for night workers. **2nd place**.',
       tags: ['Hackathon', 'Concept', 'UI'],
       gist: { role: 'Ideation, survey, wireframing', duration: '1 week', team: '2 UI, 1 UX, 1 dev, 1 PM', tools: 'Figma, Google Forms, ProtoPie' },
       problem: 'La Poste asked us to imagine the concierge service of tomorrow. Most players on the market offer cleaning, cooking or delivery at varying price points — but none of them address night work. We picked that angle to stand apart.',
