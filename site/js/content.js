@@ -328,7 +328,7 @@ export const PROJECTS = [
              respecter l'ordre de la page Contra — illustrations, puis
              principes, puis captures — sans découper la section en deux. */
           media: {
-            /* Les 3 illustrations animées : les JSON Lottie d'origine,
+            /* Les 4 illustrations animées : les JSON Lottie d'origine,
                rendus directement par dotlottie-wc plutot que convertis en
                video. Elles sont dans le dépôt, donc `src` est utilisé
                plutôt qu'un identifiant Contra. */
@@ -338,7 +338,9 @@ export const PROJECTS = [
               { type: 'lottie', src: 'assets/media/Protection-(hollow).json',
                 caption: 'Contrainte de protection' },
               { type: 'lottie', src: 'assets/media/Spacing lottie.json',
-                caption: 'Contrainte d’espacement' }
+                caption: 'Contrainte d’espacement' },
+              { type: 'lottie', src: 'assets/media/Availability.json',
+                caption: 'Contrainte de disponibilité' }
             ],
             2: [
               { type: 'image', id: 'ytoa4swb5caon0onh5yb', caption: 'Liste des contraintes' },
@@ -403,7 +405,7 @@ export const PROJECTS = [
           /* See the French block for how `media` works: the key is the index
              of the paragraph the visuals should follow. */
           media: {
-            /* The 3 animated illustrations: the original Lottie JSON files,
+            /* The 4 animated illustrations: the original Lottie JSON files,
                rendered directly by dotlottie-wc rather than converted to
                video. They live in the repo, so `src` is used rather than a
                Contra identifier. */
@@ -413,7 +415,9 @@ export const PROJECTS = [
               { type: 'lottie', src: 'assets/media/Protection-(hollow).json',
                 caption: 'Protection constraint' },
               { type: 'lottie', src: 'assets/media/Spacing lottie.json',
-                caption: 'Spacing constraint' }
+                caption: 'Spacing constraint' },
+              { type: 'lottie', src: 'assets/media/Availability.json',
+                caption: 'Availability constraint' }
             ],
             2: [
               { type: 'image', id: 'ytoa4swb5caon0onh5yb', caption: 'Constraints list' },

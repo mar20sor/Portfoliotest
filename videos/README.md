@@ -9,6 +9,14 @@ quelles dans `../site/assets/media/` et lues dans le navigateur par le
 composant web `dotlottie-wc` (chargé via CDN dans `index.html`) : pas de
 rendu vidéo pour elles.
 
+`Availability.json` (contrainte "disponibilité") suit le même principe mais
+n'a pas de source ici : sa seule copie vit dans `../site/assets/media/`, et
+son filigrane Jitter ("jitter.video", en bas à droite) a été retiré
+directement dans ce fichier — en supprimant le calque statique qui le
+dessinait (et les 2 assets Lottie qu'il référençait), pas en le masquant
+visuellement. Si vous regénérez ce fichier depuis Jitter, il faudra refaire
+ce nettoyage.
+
 `constraint-limit.mp4`/`.jpg` restent dans `../site/assets/media/` sans être
 référencés par le site — gardés volontairement, voir l'historique git.
 
