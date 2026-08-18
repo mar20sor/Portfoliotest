@@ -4,7 +4,7 @@
 > Il enregistre **ce qui a été décidé, pourquoi, et ce qui reste à faire**.
 > Si vous reprenez le projet dans une nouvelle session, lisez ce fichier d'abord.
 
-**Dernière mise à jour :** 17 août 2026 — session 1 (construction initiale)
+**Dernière mise à jour :** 18 août 2026 — session 3 (animations Lottie + exploration Figma)
 
 ---
 
@@ -331,3 +331,73 @@ mise sous Git.
   sépare désormais la route de l'ancre. Les liens de la nav latérale sont, du
   coup, devenus de vrais liens partageables.
 - Trois contrastes sous le seuil WCAG AA (voir 3.7).
+
+### Session 2 — courant août 2026
+Rebasculage du thème sur la maquette Figma `Portfolio_Explorations` (bleu/lime,
+voir 3.6), refonte de l'accueil, page « études de cas » : fond blanc, nav
+latérale réparée, intégration des médias Contra du projet Contraintes
+(vidéo d'ouverture + 3 captures), génération de 3 animations depuis les
+fichiers Lottie sources, puis remplacement par les exports vidéo Jitter
+fournis par Mar (voir historique git `5b4a897`…`1df6c82`).
+
+### Session 3 — 18 août 2026
+**Animations du projet Contraintes : passage de la vidéo Jitter au Lottie
+natif.** Sur la branche `add-support-lottie` (fusionnée dans `main` en fin de
+session) :
+
+- Ajout du composant web `dotlottie-wc` (LottieFiles) chargé depuis le CDN
+  `unpkg.com` dans `index.html`, avec assouplissement de la CSP
+  (`script-src`/`connect-src` : `unpkg.com`, `cdn.jsdelivr.net`,
+  `'wasm-unsafe-eval'` pour le WASM du lecteur).
+- Contrainte « limite » remplacée par `Protection-(hollow).json`, rendue en
+  Lottie natif plutôt qu'en vidéo exportée — taille et cadre ajustés pour
+  matcher les vidéos voisines (`aspect-ratio` explicite en CSS, le composant
+  ne dérive pas sa taille intrinsèque du JSON), puis renommée « protection »
+  pour refléter l'illustration réelle (elle était mal étiquetée « limite »).
+- Les deux autres contraintes (« blocage », « espacement ») converties de
+  vidéo Jitter vers leurs fichiers Lottie sources d'origine. Les fichiers
+  `constraint-blocking.*` et `constraint-spacing.*` (vidéo + jpg) supprimés
+  du dépôt une fois le rendu Lottie vérifié.
+- Ajout d'une 4ᵉ contrainte, « disponibilité » (`Availability.json`) : son
+  filigrane Jitter (« jitter.video », bas droite) était **incrusté dans le
+  JSON lui-même** — pas un simple habillage vidéo — et a été retiré en
+  supprimant le calque et les deux assets de précomposition qu'il référençait
+  (traçage de la chaîne de référence pour confirmer qu'aucun autre élément ne
+  les utilisait).
+- `constraint-limit.mp4`/`.jpg` gardés dans le dépôt, volontairement, bien que
+  plus utilisés (voir `videos/README.md`).
+- Détail dans `videos/README.md`, tenu à jour à chaque étape.
+
+**Exploration visuelle dans Figma (hors dépôt de code).** Nouveau fichier
+Figma « claude portfolio image generation » : sur la Page 1, à partir des
+7 portfolios de référence déjà présents sur la page, génération de 5 mises en
+page éditables différentes pour une page d'étude de cas (auto-layout complet,
+pas des images). Travail réalisé entièrement côté Figma, aucun fichier de ce
+dépôt n'y correspond.
+
+**Git.** Historique local (`main`, la refonte bilingue complète sous `site/`)
+et historique `origin/main` (ancienne structure aplatie) avaient divergé.
+Sur demande explicite de Mar, `main` a été poussé en écrasant `origin/main`,
+à l'exception de 4 fichiers gardés strictement locaux : `Portfolio PRD for
+Claude.md`, `CONVERSATION.md`, `README.md`, et les 4 PDF sources. La méthode
+retenue : une branche `push-temp` jetable, sur laquelle ces fichiers sont
+retirés de l'index (`git rm --cached`, gardés sur disque) avant le push forcé
+— `main` lui-même n'est jamais modifié. Répété une seconde fois en fin de
+session après la fusion de `add-support-lottie`. La branche
+`add-support-lottie`, entièrement fusionnée, a ensuite été supprimée en local
+et sur `origin`.
+
+**Liste des fichiers gardés strictement locaux (à ne jamais pousser vers
+`origin`).** Référence pour tout futur push forcé via une branche
+`push-temp` (voir méthode ci-dessus) :
+
+- `Portfolio PRD for Claude.md`
+- `CONVERSATION.md`
+- `README.md`
+- `CLAUDE.md` *(créé après le dernier push de la session 3 ; jamais commité
+  ni poussé, donc absent d'`origin` — rien à retirer, juste à exclure comme
+  les autres au prochain push forcé)*
+- `Contraintes.pdf`
+- `Exclusion des services.pdf`
+- `Services exclusion.pdf`
+- `Transfert de DME.pdf`

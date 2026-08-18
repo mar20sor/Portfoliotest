@@ -1,0 +1,115 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+A hand-written, dependency-free portfolio site (`site/`) for Marvin Sorhaindo, a
+product designer. Plain HTML/CSS/JS, no framework, no build step, no
+`package.json`. The rest of the repo root (PDFs, `Portfolio PRD for Claude.md`,
+`README.md`, `CONVERSATION.md`) is source material and project documentation,
+not code.
+
+## Commands
+
+There is no build, no bundler, no package manager, no linter, and no test
+suite — none is configured, and none should be introduced without reason; the
+project's whole premise is zero dependencies.
+
+To preview the site locally (required — ES modules do not work under
+`file://`):
+
+```bash
+cd site
+python3 -m http.server 8000   # or: python -m http.server 8000
+# open http://localhost:8000
+```
+
+To publish: the site is fully static and hash-routed, so no server
+configuration is needed. Point GitHub Pages / Netlify / Vercel at the `site/`
+directory directly (no build command, publish directory = `site`).
+
+## Architecture
+
+Single-page app, single HTML file (`site/index.html`), everything else
+injected by JS into `<main>`. No routes exist on the server — all navigation
+is client-side.
+
+- **`site/js/content.js`** — all site copy, in French *and* English. This is
+  the file to edit for 99% of content changes. Key exports: `SITE` (identity/
+  contact links), `MEDIA` (Contra CDN base URLs), `UI` (interface strings per
+  language), `HERO`, `PROJECTS` (array of case studies/side projects), `PAGES`
+  (editorial pages: about, the "2-year gap" essay).
+- **`site/js/app.js`** — router, i18n helper (`t()`/`state.lang`), visitor
+  name-input sanitization, SVG poster generator, page-building functions
+  (`pageHome`, `pageList`, `pageCase`, `pageEditorial`), footer, scroll-spy,
+  loader/preloading, app bootstrap. Numbered sections (0–10) inside the file
+  mark each concern — grep for `\d+\. [A-Z]` in the section-comment headers to
+  jump around.
+- **`site/css/styles.css`** — design tokens (`:root`) + 13 numbered sections.
+  Two runtime themes, switched by `app.js` setting `data-theme` on `<html>`
+  per route: `brand` (blue background, home/lists) and `light` (white
+  background, case studies — long-form reading). Everything below the token
+  block reads through `var(...)`; there are no hardcoded colors elsewhere.
+- **`site/assets/img/`** — case study figures, extracted from the source PDFs,
+  as WebP with a PNG `<picture>` fallback.
+- **`site/assets/media/`** — Lottie JSON animations (rendered client-side by
+  the `dotlottie-wc` web component, loaded from the `unpkg.com` CDN — see
+  `index.html`), plus one legacy `constraint-limit.mp4`/`.jpg` pair kept in
+  the repo intentionally though currently unused.
+
+### Content model (`content.js`)
+
+Each entry in `PROJECTS` has `slug`, `kind` (`'work'` or `'side'` — drives
+routing and the work/side split on the home page), and parallel `fr: {}` /
+`en: {}` blocks whose keys **must match exactly** between languages or that
+language silently gets a hole. A case study's `sections[]` holds `id` /
+`label` / `title` / `body[]`, and an optional `media` object keyed by
+paragraph index (`0`, `2`, ...) to interleave images/video/Lottie after a
+specific paragraph — this preserves a specific narrative order rather than
+grouping all media at the end. Each media item's `type` is `'lottie'`,
+`'video'`, or `'image'`; lottie/video items with a bare `id` (no `src`)
+resolve against `MEDIA.videoBase`/`imageBase` (the Contra CDN); items with an
+explicit `src` are read from `assets/media/` in this repo instead.
+
+### Routing (`app.js`, section 7)
+
+Hash-based (`#/work/<slug>`, `#/side/<slug>`, `#/about`, `#/gap`), parsed by
+`parseRoute()`/`routeKey()`. Chosen deliberately over path-based routing so
+the site needs zero server configuration and works identically on GitHub
+Pages, Netlify, or a plain folder — see the comment block above `parseRoute`
+for the reasoning. `routeKey()` strips the in-page anchor (`#/work/x#mapping`)
+so anchor navigation doesn't get treated as a route change.
+
+## Security
+
+- The CSP `<meta>` tag in `index.html` is the single source of truth for
+  every allowed external origin. Any new external asset (font, CDN script,
+  image host) must be added there or it will be silently blocked by the
+  browser — check this first if something loads locally-added but not when
+  deployed. Current external origins: `fonts.googleapis.com`/`.gstatic.com`
+  (Raleway), `unpkg.com`/`cdn.jsdelivr.net` (`dotlottie-wc` + its WASM
+  runtime), `media.contra.com` (Constraints project video/images).
+- The visitor's first name (entered in the "portal" at load) goes through
+  `cleanName()` — character whitelist + length cap — and is inserted via
+  `textContent` only, never `innerHTML`. See `app.js` section 2.
+
+## Fragile external dependencies
+
+- **Constraints project hero video + 3 gallery images**: hosted on Contra
+  (`media.contra.com`), not versioned in this repo. If that project is
+  deleted/renamed on Contra, or the CDN changes URLs, these break silently.
+- **Raleway font**: loaded from Google Fonts — the only other external
+  origin besides Contra and the Lottie CDN; couldn't be self-hosted in this
+  sandboxed dev environment.
+
+## Before making non-trivial changes, read
+
+- `README.md` — quick start, file map, "how do I change X" (in French).
+- `CONVERSATION.md` — full decision log: why each deviation from the
+  original brief was made, known accessibility trade-offs, and an ordered
+  TODO list (§5) of what's still blocking publication. Written in French.
+- `Portfolio PRD for Claude.md` — the original brief.
+- `videos/README.md` — documents the Lottie source files and the fallback
+  Python/Cairo renderer (`videos/lottie_render.py`) used when a Lottie can't
+  be played via `dotlottie-wc` directly.
