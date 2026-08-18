@@ -3,16 +3,19 @@
 `constraints/` contient les fichiers Lottie (JSON) des illustrations animées
 du projet Contraintes. Ce sont les **sources**.
 
-`Protection-(hollow).json` (contrainte "limite") fait exception : une copie
-est servie telle quelle depuis `../site/assets/media/` et lue dans le
-navigateur par le composant web `dotlottie-wc` (chargé via CDN dans
-`index.html`) — pas de rendu vidéo pour celle-ci. `Blocking-complete lottie.json`
-et `Spacing lottie.json` restent converties en `.mp4`, ci-dessous.
+Les 3 (`Blocking-complete lottie.json`, `Protection-(hollow).json` —
+contrainte "protection" —, `Spacing lottie.json`) sont copiées telles
+quelles dans `../site/assets/media/` et lues dans le navigateur par le
+composant web `dotlottie-wc` (chargé via CDN dans `index.html`) : pas de
+rendu vidéo pour elles.
 
-## Régénérer les vidéos
+`constraint-limit.mp4`/`.jpg` restent dans `../site/assets/media/` sans être
+référencés par le site — gardés volontairement, voir l'historique git.
 
-Les `.mp4` et leurs affiches `.jpg` vivent dans `../site/assets/media/`.
-Pour les reconstruire après avoir modifié un Lottie :
+## Régénérer une vidéo (si besoin un jour)
+
+Le moteur de rendu maison ci-dessous reste disponible pour reconvertir un
+Lottie en `.mp4`/`.jpg` si un futur cas ne peut pas passer par dotlottie-wc :
 
 ```bash
 cd videos

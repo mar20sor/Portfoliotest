@@ -812,12 +812,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* dotlottie-wc ne rapporte pas le ratio natif du Lottie a sa boite hote (son
    <canvas> interne demarre a un ratio par defaut ~2:1), donc sans ce ratio
    explicite elle s'affiche ecrasee, bien plus courte que les videos voisines.
-   1185/993 est le ratio propre au fichier Protection-(hollow).json : a
-   ajuster si un autre Lottie est utilise ici un jour.
+   1185/993 est le ratio commun aux 3 fichiers Lottie des contraintes
+   (Blocking-complete lottie.json, Protection-(hollow).json, Spacing
+   lottie.json) : a ajuster si un futur Lottie utilise un autre canevas.
    Le cadre garde aussi son fond/liser pour les videos (fond fonce opaque,
-   pas de transparence a couvrir) mais pas pour ce Lottie : son illustration
-   laisse de l'espace transparent autour de l'icone, donc le fond/liser du
-   cadre restait visible comme une bordure — on les retire pour ce cas. */
+   pas de transparence a couvrir) mais pas pour ces Lottie : leurs
+   illustrations laissent de l'espace transparent autour de l'icone, donc le
+   fond/liser du cadre restait visible comme une bordure — on les retire. */
 .figure--lottie dotlottie-wc { aspect-ratio: 1185 / 993; }
 .figure--lottie .figure__frame { background: none; border: none; }
 

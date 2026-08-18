@@ -328,18 +328,16 @@ export const PROJECTS = [
              respecter l'ordre de la page Contra — illustrations, puis
              principes, puis captures — sans découper la section en deux. */
           media: {
-            /* Les 3 illustrations animées : blocage et espacement sont des
-               exports Jitter ré-encodés en vidéo, limite est le JSON Lottie
-               d'origine (rendu par dotlottie-wc). Elles sont dans le dépôt,
-               donc `src` est utilisé plutôt qu'un identifiant Contra. */
+            /* Les 3 illustrations animées : les JSON Lottie d'origine,
+               rendus directement par dotlottie-wc plutot que convertis en
+               video. Elles sont dans le dépôt, donc `src` est utilisé
+               plutôt qu'un identifiant Contra. */
             0: [
-              { type: 'video', src: 'assets/media/constraint-blocking.mp4',
-                poster: 'assets/media/constraint-blocking.jpg',
+              { type: 'lottie', src: 'assets/media/Blocking-complete lottie.json',
                 caption: 'Contrainte de blocage' },
               { type: 'lottie', src: 'assets/media/Protection-(hollow).json',
-                caption: 'Contrainte de limite' },
-              { type: 'video', src: 'assets/media/constraint-spacing.mp4',
-                poster: 'assets/media/constraint-spacing.jpg',
+                caption: 'Contrainte de protection' },
+              { type: 'lottie', src: 'assets/media/Spacing lottie.json',
                 caption: 'Contrainte d’espacement' }
             ],
             2: [
@@ -405,18 +403,16 @@ export const PROJECTS = [
           /* See the French block for how `media` works: the key is the index
              of the paragraph the visuals should follow. */
           media: {
-            /* The 3 animated illustrations: blocking and spacing are Jitter
-               exports re-encoded to video, limit is the original Lottie JSON
-               (rendered by dotlottie-wc). They live in the repo, so `src` is
-               used rather than a Contra identifier. */
+            /* The 3 animated illustrations: the original Lottie JSON files,
+               rendered directly by dotlottie-wc rather than converted to
+               video. They live in the repo, so `src` is used rather than a
+               Contra identifier. */
             0: [
-              { type: 'video', src: 'assets/media/constraint-blocking.mp4',
-                poster: 'assets/media/constraint-blocking.jpg',
+              { type: 'lottie', src: 'assets/media/Blocking-complete lottie.json',
                 caption: 'Blocking constraint' },
               { type: 'lottie', src: 'assets/media/Protection-(hollow).json',
-                caption: 'Limit constraint' },
-              { type: 'video', src: 'assets/media/constraint-spacing.mp4',
-                poster: 'assets/media/constraint-spacing.jpg',
+                caption: 'Protection constraint' },
+              { type: 'lottie', src: 'assets/media/Spacing lottie.json',
                 caption: 'Spacing constraint' }
             ],
             2: [
