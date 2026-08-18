@@ -160,6 +160,33 @@ assouplie pour autoriser `fonts.googleapis.com` et `fonts.gstatic.com`.
 `<link>` par des règles `@font-face`, et retirer les deux autorisations Google
 de la CSP. La marche à suivre est aussi en commentaire dans `index.html`.
 
+### 3.8 bis Médias du projet Contraintes — hébergés chez Contra
+
+La vidéo d'ouverture et les trois captures du projet Contraintes viennent de
+la page Contra de Marvin. Elles **ne sont pas dans le dépôt** : le code pointe
+vers `media.contra.com` (le proxy du bac à sable bloque ce CDN, je n'ai pas pu
+les télécharger).
+
+**Ce que ça implique.** Si le projet est supprimé, renommé, ou si Contra change
+ses URLs, ces médias disparaissent du site sans prévenir. C'est la deuxième
+dépendance externe du site, après Google Fonts.
+
+**Pour passer en local** — tout est centralisé dans `MEDIA`, en haut de
+`content.js` :
+
+1. Télécharger les fichiers depuis Contra.
+2. Les poser dans `site/assets/media/`, en gardant les identifiants comme noms
+   de fichier (`fwfmk99wycaup34crhb4.mp4`, `ytoa4swb5caon0onh5yb.webp`, etc.).
+3. Remplacer les deux bases d'URL par `assets/media/`.
+4. Retirer `media.contra.com` de la CSP dans `index.html`.
+
+**Il manque trois médias.** Les illustrations animées de la section Conception
+(« Blocking constraint », « Protection constraint » ×2) sont chargées par
+JavaScript sur Contra : leurs URLs ne sont pas dans le HTML, et l'extension
+Chrome n'était pas connectée pour aller les chercher. L'emplacement est prêt
+dans `content.js` (`media: { 0: [...] }` de la section `design`), avec la
+marche à suivre en commentaire — un clic droit sur chaque animation suffit.
+
 ### 3.9 Ce que la maquette a apporté d'autre
 
 - **Copie du héros reprise mot pour mot** en anglais, puis traduite. Elle

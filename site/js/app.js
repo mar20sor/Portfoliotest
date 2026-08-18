@@ -29,7 +29,7 @@
    0. IMPORTS ET OUTILS
    ========================================================================== */
 
-import { SITE, UI, HERO, PROJECTS, PAGES } from './content.js';
+import { SITE, UI, HERO, PROJECTS, PAGES, MEDIA } from './content.js';
 
 /* Raccourcis vers querySelector. Ecrire $('#main') au lieu de
    document.querySelector('#main') rend le reste du fichier bien plus lisible.
@@ -372,12 +372,26 @@ function projectCard(p) {
   return card;
 }
 
-/* Choisit le visuel d'une carte.
-   Si le projet possede des figures extraites des PDF, on prend la DERNIERE
-   qui en a une : c'est presque toujours l'ecran final, donc le plus parlant.
-   Sinon on retombe sur l'affiche SVG generee. */
+/* Choisit le visuel d'une carte, par ordre de preference :
+     1. le media d'ouverture du projet (une video, quand il y en a une) ;
+     2. sinon la DERNIERE figure extraite des PDF — presque toujours l'ecran
+        final, donc le plus parlant ;
+     3. sinon l'affiche SVG generee. */
 function cardMedia(p) {
-  const sections = p[state.lang].sections || [];
+  const c = p[state.lang];
+
+  // 1. Le visuel d'ouverture sert de vignette. La video tourne en boucle,
+  //    en sourdine, uniquement quand la carte est a l'ecran (setupVideos).
+  if (c.heroMedia) {
+    const url = escapeAttr(mediaUrl(c.heroMedia));
+    return c.heroMedia.type === 'video'
+      ? `<video src="${url}" muted loop playsinline preload="metadata"
+                data-autoplay aria-hidden="true" tabindex="-1"
+                disablepictureinpicture></video>`
+      : `<img src="${url}" alt="" loading="lazy" decoding="async">`;
+  }
+
+  const sections = c.sections || [];
   const withImage = sections.filter(s => s.image);
   const last = withImage[withImage.length - 1];
   if (!last) return posterSVG(p);
@@ -523,6 +537,8 @@ function pageCase(project) {
     </div>
 
     ${c.draftNote ? `<p class="todo" style="margin-top:var(--s6)">${escapeAttr(c.draftNote)}</p>` : ''}
+
+    ${c.heroMedia ? `<div class="cs__hero-media">${mediaMarkup(c.heroMedia)}</div>` : ''}
   `);
   head.append(hw);
   page.append(head);
@@ -556,11 +572,20 @@ function pageCase(project) {
     const secs = el('div');
     c.sections.forEach(s => {
       const sec = el('section', { class: 'cs-sec', id: `sec-${s.id}` });
-      const fig = s.image ? figureFor(s) : '';
+
+      /* Les paragraphes, avec les medias intercales aux positions indiquees
+         par `s.media`. La cle de cet objet est l'index du paragraphe apres
+         lequel le groupe doit s'afficher — c'est ce qui permet de reproduire
+         l'ordre exact d'une page source sans decouper la section. */
+      const parts = s.body.map((p, i) => {
+        const after = s.media && s.media[i] ? mediaGroup(s.media[i]) : '';
+        return `<p>${escapeAttr(p)}</p>${after}`;
+      }).join('');
+
       sec.innerHTML = `
         <h2 class="cs-sec__title">${escapeAttr(s.title)}</h2>
-        ${s.body.map(p => `<p>${escapeAttr(p)}</p>`).join('')}
-        ${fig}`;
+        ${parts}
+        ${s.image ? figureFor(s) : ''}`;
       secs.append(sec);
     });
 
@@ -600,6 +625,51 @@ function pageCase(project) {
   }
 
   return page;
+}
+
+/* ---- 5e bis. LES MEDIAS HEBERGES (Contra) -------------------------------
+   Deux fonctions seulement : une pour fabriquer l'URL, une pour le balisage.
+   Tout passe par MEDIA (content.js), donc basculer du CDN vers des fichiers
+   locaux ne demande de toucher a aucune de ces lignes. */
+
+function mediaUrl(m) {
+  return m.type === 'video'
+    ? MEDIA.videoBase + m.id + MEDIA.videoExt
+    : MEDIA.imageBase + m.id + MEDIA.imageExt;
+}
+
+/* Balisage d'un media distant.
+
+   POUR LES VIDEOS :
+   - `muted` est OBLIGATOIRE pour que la lecture automatique soit autorisee.
+     Tous les navigateurs bloquent le son declenche sans geste de l'utilisateur.
+   - `playsinline` empeche iOS de passer en plein ecran de force.
+   - `loop` boucle, `preload="metadata"` ne telecharge que l'entete tant que
+     la video n'est pas visible.
+   - PAS d'attribut `autoplay` : la lecture est pilotee par setupVideos(),
+     qui ne demarre que ce qui est reellement a l'ecran et respecte le
+     reglage systeme "mouvement reduit".
+   - `aria-label` remplace le texte alternatif : une video n'a pas d'attribut
+     alt, et sans libelle elle est muette pour un lecteur d'ecran. */
+function mediaMarkup(m) {
+  const url = escapeAttr(mediaUrl(m));
+  const cap = escapeAttr(m.caption || '');
+  const inner = m.type === 'video'
+    ? `<video src="${url}" muted loop playsinline preload="metadata"
+              data-autoplay aria-label="${cap}" disablepictureinpicture></video>`
+    : `<img src="${url}" alt="${cap}" loading="lazy" decoding="async">`;
+  return `<figure class="figure figure--remote">
+      <div class="figure__frame">${inner}</div>
+      ${cap ? `<figcaption>${cap}</figcaption>` : ''}
+    </figure>`;
+}
+
+/* Un groupe de medias. A partir de deux elements, ils se rangent en grille
+   plutot que de s'empiler : les captures de Contra vont par trois. */
+function mediaGroup(list) {
+  if (!list || !list.length) return '';
+  const cls = list.length > 1 ? 'media-grid' : 'media-single';
+  return `<div class="${cls}">${list.map(mediaMarkup).join('')}</div>`;
 }
 
 /* Construit le balisage d'une figure.
@@ -829,6 +899,7 @@ function render() {
 
     if (route.name === 'case') setupCaseBehaviours();
     setupScrollProgress();
+    setupVideos();
   };
 
   // Transition de page. startViewTransition est l'API moderne : le navigateur
@@ -923,6 +994,45 @@ function setupScrollProgress() {
     window.removeEventListener('resize', update);
   });
   update();
+}
+
+/* ---- 8a bis. LECTURE DES VIDEOS PILOTEE PAR LA VISIBILITE ----
+   Les videos ne jouent que lorsqu'elles sont a l'ecran, et se mettent en
+   pause des qu'elles en sortent.
+
+   Pourquoi ne pas simplement mettre l'attribut `autoplay` ? Parce qu'il fait
+   demarrer TOUTES les videos de la page en meme temps, y compris celles qu'on
+   ne verra jamais. Sur la page d'accueil, cela reviendrait a telecharger
+   plusieurs megaoctets pour rien et a faire tourner les ventilateurs.
+
+   MOUVEMENT REDUIT : si le systeme demande moins d'animation, on ne lance
+   rien du tout et on affiche les controles a la place. La personne garde
+   l'acces au contenu, mais decide elle-meme de le declencher. */
+function setupVideos() {
+  const videos = $$('video[data-autoplay]');
+  if (!videos.length) return;
+
+  if (prefersReducedMotion()) {
+    videos.forEach(v => { v.controls = true; v.removeAttribute('data-autoplay'); });
+    return;
+  }
+
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      const v = e.target;
+      if (e.isIntersecting) {
+        // play() renvoie une promesse qui peut etre rejetee (economiseur de
+        // batterie, onglet en arriere-plan...). On ignore l'echec : ce n'est
+        // pas une erreur, juste une lecture qui n'a pas lieu.
+        v.play().catch(() => {});
+      } else {
+        v.pause();
+      }
+    });
+  }, { threshold: 0.25 });
+
+  videos.forEach(v => io.observe(v));
+  addCleanup(() => io.disconnect());   // sinon l'observateur survit au changement de page
 }
 
 /* ---- 8b. Nav laterale d'etude de cas : scroll-spy + progression ----

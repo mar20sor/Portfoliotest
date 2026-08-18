@@ -33,6 +33,33 @@ export const SITE = {
 };
 
 /* --------------------------------------------------------------------------
+   1 bis) LES MEDIAS HEBERGES SUR CONTRA
+   --------------------------------------------------------------------------
+   Les vidéos et images du projet Contraintes viennent de la page Contra de
+   Marvin. Elles ne sont PAS dans ce dépôt : le code pointe vers le CDN de
+   Contra.
+
+   >>> CE QUE ÇA IMPLIQUE <<<
+   Si le projet est supprimé, renommé, ou si Contra change ses URLs, ces
+   médias disparaissent du site sans prévenir. C'est la contrepartie assumée
+   de ne pas avoir à héberger les fichiers.
+
+   >>> POUR PASSER EN LOCAL PLUS TARD <<<
+   1. Télécharger les fichiers depuis Contra.
+   2. Les poser dans site/assets/media/ en gardant les identifiants ci-dessous
+      comme noms de fichier (ex : fwfmk99wycaup34crhb4.mp4).
+   3. Remplacer les deux bases ci-dessous par 'assets/media/'.
+   4. Retirer media.contra.com de la CSP dans index.html.
+   Rien d'autre à changer : tout le site passe par ces deux constantes.
+   -------------------------------------------------------------------------- */
+export const MEDIA = {
+  videoBase: 'https://media.contra.com/video/upload/fl_progressive/q_auto:best,w_900/',
+  imageBase: 'https://media.contra.com/image/upload/fl_progressive/q_auto:best/',
+  videoExt: '.mp4',
+  imageExt: '.webp'
+};
+
+/* --------------------------------------------------------------------------
    2) LIBELLES D'INTERFACE — tous les mots qui ne sont pas du "contenu"
    (boutons, titres de sections, messages du formulaire...).
    Regroupes par langue pour qu'une traduction manquante se voie tout de suite.
@@ -252,7 +279,9 @@ export const PROJECTS = [
       client: 'Petal',
       tagline: 'Refonte d’un moteur de règles de planification, ramenées de **24 à 9**.',
       tags: ['Design système', 'Recherche', 'SaaS santé'],
-      gist: { role: 'UX / UI, recherche', duration: '4 mois', team: '1 designer, 1 PM', tools: 'Figma, entretiens' },
+      gist: { role: 'UX / UI, recherche', duration: '4 mois', team: '1 designer, 1 PM', tools: 'Figma, Jitter, entretiens' },
+      // Le visuel d'ouverture. Il sert AUSSI de vignette sur la page d'accueil.
+      heroMedia: { type: 'video', id: 'fwfmk99wycaup34crhb4', caption: 'Aperçu du paramétrage d’une contrainte' },
       problem: 'Les contraintes sont les règles qui s’appliquent aux disponibilités du personnel pour construire un planning équitable — « un membre ne peut pas faire deux périodes d’affilée », par exemple. Elles étaient paramétrées à la main par les équipes internes de Petal : long, coûteux, et si redondant que plusieurs règles différentes menaient au même résultat. Les agents se trompaient.',
       outcome: 'J’ai réduit les 24 contraintes à 9 (et les 8 plus utilisées à 3) en identifiant leurs caractéristiques communes, puis conçu un rule builder que les gestionnaires de clinique peuvent utiliser eux-mêmes — sans passer par un agent.',
       stats: [
@@ -289,10 +318,31 @@ export const PROJECTS = [
         {
           id: 'design', label: 'Conception', title: '4. Conception',
           body: [
+            'J’ai créé des illustrations abstraites animées, pour rendre chaque contrainte identifiable au premier coup d’œil et représenter visuellement son action.',
             'Quatre principes ont guidé les interfaces. Les caractéristiques à paramétrer ne s’affichent qu’en cas de besoin (progressive disclosure). Les options les plus courantes sont présélectionnées par défaut. Le processus est découpé en étapes pour rester digeste. Une aide contextuelle et des illustrations accompagnent le paramétrage pour limiter les erreurs.',
             'J’ai exploré deux directions. La première affiche les paramètres et le résultat côte à côte. La seconde affiche les paramètres de façon contextuelle et reformule la règle dans une phrase en langage naturel — « Marc Tremblay ne pourra pas être affecté à la tâche Soins - Étage 2 du lundi au vendredi ». Cette phrase est la pièce importante : elle permet à un gestionnaire de vérifier ce qu’il vient de créer sans relire les champs un par un.',
             'J’ai aussi envisagé le paramétrage de plusieurs règles en une seule passe, pour accélérer la mise en place d’un établissement complet.'
           ],
+          /* `media` place des visuels APRÈS un paragraphe précis : la clé est
+             l'index du paragraphe (0 = le premier). C'est ce qui permet de
+             respecter l'ordre de la page Contra — illustrations, puis
+             principes, puis captures — sans découper la section en deux. */
+          media: {
+            0: [
+              /* >>> À COMPLÉTER : les 3 illustrations animées <<<
+                 Leurs URLs n'ont pas pu être récupérées (chargées par
+                 JavaScript sur Contra, et le réseau du bac à sable bloque le
+                 CDN). Sur la page Contra, faites un clic droit sur chaque
+                 animation → « Copier l'adresse de la vidéo », puis collez ici
+                 l'identifiant : la partie du nom de fichier avant « .mp4 ».
+                 Exemple : { type: 'video', id: 'abcd1234efgh', caption: 'Contrainte de blocage' } */
+            ],
+            2: [
+              { type: 'image', id: 'ytoa4swb5caon0onh5yb', caption: 'Liste des contraintes' },
+              { type: 'image', id: 'mcpbonwlpodke4hgyjaq', caption: 'Paramétrage d’une contrainte' },
+              { type: 'image', id: 'qkmo6j2mbfagfqbt0hti', caption: 'Composants' }
+            ]
+          },
           image: 'constraints-4-design', frOnly: true,
           caption: 'Les deux directions explorées, puis le panneau de liste des contraintes créées.'
         }
@@ -303,7 +353,9 @@ export const PROJECTS = [
       client: 'Petal',
       tagline: 'Redesigning a rule-making engine, reducing rules from **24 to 9**.',
       tags: ['Systems design', 'Research', 'Healthcare SaaS'],
-      gist: { role: 'UX / UI, research', duration: '4 months', team: '1 designer, 1 PM', tools: 'Figma, interviews' },
+      gist: { role: 'UX / UI, research', duration: '4 months', team: '1 designer, 1 PM', tools: 'Figma, Jitter, interviews' },
+      // The opening visual. It doubles as the card thumbnail on the homepage.
+      heroMedia: { type: 'video', id: 'fwfmk99wycaup34crhb4', caption: 'Configuring a constraint, end to end' },
       problem: 'Constraints are the rules applied to staff availability to build a fair schedule — “a member cannot work two consecutive periods”, for instance. They were configured by hand by Petal’s internal teams: slow, expensive, and so redundant that several different rules led to the same result. Agents made mistakes.',
       outcome: 'I reduced the 24 constraints to 9 (and the 8 most-used to 3) by identifying the characteristics they shared, then designed a rule builder clinic managers can operate themselves — without going through an agent.',
       stats: [
@@ -340,10 +392,24 @@ export const PROJECTS = [
         {
           id: 'design', label: 'Design', title: '4. Design',
           body: [
+            'I created animated abstract illustrations, both to make each constraint identifiable at a glance and to represent visually what it does.',
             'Four principles drove the interfaces. Characteristics only appear when they are needed (progressive disclosure). The most common options are preselected by default. The process is split into steps to stay digestible. Contextual help and illustrations sit alongside configuration to reduce errors.',
             'I explored two directions. The first shows parameters and result side by side. The second shows parameters contextually and restates the rule as a plain-language sentence — “Marc Tremblay cannot be assigned to Care - Floor 2 from Monday to Friday.” That sentence is the important piece: it lets a manager verify what they just built without re-reading every field.',
             'I also looked at configuring several rules in a single pass, to speed up setting up a whole facility.'
           ],
+          /* See the French block for how `media` works: the key is the index
+             of the paragraph the visuals should follow. */
+          media: {
+            0: [
+              /* >>> TO FILL IN: the 3 animated illustrations <<<
+                 Same as the French block — paste the Contra identifiers here. */
+            ],
+            2: [
+              { type: 'image', id: 'ytoa4swb5caon0onh5yb', caption: 'Constraints list' },
+              { type: 'image', id: 'mcpbonwlpodke4hgyjaq', caption: 'Constraint configuration' },
+              { type: 'image', id: 'qkmo6j2mbfagfqbt0hti', caption: 'Components' }
+            ]
+          },
           image: 'constraints-4-design', frOnly: true,
           caption: 'The two directions explored, then the panel listing created constraints.'
         }

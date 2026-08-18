@@ -48,9 +48,16 @@
     fonts.gstatic.com pour les fichiers .woff2 eux-memes. Ce sont les seules
     origines externes autorisees par tout le site.
   -->
+  <!--
+    media.contra.com est autorise pour les images et les videos du projet
+    Contraintes, hebergees sur Contra. C'est une DEPENDANCE EXTERNE assumee :
+    si le projet est supprime ou renomme sur Contra, ces medias disparaissent
+    du site. Pour s'en affranchir, voir MEDIA dans js/content.js.
+  -->
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self';
-                 img-src 'self' data:;
+                 img-src 'self' data: https://media.contra.com;
+                 media-src 'self' https://media.contra.com;
                  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
                  font-src 'self' https://fonts.gstatic.com;
                  script-src 'self';
