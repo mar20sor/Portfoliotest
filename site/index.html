@@ -13,7 +13,7 @@
   js/app.js remplir le reste a partir de js/content.js.
   ===========================================================================
 -->
-<html lang="fr">
+<html lang="en">
 <head>
   <!-- charset en premier : indispensable pour que les accents s'affichent -->
   <meta charset="utf-8">
@@ -25,13 +25,13 @@
   <!-- theme-color colore la barre d'adresse du navigateur sur mobile -->
   <meta name="theme-color" content="#2078F0">
 
-  <title>Marvin Sorhaindo — Designer produit</title>
-  <meta name="description" content="Portfolio de Marvin Sorhaindo, designer produit à Montréal. Trois ans de SaaS santé : planification hospitalière, synchronisation de données cliniques, refontes web.">
+  <title>Marvin Sorhaindo — Product designer</title>
+  <meta name="description" content="Portfolio of Marvin Sorhaindo, product designer based in Montréal. Three years of healthcare SaaS: hospital scheduling, clinical data sync, web redesigns.">
 
   <!-- Open Graph : ce qui s'affiche quand le lien est partage sur LinkedIn -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Marvin Sorhaindo — Designer produit">
-  <meta property="og:description" content="Trois ans de SaaS santé. Vingt-quatre règles de planification ramenées à neuf.">
+  <meta property="og:title" content="Marvin Sorhaindo — Product designer">
+  <meta property="og:description" content="Three years of healthcare SaaS. Twenty-four scheduling rules reduced to nine.">
 
   <!--
     SECURITE — Content Security Policy.
@@ -106,14 +106,14 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 
-<body data-lang="fr">
+<body>
 
   <!--
     Lien d'evitement : invisible a la souris, mais le premier element atteint
     par la touche Tab. Il permet a quelqu'un qui navigue au clavier ou au
     lecteur d'ecran de sauter la navigation pour aller droit au contenu.
   -->
-  <a class="skip-link" href="#main" data-i18n="skipToContent">Aller au contenu principal</a>
+  <a class="skip-link" href="#main" data-i18n="skipToContent">Skip to main content</a>
 
   <!--
     ===================== 1. LE LOADER =====================
@@ -137,10 +137,10 @@
   -->
   <div id="gate" class="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title" hidden>
     <form class="gate__card" id="gate-form" novalidate autocomplete="off">
-      <p class="gate__hi" data-i18n="gateHi">Bonjour !</p>
-      <h1 class="gate__q" id="gate-title" data-i18n="gateQuestion">Je suis Marvin. Comment vous appelez-vous ?</h1>
+      <p class="gate__hi" data-i18n="gateHi">Hey there!</p>
+      <h1 class="gate__q" id="gate-title" data-i18n="gateQuestion">I’m Marvin. What’s your name?</h1>
 
-      <label class="gate__label" for="gate-input" data-i18n="gateLabel">Mon prénom est</label>
+      <label class="gate__label" for="gate-input" data-i18n="gateLabel">My name is</label>
       <input class="gate__input"
              id="gate-input"
              name="visitor"
@@ -150,7 +150,7 @@
              autocomplete="off"
              spellcheck="false"
              aria-describedby="gate-hint gate-error"
-             placeholder="Votre prénom">
+             placeholder="Your first name">
       <!-- maxlength="24" = premiere limite. app.js re-verifie de toute facon :
            un attribut HTML se contourne, une verification JS aussi, donc on
            fait les deux ET on n'insere jamais le texte en tant que HTML. -->
@@ -158,8 +158,8 @@
       <p class="gate__error" id="gate-error" role="alert" hidden data-i18n="gateError"></p>
 
       <div class="gate__actions">
-        <button class="btn btn--primary" type="submit" data-i18n="gateSubmit">Enchanté</button>
-        <button class="btn btn--ghost" type="button" id="gate-skip" data-i18n="gateSkip">Passer cette étape</button>
+        <button class="btn btn--primary" type="submit" data-i18n="gateSubmit">Nice to meet you</button>
+        <button class="btn btn--ghost" type="button" id="gate-skip" data-i18n="gateSkip">Skip this</button>
       </div>
 
       <p class="gate__hint" id="gate-hint" data-i18n="gateHint"></p>
@@ -182,13 +182,12 @@
   -->
   <!--
     Structure calquee sur la maquette : le nom a gauche, la pilule de
-    navigation centree, le selecteur de langue a droite. Les trois zones sont
-    des colonnes de grille de largeur egale, ce qui garantit que la pilule
-    reste OPTIQUEMENT centree meme si le nom ou le selecteur changent de
-    largeur (en passant de FR a EN, par exemple).
+    navigation centree. Le site n'a plus de selecteur de langue depuis le
+    retrait du francais (voir CONVERSATION.md) ; les trois colonnes de
+    grille d'origine sont retombees a deux, le nom et la nav.
   -->
   <header class="site-head" id="site-head">
-    <a class="brand" href="#/" aria-label="Marvin Sorhaindo, accueil">Marvin S.</a>
+    <a class="brand" href="#/" aria-label="Marvin Sorhaindo, home">Marvin S.</a>
 
     <!-- Bouton hamburger, visible seulement sous 860px (voir media query CSS) -->
     <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="site-nav">
@@ -196,22 +195,12 @@
       <span class="sr-only" data-i18n="navMenu">Menu</span>
     </button>
 
-    <nav class="site-nav" id="site-nav" aria-label="Navigation principale">
-      <a href="#/work"  data-nav="work"  data-i18n="navWork">Projets</a>
-      <a href="#/side"  data-nav="side"  data-i18n="navSide">À côté</a>
-      <a href="#/about" data-nav="about" data-i18n="navAbout">À propos</a>
+    <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+      <a href="#/work"  data-nav="work"  data-i18n="navWork">Work</a>
+      <a href="#/side"  data-nav="side"  data-i18n="navSide">Side quests</a>
+      <a href="#/about" data-nav="about" data-i18n="navAbout">About</a>
       <a id="nav-contact" href="mailto:" data-i18n="navContact">Contact</a>
     </nav>
-
-    <!--
-      Selecteur de langue. Deux boutons plutot qu'un <select> : c'est plus
-      rapide a utiliser (un clic au lieu de deux) et l'etat actif est visible.
-      aria-pressed indique au lecteur d'ecran quelle langue est active.
-    -->
-    <div class="lang" role="group" aria-label="Langue / Language">
-      <button type="button" data-setlang="fr" aria-pressed="true">FR</button>
-      <button type="button" data-setlang="en" aria-pressed="false">EN</button>
-    </div>
   </header>
 
   <!--
@@ -221,7 +210,7 @@
     ou retire la classe is-visible).
   -->
   <a class="back-link" id="back-link" href="#/" hidden>
-    <span aria-hidden="true">←</span> <span data-i18n="csBack">Retour</span>
+    <span aria-hidden="true">←</span> <span data-i18n="csBack">Back</span>
   </a>
 
   <!--
@@ -256,8 +245,8 @@
   -->
   <noscript>
     <div class="noscript">
-      <h1>Marvin Sorhaindo — Designer produit</h1>
-      <p>Ce portfolio a besoin de JavaScript pour fonctionner. Vous pouvez me joindre directement :</p>
+      <h1>Marvin Sorhaindo — Product designer</h1>
+      <p>This portfolio needs JavaScript to work. You can reach me directly:</p>
       <p>
         <a href="mailto:hello@marvinsrd.com">hello@marvinsrd.com</a> ·
         <a href="https://www.linkedin.com/in/marvinsorhaindo">LinkedIn</a>

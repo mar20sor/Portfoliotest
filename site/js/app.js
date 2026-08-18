@@ -5,7 +5,7 @@
      0. Imports et petits outils
      1. L'etat de l'application (les seules donnees qui changent)
      2. Securite : nettoyage du prenom saisi
-     3. Internationalisation (FR / EN)
+     3. Libelles d'interface statiques (data-i18n)
      4. Generateur d'affiches SVG
      5. Fabriques de pages (accueil, liste, etude de cas, editorial, 404)
      6. Pied de page
@@ -64,7 +64,6 @@ function el(tag, attrs = {}, children = []) {
    ========================================================================== */
 
 const state = {
-  lang: 'fr',        // 'fr' ou 'en'
   visitor: '',       // le prenom saisi. VIT EN MEMOIRE UNIQUEMENT (cf. section 2)
   route: '',         // le hash courant
   cleanup: []        // fonctions a rappeler quand on quitte une page (voir addCleanup)
@@ -80,8 +79,10 @@ function runCleanup() {
   state.cleanup = [];
 }
 
-/* Traduction courante. t.navWork, t.csBack, etc. */
-const t = () => UI[state.lang];
+/* Raccourci vers les libelles d'interface. t().navWork, t().csBack, etc.
+   Le site n'a plus qu'une langue : cette fonction ne fait plus d'aiguillage,
+   elle existe pour eviter de reecrire tous les `const d = t()` du fichier. */
+const t = () => UI;
 
 
 /* ==========================================================================
@@ -133,17 +134,20 @@ function cleanName(raw) {
 /* Met la premiere lettre en capitale, sans toucher au reste
    (pour ne pas transformer "McDonald" en "Mcdonald"). */
 function capitalize(s) {
-  return s ? s[0].toLocaleUpperCase(state.lang) + s.slice(1) : s;
+  return s ? s[0].toLocaleUpperCase('en') + s.slice(1) : s;
 }
 
 
 /* ==========================================================================
-   3. INTERNATIONALISATION
+   3. LIBELLES D'INTERFACE STATIQUES
    --------------------------------------------------------------------------
    Deux mecanismes complementaires :
      - les elements PORTANT data-i18n="cle" sont remplis automatiquement par
        applyStaticI18n(). C'est le cas du balisage fixe d'index.html.
      - les pages generees en JS lisent directement t().cle a la construction.
+   Le site n'a qu'une langue (anglais) : cette fonction n'a plus a choisir
+   entre deux jeux de textes, mais le mecanisme reste utile pour garder
+   index.html sans texte code en dur.
    ========================================================================== */
 
 function applyStaticI18n() {
@@ -155,33 +159,12 @@ function applyStaticI18n() {
     if (typeof value === 'string') node.textContent = value;
   });
 
-  // L'attribut lang de <html> compte vraiment : il indique aux lecteurs
-  // d'ecran quelle prononciation utiliser, et au navigateur quelles regles
-  // de cesure appliquer.
-  document.documentElement.lang = state.lang;
-  document.body.dataset.lang = state.lang;
-
-  // Etat visuel + accessible du selecteur de langue.
-  $$('[data-setlang]').forEach(b => {
-    const on = b.dataset.setlang === state.lang;
-    b.setAttribute('aria-pressed', String(on));
-    b.setAttribute('title', on ? d.langLabel : d.langSwitchTo);
-  });
-
   // Le placeholder et le lien mailto ne sont pas du "contenu texte",
   // ils vivent dans des attributs : on les traite separement.
   const input = $('#gate-input');
   if (input) input.setAttribute('placeholder', d.gatePlaceholder);
   const contact = $('#nav-contact');
   if (contact) contact.href = `mailto:${SITE.email}`;
-}
-
-function setLang(lang) {
-  if (lang === state.lang) return;
-  state.lang = lang;
-  applyStaticI18n();
-  buildFooter();
-  render();                 // on redessine la page courante dans la nouvelle langue
 }
 
 
@@ -256,7 +239,7 @@ function motif(kind, fg) {
 
 function posterSVG(project) {
   const a = ACCENTS[project.accent] || ACCENTS.a;
-  const copy = project[state.lang];
+  const copy = project;
   const label = project.poster.label;
 
   // viewBox = systeme de coordonnees interne. Le SVG s'etire ensuite a la
@@ -345,7 +328,7 @@ function renderStatement(lines) {
    le titre souligne, puis les etiquettes. Pas de cadre autour de la carte :
    l'image est posee directement sur le bleu. */
 function projectCard(p) {
-  const c = p[state.lang];
+  const c = p;
   const href = p.external ? p.external : `#/${p.kind}/${p.slug}`;
   const isExt = Boolean(p.external);
 
@@ -378,7 +361,7 @@ function projectCard(p) {
         final, donc le plus parlant ;
      3. sinon l'affiche SVG generee. */
 function cardMedia(p) {
-  const c = p[state.lang];
+  const c = p;
 
   // 1. Le visuel d'ouverture sert de vignette. La video tourne en boucle,
   //    en sourdine, uniquement quand la carte est a l'ecran (setupVideos).
@@ -420,7 +403,7 @@ function emphasize(str) {
    code (pas de gabarit HTML), parce qu'il melange du contenu variable — le
    prenom du visiteur — a des liens et des mots accentues. */
 function pageHome() {
-  const d = t(), h = HERO[state.lang];
+  const d = t(), h = HERO;
   const page = el('div');
 
   /* --- Le heros --- */
@@ -489,7 +472,7 @@ function pageList(kind) {
    Structure : en-tete "30 secondes", puis grille [nav laterale | sections],
    puis lien vers le projet suivant. */
 function pageCase(project) {
-  const d = t(), c = project[state.lang];
+  const d = t(), c = project;
   const page = el('article', { class: 'cs' });
 
   // La route de cette page. Les liens vers les sections s'ecrivent
@@ -693,10 +676,11 @@ function mediaGroup(list) {
    navigateur prend le premier format qu'il sait lire. loading="lazy" evite
    de telecharger les images encore hors de l'ecran.
    `frOnly` signale honnetement les visuels dont les annotations n'existent
-   qu'en francais, plutot que de laisser un lecteur anglophone perplexe. */
+   qu'en francais (image d'origine, jamais reproduite en anglais), plutot
+   que de laisser un lecteur perplexe. */
 function figureFor(s) {
   const base = `assets/img/${s.image}`;
-  const note = (s.frOnly && state.lang === 'en')
+  const note = s.frOnly
     ? `<span class="figure__note">${escapeAttr(t().csFigureFR)}</span>` : '';
   return `
     <figure class="figure">
@@ -712,7 +696,7 @@ function figureFor(s) {
 
 /* ---- 5f. Une page editoriale (A propos, article) ---- */
 function pageEditorial(key) {
-  const d = t(), p = PAGES[key][state.lang];
+  const d = t(), p = PAGES[key];
   const page = el('div', { class: 'editorial' });
   const w = el('div', { class: 'wrap wrap--narrow' });
 
@@ -775,7 +759,7 @@ function buildFooter() {
             <li><a href="#/work">${escapeAttr(d.navWork)}</a></li>
             <li><a href="#/side">${escapeAttr(d.navSide)}</a></li>
             <li><a href="#/about">${escapeAttr(d.navAbout)}</a></li>
-            <li><a href="#/gap">${escapeAttr(HERO[state.lang].gapLink)}</a></li>
+            <li><a href="#/gap">${escapeAttr(HERO.gapLink)}</a></li>
           </ul>
         </div>
         <div>
@@ -789,7 +773,6 @@ function buildFooter() {
       </div>
       <div class="foot__bottom">
         <span>© ${new Date().getFullYear()} ${escapeAttr(SITE.name)}. ${escapeAttr(d.footerRights)}</span>
-        <span>FR / EN</span>
       </div>
     </div>`;
 }
@@ -852,11 +835,11 @@ function render() {
     case 'list':  node = pageList(route.kind);
                   title = `${route.kind === 'work' ? t().workTitle : t().sideTitle} — ${SITE.name}`; break;
     case 'case':  node = pageCase(route.project);
-                  title = `${route.project[state.lang].title} — ${SITE.name}`; break;
+                  title = `${route.project.title} — ${SITE.name}`; break;
     case 'about': node = pageEditorial('about');
                   title = `${t().navAbout} — ${SITE.name}`; break;
     case 'gap':   node = pageEditorial('gap');
-                  title = `${HERO[state.lang].gapLink} — ${SITE.name}`; break;
+                  title = `${HERO.gapLink} — ${SITE.name}`; break;
     default:      node = pageNotFound(); title = `404 — ${SITE.name}`;
   }
 
@@ -1241,14 +1224,10 @@ function setupGate() {
    `settled` plutot que `then` sur chacune : une image manquante ne doit pas
    bloquer eternellement l'entree sur le site. */
 function preloadImages(onProgress) {
-  // On rassemble les visuels des deux langues : ainsi, changer de langue
-  // plus tard n'entraine aucun telechargement.
   const names = new Set();
-  PROJECTS.forEach(p => ['fr', 'en'].forEach(l =>
-    (p[l].sections || []).forEach(s => {
-      if (s.image) names.add(s.image);
-      if (s.altImage) names.add(s.altImage);
-    })));
+  PROJECTS.forEach(p => (p.sections || []).forEach(s => {
+    if (s.image) names.add(s.image);
+  }));
 
   const urls = Array.from(names).map(n => `assets/img/${n}.webp`);
   let done = 0;
@@ -1266,11 +1245,6 @@ function preloadImages(onProgress) {
 function start() {
   const loader = $('#loader');
   const bar    = $('.loader__bar');
-
-  // Detection de langue : si le navigateur du visiteur est en anglais, on
-  // ouvre en anglais. Un petit geste qui evite un clic a la moitie des gens.
-  const nav = (navigator.language || 'fr').toLowerCase();
-  state.lang = nav.startsWith('en') ? 'en' : 'fr';
 
   applyStaticI18n();
   buildFooter();
@@ -1299,10 +1273,6 @@ function start() {
     lastRoute = key;
     render();
   });
-
-  // Selecteur de langue.
-  $$('[data-setlang]').forEach(b =>
-    b.addEventListener('click', () => setLang(b.dataset.setlang)));
 
   // Menu mobile.
   const toggle = $('#nav-toggle');
