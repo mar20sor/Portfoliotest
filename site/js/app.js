@@ -633,6 +633,9 @@ function pageCase(project) {
    locaux ne demande de toucher a aucune de ces lignes. */
 
 function mediaUrl(m) {
+  // `src` l'emporte : c'est un fichier du depot, servi depuis assets/media.
+  // Sans lui, on retombe sur l'identifiant et les bases distantes de MEDIA.
+  if (m.src) return m.src;
   return m.type === 'video'
     ? MEDIA.videoBase + m.id + MEDIA.videoExt
     : MEDIA.imageBase + m.id + MEDIA.imageExt;
@@ -654,8 +657,11 @@ function mediaUrl(m) {
 function mediaMarkup(m) {
   const url = escapeAttr(mediaUrl(m));
   const cap = escapeAttr(m.caption || '');
+  // `poster` affiche une image fixe avant que la video ne demarre. Sans lui,
+  // on voit un rectangle noir tant que le premier octet n'est pas arrive.
+  const poster = m.poster ? ` poster="${escapeAttr(m.poster)}"` : '';
   const inner = m.type === 'video'
-    ? `<video src="${url}" muted loop playsinline preload="metadata"
+    ? `<video src="${url}"${poster} muted loop playsinline preload="metadata"
               data-autoplay aria-label="${cap}" disablepictureinpicture></video>`
     : `<img src="${url}" alt="${cap}" loading="lazy" decoding="async">`;
   return `<figure class="figure figure--remote">
