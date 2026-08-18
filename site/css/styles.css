@@ -809,6 +809,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .figure--remote img,
 .figure--remote dotlottie-wc { display: block; width: 100%; border-radius: var(--radius); }
 
+/* dotlottie-wc ne rapporte pas le ratio natif du Lottie a sa boite hote (son
+   <canvas> interne demarre a un ratio par defaut ~2:1), donc sans ce ratio
+   explicite elle s'affiche ecrasee, bien plus courte que les videos voisines.
+   1185/993 est le ratio propre au fichier Protection-(hollow).json : a
+   ajuster si un autre Lottie est utilise ici un jour.
+   Le cadre garde aussi son fond/liser pour les videos (fond fonce opaque,
+   pas de transparence a couvrir) mais pas pour ce Lottie : son illustration
+   laisse de l'espace transparent autour de l'icone, donc le fond/liser du
+   cadre restait visible comme une bordure — on les retire pour ce cas. */
+.figure--lottie dotlottie-wc { aspect-ratio: 1185 / 993; }
+.figure--lottie .figure__frame { background: none; border: none; }
+
 /* Un groupe de plusieurs medias : grille auto-adaptative, comme les cartes.
    Ils se rangent cote a cote sur large ecran et s'empilent sur telephone,
    sans media query dediee.

@@ -673,7 +673,8 @@ function mediaMarkup(m) {
     ? `<video src="${url}"${poster} muted loop playsinline preload="metadata"
               data-autoplay aria-label="${cap}" disablepictureinpicture></video>`
     : `<img src="${url}" alt="${cap}" loading="lazy" decoding="async">`;
-  return `<figure class="figure figure--remote">
+  const kind = m.type === 'lottie' ? 'figure figure--remote figure--lottie' : 'figure figure--remote';
+  return `<figure class="${kind}">
       <div class="figure__frame">${inner}</div>
       ${cap ? `<figcaption>${cap}</figcaption>` : ''}
     </figure>`;
