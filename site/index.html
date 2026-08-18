@@ -54,15 +54,27 @@
     si le projet est supprime ou renomme sur Contra, ces medias disparaissent
     du site. Pour s'en affranchir, voir MEDIA dans js/content.js.
   -->
+  <!--
+    dotlottie-wc (voir plus bas, avant </head>) charge son moteur WASM depuis
+    jsdelivr, avec unpkg en repli : les deux origines doivent donc etre
+    autorisees en script-src (le <script type="module"> lui-meme) ET en
+    connect-src (le fetch() du binaire .wasm). 'wasm-unsafe-eval' est requis
+    par les navigateurs recents pour executer du WebAssembly sous CSP stricte.
+  -->
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self';
                  img-src 'self' data: https://media.contra.com;
                  media-src 'self' https://media.contra.com;
                  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
                  font-src 'self' https://fonts.gstatic.com;
-                 script-src 'self';
+                 script-src 'self' 'wasm-unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net;
+                 connect-src 'self' https://unpkg.com https://cdn.jsdelivr.net;
                  base-uri 'none';
                  form-action 'none'">
+
+  <!-- dotlottie-wc : composant web pour lire les animations Lottie/.lottie
+       (utilise ici pour la contrainte "limite", exportee en JSON Lottie). -->
+  <script type="module" src="https://unpkg.com/@lottiefiles/dotlottie-wc@latest/dist/dotlottie-wc.js"></script>
 
   <!--
     LA POLICE : Raleway, imposee par la maquette Figma.

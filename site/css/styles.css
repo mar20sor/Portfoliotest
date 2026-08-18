@@ -806,7 +806,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border: 1px solid var(--frame-line);
 }
 .figure--remote video,
-.figure--remote img { width: 100%; border-radius: var(--radius); }
+.figure--remote img,
+.figure--remote dotlottie-wc { display: block; width: 100%; border-radius: var(--radius); }
 
 /* Un groupe de plusieurs medias : grille auto-adaptative, comme les cartes.
    Ils se rangent cote a cote sur large ecran et s'empilent sur telephone,

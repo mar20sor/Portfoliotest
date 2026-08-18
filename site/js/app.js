@@ -660,7 +660,16 @@ function mediaMarkup(m) {
   // `poster` affiche une image fixe avant que la video ne demarre. Sans lui,
   // on voit un rectangle noir tant que le premier octet n'est pas arrive.
   const poster = m.poster ? ` poster="${escapeAttr(m.poster)}"` : '';
-  const inner = m.type === 'video'
+  // Le lecteur dotlottie-wc (charge en <script type="module"> dans
+  // index.html) rend le JSON Lottie lui-meme : pas de poster, il n'y a pas
+  // de premiere frame a telecharger separement comme pour une video.
+  // Meme regle de mouvement reduit que setupVideos() pour les <video> : pas
+  // de lecture automatique, mais les controles integres du lecteur pour que
+  // la personne puisse la declencher elle-meme.
+  const lottiePlay = prefersReducedMotion() ? 'controls' : 'autoplay loop';
+  const inner = m.type === 'lottie'
+    ? `<dotlottie-wc src="${url}" ${lottiePlay} aria-label="${cap}"></dotlottie-wc>`
+    : m.type === 'video'
     ? `<video src="${url}"${poster} muted loop playsinline preload="metadata"
               data-autoplay aria-label="${cap}" disablepictureinpicture></video>`
     : `<img src="${url}" alt="${cap}" loading="lazy" decoding="async">`;

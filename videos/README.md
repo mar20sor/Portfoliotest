@@ -1,8 +1,13 @@
 # Sources d'animation
 
 `constraints/` contient les fichiers Lottie (JSON) des illustrations animées
-du projet Contraintes. Ce sont les **sources** : elles ne sont pas servies
-telles quelles par le site.
+du projet Contraintes. Ce sont les **sources**.
+
+`Protection-(hollow).json` (contrainte "limite") fait exception : une copie
+est servie telle quelle depuis `../site/assets/media/` et lue dans le
+navigateur par le composant web `dotlottie-wc` (chargé via CDN dans
+`index.html`) — pas de rendu vidéo pour celle-ci. `Blocking-complete lottie.json`
+et `Spacing lottie.json` restent converties en `.mp4`, ci-dessous.
 
 ## Régénérer les vidéos
 
