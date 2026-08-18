@@ -705,12 +705,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
   grid-template-columns: 190px minmax(0, 1fr);
   gap: clamp(var(--s6), 5vw, var(--s8));
   align-items: start;
-  /* Largeur du rail de nav + son ecart : sert de reference a --media-grid--bleed
-     (plus bas) pour qu'un groupe de medias puisse deborder jusqu'a egaler la
-     largeur du media d'ouverture (.cs__hero-media, qui lui n'est pas dans
-     cette grille et occupe donc toute la largeur de .wrap). Repassee a 0 des
-     que la nav quitte la colonne laterale (voir media query 1000px). */
-  --rail: calc(190px + clamp(var(--s6), 5vw, var(--s8)));
 }
 
 .cs-nav {
@@ -838,32 +832,36 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cs__hero-media { margin-top: var(--s6); margin-bottom: var(--s7); }
 .cs__hero-media .figure { margin-block: 0; }
 /* Format impose en 16:9 : la largeur ne change pas, seule la hauteur est
-   reduite par rapport au ratio natif de la video. object-fit: cover recadre
-   sans deformer plutot que d'ecraser l'image. */
+   reduite par rapport au ratio natif de la video. object-fit: contain (et
+   non cover) : l'animation doit rester visible en entier, quitte a laisser
+   un bandeau du fond du cadre (--veil-strong) au-dessus et en-dessous. */
 .cs__hero-media .figure--remote video {
   aspect-ratio: 16 / 9;
-  object-fit: cover;
+  object-fit: contain;
 }
 
-/* ---- Contraintes, section "Design" : grille 2x2 des lotties + mosaique
+/* ---- Contraintes, section "Design" : les 4 lotties empilees + mosaique
    des captures --------------------------------------------------------
    Ciblage par contenu (:has) plutot que par une classe dediee dans
    mediaGroup() (app.js) : seule cette section a des groupes de medias a
    traiter differemment l'un de l'autre, une nouvelle classe pour un cas
-   unique aurait complexifie le generateur pour rien. */
+   unique aurait complexifie le generateur pour rien.
+   Aucun des deux groupes ne deborde de la colonne de contenu : leur largeur
+   reste celle de la figure du Benchmark juste au-dessus, pour que l'oeil
+   retrouve la meme largeur de page tout du long de la section. */
 #sec-design .media-grid:has(.figure--lottie) {
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--s6);
-  /* Deborde du rail de nav laterale pour egaler la largeur du media
-     d'ouverture (--rail defini sur .cs__body, section 8b). */
-  margin-left: calc(-1 * var(--rail));
-  width: calc(100% + var(--rail));
+  /* Une seule colonne : les 4 lotties empilees plutot qu'en grille, chacune
+     à la largeur pleine de la colonne de contenu. */
+  grid-template-columns: 1fr;
+  gap: var(--s5);
 }
 #sec-design .media-grid:not(:has(.figure--lottie)) {
-  /* Les 3 captures : colonnes plus larges qu'ailleurs, et toutes a la meme
-     taille malgre des captures d'ecran de proportions differentes a
-     l'origine — object-fit: cover recadre plutot que d'ecraser. */
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  /* Les 3 captures sur une seule rangee (jamais de retour a la ligne, a la
+     difference d'une grille auto-adaptative) : ensemble, elles retrouvent
+     la largeur totale de la figure du Benchmark. object-fit: cover les
+     recadre a une taille identique malgre des captures d'ecran de
+     proportions differentes a l'origine. */
+  grid-template-columns: repeat(3, 1fr);
 }
 #sec-design .media-grid:not(:has(.figure--lottie)) .figure--remote img {
   aspect-ratio: 4 / 3;
@@ -884,14 +882,17 @@ button { font: inherit; color: inherit; cursor: pointer; }
   color: var(--accent);
 }
 .figure-drawer summary::-webkit-details-marker { display: none; }
-/* Un "+" qui pivote en "x" a l'ouverture, plutot qu'un triangle : plus
-   lisible a cette taille et coherent avec le reste des icones du site,
-   toutes dessinees en CSS/texte plutot qu'en image. */
-.figure-drawer summary::before {
-  content: '+'; display: inline-block; width: 1em; text-align: center;
-  transition: transform .2s var(--ease);
+/* Chevron Lucide (icone MIT, inseree en SVG dans figureFor() plutot que
+   chargee depuis un CDN : un seul <path>, pas la peine d'ajouter une
+   dependance en script pour ca). Plus grand qu'une icone de texte courante
+   pour rester lisible a cote du libelle, et pivote a 180° a l'ouverture —
+   l'"animation au clic" demandee, sans JS : le pivot suit l'attribut
+   [open] que <details> bascule tout seul. */
+.figure-drawer__chevron {
+  width: 22px; height: 22px;
+  transition: transform .25s var(--ease);
 }
-.figure-drawer[open] summary::before { transform: rotate(45deg); }
+.figure-drawer[open] .figure-drawer__chevron { transform: rotate(180deg); }
 .figure-drawer .figure { margin-top: var(--s3); margin-bottom: 0; }
 
 /* La vignette video des cartes de projet. object-fit: cover recadre la video
@@ -1006,7 +1007,7 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
 
 /* --- Sous 1000px : la nav laterale de case study passe au-dessus ------- */
 @media (max-width: 1000px) {
-  .cs__body { grid-template-columns: 1fr; --rail: 0px; }
+  .cs__body { grid-template-columns: 1fr; }
 
   /* Le bouton "Retour" repasse dans le flux normal. En reste fixe, il
      recouvrirait la barre de sections qui vient se coller sous l'en-tete.

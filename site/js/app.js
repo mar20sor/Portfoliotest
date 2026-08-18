@@ -696,8 +696,14 @@ function figureFor(s) {
       </div>
       <figcaption>${escapeAttr(s.caption || '')}${note}</figcaption>
     </figure>`;
+  // Chevron Lucide (icone "chevron-down", licence MIT) : un <path> copie
+  // directement plutot qu'une dependance en script pour une seule icone.
+  // aria-hidden, le libelle textuel du <summary> porte deja le sens.
+  const chevron = `<svg class="figure-drawer__chevron" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
   return s.figureDrawer
-    ? `<details class="figure-drawer"><summary>${escapeAttr(t().figureSeeMore)}</summary>${figure}</details>`
+    ? `<details class="figure-drawer"><summary>${escapeAttr(t().figureSeeMore)}${chevron}</summary>${figure}</details>`
     : figure;
 }
 
