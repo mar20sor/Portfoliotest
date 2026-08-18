@@ -328,16 +328,16 @@ export const PROJECTS = [
              respecter l'ordre de la page Contra — illustrations, puis
              principes, puis captures — sans découper la section en deux. */
           media: {
-            /* Les 3 illustrations animées, rendues depuis vos fichiers Lottie
-               (voir videos/constraints/). Elles sont dans le dépôt, donc
-               `src` est utilisé plutôt qu'un identifiant Contra. */
+            /* Les 3 illustrations animées, exportées depuis Jitter et
+               ré-encodées pour le web. Elles sont dans le dépôt, donc `src`
+               est utilisé plutôt qu'un identifiant Contra. */
             0: [
               { type: 'video', src: 'assets/media/constraint-blocking.mp4',
                 poster: 'assets/media/constraint-blocking.jpg',
                 caption: 'Contrainte de blocage' },
-              { type: 'video', src: 'assets/media/constraint-protection.mp4',
-                poster: 'assets/media/constraint-protection.jpg',
-                caption: 'Contrainte de protection' },
+              { type: 'video', src: 'assets/media/constraint-limit.mp4',
+                poster: 'assets/media/constraint-limit.jpg',
+                caption: 'Contrainte de limite' },
               { type: 'video', src: 'assets/media/constraint-spacing.mp4',
                 poster: 'assets/media/constraint-spacing.jpg',
                 caption: 'Contrainte d’espacement' }
@@ -405,16 +405,16 @@ export const PROJECTS = [
           /* See the French block for how `media` works: the key is the index
              of the paragraph the visuals should follow. */
           media: {
-            /* The 3 animated illustrations, rendered from your Lottie source
-               files (see videos/constraints/). They live in the repo, so
-               `src` is used rather than a Contra identifier. */
+            /* The 3 animated illustrations, exported from Jitter and
+               re-encoded for the web. They live in the repo, so `src` is
+               used rather than a Contra identifier. */
             0: [
               { type: 'video', src: 'assets/media/constraint-blocking.mp4',
                 poster: 'assets/media/constraint-blocking.jpg',
                 caption: 'Blocking constraint' },
-              { type: 'video', src: 'assets/media/constraint-protection.mp4',
-                poster: 'assets/media/constraint-protection.jpg',
-                caption: 'Protection constraint' },
+              { type: 'video', src: 'assets/media/constraint-limit.mp4',
+                poster: 'assets/media/constraint-limit.jpg',
+                caption: 'Limit constraint' },
               { type: 'video', src: 'assets/media/constraint-spacing.mp4',
                 poster: 'assets/media/constraint-spacing.jpg',
                 caption: 'Spacing constraint' }
