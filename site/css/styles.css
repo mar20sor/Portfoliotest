@@ -705,6 +705,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
   grid-template-columns: 190px minmax(0, 1fr);
   gap: clamp(var(--s6), 5vw, var(--s8));
   align-items: start;
+  /* Largeur du rail de nav + son ecart : sert de reference a --media-grid--bleed
+     (plus bas) pour qu'un groupe de medias puisse deborder jusqu'a egaler la
+     largeur du media d'ouverture (.cs__hero-media, qui lui n'est pas dans
+     cette grille et occupe donc toute la largeur de .wrap). Repassee a 0 des
+     que la nav quitte la colonne laterale (voir media query 1000px). */
+  --rail: calc(190px + clamp(var(--s6), 5vw, var(--s8)));
 }
 
 .cs-nav {
@@ -827,9 +833,66 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .media-single { margin-block: var(--s6); }
 
 /* Le media d'ouverture d'une etude de cas : pleine largeur, juste sous
-   l'en-tete de la page. */
-.cs__hero-media { margin-top: var(--s7); }
+   le sous-titre (voir pageCase() dans app.js — deplace ici volontairement,
+   au lieu du bas de l'en-tete, pour ancrer la page des l'arrivee). */
+.cs__hero-media { margin-top: var(--s6); margin-bottom: var(--s7); }
 .cs__hero-media .figure { margin-block: 0; }
+/* Format impose en 16:9 : la largeur ne change pas, seule la hauteur est
+   reduite par rapport au ratio natif de la video. object-fit: cover recadre
+   sans deformer plutot que d'ecraser l'image. */
+.cs__hero-media .figure--remote video {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+/* ---- Contraintes, section "Design" : grille 2x2 des lotties + mosaique
+   des captures --------------------------------------------------------
+   Ciblage par contenu (:has) plutot que par une classe dediee dans
+   mediaGroup() (app.js) : seule cette section a des groupes de medias a
+   traiter differemment l'un de l'autre, une nouvelle classe pour un cas
+   unique aurait complexifie le generateur pour rien. */
+#sec-design .media-grid:has(.figure--lottie) {
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s6);
+  /* Deborde du rail de nav laterale pour egaler la largeur du media
+     d'ouverture (--rail defini sur .cs__body, section 8b). */
+  margin-left: calc(-1 * var(--rail));
+  width: calc(100% + var(--rail));
+}
+#sec-design .media-grid:not(:has(.figure--lottie)) {
+  /* Les 3 captures : colonnes plus larges qu'ailleurs, et toutes a la meme
+     taille malgre des captures d'ecran de proportions differentes a
+     l'origine — object-fit: cover recadre plutot que d'ecraser. */
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+}
+#sec-design .media-grid:not(:has(.figure--lottie)) .figure--remote img {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+/* ---- Figure repliee dans un tiroir "En voir plus" ----------------------
+   Pour une figure dense et facultative a la lecture (ex. le mapping des 24
+   contraintes) : <details> natif, donc accessible au clavier et aux
+   lecteurs d'ecran sans JavaScript supplementaire (voir figureDrawer dans
+   content.js et figureFor() dans app.js). */
+.figure-drawer { margin-block: var(--s6); }
+.figure-drawer summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex; align-items: center; gap: var(--s2);
+  font-size: var(--fs-small); font-weight: var(--w-semibold);
+  color: var(--accent);
+}
+.figure-drawer summary::-webkit-details-marker { display: none; }
+/* Un "+" qui pivote en "x" a l'ouverture, plutot qu'un triangle : plus
+   lisible a cette taille et coherent avec le reste des icones du site,
+   toutes dessinees en CSS/texte plutot qu'en image. */
+.figure-drawer summary::before {
+  content: '+'; display: inline-block; width: 1em; text-align: center;
+  transition: transform .2s var(--ease);
+}
+.figure-drawer[open] summary::before { transform: rotate(45deg); }
+.figure-drawer .figure { margin-top: var(--s3); margin-bottom: 0; }
 
 /* La vignette video des cartes de projet. object-fit: cover recadre la video
    dans le format de la carte sans la deformer — l'equivalent de background-size
@@ -943,7 +1006,7 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
 
 /* --- Sous 1000px : la nav laterale de case study passe au-dessus ------- */
 @media (max-width: 1000px) {
-  .cs__body { grid-template-columns: 1fr; }
+  .cs__body { grid-template-columns: 1fr; --rail: 0px; }
 
   /* Le bouton "Retour" repasse dans le flux normal. En reste fixe, il
      recouvrirait la barre de sections qui vient se coller sous l'en-tete.

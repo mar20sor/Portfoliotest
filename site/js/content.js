@@ -104,6 +104,7 @@ export const UI = {
   csProgress: 'Progress through the page',
   csSections: 'Sections on this page',
   csFigureFR: 'Figure annotated in French',
+  figureSeeMore: 'See more',
 
   footerSitemap: 'Sitemap',
   footerContact: 'Get in touch',
@@ -181,6 +182,9 @@ export const HERO = {
                              (visuel d'origine, pas de version anglaise disponible ;
                              une mention le signale sous la figure, voir figureFor()
                              dans app.js)
+                   figureDrawer -> true pour cacher la figure derriere un
+                             <details> "See more" plutot que l'afficher
+                             directement (voir figureFor() dans app.js)
    -------------------------------------------------------------------------- */
 export const PROJECTS = [
 
@@ -217,7 +221,7 @@ export const PROJECTS = [
           'Two interviews with managers filled in the end-user side. Then I drew each constraint as a flow, to see when each characteristic was selected and whether that moment mattered. The question underneath: can you configure one characteristic once for several rules applied together?',
           'You can. That consolidation work is what took 24 rules down to 9.'
         ],
-        image: 'constraints-2-mapping', frOnly: true,
+        image: 'constraints-2-mapping', frOnly: true, figureDrawer: true,
         caption: 'Worked example on the “limits” family: shared characteristics (task type, period type, member type) are extracted so they can be configured once.'
       },
       {

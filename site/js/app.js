@@ -497,6 +497,8 @@ function pageCase(project) {
     <h1 class="cs__title">${escapeAttr(c.title)}</h1>
     <p class="cs__tagline">${emphasize(c.tagline)}</p>
 
+    ${c.heroMedia ? `<div class="cs__hero-media">${mediaMarkup(c.heroMedia)}</div>` : ''}
+
     <dl class="gist">
       <div><dt>${escapeAttr(d.csRole)}</dt><dd>${escapeAttr(c.gist.role)}</dd></div>
       <div><dt>${escapeAttr(d.csDuration)}</dt><dd>${escapeAttr(c.gist.duration)}</dd></div>
@@ -520,8 +522,6 @@ function pageCase(project) {
     </div>
 
     ${c.draftNote ? `<p class="todo" style="margin-top:var(--s6)">${escapeAttr(c.draftNote)}</p>` : ''}
-
-    ${c.heroMedia ? `<div class="cs__hero-media">${mediaMarkup(c.heroMedia)}</div>` : ''}
   `);
   head.append(hw);
   page.append(head);
@@ -677,12 +677,16 @@ function mediaGroup(list) {
    de telecharger les images encore hors de l'ecran.
    `frOnly` signale honnetement les visuels dont les annotations n'existent
    qu'en francais (image d'origine, jamais reproduite en anglais), plutot
-   que de laisser un lecteur perplexe. */
+   que de laisser un lecteur perplexe.
+   `figureDrawer` cache la figure derriere un <details> natif ("En voir
+   plus") : utile pour une image dense qui n'est pas indispensable a la
+   lecture continue du texte. Natif = clavier et lecteurs d'ecran gratuits,
+   aucun JS de plus a ecrire. */
 function figureFor(s) {
   const base = `assets/img/${s.image}`;
   const note = s.frOnly
     ? `<span class="figure__note">${escapeAttr(t().csFigureFR)}</span>` : '';
-  return `
+  const figure = `
     <figure class="figure">
       <div class="figure__frame">
         <picture>
@@ -692,6 +696,9 @@ function figureFor(s) {
       </div>
       <figcaption>${escapeAttr(s.caption || '')}${note}</figcaption>
     </figure>`;
+  return s.figureDrawer
+    ? `<details class="figure-drawer"><summary>${escapeAttr(t().figureSeeMore)}</summary>${figure}</details>`
+    : figure;
 }
 
 /* ---- 5f. Une page editoriale (A propos, article) ---- */
