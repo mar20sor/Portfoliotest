@@ -982,7 +982,7 @@ function constraintBuilderMarkup(cfg) {
 
   const illustration = `
     <div class="cbuild__illu" aria-hidden="true">
-      <div class="cbuild__illu-graphic">
+      <div class="cbuild__illu-graphic" data-role="illu-graphic" style="--illu-count: ${d.tasks.length}">
         ${diamondLayers}
         <img class="cbuild__illu-rule" src="assets/icons/constraint-illu-rule.svg" alt="">
         <span class="cbuild__illu-bracket-label" data-role="illu-bracket-label">${escapeAttr(selectedConstraint.name)}</span>
@@ -1074,6 +1074,7 @@ function setupConstraintBuilder() {
   const illuDays = $('[data-role="illu-days"]', root);
   const illuTask = $('[data-role="illu-task"]', root);
   const illuDiamonds = $$('[data-role="illu-diamond"]', root);
+  const illuGraphic = $('[data-role="illu-graphic"]', root);
   const previewTitle = $('[data-role="preview-title"]', root);
   const illuBracketLabel = $('[data-role="illu-bracket-label"]', root);
 
@@ -1082,6 +1083,10 @@ function setupConstraintBuilder() {
     illuDays.textContent = formatDayRange(vals.days, cfg.days);
     illuTask.textContent = taskFieldLabel(cfg, vals.tasks);
     illuDiamonds.forEach((img, i) => { img.hidden = i >= vals.tasks.length; });
+    // --illu-count pilote --illu-base (styles.css) : garde le tas de losanges
+    // visibles centre sur le crochet "Limit" quel que soit leur nombre,
+    // plutot que de toujours empiler depuis le meme losange du bas.
+    illuGraphic.style.setProperty('--illu-count', vals.tasks.length);
     previewTitle.textContent = `${constraint.name} constraint`;
     illuBracketLabel.textContent = constraint.name;
     taskWord.textContent = vals.tasks.length > 1 ? 'the tasks' : 'the task';
@@ -1093,6 +1098,21 @@ function setupConstraintBuilder() {
   // ce que `closers` connait, et le clic exterieur (plus bas) fait la meme
   // chose.
   const closers = [];
+
+  // Ferme UN champ (trigger + son contenu deplie) des qu'un clic tombe en
+  // dehors de ces elements precis — meme si ce clic reste a l'interieur du
+  // widget (ex. cliquer sur "Constraint parameters" pendant que la listbox
+  // des taches est ouverte). mousedown plutot que click : se declenche avant
+  // qu'un autre gestionnaire de clic n'ait la moindre chance d'interferer
+  // (ex. stopPropagation), pattern standard pour ce genre de detection.
+  const bindOutsideClose = (elements, close) => {
+    const onDocMouseDown = (ev) => {
+      if (elements.some(el => el && el.contains(ev.target))) return;
+      close();
+    };
+    document.addEventListener('mousedown', onDocMouseDown, true);
+    addCleanup(() => document.removeEventListener('mousedown', onDocMouseDown, true));
+  };
 
   // Listbox a selection simple (physicien) : ferme au clic sur une option.
   const setupSingleSelectDropdown = (role, onSelect) => {
@@ -1135,6 +1155,7 @@ function setupConstraintBuilder() {
     addCleanup(() => listbox.removeEventListener('keydown', onKeydown));
 
     closers.push(() => { if (!listbox.hidden) close(); });
+    bindOutsideClose([trigger, listbox], close);
   };
 
   setupSingleSelectDropdown('physician', (value, label) => {
@@ -1184,6 +1205,7 @@ function setupConstraintBuilder() {
     addCleanup(() => listbox.removeEventListener('keydown', onKeydown));
 
     closers.push(() => { if (!listbox.hidden) close(); });
+    bindOutsideClose([trigger, listbox], close);
   })();
 
   // Listbox des taches : cases a cocher, plafonnee a cfg.maxTasks, reste
@@ -1239,6 +1261,7 @@ function setupConstraintBuilder() {
     addCleanup(() => listbox.removeEventListener('keydown', onKeydown));
 
     closers.push(() => { if (!listbox.hidden) close(); });
+    bindOutsideClose([trigger, listbox], close);
   })();
 
   // Panneau "Limit constraint" (jours) : masque par defaut, ne s'affiche que
@@ -1261,14 +1284,7 @@ function setupConstraintBuilder() {
   daysTrigger.addEventListener('click', toggleInfo);
   addCleanup(() => daysTrigger.removeEventListener('click', toggleInfo));
   closers.push(() => { if (infoOpen) setInfoOpen(false); });
-
-  // Un clic hors du widget referme n'importe quel panneau encore ouvert.
-  // mousedown plutot que click : se declenche avant qu'un autre gestionnaire
-  // de clic ailleurs sur la page n'ait la moindre chance d'interferer (ex.
-  // stopPropagation), et c'est le pattern standard pour ce genre de detection.
-  const onOutsidePointerDown = (ev) => { if (!root.contains(ev.target)) closers.forEach(close => close()); };
-  document.addEventListener('mousedown', onOutsidePointerDown, true);
-  addCleanup(() => document.removeEventListener('mousedown', onOutsidePointerDown, true));
+  bindOutsideClose([daysTrigger, constraintInfo], () => setInfoOpen(false));
 
   // "Select all" devient "Unselect all" des que les 7 jours sont coches —
   // reflete l'etat courant plutot que de rester un libelle fixe qui n'aurait
@@ -1548,6 +1564,23 @@ function scrollToSection(id, behavior) {
   if (!target) return;
   const y = target.getBoundingClientRect().top + window.scrollY - readHeadHeight() - 24;
   window.scrollTo({ top: Math.max(0, y), behavior });
+}
+
+/* --head-h (styles.css) n'est qu'une approximation par point de rupture
+   (82px bureau / 72px mobile) : des qu'un navigateur rend l'en-tete un peu
+   plus haut (police, marge du systeme...), .cs-nav — qui se colle a
+   top: var(--head-h) en mobile, sans marge supplementaire contrairement a la
+   version bureau — se decolle visuellement de la barre du haut. Un
+   ResizeObserver ecrit donc la VRAIE hauteur mesuree dans --head-h (variable
+   inline sur <html>, qui l'emporte sur les valeurs de styles.css), une fois
+   pour toutes au demarrage plutot qu'a chaque changement de page : #site-head
+   n'est jamais remplace par le routeur, seul <main> l'est. */
+function syncHeadHeight() {
+  const head = $('#site-head');
+  if (!head) return;
+  const sync = () => document.documentElement.style.setProperty('--head-h', `${head.offsetHeight}px`);
+  new ResizeObserver(sync).observe(head);
+  sync();
 }
 
 /* Lit la hauteur de l'en-tete depuis le CSS plutot que de la coder en dur.
@@ -1885,6 +1918,8 @@ function start() {
   buildFooter();
 
   const gate = setupGate();
+
+  syncHeadHeight();
 
   /* --- Ecouteurs globaux, installes une seule fois --- */
 

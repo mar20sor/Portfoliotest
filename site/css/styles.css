@@ -1113,7 +1113,10 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   display: flex; align-items: center; gap: 4px;
   font-size: 14px; color: #371495; margin: 0;
 }
-.cbuild__drawer-title { font-size: 20px; font-weight: 500; color: #303030; margin: 0 0 8px; }
+/* .cbuild__info-body prefixe : sans lui, la specificite d'un simple .cbuild__drawer-title
+   (0,1,0) perd face a .cs-sec p (0,1,1) — le <p> generique des sections de cas —
+   et margin-bottom repasse a var(--s4) malgre cette regle. */
+.cbuild__info-body .cbuild__drawer-title { font-size: 20px; font-weight: 500; color: #303030; margin: 0; }
 .cbuild__drawer-hint { font-size: 16px; color: #303030; margin: 0 0 24px; }
 .cbuild__select-all {
   display: block; font: inherit; font-size: 16px; line-height: 16px;
@@ -1155,6 +1158,11 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   position: relative; width: 100%; max-width: 210px;
   aspect-ratio: 244 / 262.989;
   margin-inline: auto;
+  /* --illu-count (mis a jour par updatePreview(), app.js) pilote --illu-base
+     ci-dessous : voir le commentaire sur .cbuild__illu-layer--slot0..3 plus
+     bas pour ce que ce calcul centre. */
+  --illu-count: 1;
+  --illu-base: calc(35% - (var(--illu-count) - 1) * 3.5%);
 }
 /* rotate(45deg) : le path SVG trace un losange dont les diagonales sont deja
    a 45°/135° dans son propre viewBox (voir commentaire dans app.js) — sans
@@ -1175,10 +1183,33 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   position: absolute; left: 24.06%; width: 43.48%; height: auto;
   display: block; transform: rotate(45deg);
 }
-.cbuild__illu-layer--slot0 { top: 34.87%; }
-.cbuild__illu-layer--slot1 { top: 27.87%; }
-.cbuild__illu-layer--slot2 { top: 20.87%; }
-.cbuild__illu-layer--slot3 { top: 13.87%; }
+/* display:block ci-dessus bat la regle UA [hidden]{display:none} (une regle
+   auteur l'emporte toujours sur l'UA, meme a specificite egale) : sans cette
+   ligne, les 4 losanges restent visibles en permanence quel que soit le
+   nombre de taches cochees, hidden ou non (voir illuDiamonds dans app.js). */
+.cbuild__illu-layer[hidden] { display: none; }
+/* Avant : top fixe par slot (34.87%/27.87%/20.87%/13.87%), toujours empile
+   depuis slot0 (le bas) vers le haut. Comme les losanges visibles sont
+   toujours slot0..slot(N-1) (jamais l'inverse), le losange du BAS restait
+   fixe et seul le HAUT du tas montait avec N — la pile entiere derivait donc
+   vers le haut par rapport au crochet "Limit" a mesure que N grandissait.
+   --illu-base (calc ci-dessus, .cbuild__illu-graphic) recentre le groupe
+   visible sur le meme pivot (35%, cf --illu-count) quel que soit N, au lieu
+   de toujours ancrer slot0 en bas. */
+.cbuild__illu-layer--slot0 { top: var(--illu-base); }
+.cbuild__illu-layer--slot1 { top: calc(var(--illu-base) + 7%); }
+.cbuild__illu-layer--slot2 { top: calc(var(--illu-base) + 14%); }
+.cbuild__illu-layer--slot3 { top: calc(var(--illu-base) + 21%); }
+/* slot0 est toujours le losange le plus HAUT du tas visible (top le plus
+   petit, cf. formule ci-dessus) et slot3 le plus bas — mais sans z-index
+   explicite, l'ordre de peinture suit l'ordre du DOM (slot0..slot3), donc le
+   losange du BAS (slot le plus eleve, ajoute en dernier dans le HTML) se
+   retrouvait peint PAR-DESSUS ceux du dessus. On veut l'inverse : le losange
+   du haut du tas reste visuellement au premier plan. */
+.cbuild__illu-layer--slot0 { z-index: 4; }
+.cbuild__illu-layer--slot1 { z-index: 3; }
+.cbuild__illu-layer--slot2 { z-index: 2; }
+.cbuild__illu-layer--slot3 { z-index: 1; }
 .cbuild__illu-rule {
   position: absolute; left: 11.68%; top: 16.54%; width: 70.08%; height: 75.29%; display: block;
 }
@@ -1186,18 +1217,31 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   position: absolute; left: 84.84%; top: 52.48%; transform: translateY(-50%);
   font-size: 16px; color: rgba(55,20,149,.7); white-space: nowrap;
 }
-/* Time/Tasks empiles dans la meme colonne (gauche), plutot que cote a cote
-   comme dans la maquette : avec des libelles de longueur variable ("Monday
-   to Friday" vs "2 days", "Care - Floor 2" vs "4 tasks"), les placer l'un a
-   cote de l'autre risquait de les faire se chevaucher selon le contenu. Un
-   empilement vertical avec un ecart fixe reste correct quel que soit le
-   texte. */
-.cbuild__illu-label { position: absolute; left: 0; text-align: left; }
-.cbuild__illu-label--time { top: 0; }
-.cbuild__illu-label--tasks { top: 30%; }
+/* Time a gauche, Tasks a droite (au-dessus des losanges) — fidele a la
+   maquette Figma (node 18:383) : le libelle des taches n'est plus empile
+   sous celui des jours, il se cale a droite via right:%, quelle que soit la
+   longueur du texte ("Diag - Floor 2" vs "4 tasks"). text-align reste a
+   gauche (dt "Tasks" aligne sur dd, comme le libelle "Time") : la boite se
+   deplace horizontalement pour rester a droite (elle epouse la largeur de
+   son contenu), mais le texte a l'interieur ne se retourne pas.
+
+   right:25% (et non 0) pour ne jamais toucher le petit crochet vertical de
+   .cbuild__illu-rule : ce crochet (les 2 courtes lignes horizontales +
+   segment vertical du SVG source, cote droit) n'occupe qu'une bande etroite
+   x∈[78.04%, 81.76%] de la largeur de l'illustration (calcule depuis son
+   propre viewBox 171x198 : le crochet vit en x=162..171/171, reporte dans le
+   cadre de .cbuild__illu-rule lui-meme a 11.68%..81.76%). Le bord droit du
+   libelle doit donc rester sous ~78% ; right:25% le place a 75%, avec une
+   marge de securite. */
+.cbuild__illu-label { position: absolute; text-align: left; }
+.cbuild__illu-label--time { top: 0; left: 0; }
+.cbuild__illu-label--tasks { top: 80%; right: 25%; }
 .cbuild__illu-label dt { font-size: 12px; color: rgba(55,20,149,.8); }
 .cbuild__illu-label dd { font-size: 16px; font-weight: 500; color: #371495; margin: 0; white-space: nowrap; }
-.cbuild__preview-title { align-self: flex-start; text-align: left; font-size: 20px; font-weight: 500; color: #303030; margin: 0; }
+/* .cbuild__right prefixe pour la meme raison que .cbuild__info-body plus
+   haut : .cs-sec p (0,1,1) bat sinon un simple .cbuild__preview-title
+   (0,1,0) et margin-bottom repasse a var(--s4). */
+.cbuild__right .cbuild__preview-title { align-self: flex-start; text-align: left; font-size: 20px; font-weight: 500; color: #303030; margin: 0 0 12px; }
 .cbuild__recap {
   /* +4px par rapport a la simple ligne 1.6 : espace un peu plus les lignes
      de la phrase quand elle passe a la ligne (pastilles + texte se
@@ -1209,7 +1253,7 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   /* marge verticale : sans elle, deux pastilles sur deux lignes consecutives
      de la phrase (quand elle passe a la ligne) se touchent quasiment — voir
      leur hauteur (padding + ligne) face a line-height de .cbuild__recap. */
-  margin-block: 2px;
+  margin-block: 4px;
   background: #e3defb;
   color: #371495; font-weight: 400;
   padding: 4px 12px; border-radius: 8px;
