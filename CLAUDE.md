@@ -6,10 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A hand-written, dependency-free portfolio site (`site/`) for Marvin Sorhaindo, a
 product designer. Plain HTML/CSS/JS, no framework, no build step, no
-`package.json`. English-only (French support was removed on the
-`fr-lang-removal` branch — see below). The rest of the repo root (PDFs,
-`Portfolio PRD for Claude.md`, `README.md`, `CONVERSATION.md`) is source
-material and project documentation, not code.
+`package.json`. English-only (French support was removed — see below). The
+rest of the repo root (PDFs, `Portfolio PRD for Claude.md`, `README.md`,
+`CONVERSATION.md`) is source material and project documentation, not code.
 
 ## Commands
 
@@ -41,8 +40,8 @@ is client-side.
   links), `MEDIA` (Contra CDN base URLs, still used for the Constraints
   gallery images), `UI` (interface strings), `HERO`, `PROJECTS` (array of case
   studies/side projects), `PAGES` (editorial pages: about, the "2-year gap"
-  essay). Until `8592e3b` (`fr-lang-removal` branch) each entry had parallel
-  `fr: {}`/`en: {}` blocks; that split is gone — see "French removal" below.
+  essay). Until `8592e3b` each entry had parallel `fr: {}`/`en: {}` blocks;
+  that split is gone — see "French removal" below.
 - **`site/js/app.js`** — router, static UI-string application
   (`applyStaticI18n()`; no more language switching — see below), visitor
   name-input sanitization, SVG poster generator, page-building functions
@@ -79,7 +78,7 @@ permanent "Figure annotated in French" note, since French removal left no
 other language to fall back to) and/or `altImage` (an English re-export, once
 one exists, to replace the `frOnly` figure).
 
-### French removal (`fr-lang-removal` branch, commit `8592e3b`)
+### French removal (commit `8592e3b`, merged to `main`)
 
 The site was originally bilingual (`fr:`/`en:` blocks per content entry,
 `state.lang` in `app.js`, a header language switcher, a `t()` lookup helper).

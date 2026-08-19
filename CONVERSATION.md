@@ -4,7 +4,7 @@
 > Il enregistre **ce qui a été décidé, pourquoi, et ce qui reste à faire**.
 > Si vous reprenez le projet dans une nouvelle session, lisez ce fichier d'abord.
 
-**Dernière mise à jour :** 19 août 2026 — session 4 (retrait du français, vidéo d'ouverture Contraintes en local, poussés vers `origin`)
+**Dernière mise à jour :** 19 août 2026 — session 4 (retrait du français, vidéo d'ouverture Contraintes en local, fusionnés dans `main` et poussés vers `origin`)
 
 ---
 
@@ -396,10 +396,11 @@ et sur `origin`.
 - `README.md`
 - `CLAUDE.md` *(commité en session 3 — `d6de7ef` — et exclu comme les autres
   depuis)*
-- `french-translation.md` *(créé sur la branche `fr-lang-removal` en session 4
+- `french-translation.md` *(créé en session 4 sur la branche `fr-lang-removal`
   — voir ci-dessous — pour archiver tout le contenu français retiré du site.
-  Poussé une première fois par erreur, retiré au push suivant. Gardé tracké
-  dans l'historique local de la branche, seulement exclu du snapshot poussé
+  Poussé une première fois par erreur, retiré au push suivant. La branche a
+  depuis été fusionnée dans `main` et supprimée ; le fichier vit maintenant
+  dans l'historique local de `main`, toujours exclu de chaque snapshot poussé
   vers `origin`.)*
 - `Contraintes.pdf`
 - `Exclusion des services.pdf`
@@ -465,3 +466,20 @@ Un second cycle `push-temp` a suivi, après mise à jour de ce journal et de
 (`53c293a`) et poussé en écrasant `origin/fr-lang-removal`. La branche
 `push-temp` a ensuite été supprimée comme toujours — c'est une branche
 jetable recréée à chaque push, jamais conservée.
+
+**Fusion dans `main` et suppression de `fr-lang-removal`.** `main` local
+était encore au commit `d6de7ef` (fin de session 3), exactement le parent de
+`fr-lang-removal` : la fusion (`git merge fr-lang-removal`) a donc été un
+simple fast-forward jusqu'à `882fef5`, sans commit de fusion ni conflit.
+`main` a ensuite été poussé vers `origin/main` par le même cycle
+`push-temp` habituel (mêmes 9 fichiers exclus, snapshot `856fe8d`, écrasant
+l'ancien snapshot `f443aba` de la session 3). Une fois la fusion confirmée,
+la branche `fr-lang-removal` — entièrement intégrée à `main`, plus aucune
+raison de la garder — a été supprimée en local (`git branch -d`) et sur
+`origin` (`git push origin --delete`), suivant exactement le même schéma que
+`add-support-lottie` en session 3. Le dépôt n'a donc plus, à la fin de la
+session 4, que deux branches : `main` (locale et `origin`).
+
+La liste des fichiers gardés strictement locaux ci-dessus reste valable telle
+quelle : elle s'applique maintenant à tout push de `main` (et de toute future
+branche de travail), pas seulement à `fr-lang-removal`.
