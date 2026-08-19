@@ -4,7 +4,7 @@
 > Il enregistre **ce qui a été décidé, pourquoi, et ce qui reste à faire**.
 > Si vous reprenez le projet dans une nouvelle session, lisez ce fichier d'abord.
 
-**Dernière mise à jour :** 19 août 2026 — session 4 (retrait du français, vidéo d'ouverture Contraintes en local, fusionnés dans `main` et poussés vers `origin`)
+**Dernière mise à jour :** 19 août 2026 — session 5 (widget interactif « sentence builder » et carrousel Lottie pour Contraintes, refonte de la nav latérale d'étude de cas ; branche `constraint-module` commitée et fusionnée dans `main`, pas encore poussée vers `origin`)
 
 ---
 
@@ -483,3 +483,125 @@ session 4, que deux branches : `main` (locale et `origin`).
 La liste des fichiers gardés strictement locaux ci-dessus reste valable telle
 quelle : elle s'applique maintenant à tout push de `main` (et de toute future
 branche de travail), pas seulement à `fr-lang-removal`.
+
+### Session 5 — 18-19 août 2026 (branche `constraint-module`, fusionnée dans `main`)
+
+**Widget interactif « sentence builder »**, section Design de l'étude de cas
+Contraintes : le paragraphe qui cite déjà la phrase-résumé (« Marc Tremblay
+cannot be assigned to Care - Floor 2 from Monday to Friday ») est maintenant
+suivi d'un module éditable reproduisant cette interaction, à partir de la
+maquette Figma « Claude portfolio image generation »
+(`itn1kZeKMMFva4PUSX9hlS`). Construit hors du système `media[]`/`mediaGroup()`
+existant (nouveau champ `s.builder` dans `content.js`,
+`constraintBuilderMarkup()`/`setupConstraintBuilder()` dans `app.js`) : un
+widget avec état et clavier n'a pas sa place dans un pipeline pensé pour des
+`<img>`/`<video>` statiques.
+
+Construit en plusieurs passes de retouche sur retours directs de Mar (trop
+nombreuses pour être détaillées une par une ici — voir le message du commit
+de fusion pour le détail complet) :
+
+- Listbox physicien/tâche alignées visuellement sur celle du type de
+  contrainte ; seul « Limit » reste réellement sélectionnable (les 4 autres
+  types restent visibles et cliquables, fidèles à la maquette, mais inertes) ;
+  tâches en cases à cocher multi-sélection (4 max), avec autant de losanges
+  dans l'illustration que de tâches cochées.
+- Illustration reconstruite à partir des vrais calques SVG Figma (empilement
+  de losanges en dégradé, ligne pointillée, crochet) plutôt qu'en SVG dessiné
+  à la main — téléchargés dans `site/assets/icons/`, jamais réécrits (règle
+  du skill Figma : une icône exportée ne se réinvente pas).
+- Tiroir « Limit constraint » (jours) séparé de la phrase. Son comportement a
+  changé de sens en cours de session : un premier essai gardait l'en-tête
+  (icône + « Limit constraint ») visible même replié, pour éviter que tout le
+  bloc ait l'air d'avoir disparu ; la maquette de référence de Mar (capture
+  d'écran du flux Figma) montrait en fait l'inverse — le tiroir entier
+  (en-tête compris) absent tant que le champ « from [...] » de la phrase n'a
+  pas été sélectionné, exactement comme les autres listbox du widget. Réglé
+  dans ce sens final : `.cbuild__constraint-info` masqué (`hidden`) par
+  défaut, ne s'affiche qu'au clic sur ce champ. Le chevron interne au tiroir
+  (bouton dédié à le refermer) a ensuite été retiré tout court, redondant
+  avec ce même champ qui pilote déjà l'ouverture/fermeture.
+- Coche des cases à cocher : remplacée par le vrai check Figma (asset SVG
+  téléchargé, `constraint-check.svg`) après un premier essai en CSS
+  dessiné à la main (bordure pivotée) qui rendait décentré.
+- « Select all » (jours) devient « Unselect all » dès que les 7 jours sont
+  cochés, et efface tout au lieu de tout cocher dans cet état — un libellé
+  fixe n'avait plus de sens une fois tout déjà sélectionné.
+
+**Bug trouvé en testant : clic extérieur pour fermer un menu, parfois sans
+effet.** Cause réelle, repérée dans la console (`InvalidStateError:
+Transition was aborted…`) : `render()` (routeur, `app.js`) lance
+`document.startViewTransition(swap).updateCallbackDone.then(afterSwap)` sans
+gestionnaire de rejet. Si une navigation arrive pendant qu'une transition
+précédente anime encore, le navigateur l'annule et `updateCallbackDone` est
+rejetée — et sans second argument à `.then()`, `afterSwap()` (qui attache
+TOUS les écouteurs de la page : widget, scroll-spy, clic extérieur…) ne
+tournait alors jamais pour cette page, sans erreur visible côté utilisateur.
+Corrigé en passant `afterSwap` comme gestionnaire de résolution *et* de rejet.
+Vérifié en forçant plusieurs navigations rapprochées dans la console.
+
+**Carrousel des 4 illustrations animées** (maquette Figma, nœud `34:817`) :
+la grille statique des 4 Lottie (Blocking/Protection/Spacing/Availability)
+est remplacée par une scène unique + une liste de libellés cliquables à côté
+— un seul clic affiche l'animation correspondante, Blocking par défaut.
+Nouveau champ `lottieCarousel` sur la section Design, rendu par
+`lottieCarouselMarkup()`/`setupLottieCarousel()`, toujours hors du pipeline
+`media[]` pour la même raison que le widget ci-dessus (état exclusif, pas une
+grille statique).
+
+**Nav latérale d'étude de cas : refonte pour englober toute la page**, sur
+le modèle de <https://www.rachelchen.tech/projects/openai> (demande
+explicite) : la nav (`.cs-nav`) ne longe plus seulement les étapes du
+processus mais toute la page, avec « Overview » comme première entrée
+(pointant vers l'en-tête/résumé lui-même, `id="sec-overview"`). L'en-tête et
+les sections de processus partagent maintenant la même colonne de largeur
+(l'en-tête a perdu son propre `.wrap` séparé) — c'était explicitement demandé
+(« Overview-summary and process wraps are the same width »). Le lien retour
+perd son chrome en pilule pour redevenir un lien discret, séparé du reste de
+la liste par une marge plutôt que par une bordure.
+
+**Carrousel Lottie : redimensionnement et flou, deux passes.** Retour de Mar :
+la scène du carrousel occupait toute la largeur de la colonne (~987px de
+large, jusqu'à ~835px de haut — plus grande qu'aucune autre figure de la
+page) et les 3 animations autres que « Blocking » étaient floues/pixellisées.
+
+- Taille : la colonne de scène est passée de `1fr` à `minmax(0, 420px)`
+  dans `.lottie-carousel`.
+- Flou — cause réelle trouvée en inspectant le `<canvas>` interne de
+  `dotlottie-wc` (`shadowRoot`) : son tampon de pixels restait bloqué à
+  300×150, la taille par défaut d'un `<canvas>` HTML sans attributs, alors
+  que sa boîte CSS affichée faisait ~600×500px — un bitmap minuscule étiré
+  par le navigateur, d'où le flou. `dotlottie-wc` a un mode
+  `freezeOnOffscreen` : s'il s'initialise pendant que son panneau est encore
+  `hidden` (donc de taille nulle), il ne se redimensionne jamais ensuite,
+  même une fois `hidden` retiré. Seul « Blocking » (panneau visible dès le
+  chargement) y échappait. Corrigé en ne posant `src` sur les 3 autres
+  qu'au premier clic sur leur onglet (`data-src` en attente, promu en `src`
+  par `setupLottieCarousel()`) — le composant ne s'initialise alors qu'une
+  fois réellement visible et correctement dimensionné. Vérifié en lisant
+  directement `canvas.width`/`height` avant/après (300×150 → 695×582).
+- Un premier essai de recadrage utilisait `transform: scale(1.4)` en CSS sur
+  les 3 animations dont le sujet (losanges) n'occupe qu'une bande centrée du
+  canevas source — mais un `transform` CSS étire un rendu déjà calculé
+  (flou), donc remplacé par un agrandissement réel de la boîte du
+  `dotlottie-wc` (140%, `position: absolute`, recadré par l'`overflow:
+  hidden` de la scène) : le composant redessine alors nativement à une
+  résolution plus grande.
+- Un quadrillage CSS (dégradés diagonaux croisés) avait été ajouté en
+  surimpression des 3 animations pour imiter le décor « plan quadrillé » que
+  « Blocking » a lui-même dans son propre Lottie — retiré après retour de
+  Mar : contrairement au vrai décor de Blocking (confiné à des plans
+  losanges nets, avec profondeur), ce quadrillage CSS recouvrait tout le
+  cadre rectangulaire sans respecter aucune forme de sol, et se lisait comme
+  du bruit visuel plutôt que comme un sol. Les 3 animations restent donc sur
+  fond uni, sans décor ajouté.
+
+**État Git.** Ce travail (widget sentence-builder, carrousel Lottie, refonte
+de la nav) a été commité sur `constraint-module` puis fusionné dans `main`
+(voir le message de commit pour le détail complet) — les deux branches
+pointent maintenant sur le même commit. `constraint-module` n'a pas été
+supprimée (ni en local ni sur `origin`, où elle n'existe de toute façon pas)
+en l'absence d'une demande explicite en ce sens ; voir la note de session 3
+sur le nettoyage de `add-support-lottie` si on veut reproduire ce geste.
+Rien n'a encore été poussé vers `origin` — la méthode `push-temp` habituelle
+(§7, sessions 3-4) s'appliquera le jour où ce sera demandé.

@@ -60,6 +60,10 @@ is client-side.
   the `dotlottie-wc` web component, loaded from the `unpkg.com` CDN — see
   `index.html`), plus `constraint-limit.mp4`/`.jpg`, the Constraints case
   study's hero video (local, not Contra — see below).
+- **`site/assets/icons/`** — small SVGs downloaded verbatim from Figma (never
+  hand-authored) for the Constraints "sentence builder" widget: constraint-type
+  icons, the diamond-stack illustration layers, the drawer chevron, and the
+  task-checkbox checkmark.
 
 ### Content model (`content.js`)
 
@@ -76,7 +80,16 @@ just the Constraints hero video). Image items may carry `frOnly: true` (the
 source PDF annotation only ever existed in French — now shown with a
 permanent "Figure annotated in French" note, since French removal left no
 other language to fall back to) and/or `altImage` (an English re-export, once
-one exists, to replace the `frOnly` figure).
+one exists, to replace the `frOnly` figure). A `design`-section-only `builder`
+field renders an interactive sentence-builder widget after the section's
+mockup figure (`constraintBuilderMarkup()`/`setupConstraintBuilder()` in
+`app.js`), deliberately outside the `media` pipeline — see the CSS comment
+next to `.constraint-builder` for why. The same section also has a
+`lottieCarousel` field (an array of `{ src, label }`), rendered right after
+the section's first paragraph by `lottieCarouselMarkup()`/
+`setupLottieCarousel()` — a single-panel-at-a-time viewer (click a label,
+see its animation) rather than the static `media` grid, so it also stays
+outside the `media` pipeline.
 
 ### French removal (commit `8592e3b`, merged to `main`)
 
@@ -89,6 +102,19 @@ archived verbatim in `french-translation.md` at the repo root — kept for
 reference but deliberately excluded from every push to `origin` (see
 "Pushing to origin" below).
 
+### Case study layout (`pageCase()`, `app.js`)
+
+For a project with `sections[]`, the sticky sidenav (`.cs-nav`) spans the
+*whole* page, not just the process steps: its first entry is "Overview",
+pointing at the intro/hero block itself (`id="sec-overview"`), which is
+nested inside the same width-constrained column as the process sections
+rather than sitting in its own separate `.wrap`. This keeps the intro and the
+sections visually the same width (modeled on
+rachelchen.tech/projects/openai). `setupCaseBehaviours()`'s scroll-spy and
+progress bar select `#sec-overview, .cs-sec` together, so the overview block
+is just the first tracked "section". Projects with no `sections[]` skip this
+whole nav — the intro renders alone in its own `.wrap`, as before.
+
 ### Routing (`app.js`, section 7)
 
 Hash-based (`#/work/<slug>`, `#/side/<slug>`, `#/about`, `#/gap`), parsed by
@@ -98,6 +124,39 @@ Pages, Netlify, or a plain folder — see the comment block above `parseRoute`
 for the reasoning. `routeKey()` strips the in-page anchor (`#/work/x#mapping`)
 so anchor navigation doesn't get treated as a route change.
 
+### View transitions and `afterSwap` (`render()`, `app.js`)
+
+`render()` swaps `<main>`'s content inside `document.startViewTransition()`
+and waits on `updateCallbackDone` before running `afterSwap()` (which wires up
+every page's event listeners — widget interactivity, scroll-spy, outside-click
+handlers, etc.). If a second navigation fires while a transition is still
+animating, the browser aborts the first transition and rejects its
+`updateCallbackDone` with `InvalidStateError` — harmless-looking console noise,
+but without a rejection handler `afterSwap()` would silently never run for
+that render pass, leaving the new page's listeners unattached. `render()`
+passes `afterSwap` as both the resolve *and* reject handler for exactly this
+reason — don't remove the second argument.
+
+### Lottie carousel and `dotlottie-wc` sizing (`lottieCarouselMarkup()`, `app.js`)
+
+Only the active panel's `dotlottie-wc` gets a real `src` attribute up front;
+the other three carry the same URL as `data-src` instead, and
+`setupLottieCarousel()`'s tab click handler promotes `data-src` to `src` the
+first time a panel is actually shown. This isn't just lazy-loading —
+`dotlottie-wc` has a `freezeOnOffscreen` behavior that, if it initializes
+its `<canvas>` while its own panel is still `hidden` (zero-size), leaves
+that canvas stuck at the raw HTML default of 300×150px forever, even after
+`hidden` is later removed: the result is a small bitmap stretched to fill a
+much bigger box, i.e. visibly blurry/pixelated. Giving it a real `src` only
+once its panel is unhidden avoids ever creating the canvas at the wrong
+size. Don't move `src` back into the initial markup for panels other than
+index 0 without re-testing this. Non-Blocking panels also enlarge their
+`dotlottie-wc` to 140% (`position: absolute`, clipped by
+`.lottie-carousel__stage`'s `overflow: hidden`) rather than using a CSS
+`transform: scale()`, so the crop redraws at a genuinely higher resolution
+instead of stretching an already-rendered bitmap — same
+blur-avoidance principle, different half of the problem.
+
 ## Security
 
 - The CSP `<meta>` tag in `index.html` is the single source of truth for
@@ -105,7 +164,9 @@ so anchor navigation doesn't get treated as a route change.
   image host) must be added there or it will be silently blocked by the
   browser — check this first if something loads locally-added but not when
   deployed. Current external origins: `fonts.googleapis.com`/`.gstatic.com`
-  (Raleway), `unpkg.com`/`cdn.jsdelivr.net` (`dotlottie-wc` + its WASM
+  (Raleway, plus Roboto — loaded only for the constraint-builder widget, to
+  match its Figma source — both pulled from the same stylesheet link in
+  `index.html`), `unpkg.com`/`cdn.jsdelivr.net` (`dotlottie-wc` + its WASM
   runtime), `media.contra.com` (Constraints project video/images).
 - The visitor's first name (entered in the "portal" at load) goes through
   `cleanName()` — character whitelist + length cap — and is inserted via
@@ -121,9 +182,9 @@ so anchor navigation doesn't get treated as a route change.
   `.cs__hero-media` comment in `styles.css` for why the frame background is
   `#e9e1f9` (sampled from the video's own poster frame, to hide the
   letterboxing from a portrait video in a 16:9 box).
-- **Raleway font**: loaded from Google Fonts — the only other external
-  origin besides Contra and the Lottie CDN; couldn't be self-hosted in this
-  sandboxed dev environment.
+- **Raleway and Roboto fonts**: loaded from Google Fonts — the only other
+  external origin besides Contra and the Lottie CDN; couldn't be
+  self-hosted in this sandboxed dev environment.
 
 ## Pushing to origin
 
