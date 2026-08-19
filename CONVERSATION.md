@@ -4,7 +4,7 @@
 > Il enregistre **ce qui a été décidé, pourquoi, et ce qui reste à faire**.
 > Si vous reprenez le projet dans une nouvelle session, lisez ce fichier d'abord.
 
-**Dernière mise à jour :** 18 août 2026 — session 4 (retrait du français, vidéo d'ouverture Contraintes en local)
+**Dernière mise à jour :** 19 août 2026 — session 4 (retrait du français, vidéo d'ouverture Contraintes en local, poussés vers `origin`)
 
 ---
 
@@ -459,3 +459,9 @@ n'y a plus d'autre langue vers laquelle basculer pour la comparer.
 (`8592e3b`, `1c68dc0`, `53146d4`, `30eab8b`) puis poussées vers
 `origin/fr-lang-removal` via la méthode `push-temp` habituelle, en excluant
 désormais aussi `french-translation.md` (voir liste ci-dessus).
+
+Un second cycle `push-temp` a suivi, après mise à jour de ce journal et de
+`CLAUDE.md` (`bf5c140`) : mêmes 9 fichiers exclus, snapshot commité
+(`53c293a`) et poussé en écrasant `origin/fr-lang-removal`. La branche
+`push-temp` a ensuite été supprimée comme toujours — c'est une branche
+jetable recréée à chaque push, jamais conservée.
