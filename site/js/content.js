@@ -198,7 +198,11 @@ export const PROJECTS = [
     tags: ['Systems design', 'Research', 'Healthcare SaaS'],
     gist: { role: 'UX / UI, research', duration: '4 months', team: '1 designer, 1 PM', tools: 'Figma, Jitter, interviews' },
     // The opening visual. It doubles as the card thumbnail on the homepage.
-    heroMedia: { type: 'video', id: 'fwfmk99wycaup34crhb4', caption: 'Configuring a constraint, end to end' },
+    // Local file rather than the Contra CDN id: no external dependency, and
+    // it's the one visual in the repo with a matching poster frame (see
+    // .cs__hero-media background in styles.css, sampled from this jpg).
+    heroMedia: { type: 'video', src: 'assets/media/constraint-limit.mp4',
+      poster: 'assets/media/constraint-limit.jpg', caption: 'Configuring a constraint, end to end' },
     problem: 'Constraints are the rules applied to staff availability to build a fair schedule — “a member cannot work two consecutive periods”, for instance. They were configured by hand by Petal’s internal teams: slow, expensive, and so redundant that several different rules led to the same result. Agents made mistakes.',
     outcome: 'I reduced the 24 constraints to 9 (and the 8 most-used to 3) by identifying the characteristics they shared, then designed a rule builder clinic managers can operate themselves — without going through an agent.',
     stats: [

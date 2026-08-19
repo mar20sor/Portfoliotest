@@ -397,6 +397,10 @@ et sur `origin`.
 - `CLAUDE.md` *(créé après le dernier push de la session 3 ; jamais commité
   ni poussé, donc absent d'`origin` — rien à retirer, juste à exclure comme
   les autres au prochain push forcé)*
+- `french-translation.md` *(créé sur la branche `fr-lang-removal` ; poussé
+  une première fois par erreur — présent dans le tout premier push de cette
+  branche puis retiré au push suivant. Gardé tracké dans l'historique local
+  de la branche, seulement exclu du snapshot poussé vers `origin`.)*
 - `Contraintes.pdf`
 - `Exclusion des services.pdf`
 - `Services exclusion.pdf`

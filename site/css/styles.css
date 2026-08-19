@@ -833,8 +833,19 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cs__hero-media .figure { margin-block: 0; }
 /* Format impose en 16:9 : la largeur ne change pas, seule la hauteur est
    reduite par rapport au ratio natif de la video. object-fit: contain (et
-   non cover) : l'animation doit rester visible en entier, quitte a laisser
-   un bandeau du fond du cadre (--veil-strong) au-dessus et en-dessous. */
+   non cover) : l'animation doit rester visible en entier.
+   La video (assets/media/constraint-limit.mp4) est cadree en portrait
+   (524x600, ratio 0.87) : dans une boite 16:9, contain laisse donc de
+   larges bandes de part et d'autre plutot qu'en haut/bas. #e9e1f9 est la
+   couleur de fond relevee sur toute la hauteur du bord gauche de
+   constraint-limit.jpg (la premiere frame de cette meme video, utilisee
+   comme poster juste en dessous) — la moyenne des quatre coins seuls
+   donnait une teinte legerement plus grise, faussee par l'anti-aliasing
+   au tout bord de l'image. En reprenant cette couleur ici plutot que
+   --veil-strong, les bandes se fondent avec le fond de la video elle-meme
+   au lieu de trancher avec — l'illusion que la video occupe toute la
+   largeur de la boite. */
+.cs__hero-media .figure__frame { background: #e9e1f9; }
 .cs__hero-media .figure--remote video {
   aspect-ratio: 16 / 9;
   object-fit: contain;
