@@ -111,10 +111,15 @@ const t = () => UI;
 
    ET LE STOCKAGE ? Le cahier des charges dit "sauvegarde dans une variable,
    pas dans une base de donnees". Le prenom vit dans state.visitor, en
-   memoire. Il disparait au rechargement de la page. Rien n'est envoye sur
-   le reseau (le <form> n'a pas d'attribut action), rien n'est ecrit sur le
-   disque, aucun cookie. Si vous preferez qu'un rafraichissement ne
-   redemande pas le prenom, voyez la note en fin de section 9.
+   memoire. Rien n'est envoye sur le reseau (le <form> n'a pas d'attribut
+   action), aucun cookie.
+   DEVIATION (demandee explicitement, session ulterieure) : pour eviter de
+   redemander le prenom a chaque rechargement, il est aussi ecrit dans
+   localStorage avec une expiration a 1h (voir readStoredVisitor()/
+   writeStoredVisitor() en fin de section 9) — un compromis assume avec la
+   consigne "pas de base de donnees" ci-dessus : ce n'est qu'une chaine de
+   texte courte, sur la machine du visiteur, jamais transmise, et elle
+   s'auto-efface au bout d'une heure.
    -------------------------------------------------------------------------- */
 
 const NAME_MAX = 24;
@@ -335,6 +340,7 @@ function projectCard(p) {
   const card = el('a', {
     class: 'card',
     href,
+    'data-slug': p.slug,
     // Un lien externe s'ouvre dans un nouvel onglet. rel="noopener" empeche
     // la page ouverte d'acceder a la notre via window.opener : c'est une
     // faille classique, et l'attribut la ferme.
@@ -1815,6 +1821,36 @@ function setupCaseBehaviours() {
    9. LE PORTAIL DU PRENOM
    ========================================================================== */
 
+const VISITOR_KEY = 'visitor';
+const VISITOR_TTL = 60 * 60 * 1000; // 1h
+
+/* Relit le prenom stocke, s'il existe et n'a pas expire. Toujours repasse
+   par cleanName() : ce qui sort du stockage est traite avec la meme
+   mefiance que ce qui sort du formulaire. */
+function readStoredVisitor() {
+  try {
+    const raw = localStorage.getItem(VISITOR_KEY);
+    if (!raw) return '';
+    const { v, exp } = JSON.parse(raw);
+    if (!exp || Date.now() > exp) {
+      localStorage.removeItem(VISITOR_KEY);
+      return '';
+    }
+    return cleanName(v || '');
+  } catch {
+    return '';                 // stockage indisponible (mode prive, quota...) : tant pis
+  }
+}
+
+function writeStoredVisitor(name) {
+  try {
+    localStorage.setItem(VISITOR_KEY, JSON.stringify({ v: name, exp: Date.now() + VISITOR_TTL }));
+  } catch {
+    /* stockage indisponible : le prenom reste en memoire pour cette page,
+       simplement redemande au prochain rechargement. */
+  }
+}
+
 function setupGate() {
   const gate  = $('#gate');
   const form  = $('#gate-form');
@@ -1823,6 +1859,15 @@ function setupGate() {
   const skip  = $('#gate-skip');
 
   const open = () => {
+    // Prenom encore valide (< 1h) : on l'applique directement, sans
+    // rouvrir le portail.
+    const stored = readStoredVisitor();
+    if (stored) {
+      state.visitor = stored;
+      render();
+      return;
+    }
+
     gate.hidden = false;
     document.body.classList.add('is-locked');
     // Le focus part dans le champ : la personne peut taper immediatement,
@@ -1850,7 +1895,8 @@ function setupGate() {
       input.focus();
       return;
     }
-    state.visitor = capitalize(value);           // en memoire, nulle part ailleurs
+    state.visitor = capitalize(value);
+    writeStoredVisitor(state.visitor);           // survit au rechargement, 1h
     close();
   });
 
@@ -1867,16 +1913,6 @@ function setupGate() {
   gate.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') close(); });
 
   return { open };
-
-  /* --- NOTE : ET SI ON VOULAIT NE PAS REDEMANDER LE PRENOM ? ---
-     Actuellement, rafraichir la page repose la question, car state.visitor
-     ne vit qu'en memoire. Pour s'en souvenir le temps de l'onglet, ajoutez
-     dans le submit :         sessionStorage.setItem('v', state.visitor);
-     et au demarrage :        state.visitor = cleanName(sessionStorage.getItem('v') || '');
-     sessionStorage n'est pas une base de donnees, reste sur la machine du
-     visiteur et s'efface a la fermeture de l'onglet. Repassez toujours la
-     valeur relue par cleanName() : ce qui sort d'un stockage doit etre
-     traite avec la meme mefiance que ce qui sort d'un formulaire. */
 }
 
 
