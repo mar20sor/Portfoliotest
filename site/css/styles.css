@@ -260,6 +260,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   padding-inline: var(--gutter);
 }
 .wrap--narrow { max-width: 860px; }
+/* Aussi large que .site-head (qui n'a pas de max-width, juste le gutter) —
+   utilise sur le corps d'une etude de cas, voir pageCase(). */
+.wrap--wide { max-width: none; }
 
 .rule { height: 1px; background: var(--line-soft); border: 0; margin: 0; }
 
@@ -645,8 +648,19 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* ---- 8a. L'en-tete : la partie "30 secondes" ----
    Tout ce qu'un recruteur presse doit lire tient ici, avant le premier scroll.
-   La marge haute degage le bouton "Retour", qui est fixe au-dessus. */
-.cs__head { padding-block: calc(var(--back-h) + var(--s6)) var(--s6); }
+   La marge haute degage le bouton "Retour", qui est fixe au-dessus — SAUF
+   quand cette etude de cas a sa propre nav laterale (.cs-nav) : le lien
+   retour vit alors dans cette nav (voir pageCase()/setupBackLink()) et ne
+   flotte plus par-dessus l'en-tete, donc plus besoin de lui reserver de
+   place ici. */
+.cs__head {
+  padding-block: calc(var(--back-h) + var(--s6)) var(--s6);
+  /* Decale la cible d'ancrage quand cet en-tete sert de section "Overview"
+     dans la nav laterale (voir pageCase()), pour que le titre ne finisse
+     pas sous l'en-tete collant du site — meme reglage que .cs-sec. */
+  scroll-margin-top: calc(var(--head-h) + var(--s4));
+}
+.cs:has(.cs-nav) .cs__head { padding-block: var(--s6); }
 .cs__client { font-size: var(--fs-body); margin-bottom: var(--s2); color: var(--ink-soft); }
 .cs__title { font-size: var(--fs-h1); font-weight: var(--w-medium); margin-bottom: var(--s4); }
 .cs__tagline {
@@ -709,21 +723,30 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .cs-nav {
   position: sticky;
-  /* L'offset doit degager DEUX choses : l'en-tete collant, et le bouton
-     "Retour" desormais fixe juste en dessous. Sans ce calcul, le titre
-     "LE PROCESSUS" venait coller le filet de l'en-tete.
-     --back-h est la hauteur du bouton retour, declaree plus bas pour que les
-     deux valeurs ne puissent pas diverger. */
-  top: calc(var(--head-h) + var(--back-h) + var(--s6));
+  /* Le lien retour vit maintenant DANS cette nav (premiere entree, voir
+     .cs-nav__back plus bas) plutot que de flotter fixe au-dessus — l'offset
+     n'a donc plus qu'a degager l'en-tete collant. */
+  top: calc(var(--head-h) + var(--s6));
   /* Si un jour il y a 20 sections, la nav defile elle-meme au lieu de
      deborder de l'ecran. */
-  max-height: calc(100vh - var(--head-h) - var(--back-h) - var(--s8));
+  max-height: calc(100vh - var(--head-h) - var(--s8));
   overflow-y: auto;
 }
-.cs-nav__title {
-  font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: .1em;
-  color: var(--ink-faint); font-weight: var(--w-semibold); margin-bottom: var(--s4);
+/* Le lien retour, en premiere position dans la nav laterale — meme famille
+   visuelle que .back-link (le bouton flottant utilise ailleurs sur le site)
+   mais en flux normal, pas fixe : il defile et colle avec le reste de
+   .cs-nav plutot que de rester plaque en haut de l'ecran. */
+/* Lien discret, pas un bouton/pilule : une nette separation avec la liste
+   qui suit (marge genereuse) suffit a le distinguer, sans chrome propre —
+   cf. https://www.rachelchen.tech/projects/openai (demande explicite). */
+.cs-nav__back {
+  display: inline-flex; align-items: center; gap: var(--s2);
+  margin-bottom: var(--s6);
+  text-decoration: none; color: var(--ink-soft);
+  font-size: var(--fs-small); font-weight: var(--w-semibold);
+  transition: transform .2s var(--ease), color .2s var(--ease);
 }
+.cs-nav__back:hover { transform: translateX(-3px); color: var(--ink); }
 .cs-nav ol { display: grid; gap: 2px; }
 .cs-nav a {
   display: flex; align-items: baseline; gap: var(--s3);
@@ -851,22 +874,17 @@ button { font: inherit; color: inherit; cursor: pointer; }
   object-fit: contain;
 }
 
-/* ---- Contraintes, section "Design" : les 4 lotties empilees + mosaique
-   des captures --------------------------------------------------------
-   Ciblage par contenu (:has) plutot que par une classe dediee dans
-   mediaGroup() (app.js) : seule cette section a des groupes de medias a
-   traiter differemment l'un de l'autre, une nouvelle classe pour un cas
-   unique aurait complexifie le generateur pour rien.
-   Aucun des deux groupes ne deborde de la colonne de contenu : leur largeur
-   reste celle de la figure du Benchmark juste au-dessus, pour que l'oeil
-   retrouve la meme largeur de page tout du long de la section. */
-#sec-design .media-grid:has(.figure--lottie) {
-  /* Une seule colonne : les 4 lotties empilees plutot qu'en grille, chacune
-     à la largeur pleine de la colonne de contenu. */
-  grid-template-columns: 1fr;
-  gap: var(--s5);
-}
-#sec-design .media-grid:not(:has(.figure--lottie)) {
+/* ---- Contraintes, section "Design" : mosaique des captures --------------
+   Ciblage par ID de section plutot qu'une classe dediee dans mediaGroup()
+   (app.js) : seule cette section a un groupe de medias a traiter
+   differemment des autres, une nouvelle classe pour un cas unique aurait
+   complexifie le generateur pour rien.
+   Ne deborde pas de la colonne de contenu : sa largeur reste celle de la
+   figure du Benchmark juste au-dessus, pour que l'oeil retrouve la meme
+   largeur de page tout du long de la section. Les 4 illustrations animees
+   qui occupaient jadis media[0] sont maintenant le carrousel ci-dessous
+   (.lottie-carousel), plus une grille statique. */
+#sec-design .media-grid {
   /* Les 3 captures sur une seule rangee (jamais de retour a la ligne, a la
      difference d'une grille auto-adaptative) : ensemble, elles retrouvent
      la largeur totale de la figure du Benchmark. object-fit: cover les
@@ -874,9 +892,327 @@ button { font: inherit; color: inherit; cursor: pointer; }
      proportions differentes a l'origine. */
   grid-template-columns: repeat(3, 1fr);
 }
-#sec-design .media-grid:not(:has(.figure--lottie)) .figure--remote img {
+#sec-design .media-grid .figure--remote img {
   aspect-ratio: 4 / 3;
   object-fit: cover;
+}
+
+/* ---- Contraintes, section "Design" : carrousel des 4 illustrations
+   animees (voir lottieCarouselMarkup()/setupLottieCarousel() dans app.js,
+   figma node 34:817) --------------------------------------------------
+   Meme raison qu'au-dessus pour rester hors de mediaMarkup()/mediaGroup() :
+   un seul panneau visible a la fois n'est pas une grille statique, c'est un
+   etat expose/interactif. Scene sombre a gauche (mode d'affichage d'origine
+   des Lottie de contraintes, voir .figure--remote plus haut), libelles a
+   droite empiles verticalement — reprend la mise en page a deux colonnes
+   du node Figma plutot que les proportions au pixel pres. */
+.lottie-carousel {
+  /* Colonne de scene volontairement bridee (420px) plutot que 1fr : a
+     pleine largeur de colonne (~1000px) la scene depassait 800px de haut,
+     bien plus grande que les autres figures de la section. */
+  display: grid; grid-template-columns: minmax(0, 420px) auto; gap: var(--s5);
+  align-items: start; margin-block: var(--s6);
+}
+.lottie-carousel__stage {
+  position: relative;
+  background: var(--veil-strong);
+  border: 1px solid var(--frame-line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+/* aspect-ratio deplace du <dotlottie-wc> vers .lottie-carousel__panel
+   lui-meme (qui porte aussi position:relative) : c'est ce qui donne au
+   panneau une boite de taille fixe et independante de son contenu, pour
+   pouvoir agrandir le <dotlottie-wc> au-dela de 100% ci-dessous sans que le
+   panneau (et donc .lottie-carousel__stage, qui prend sa hauteur du panneau
+   visible) ne s'effondre. */
+.lottie-carousel__panel { display: block; position: relative; aspect-ratio: 1185 / 993; }
+.lottie-carousel__panel[hidden] { display: none; }
+.lottie-carousel__panel dotlottie-wc { display: block; width: 100%; height: 100%; }
+/* Sur les 3 animations autres que "Blocking" (index 0), le sujet
+   (losanges/etiquette) n'occupe que la portion centrale du canevas source
+   (1185x993) — Blocking est la seule a etendre son propre decor (le plan
+   quadrille) jusqu'aux bords. Resserrer le cadrage sur leur sujet en
+   agrandissant le <dotlottie-wc> LUI-MEME (position absolute, 140%,
+   recadre par l'overflow:hidden de .lottie-carousel__stage) plutot que via
+   un CSS transform:scale : dotlottie-wc dimensionne son <canvas> interne a
+   sa propre boite reelle (ResizeObserver), donc l'agrandir "en vrai" fait
+   redessiner l'animation a une resolution plus grande, nette — alors qu'un
+   transform:scale ne fait qu'etirer au pixel pres le rendu deja calcule a
+   la taille d'origine (flou, surtout perceptible sur les traits fins des
+   losanges). */
+.lottie-carousel__panel:not([data-index="0"]) dotlottie-wc {
+  position: absolute; top: 50%; left: 50%;
+  width: 140%; height: 140%;
+  transform: translate(-50%, -50%);
+}
+.lottie-carousel__tabs {
+  display: flex; flex-direction: column; gap: var(--s4);
+  padding-top: var(--s2);
+}
+.lottie-carousel__tab {
+  font: inherit; font-size: var(--fs-body); font-weight: var(--w-semibold);
+  color: var(--ink-faint);
+  background: none; border: none; padding: 0; text-align: left;
+  cursor: pointer; transition: color .18s var(--ease);
+}
+.lottie-carousel__tab:hover { color: var(--accent); }
+.lottie-carousel__tab.is-active { color: var(--accent); }
+
+/* ---- Contraintes, section "Design" : demo interactif "sentence builder" --
+   Widget autonome (voir constraintBuilderMarkup()/setupConstraintBuilder()
+   dans app.js), rendu APRES figureFor(s) dans pageCase() plutot que via
+   media[]/mediaGroup() : il n'a donc jamais la classe .media-grid/.figure et
+   n'est concerne par aucune des regles :has() ci-dessus.
+
+   Fidelite exacte a la maquette Figma (fichier "Claude portfolio image
+   generation", section "Constraint selection module", node 94:5342) : sur
+   demande explicite, ce widget reprend les couleurs, tailles et polices
+   EXACTES de la maquette (violet #371495 etc., police Roboto) plutot que
+   les tokens du site (--accent bleu, Raleway) — c'est la seule zone du site
+   qui deroge au design system, deliberement, pour ce widget precis. */
+.constraint-builder { margin-block: var(--s6); font-family: 'Roboto', 'Segoe UI', sans-serif; }
+.cbuild__intro {
+  font-size: var(--fs-tiny); font-weight: var(--w-semibold);
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ink-faint); margin-bottom: var(--s4);
+  font-family: var(--font);
+}
+
+/* Le cadre degrade (image de fond identique a la maquette) dans lequel la
+   carte blanche flotte, comme dans la presentation Figma d'origine. */
+.cbuild__frame {
+  background-image: url('../assets/img/constraint-builder-bg.png');
+  background-size: cover;
+  background-position: center;
+  border-radius: 20px;
+  padding: clamp(20px, 4vw, 56px);
+}
+.cbuild__card {
+  background: #fff;
+  border: 1px solid #eaeaf9;
+  border-radius: 16px;
+  padding: 24px;
+  color: #303030;
+}
+.cbuild__card-title { font-size: 20px; font-weight: 500; margin-bottom: 16px; }
+
+/* Deux colonnes : la phrase a gauche, l'apercu (illustration + recap) a
+   droite, dans un ratio proche de celui de la maquette (550:332) — replie a
+   une colonne sous 860px (regle ajoutee dans le bloc @media existant, pas un
+   nouveau point de rupture). */
+.cbuild__layout { display: grid; grid-template-columns: 5fr 3fr; gap: 32px; align-items: start; }
+
+.cbuild__sentence {
+  font-size: 16px; line-height: 1.7; color: #303030;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+}
+.cbuild__field { display: inline-flex; align-items: center; position: relative; }
+.cbuild__field--constraint { position: relative; }
+.cbuild__field-chevron {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  width: 20px; height: 20px; pointer-events: none;
+}
+
+.cbuild__select {
+  font: inherit; font-size: 16px;
+  color: #371495;
+  background: #f7f3fe;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  padding: 8px 36px 8px 16px;
+  appearance: none;
+  cursor: pointer;
+  transition: border-color .18s var(--ease), background .18s var(--ease);
+}
+.cbuild__select:hover { background: #eee4fc; }
+.cbuild__select:focus-visible { outline: none; border-color: #371495; background: #fff; }
+.cbuild__trigger {
+  display: inline-flex; align-items: center;
+  background: #f7f3fe; border: 2px solid transparent; border-radius: 4px;
+  padding: 8px 36px 8px 16px; font: inherit; font-size: 16px; color: #371495; cursor: pointer;
+  transition: border-color .18s var(--ease), background .18s var(--ease);
+}
+.cbuild__trigger:hover { background: #eee4fc; }
+.cbuild__trigger[aria-expanded="true"] { background: #fff; border-color: #371495; }
+
+.cbuild__listbox {
+  position: absolute; z-index: 5; top: calc(100% + 8px); left: 0;
+  min-width: 260px; width: max-content; max-width: min(380px, 90vw);
+  background: #fff;
+  border: 1px solid #eaeaf9;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 8px;
+  display: grid; gap: 4px;
+  /* Empeche tout contenu (ex. la description de "Blocking", la plus longue
+     des cinq) de deborder du popover arrondi : sans overflow:hidden ici et
+     min-width:0 sur .cbuild__opt-text plus bas, un flex item garde sa
+     largeur intrinseque et "saigne" hors du cadre plutot que de passer a la
+     ligne. */
+  overflow: hidden;
+}
+.cbuild__listbox[hidden] { display: none; }
+.cbuild__listbox li {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px; border-radius: 6px;
+  cursor: pointer;
+}
+/* Survol violet clair. Ne depend plus de aria-selected : dans le menu du
+   type de contrainte, cliquer une option autre que "Limit" ferme le menu
+   sans rien changer (setupConstraintBuilder, app.js) — si aria-selected
+   gardait ce style, la ligne "Limit" resterait visuellement "en survol" en
+   permanence meme sans la souris dessus, ce qui n'est pas voulu. */
+.cbuild__listbox li:hover,
+.cbuild__listbox li:focus { outline: none; background: #f1ecfc; }
+.cbuild__listbox li:hover .cbuild__opt-predicate,
+.cbuild__listbox li:focus .cbuild__opt-predicate { color: #371495; }
+.cbuild__opt-icon {
+  width: 36px; height: 36px; flex: none;
+  display: grid; place-items: center;
+  background: #eaeaf9; border-radius: 4px;
+}
+.cbuild__opt-icon img { width: 20px; height: 20px; }
+/* Case a cocher decorative (taches, multi-selection) : l'etat reel est
+   porte par aria-selected sur le <li> (voir taskCheckboxRows, app.js) ; ici
+   on ne fait que dessiner un carre qui se remplit en fonction de cet
+   attribut, cochee ou non. */
+.cbuild__opt-checkbox {
+  width: 20px; height: 20px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid #9479f3; border-radius: 6px;
+  background: #fff;
+}
+li[aria-selected="true"] .cbuild__opt-checkbox { background: #371495; border-color: #371495; }
+.cbuild__opt-check { width: 12px; height: 10px; display: block; opacity: 0; }
+li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
+.cbuild__opt-text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+.cbuild__opt-predicate { font-size: 14px; line-height: 20px; color: #353a45; overflow-wrap: break-word; }
+.cbuild__opt-desc { font-size: 12px; line-height: 18px; color: #353a45; overflow-wrap: break-word; }
+
+/* ---- Panneau "Limit constraint" (jours) --------------------------------
+   Une seule boite (chevron + contenu), separee de la phrase : le champ
+   "from [...]" au-dessus (dans .cbuild__sentence) n'est qu'un declencheur —
+   c'est ce panneau qui porte le vrai contenu ("Limit constraint" en kicker,
+   "Days" en titre, puis le picker), comme dans la maquette Figma (node
+   18:169) plutot que la fusion "resume + tiroir" des versions precedentes. */
+.cbuild__constraint-info {
+  margin-top: 24px; padding: 24px;
+  background: rgba(238,232,253,.5); border-radius: 4px;
+}
+/* Le panneau entier (tete + corps) est masque par defaut ([hidden] sur
+   .cbuild__constraint-info, voir constraintBuilderMarkup()/setupConstraintBuilder()
+   dans app.js) et ne s'affiche que quand le champ "from [...]" est
+   selectionne — comme les listbox physicien/tache/contrainte, pas un
+   sous-etat visible en permanence. */
+.cbuild__constraint-info[hidden] { display: none; }
+.cbuild__info-head { display: flex; align-items: center; }
+.cbuild__info-body { min-width: 0; margin-top: 24px; }
+.cbuild__info-body[hidden] { display: none; }
+.cbuild__drawer-kicker {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 14px; color: #371495; margin: 0;
+}
+.cbuild__drawer-title { font-size: 20px; font-weight: 500; color: #303030; margin: 0 0 8px; }
+.cbuild__drawer-hint { font-size: 16px; color: #303030; margin: 0 0 24px; }
+.cbuild__select-all {
+  display: block; font: inherit; font-size: 16px; line-height: 16px;
+  color: #371495; background: none; border: none; padding: 0; margin: 0 0 12px;
+  cursor: pointer;
+}
+.cbuild__select-all:hover { text-decoration: underline; }
+.cbuild__days { display: flex; flex-wrap: wrap; gap: 8px; }
+.cbuild__day {
+  font: inherit; font-size: 16px; text-transform: uppercase;
+  padding: 8px; min-width: 42px; border-radius: 4px;
+  border: 1.5px solid #9479f3; background: transparent; color: #371495;
+  cursor: pointer; transition: background .18s var(--ease), color .18s var(--ease);
+}
+.cbuild__day:hover { background: rgba(148,121,243,.15); }
+.cbuild__day.is-on { background: #371495; border-color: #371495; color: #fff; }
+.cbuild__day.is-on:hover { background: #2c1077; }
+
+/* ---- Colonne de droite : illustration + recap. L'illustration reproduit
+   l'etat "Limit" de la maquette Figma (node 18:383, le seul illustre dans le
+   fichier source — d'ou la restriction du widget a ce seul type, voir
+   content.js) : un seul losange (une tache selectionnee = un losange, voir
+   constraintBuilderMarkup) plus la ligne pointillee/crochet, positionnes en
+   % des coordonnees Figma d'origine (cadre 244x262.989) pour rester
+   proportionnels a n'importe quelle taille d'affichage. Le fond violet clair
+   n'habille QUE ce bloc — pas .cbuild__right au complet — pour ne pas
+   deborder sous le titre/la phrase de synthese en dessous, comme dans la
+   maquette (le noeud "Illu" original porte lui-meme ce fond, pas un cadre
+   plus grand qui l'englobe). */
+.cbuild__right {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.cbuild__illu {
+  width: 100%; margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: center;
+  background: #e8e2fb; border-radius: 10px; padding: 24px 16px;
+}
+.cbuild__illu-graphic {
+  position: relative; width: 100%; max-width: 210px;
+  aspect-ratio: 244 / 262.989;
+  margin-inline: auto;
+}
+/* rotate(45deg) : le path SVG trace un losange dont les diagonales sont deja
+   a 45°/135° dans son propre viewBox (voir commentaire dans app.js) — sans
+   cette rotation, la forme rendue est penchee plutot que "debout" (pointes
+   en haut/bas/gauche/droite) comme dans la maquette. transform-origin:
+   center (valeur par defaut) pour pivoter sur place, sans decaler le
+   positionnement left/top ci-dessous.
+
+   Largeur reduite (43.48%, contre 60.86% dans la maquette source) : a la
+   taille d'origine, le losange pivote deborde des deux lignes de reference
+   (pointille a gauche, crochet "Limit" a droite — la rotation elargit son
+   emprise visuelle a width*sqrt(2)). Cette valeur est calculee pour que
+   l'emprise pivotee tienne exactement entre les deux. Un etage (slot) par
+   tache cochee (jusqu'a cfg.maxTasks) : meme left/width pour tous, seul top
+   varie (cbuild__illu-layer--slot0..3), du plus bas (une seule tache) au
+   plus haut (quatre). */
+.cbuild__illu-layer {
+  position: absolute; left: 24.06%; width: 43.48%; height: auto;
+  display: block; transform: rotate(45deg);
+}
+.cbuild__illu-layer--slot0 { top: 34.87%; }
+.cbuild__illu-layer--slot1 { top: 27.87%; }
+.cbuild__illu-layer--slot2 { top: 20.87%; }
+.cbuild__illu-layer--slot3 { top: 13.87%; }
+.cbuild__illu-rule {
+  position: absolute; left: 11.68%; top: 16.54%; width: 70.08%; height: 75.29%; display: block;
+}
+.cbuild__illu-bracket-label {
+  position: absolute; left: 84.84%; top: 52.48%; transform: translateY(-50%);
+  font-size: 16px; color: rgba(55,20,149,.7); white-space: nowrap;
+}
+/* Time/Tasks empiles dans la meme colonne (gauche), plutot que cote a cote
+   comme dans la maquette : avec des libelles de longueur variable ("Monday
+   to Friday" vs "2 days", "Care - Floor 2" vs "4 tasks"), les placer l'un a
+   cote de l'autre risquait de les faire se chevaucher selon le contenu. Un
+   empilement vertical avec un ecart fixe reste correct quel que soit le
+   texte. */
+.cbuild__illu-label { position: absolute; left: 0; text-align: left; }
+.cbuild__illu-label--time { top: 0; }
+.cbuild__illu-label--tasks { top: 30%; }
+.cbuild__illu-label dt { font-size: 12px; color: rgba(55,20,149,.8); }
+.cbuild__illu-label dd { font-size: 16px; font-weight: 500; color: #371495; margin: 0; white-space: nowrap; }
+.cbuild__preview-title { align-self: flex-start; text-align: left; font-size: 20px; font-weight: 500; color: #303030; margin: 0; }
+.cbuild__recap {
+  /* +4px par rapport a la simple ligne 1.6 : espace un peu plus les lignes
+     de la phrase quand elle passe a la ligne (pastilles + texte se
+     touchaient visuellement d'une ligne a l'autre). */
+  font-size: 16px; line-height: calc(1.6em + 4px); color: #303030; text-align: left; margin: 0;
+}
+.cbuild__pill {
+  display: inline-flex; align-items: center;
+  /* marge verticale : sans elle, deux pastilles sur deux lignes consecutives
+     de la phrase (quand elle passe a la ligne) se touchent quasiment — voir
+     leur hauteur (padding + ligne) face a line-height de .cbuild__recap. */
+  margin-block: 2px;
+  background: #e3defb;
+  color: #371495; font-weight: 400;
+  padding: 4px 12px; border-radius: 8px;
 }
 
 /* ---- Figure repliee dans un tiroir "En voir plus" ----------------------
@@ -1039,7 +1375,6 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
     margin-inline: calc(-1 * var(--gutter));
     padding: var(--s3) var(--gutter);
   }
-  .cs-nav__title { display: none; }
   /* La liste devient une barre horizontale defilante. */
   .cs-nav ol {
     display: flex; gap: var(--s2);
@@ -1092,6 +1427,9 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
   .pair { grid-template-columns: 1fr; }
   .foot__grid { grid-template-columns: 1fr 1fr; }
   .cs-next__link { flex-direction: column; align-items: flex-start; }
+  .cbuild__layout { grid-template-columns: 1fr; }
+  .lottie-carousel { grid-template-columns: 1fr; }
+  .lottie-carousel__tabs { flex-direction: row; flex-wrap: wrap; gap: var(--s4) var(--s5); }
 }
 
 /* --- Sous 560px : les petits ecrans ----------------------------------- */

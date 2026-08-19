@@ -524,19 +524,47 @@ function pageCase(project) {
     ${c.draftNote ? `<p class="todo" style="margin-top:var(--s6)">${escapeAttr(c.draftNote)}</p>` : ''}
   `);
   head.append(hw);
-  page.append(head);
 
   /* --- Corps : nav laterale + sections de processus --- */
   if (hasProcess) {
-    const body = el('div', { class: 'wrap' });
+    // La nav laterale couvre TOUTE la page, pas seulement le processus :
+    // "Overview" (l'en-tete lui-meme) en est la premiere entree, au meme
+    // titre que les etapes suivantes, plutot qu'un bloc separe au-dessus
+    // d'une nav qui ne couvrirait que le processus. Repris de
+    // https://www.rachelchen.tech/projects/openai (demande explicite) —
+    // c'est aussi ce qui permet a l'en-tete et aux sections de partager
+    // exactement la meme largeur de colonne (voir hw.classList.remove plus
+    // bas : sans son propre .wrap, l'en-tete herite de la largeur de
+    // .cs__content, comme secs).
+    hw.classList.remove('wrap');
+    head.id = 'sec-overview';
+
+    // wrap--wide : sur cette page, le contenu doit occuper la meme largeur
+    // que l'en-tete du site (.site-head n'a pas de max-width, seulement le
+    // gutter) — .wrap seul (max-width 1280px) laissait un ecart visible sur
+    // grand ecran entre le bord de la pilule de nav et celui de la nav
+    // laterale/des sections en dessous.
+    const body = el('div', { class: 'wrap wrap--wide' });
     const grid = el('div', { class: 'cs__body' });
 
     // La navigation collante. <nav> + <ol> : une liste ordonnee, parce que
     // les etapes d'un processus ont un ordre. Le lecteur d'ecran l'annonce.
+    // Le lien retour vit ICI, separe du reste de la liste par une marge (un
+    // lien discret, pas un bouton/pilule — cf. reference) plutot que dans le
+    // bouton flottant #back-link partage par tout le site : sur une page
+    // avec cette nav laterale, le flottant fait double emploi —
+    // setupBackLink() (plus bas) le garde donc masque sur ces pages
+    // precises et ne l'utilise que sur les pages sans processus (about,
+    // gap, projets sans sections).
     const nav = el('nav', { class: 'cs-nav', 'aria-label': d.csSections });
     nav.innerHTML = `
-      <p class="cs-nav__title">${escapeAttr(d.csProcess)}</p>
+      <a class="cs-nav__back" href="#/${escapeAttr(c.kind)}">
+        <span aria-hidden="true">←</span> ${escapeAttr(d.csBack)}
+      </a>
       <ol>
+        <li><a href="${base}#overview" data-spy="sec-overview">
+          <span>${escapeAttr(d.csOverview)}</span>
+        </a></li>
         ${c.sections.map((s, i) => `
           <li><a href="${base}#${escapeAttr(s.id)}" data-spy="sec-${escapeAttr(s.id)}">
             <span class="cs-nav__num">${String(i + 1).padStart(2, '0')}</span>
@@ -551,6 +579,12 @@ function pageCase(project) {
         <p class="cs-nav__pct" id="cs-pct">0%</p>
       </div>`;
 
+    // Colonne de contenu : l'en-tete (apercu) puis les sections du
+    // processus, l'une sous l'autre — la nav reste seule a gauche sur toute
+    // la hauteur de la page, plutot que de ne longer que les sections.
+    const content = el('div', { class: 'cs__content' });
+    content.append(head);
+
     // Les sections elles-memes.
     const secs = el('div');
     c.sections.forEach(s => {
@@ -562,19 +596,24 @@ function pageCase(project) {
          l'ordre exact d'une page source sans decouper la section. */
       const parts = s.body.map((p, i) => {
         const after = s.media && s.media[i] ? mediaGroup(s.media[i]) : '';
-        return `<p>${escapeAttr(p)}</p>${after}`;
+        const carousel = s.lottieCarousel && i === 0 ? lottieCarouselMarkup(s.lottieCarousel) : '';
+        return `<p>${escapeAttr(p)}</p>${after}${carousel}`;
       }).join('');
 
       sec.innerHTML = `
         <h2 class="cs-sec__title">${escapeAttr(s.title)}</h2>
         ${parts}
-        ${s.image ? figureFor(s) : ''}`;
+        ${s.image ? figureFor(s) : ''}
+        ${s.builder ? constraintBuilderMarkup(s.builder) : ''}`;
       secs.append(sec);
     });
+    content.append(secs);
 
-    grid.append(nav, secs);
+    grid.append(nav, content);
     body.append(grid);
     page.append(body);
+  } else {
+    page.append(head);
   }
 
   /* --- Pied : les autres projets ---
@@ -696,15 +735,581 @@ function figureFor(s) {
       </div>
       <figcaption>${escapeAttr(s.caption || '')}${note}</figcaption>
     </figure>`;
-  // Chevron Lucide (icone "chevron-down", licence MIT) : un <path> copie
-  // directement plutot qu'une dependance en script pour une seule icone.
-  // aria-hidden, le libelle textuel du <summary> porte deja le sens.
-  const chevron = `<svg class="figure-drawer__chevron" viewBox="0 0 24 24" fill="none"
+  return s.figureDrawer
+    ? `<details class="figure-drawer"><summary>${escapeAttr(t().figureSeeMore)}${chevronIcon('figure-drawer__chevron')}</summary>${figure}</details>`
+    : figure;
+}
+
+// Chevron Lucide (icone "chevron-down", licence MIT) : un <path> copie
+// directement plutot qu'une dependance en script pour une seule icone.
+// aria-hidden partout ou elle est utilisee : le libelle textuel voisin
+// porte deja le sens. Partagee entre figureFor() (tiroir de figure) et
+// constraintBuilderMarkup() (declencheur + tiroir des jours) plutot que
+// dupliquee, vu qu'elle est identique aux deux endroits hormis la classe.
+function chevronIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
       aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
-  return s.figureDrawer
-    ? `<details class="figure-drawer"><summary>${escapeAttr(t().figureSeeMore)}${chevron}</summary>${figure}</details>`
-    : figure;
+}
+
+/* Carrousel des 4 illustrations Lottie (section "design", meme place que
+   l'ancien media[0] — voir content.js). N'entre pas dans mediaMarkup()/
+   mediaGroup() : contrairement a une grille statique, un seul panneau est
+   visible a la fois, choisi en cliquant son libelle (figma node 34:817),
+   donc il lui faut son propre etat expose/interactif plutot qu'un simple
+   <figure> empile. Le premier constraint (Blocking) est affiche par defaut. */
+function lottieCarouselMarkup(items) {
+  const lottiePlay = prefersReducedMotion() ? 'controls' : 'autoplay loop';
+  // src en `data-src` (pas `src`) pour les panneaux i>0 : dotlottie-wc a un
+  // mode `freezeOnOffscreen` qui, s'il initialise son <canvas> pendant que
+  // l'element est encore `hidden` (donc hors-flux, taille nulle), le laisse
+  // bloque a la taille par defaut du <canvas> HTML (300x150) — meme apres
+  // avoir enleve `hidden` plus tard, il ne se redimensionne jamais, d'ou le
+  // flou/pixellise observe. En ne posant `src` qu'au premier clic sur son
+  // onglet (setupLottieCarousel), l'element ne s'initialise qu'une fois
+  // reellement visible et correctement dimensionne.
+  const panels = items.map((item, i) => `
+    <div class="lottie-carousel__panel${i === 0 ? ' is-active' : ''}" data-role="lottie-panel"
+         data-index="${i}"${i === 0 ? '' : ' hidden'}>
+      <dotlottie-wc ${i === 0 ? `src="${escapeAttr(mediaUrl(item))}"` : `data-src="${escapeAttr(mediaUrl(item))}"`} ${lottiePlay} aria-label="${escapeAttr(item.label)} constraint"></dotlottie-wc>
+    </div>`).join('');
+  const tabs = items.map((item, i) => `
+    <button type="button" class="lottie-carousel__tab${i === 0 ? ' is-active' : ''}"
+            data-role="lottie-tab" data-index="${i}" aria-pressed="${i === 0 ? 'true' : 'false'}">${escapeAttr(item.label)}</button>`).join('');
+  return `
+    <div class="lottie-carousel" data-role="lottie-carousel">
+      <div class="lottie-carousel__stage">${panels}</div>
+      <div class="lottie-carousel__tabs" role="tablist" aria-label="Constraint animations">${tabs}</div>
+    </div>`;
+}
+
+/* Cablage : un clic sur un libelle affiche son panneau et cache les autres.
+   $$() est deja scope au widget (root), donc plusieurs carrousels sur la
+   meme page ne se marchent pas dessus — pas le cas ici, mais coherent avec
+   setupConstraintBuilder() plus bas. */
+function setupLottieCarousel() {
+  $$('[data-role="lottie-carousel"]').forEach(root => {
+    const tabs = $$('[data-role="lottie-tab"]', root);
+    const panels = $$('[data-role="lottie-panel"]', root);
+    tabs.forEach(tab => {
+      const onClick = () => {
+        const index = tab.dataset.index;
+        tabs.forEach(t => {
+          const active = t === tab;
+          t.classList.toggle('is-active', active);
+          t.setAttribute('aria-pressed', String(active));
+        });
+        panels.forEach(p => {
+          const active = p.dataset.index === index;
+          p.classList.toggle('is-active', active);
+          p.hidden = !active;
+          if (active) {
+            const wc = p.querySelector('dotlottie-wc');
+            if (wc.hasAttribute('data-src')) {
+              wc.setAttribute('src', wc.getAttribute('data-src'));
+              wc.removeAttribute('data-src');
+            }
+          }
+        });
+      };
+      tab.addEventListener('click', onClick);
+      addCleanup(() => tab.removeEventListener('click', onClick));
+    });
+  });
+}
+
+/* ==========================================================================
+   5e ter. LE CONSTRUCTEUR DE CONTRAINTES — widget interactif
+   --------------------------------------------------------------------------
+   Un seul cas d'usage (section "design" de l'etude de cas Contraintes) :
+   voir s.builder dans content.js et l'appel dans pageCase(). N'entre PAS
+   dans mediaMarkup()/mediaGroup() : voir la note dans styles.css a cote de
+   .constraint-builder pour la justification.
+   ========================================================================== */
+
+/* Reduit une liste de jours a une formule lisible : une plage continue
+   ("Monday to Friday"), un jour seul ("Monday"), ou juste le compte
+   ("3 days") si les jours choisis ne se suivent pas — une liste separee par
+   des virgules devient vite illisible des que le nombre de jours augmente. */
+function formatDayRange(selected, daysCfg) {
+  const order = daysCfg.map(d => d.value);
+  const chosen = order.filter(v => selected.includes(v));
+  if (!chosen.length) return 'no days selected';
+  const full = v => daysCfg.find(d => d.value === v).full;
+  const idxs = chosen.map(v => order.indexOf(v));
+  const isContiguous = idxs.every((v, i) => i === 0 || v === idxs[i - 1] + 1);
+  if (chosen.length === 1) return full(chosen[0]);
+  if (isContiguous) return `${full(chosen[0])} to ${full(chosen[chosen.length - 1])}`;
+  return `${chosen.length} days`;
+}
+
+/* "Care - Floor 2" si une seule tache est cochee, sinon "3 tasks" — le
+   champ tache est multi-selection (jusqu'a cfg.maxTasks, voir
+   setupTaskDropdown), donc son libelle doit degrader en compte des que plus
+   d'une tache est choisie, exactement comme formatDayRange() pour les jours. */
+function taskFieldLabel(cfg, selectedValues) {
+  if (selectedValues.length === 1) {
+    const t = cfg.tasks.find(x => x.value === selectedValues[0]);
+    return t ? t.label : '';
+  }
+  return `${selectedValues.length} tasks`;
+}
+
+/* Phrase de synthese, avec les valeurs en pastilles (".cbuild__pill") —
+   c'est la partie que le texte de la section designe comme "the important
+   piece". Reconstruite entierement a chaque changement. "the task"/"the
+   tasks" et le nombre de pastilles suivent le nombre de taches cochees. */
+function constraintRecapHTML(vals, cfg) {
+  const physician = cfg.physicians.find(p => p.value === vals.physician);
+  const constraint = cfg.constraints.find(c => c.value === vals.constraint);
+  const pill = (text) => `<span class="cbuild__pill">${escapeAttr(text)}</span>`;
+  const taskWord = vals.tasks.length > 1 ? 'tasks' : 'task';
+  let html = `${pill(physician.label)} ${escapeAttr(constraint.predicate)} the ${taskWord} ${pill(taskFieldLabel(cfg, vals.tasks))}`;
+  if (vals.days.length) {
+    html += ` from ${pill(formatDayRange(vals.days, cfg.days))}`;
+  }
+  return html + '.';
+}
+
+/* Lignes d'options simples (physicien) : meme composant listbox que le type
+   de contrainte (cbuild__listbox / cbuild__trigger), juste sans icone ni
+   description. */
+function simpleOptionRows(items, selectedValue) {
+  return items.map(item => `
+    <li role="option" data-value="${escapeAttr(item.value)}"
+        aria-selected="${item.value === selectedValue ? 'true' : 'false'}" tabindex="-1">
+      <span class="cbuild__opt-text"><span class="cbuild__opt-predicate">${escapeAttr(item.label)}</span></span>
+    </li>`).join('');
+}
+
+/* Lignes a cases a cocher (taches, multi-selection) : meme structure que
+   simpleOptionRows() plus une case visuelle (cbuild__opt-checkbox, purement
+   decorative — l'etat coche/decoche reel est porte par aria-selected, comme
+   pour les autres listbox du widget). */
+function taskCheckboxRows(items, selectedValues) {
+  return items.map(item => `
+    <li role="option" data-value="${escapeAttr(item.value)}"
+        aria-selected="${selectedValues.includes(item.value) ? 'true' : 'false'}" tabindex="-1">
+      <span class="cbuild__opt-checkbox" aria-hidden="true">
+        <img class="cbuild__opt-check" src="assets/icons/constraint-check.svg" alt="" width="12" height="10">
+      </span>
+      <span class="cbuild__opt-text"><span class="cbuild__opt-predicate">${escapeAttr(item.label)}</span></span>
+    </li>`).join('');
+}
+
+/* Un champ "trigger + listbox" complet (physicien, tache, ou contrainte) —
+   factorise parce que les trois partagent exactement la meme mecanique
+   ARIA/CSS (cbuild__trigger, cbuild__listbox, role=listbox/option). */
+function dropdownField({ role, label, ariaLabel, rowsHTML, chevron }) {
+  return `
+    <span class="cbuild__field cbuild__field--${role}">
+      <button type="button" class="cbuild__select cbuild__trigger" data-role="${role}-trigger"
+              aria-haspopup="listbox" aria-expanded="false" aria-controls="cbuild-${role}-list">
+        <span data-role="${role}-label">${escapeAttr(label)}</span>
+        ${chevron}
+      </button>
+      <ul class="cbuild__listbox" id="cbuild-${role}-list" role="listbox"
+          aria-label="${escapeAttr(ariaLabel)}" data-role="${role}-list" hidden>${rowsHTML}</ul>
+    </span>`;
+}
+
+/* Balisage initial (etat par defaut = Limit, seul type selectionnable dans
+   cette demo). Rendu normalement dans le flux du HTML de la page ;
+   setupConstraintBuilder() ajoute ensuite l'interactivite. */
+function constraintBuilderMarkup(cfg) {
+  const d = cfg.default;
+  const selectedConstraint = cfg.constraints.find(c => c.value === d.constraint);
+  const selectedPhysician = cfg.physicians.find(p => p.value === d.physician);
+
+  // Les trois autres types restent visibles et cliquables (fidele au
+  // composant Figma node 18:254), mais cliquer dessus ne change jamais la
+  // selection reelle (voir setupConstraintDropdown, app.js) : seule "Limit"
+  // a une illustration dans la maquette source (node 18:383).
+  const constraintRows = cfg.constraints.map(c => `
+    <li role="option" data-value="${escapeAttr(c.value)}"
+        aria-selected="${c.value === d.constraint ? 'true' : 'false'}" tabindex="-1">
+      <span class="cbuild__opt-icon" aria-hidden="true">${c.icon ? `<img src="${escapeAttr(c.icon)}" alt="" width="20" height="20">` : ''}</span>
+      <span class="cbuild__opt-text">
+        <span class="cbuild__opt-predicate">${escapeAttr(c.predicate)}</span>
+        <span class="cbuild__opt-desc">${escapeAttr(c.description)}</span>
+      </span>
+    </li>`).join('');
+
+  const dayButtons = cfg.days.map(day => `
+    <button type="button" class="cbuild__day${d.days.includes(day.value) ? ' is-on' : ''}"
+            data-day="${escapeAttr(day.value)}" aria-pressed="${d.days.includes(day.value) ? 'true' : 'false'}">${escapeAttr(day.label)}</button>`).join('');
+
+  // Icone chevron de la maquette Figma (fond violet fixe #371495), pas le
+  // chevron Lucide partage par chevronIcon() ailleurs sur le site : fidelite
+  // exacte demandee pour ce widget precis.
+  const fieldChevron = `<img class="cbuild__field-chevron" src="assets/icons/constraint-chevron-down.svg" alt="" aria-hidden="true" width="24" height="24">`;
+
+  const physicianField = dropdownField({
+    role: 'physician', label: selectedPhysician.label, ariaLabel: 'Physician',
+    rowsHTML: simpleOptionRows(cfg.physicians, d.physician), chevron: fieldChevron
+  });
+  const taskField = dropdownField({
+    role: 'task', label: taskFieldLabel(cfg, d.tasks), ariaLabel: 'Tasks',
+    rowsHTML: taskCheckboxRows(cfg.tasks, d.tasks), chevron: fieldChevron
+  });
+  const constraintField = dropdownField({
+    role: 'constraint', label: selectedConstraint.predicate, ariaLabel: 'Constraint type',
+    rowsHTML: constraintRows, chevron: fieldChevron
+  });
+
+  // Illustration : reproduction de l'etat "Limit" de la maquette Figma (node
+  // 18:383) — un losange par tache selectionnee (jusqu'a cfg.maxTasks),
+  // chacun sur son propre "etage" vertical (cbuild__illu-layer--slotN) avec
+  // une couleur differente, dans le meme esprit que l'empilement a cinq
+  // losanges de la maquette d'origine. Les 4 <img> sont toujours dans le DOM
+  // (setupConstraintBuilder bascule leur [hidden] selon le nombre de taches
+  // cochees) plutot que regenerees a chaque changement.
+  // rotate(45deg) : le path SVG trace un losange dont les DIAGONALES sont
+  // deja a 45°/135° dans son propre viewBox — sans rotation CSS, la forme
+  // rendue est donc un losange penche, pas la forme "debout" (pointes en
+  // haut/bas/gauche/droite) de la maquette ; la rotation ramene ces
+  // diagonales a 0°/90°. La ligne pointillee + crochet reste (constraint-
+  // illu-rule.svg).
+  const layerAssets = [
+    'assets/icons/constraint-illu-layer-3.svg',
+    'assets/icons/constraint-illu-layer-2.svg',
+    'assets/icons/constraint-illu-layer-4.svg',
+    'assets/icons/constraint-illu-layer-5.svg'
+  ];
+  const diamondLayers = layerAssets.map((src, i) => `
+    <img class="cbuild__illu-layer cbuild__illu-layer--slot${i}" data-role="illu-diamond"
+         src="${escapeAttr(src)}" alt=""${i < d.tasks.length ? '' : ' hidden'}>`).join('');
+
+  const illustration = `
+    <div class="cbuild__illu" aria-hidden="true">
+      <div class="cbuild__illu-graphic">
+        ${diamondLayers}
+        <img class="cbuild__illu-rule" src="assets/icons/constraint-illu-rule.svg" alt="">
+        <span class="cbuild__illu-bracket-label" data-role="illu-bracket-label">${escapeAttr(selectedConstraint.name)}</span>
+        <div class="cbuild__illu-label cbuild__illu-label--time">
+          <dt>Time</dt><dd data-role="illu-days">${escapeAttr(formatDayRange(d.days, cfg.days))}</dd>
+        </div>
+        <div class="cbuild__illu-label cbuild__illu-label--tasks">
+          <dt>Tasks</dt><dd data-role="illu-task">${escapeAttr(taskFieldLabel(cfg, d.tasks))}</dd>
+        </div>
+      </div>
+    </div>`;
+  // aria-hidden sur toute l'illustration : purement decorative. Chaque fait
+  // qu'elle montre (contrainte, tache, jours) est deja enonce en texte
+  // simple dans la phrase de synthese ci-dessous, qui porte l'information
+  // pour un lecteur d'ecran ou sans SVG.
+
+  return `
+    <div class="constraint-builder" data-constraint-builder>
+      <p class="cbuild__intro">${escapeAttr(cfg.title)}</p>
+      <div class="cbuild__frame">
+        <div class="cbuild__card">
+          <div class="cbuild__layout">
+            <div class="cbuild__left">
+              <p class="cbuild__card-title">Constraint parameters</p>
+              <div class="cbuild__sentence">
+                Physician(s)
+                ${physicianField}
+                ${constraintField}
+                <span data-role="task-word">${d.tasks.length > 1 ? 'the tasks' : 'the task'}</span>
+                ${taskField}
+                from
+                <span class="cbuild__field cbuild__field--days">
+                  <button type="button" class="cbuild__select cbuild__trigger" data-role="days-trigger"
+                          aria-expanded="false" aria-controls="cbuild-days-panel">
+                    <span data-role="days-summary">${escapeAttr(formatDayRange(d.days, cfg.days))}</span>
+                    ${fieldChevron}
+                  </button>
+                </span>
+              </div>
+
+              <div class="cbuild__constraint-info" data-role="constraint-info" id="cbuild-days-panel" hidden>
+                <div class="cbuild__info-head">
+                  <p class="cbuild__drawer-kicker">
+                    <img data-role="drawer-kicker-icon" src="${escapeAttr(selectedConstraint.icon)}" alt="" aria-hidden="true" width="16" height="16">
+                    <span data-role="drawer-kicker-label">${escapeAttr(selectedConstraint.name)} constraint</span>
+                  </p>
+                </div>
+                <div class="cbuild__info-body" data-role="info-body">
+                  <p class="cbuild__drawer-title">Days</p>
+                  <p class="cbuild__drawer-hint">Select applicable days for this constraint.</p>
+                  <button type="button" class="cbuild__select-all" data-role="select-all-days">${d.days.length === cfg.days.length ? 'Unselect all' : 'Select all'}</button>
+                  <div class="cbuild__days" data-role="days-picker" role="group" aria-label="Applicable days">${dayButtons}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="cbuild__right">
+              ${illustration}
+              <p class="cbuild__preview-title" data-role="preview-title">${escapeAttr(selectedConstraint.name)} constraint</p>
+              <p class="cbuild__recap" data-role="recap" aria-live="polite">${constraintRecapHTML(d, cfg)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* Cablage : trois champs "trigger + listbox" identiques (physicien, tache,
+   type de contrainte — factorises dans setupDropdown ci-dessous), boutons de
+   jours, tiroir conditionnel, phrase de synthese. Tout ecouteur passe par
+   addCleanup() : voir section 1. */
+function setupConstraintBuilder() {
+  const root = $('.constraint-builder');
+  if (!root) return;
+
+  const project = PROJECTS.find(p => p.slug === 'constraints');
+  const cfg = project.sections.find(s => s.id === 'design').builder;
+  const vals = { physician: cfg.default.physician, constraint: cfg.default.constraint,
+                 tasks: [...cfg.default.tasks], days: [...cfg.default.days] };
+
+  const daysTrigger = $('[data-role="days-trigger"]', root);
+  const daysTriggerSummary = $('[data-role="days-summary"]', root);
+  const constraintInfo = $('[data-role="constraint-info"]', root);
+  const infoBody = $('[data-role="info-body"]', root);
+  const dayButtons = $$('.cbuild__day', root);
+  const selectAllBtn = $('[data-role="select-all-days"]', root);
+  const taskWord = $('[data-role="task-word"]', root);
+  const recap = $('[data-role="recap"]', root);
+  const illuDays = $('[data-role="illu-days"]', root);
+  const illuTask = $('[data-role="illu-task"]', root);
+  const illuDiamonds = $$('[data-role="illu-diamond"]', root);
+  const previewTitle = $('[data-role="preview-title"]', root);
+  const illuBracketLabel = $('[data-role="illu-bracket-label"]', root);
+
+  const updatePreview = () => {
+    const constraint = cfg.constraints.find(c => c.value === vals.constraint);
+    illuDays.textContent = formatDayRange(vals.days, cfg.days);
+    illuTask.textContent = taskFieldLabel(cfg, vals.tasks);
+    illuDiamonds.forEach((img, i) => { img.hidden = i >= vals.tasks.length; });
+    previewTitle.textContent = `${constraint.name} constraint`;
+    illuBracketLabel.textContent = constraint.name;
+    taskWord.textContent = vals.tasks.length > 1 ? 'the tasks' : 'the task';
+    recap.innerHTML = constraintRecapHTML(vals, cfg);
+  };
+
+  // Un seul panneau ouvert a la fois (les 3 listbox + le panneau de details
+  // des jours) : chaque `open()`/toggle ci-dessous commence par fermer tout
+  // ce que `closers` connait, et le clic exterieur (plus bas) fait la meme
+  // chose.
+  const closers = [];
+
+  // Listbox a selection simple (physicien) : ferme au clic sur une option.
+  const setupSingleSelectDropdown = (role, onSelect) => {
+    const trigger = $(`[data-role="${role}-trigger"]`, root);
+    const label = $(`[data-role="${role}-label"]`, root);
+    const listbox = $(`[data-role="${role}-list"]`, root);
+    const options = $$('li[role="option"]', listbox);
+
+    const close = () => { listbox.hidden = true; trigger.setAttribute('aria-expanded', 'false'); };
+    const open = () => {
+      closers.forEach(c => c());
+      listbox.hidden = false;
+      trigger.setAttribute('aria-expanded', 'true');
+      (options.find(o => o.getAttribute('aria-selected') === 'true') || options[0]).focus();
+    };
+    const onTriggerClick = () => { listbox.hidden ? open() : close(); };
+    trigger.addEventListener('click', onTriggerClick);
+    addCleanup(() => trigger.removeEventListener('click', onTriggerClick));
+
+    const select = (value) => {
+      options.forEach(o => o.setAttribute('aria-selected', String(o.dataset.value === value)));
+      onSelect(value, label);
+    };
+    options.forEach(opt => {
+      const onClick = () => { select(opt.dataset.value); close(); trigger.focus(); };
+      opt.addEventListener('click', onClick);
+      addCleanup(() => opt.removeEventListener('click', onClick));
+    });
+
+    const onKeydown = (ev) => {
+      const i = options.indexOf(document.activeElement);
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); (options[i + 1] || options[0]).focus(); }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); (options[i - 1] || options[options.length - 1]).focus(); }
+      else if (ev.key === 'Home') { ev.preventDefault(); options[0].focus(); }
+      else if (ev.key === 'End') { ev.preventDefault(); options[options.length - 1].focus(); }
+      else if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); select(document.activeElement.dataset.value); close(); trigger.focus(); }
+      else if (ev.key === 'Escape') { close(); trigger.focus(); }
+    };
+    listbox.addEventListener('keydown', onKeydown);
+    addCleanup(() => listbox.removeEventListener('keydown', onKeydown));
+
+    closers.push(() => { if (!listbox.hidden) close(); });
+  };
+
+  setupSingleSelectDropdown('physician', (value, label) => {
+    vals.physician = value;
+    label.textContent = cfg.physicians.find(p => p.value === value).label;
+    updatePreview();
+  });
+
+  // Listbox du type de contrainte : toutes les options sont cliquables et
+  // ferment le menu (demande explicite), mais seule "Limit" reste jamais
+  // reellement selectionnee — aria-selected n'est donc jamais reecrit ici, et
+  // .cbuild__listbox li[aria-selected] n'a plus de style de survol permanent
+  // (styles.css) : cliquer une autre option ne fait donc que fermer le menu,
+  // sans laisser de trace visuelle sur la ligne cliquee.
+  (() => {
+    const trigger = $('[data-role="constraint-trigger"]', root);
+    const listbox = $('[data-role="constraint-list"]', root);
+    const options = $$('li[role="option"]', listbox);
+
+    const close = () => { listbox.hidden = true; trigger.setAttribute('aria-expanded', 'false'); };
+    const open = () => {
+      closers.forEach(c => c());
+      listbox.hidden = false;
+      trigger.setAttribute('aria-expanded', 'true');
+      (options.find(o => o.dataset.value === vals.constraint) || options[0]).focus();
+    };
+    const onTriggerClick = () => { listbox.hidden ? open() : close(); };
+    trigger.addEventListener('click', onTriggerClick);
+    addCleanup(() => trigger.removeEventListener('click', onTriggerClick));
+
+    options.forEach(opt => {
+      const onClick = () => { close(); trigger.focus(); };
+      opt.addEventListener('click', onClick);
+      addCleanup(() => opt.removeEventListener('click', onClick));
+    });
+
+    const onKeydown = (ev) => {
+      const i = options.indexOf(document.activeElement);
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); (options[i + 1] || options[0]).focus(); }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); (options[i - 1] || options[options.length - 1]).focus(); }
+      else if (ev.key === 'Home') { ev.preventDefault(); options[0].focus(); }
+      else if (ev.key === 'End') { ev.preventDefault(); options[options.length - 1].focus(); }
+      else if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); close(); trigger.focus(); }
+      else if (ev.key === 'Escape') { close(); trigger.focus(); }
+    };
+    listbox.addEventListener('keydown', onKeydown);
+    addCleanup(() => listbox.removeEventListener('keydown', onKeydown));
+
+    closers.push(() => { if (!listbox.hidden) close(); });
+  })();
+
+  // Listbox des taches : cases a cocher, plafonnee a cfg.maxTasks, reste
+  // ouverte apres chaque coche (contrairement aux deux listbox ci-dessus) —
+  // on choisit plusieurs taches d'affilee sans rouvrir le menu a chaque fois.
+  (() => {
+    const trigger = $('[data-role="task-trigger"]', root);
+    const label = $('[data-role="task-label"]', root);
+    const listbox = $('[data-role="task-list"]', root);
+    const options = $$('li[role="option"]', listbox);
+
+    const close = () => { listbox.hidden = true; trigger.setAttribute('aria-expanded', 'false'); };
+    const open = () => {
+      closers.forEach(c => c());
+      listbox.hidden = false;
+      trigger.setAttribute('aria-expanded', 'true');
+      (options.find(o => o.getAttribute('aria-selected') === 'true') || options[0]).focus();
+    };
+    const onTriggerClick = () => { listbox.hidden ? open() : close(); };
+    trigger.addEventListener('click', onTriggerClick);
+    addCleanup(() => trigger.removeEventListener('click', onTriggerClick));
+
+    const toggleTask = (opt) => {
+      const value = opt.dataset.value;
+      const isOn = opt.getAttribute('aria-selected') === 'true';
+      if (isOn) {
+        if (vals.tasks.length <= 1) return;              // au moins une tache reste cochee
+        vals.tasks = vals.tasks.filter(v => v !== value);
+      } else {
+        if (vals.tasks.length >= cfg.maxTasks) return;    // plafond (4)
+        vals.tasks = [...vals.tasks, value];
+      }
+      opt.setAttribute('aria-selected', String(!isOn));
+      label.textContent = taskFieldLabel(cfg, vals.tasks);
+      updatePreview();
+    };
+    options.forEach(opt => {
+      const onClick = () => toggleTask(opt);
+      opt.addEventListener('click', onClick);
+      addCleanup(() => opt.removeEventListener('click', onClick));
+    });
+
+    const onKeydown = (ev) => {
+      const i = options.indexOf(document.activeElement);
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); (options[i + 1] || options[0]).focus(); }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); (options[i - 1] || options[options.length - 1]).focus(); }
+      else if (ev.key === 'Home') { ev.preventDefault(); options[0].focus(); }
+      else if (ev.key === 'End') { ev.preventDefault(); options[options.length - 1].focus(); }
+      else if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); toggleTask(document.activeElement); }
+      else if (ev.key === 'Escape') { close(); trigger.focus(); }
+    };
+    listbox.addEventListener('keydown', onKeydown);
+    addCleanup(() => listbox.removeEventListener('keydown', onKeydown));
+
+    closers.push(() => { if (!listbox.hidden) close(); });
+  })();
+
+  // Panneau "Limit constraint" (jours) : masque par defaut, ne s'affiche que
+  // lorsque le champ "from [...]" est selectionne (ouvert) — seul ce champ
+  // pilote le panneau desormais (plus de chevron/bouton dedie a l'interieur
+  // du tiroir, redondant avec ce meme champ). Se referme (et redisparait
+  // entierement, pas seulement son contenu) via les memes `closers` que les
+  // listbox : clic exterieur, ouverture d'un autre champ, etc.
+  let infoOpen = false;
+  const setInfoOpen = (open) => {
+    infoOpen = open;
+    constraintInfo.hidden = !open;
+    infoBody.hidden = !open;
+    daysTrigger.setAttribute('aria-expanded', String(open));
+  };
+  const toggleInfo = () => {
+    if (infoOpen) { setInfoOpen(false); }
+    else { closers.forEach(c => c()); setInfoOpen(true); }
+  };
+  daysTrigger.addEventListener('click', toggleInfo);
+  addCleanup(() => daysTrigger.removeEventListener('click', toggleInfo));
+  closers.push(() => { if (infoOpen) setInfoOpen(false); });
+
+  // Un clic hors du widget referme n'importe quel panneau encore ouvert.
+  // mousedown plutot que click : se declenche avant qu'un autre gestionnaire
+  // de clic ailleurs sur la page n'ait la moindre chance d'interferer (ex.
+  // stopPropagation), et c'est le pattern standard pour ce genre de detection.
+  const onOutsidePointerDown = (ev) => { if (!root.contains(ev.target)) closers.forEach(close => close()); };
+  document.addEventListener('mousedown', onOutsidePointerDown, true);
+  addCleanup(() => document.removeEventListener('mousedown', onOutsidePointerDown, true));
+
+  // "Select all" devient "Unselect all" des que les 7 jours sont coches —
+  // reflete l'etat courant plutot que de rester un libelle fixe qui n'aurait
+  // plus de sens une fois tout deja selectionne.
+  const updateSelectAllLabel = () => {
+    selectAllBtn.textContent = vals.days.length === cfg.days.length ? 'Unselect all' : 'Select all';
+  };
+
+  const refreshDays = () => {
+    const rangeText = formatDayRange(vals.days, cfg.days);
+    daysTriggerSummary.textContent = rangeText;
+    illuDays.textContent = rangeText;
+    recap.innerHTML = constraintRecapHTML(vals, cfg);
+    updateSelectAllLabel();
+  };
+
+  dayButtons.forEach(btn => {
+    const onClick = () => {
+      const day = btn.dataset.day;
+      const on = !btn.classList.contains('is-on');
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', String(on));
+      vals.days = on ? [...vals.days, day] : vals.days.filter(x => x !== day);
+      refreshDays();
+    };
+    btn.addEventListener('click', onClick);
+    addCleanup(() => btn.removeEventListener('click', onClick));
+  });
+
+  const onSelectAllToggle = () => {
+    const allSelected = vals.days.length === cfg.days.length;
+    vals.days = allSelected ? [] : cfg.days.map(d => d.value);
+    dayButtons.forEach(btn => {
+      btn.classList.toggle('is-on', !allSelected);
+      btn.setAttribute('aria-pressed', String(!allSelected));
+    });
+    refreshDays();
+  };
+  selectAllBtn.addEventListener('click', onSelectAllToggle);
+  addCleanup(() => selectAllBtn.removeEventListener('click', onSelectAllToggle));
+  addCleanup(() => selectAllBtn.removeEventListener('click', onSelectAll));
 }
 
 /* ---- 5f. Une page editoriale (A propos, article) ---- */
@@ -910,6 +1515,8 @@ function render() {
     main.focus({ preventScroll: true });
 
     if (route.name === 'case') setupCaseBehaviours();
+    if (route.name === 'case' && route.project.slug === 'constraints') setupConstraintBuilder();
+    if (route.name === 'case' && route.project.slug === 'constraints') setupLottieCarousel();
     setupScrollProgress();
     setupVideos();
   };
@@ -918,8 +1525,15 @@ function render() {
   // photographie l'ancien et le nouvel etat et interpole entre les deux.
   // `updateCallbackDone` est la promesse tenue une fois le DOM remplace —
   // c'est notre signal pour lancer afterSwap sans risque.
+  // Deux gestionnaires (pas juste .then) : si une navigation arrive pendant
+  // qu'une transition precedente est encore en cours, le navigateur ANNULE
+  // celle-ci et son updateCallbackDone est REJETEE (InvalidStateError),
+  // meme si swap() s'est deja execute. Sans gestionnaire de rejet, afterSwap
+  // ne tourne alors jamais : plus aucun ecouteur ne se rattache sur la page
+  // (widget, clic exterieur, etc.) jusqu'a la prochaine navigation reussie —
+  // c'etait la cause d'interactions qui semblaient marcher "par intermittence".
   if (document.startViewTransition && !prefersReducedMotion()) {
-    document.startViewTransition(swap).updateCallbackDone.then(afterSwap);
+    document.startViewTransition(swap).updateCallbackDone.then(afterSwap, afterSwap);
   } else {
     swap();
     afterSwap();
@@ -956,10 +1570,14 @@ function markActiveNav(route) {
 
 /* Le lien retour persistant : visible seulement sur les pages de detail.
    Sa destination est deduite du type de projet, pour revenir a la bonne
-   liste plutot que systematiquement a l'accueil. */
+   liste plutot que systematiquement a l'accueil. Masque sur une etude de cas
+   AVEC nav laterale (hasProcess) : cette page a deja son propre lien retour
+   integre a .cs-nav (voir pageCase()) — garder le bouton flottant en plus
+   ferait doublon. */
 function setupBackLink(route) {
   const link = $('#back-link');
-  const deep = ['case', 'about', 'gap'].includes(route.name);
+  const hasOwnBackLink = route.name === 'case' && (route.project.sections || []).length > 0;
+  const deep = ['case', 'about', 'gap'].includes(route.name) && !hasOwnBackLink;
   link.hidden = !deep;
   if (!deep) return;
   link.href = route.name === 'case' ? `#/${route.project.kind}` : '#/';
@@ -1057,7 +1675,11 @@ function setupVideos() {
    que la page a ete inseree dans <main>, jamais avant (voir render). */
 function setupCaseBehaviours() {
   const links = $$('.cs-nav a[data-spy]');
-  const secs  = $$('.cs-sec');
+  // #sec-overview (l'en-tete) est traite comme la premiere "section" du
+  // scroll-spy au meme titre que les .cs-sec du processus — querySelectorAll
+  // renvoie les elements dans l'ordre du DOM, donc il arrive naturellement
+  // en tete de liste sans tri supplementaire (voir pageCase()).
+  const secs = $$('#sec-overview, .cs-sec');
   if (!secs.length) return;
 
   const bar   = $('#cs-bar');

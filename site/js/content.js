@@ -98,7 +98,7 @@ export const UI = {
   csRole: 'Role', csDuration: 'Duration', csTeam: 'Team', csTools: 'Tools', csYear: 'Year',
   csProblem: 'The problem',
   csOutcome: 'The outcome',
-  csProcess: 'The process',
+  csOverview: 'Overview',
   csNext: 'Next project',
   csBack: 'Back',
   csProgress: 'Progress through the page',
@@ -249,28 +249,94 @@ export const PROJECTS = [
            respecter l'ordre de la page Contra — illustrations, puis
            principes, puis captures — sans découper la section en deux. */
         media: {
-          /* Les 4 illustrations animées : les JSON Lottie d'origine,
-             rendus directement par dotlottie-wc plutot que convertis en
-             video. Elles sont dans le dépôt, donc `src` est utilisé
-             plutôt qu'un identifiant Contra. */
-          0: [
-            { type: 'lottie', src: 'assets/media/Blocking-complete lottie.json',
-              caption: 'Blocking constraint' },
-            { type: 'lottie', src: 'assets/media/Protection-(hollow).json',
-              caption: 'Protection constraint' },
-            { type: 'lottie', src: 'assets/media/Spacing lottie.json',
-              caption: 'Spacing constraint' },
-            { type: 'lottie', src: 'assets/media/Availability.json',
-              caption: 'Availability constraint' }
-          ],
           2: [
             { type: 'image', id: 'ytoa4swb5caon0onh5yb', caption: 'Constraints list' },
             { type: 'image', id: 'mcpbonwlpodke4hgyjaq', caption: 'Constraint configuration' },
             { type: 'image', id: 'qkmo6j2mbfagfqbt0hti', caption: 'Components' }
           ]
         },
-        image: 'constraints-4-design', frOnly: true,
-        caption: 'The two directions explored, then the panel listing created constraints.'
+        /* Carrousel des 4 illustrations animees (paragraphe 0, meme place que
+           l'ancien media[0]) : un seul JSON Lottie visible a la fois, choisi
+           en cliquant son libelle (figma node 34:817). N'est pas dans
+           media[] : ce n'est plus une grille statique mais un etat exclusif
+           (voir lottieCarouselMarkup()/setupLottieCarousel() dans app.js). */
+        lottieCarousel: [
+          { src: 'assets/media/Blocking-complete lottie.json', label: 'Blocking' },
+          { src: 'assets/media/Protection-(hollow).json', label: 'Protection' },
+          { src: 'assets/media/Spacing lottie.json', label: 'Spacing' },
+          { src: 'assets/media/Availability.json', label: 'Availability' }
+        ],
+        /* Widget interactif : le "sentence builder" decrit au paragraphe 3
+           ("...restates the rule as a plain-language sentence..."). N'est
+           PAS un media (voir constraintBuilderMarkup()/setupConstraintBuilder()
+           dans app.js) : rendu apres la figure des mockups, pas entre deux
+           paragraphes, donc en dehors du systeme media[]/mediaGroup(). */
+        builder: {
+          title: 'Try the sentence-builder direction',
+          intro: 'A simplified version of the second direction described above — the same example from the paragraph, editable.',
+
+          physicians: [
+            { value: 'marc-tremblay', label: 'Marc Tremblay' },
+            { value: 'jean-dupont',   label: 'Jean Dupont' },
+            { value: 'isabelle-roy',  label: 'Isabelle Roy' },
+            { value: 'david-chen',    label: 'David Chen' }
+          ],
+          // max 4 (voir builder.maxTasks) : autant de taches selectionnees que
+          // de losanges affiches dans l'illustration (un losange par tache).
+          tasks: [
+            { value: 'care-floor-2',    label: 'Care - Floor 2' },
+            { value: 'diag-floor-2',    label: 'Diag - Floor 2' },
+            { value: 'triage-floor-1',  label: 'Triage - Floor 1' },
+            { value: 'post-op-floor-3', label: 'Post-Op - Floor 3' }
+          ],
+          maxTasks: 4,
+          // Seul 'limit' est selectionnable dans cette demo — c'est le seul
+          // etat pour lequel la maquette Figma fournit une illustration
+          // complete (empilement de losanges + libelles Time/Tasks, node
+          // 18:383), donc le seul qu'on peut reproduire a l'identique. Les 3
+          // autres restent visibles dans la liste (fidele au composant Figma
+          // node 18:254) et cliquables, mais la selection ne change jamais
+          // (voir selectConstraint() dans app.js) : cliquer dessus ferme
+          // juste le menu, "Limit" reste actif.
+          // `predicate` se compose comme "PHYSICIEN <predicate> the task
+          // TACHE" (voir constraintRecapHTML() et le "the task" statique
+          // dans constraintBuilderMarkup(), app.js) : chaque predicate doit
+          // donc se terminer par sa propre preposition, sinon la phrase
+          // duplique "to" ou tombe a plat selon le type choisi.
+          constraints: [
+            { value: 'spacing', name: 'Spacing', predicate: 'will be spaced from',
+              description: 'The spacing constraint separates two tasks.',
+              icon: 'assets/icons/constraint-spacing.svg' },
+            { value: 'limit', name: 'Limit', predicate: 'will be limited to',
+              description: 'The limit constraint restricts task assignment.',
+              icon: 'assets/icons/constraint-limit.svg' },
+            { value: 'blocking', name: 'Blocking', predicate: 'will be blocked from',
+              description: 'The blocking constraint excludes simultaneous assignment.',
+              icon: 'assets/icons/constraint-blocking.svg' },
+            { value: 'protection', name: 'Protection', predicate: 'will be reserved for',
+              description: 'The protection constraint reserves a task for a time block.',
+              icon: 'assets/icons/constraint-protection.svg' }
+          ],
+          days: [
+            { value: 'mon', label: 'Mon', full: 'Monday' },
+            { value: 'tue', label: 'Tue', full: 'Tuesday' },
+            { value: 'wed', label: 'Wed', full: 'Wednesday' },
+            { value: 'thu', label: 'Thu', full: 'Thursday' },
+            { value: 'fri', label: 'Fri', full: 'Friday' },
+            { value: 'sat', label: 'Sat', full: 'Saturday' },
+            { value: 'sun', label: 'Sun', full: 'Sunday' }
+          ],
+          // Limit par defaut (seul type selectionnable) ; le reste reste
+          // l'exemple du paragraphe ci-dessus. `tasks` est un tableau (multi-
+          // selection, voir maxTasks) meme si une seule tache est cochee par
+          // defaut.
+          default: {
+            physician: 'marc-tremblay',
+            constraint: 'limit',
+            tasks: ['care-floor-2'],
+            days: ['mon', 'tue', 'wed', 'thu', 'fri']
+          }
+        }
       }
     ]
   },
