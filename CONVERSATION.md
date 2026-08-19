@@ -4,7 +4,7 @@
 > Il enregistre **ce qui a été décidé, pourquoi, et ce qui reste à faire**.
 > Si vous reprenez le projet dans une nouvelle session, lisez ce fichier d'abord.
 
-**Dernière mise à jour :** 18 août 2026 — session 3 (animations Lottie + exploration Figma)
+**Dernière mise à jour :** 18 août 2026 — session 4 (retrait du français, vidéo d'ouverture Contraintes en local)
 
 ---
 
@@ -29,7 +29,7 @@ Quatre questions posées au démarrage, quatre réponses :
 | Question | Réponse retenue |
 |---|---|
 | Stack technique | HTML / CSS / JS **vanilla**, sans build |
-| Langues | **Bilingue FR / EN** avec sélecteur |
+| Langues | **Bilingue FR / EN** avec sélecteur *(retiré en session 4, voir §7)* |
 | Texte « À propos » | **Brouillon rédigé** à partir des sources, à valider |
 | Périmètre session 1 | **Site complet** d'un coup |
 
@@ -208,8 +208,8 @@ marche à suivre en commentaire — un clic droit sur chaque animation suffit.
 site/
   index.html            coquille : loader, portail, en-tête, main vide, pied de page
   css/styles.css        design system + toute la mise en page (13 sections numérotées)
-  js/content.js         TOUT le texte FR/EN — c'est ici qu'on modifie le contenu
-  js/app.js             routeur, i18n, sécurité, scroll-spy, affiches SVG
+  js/content.js         TOUT le texte (anglais seul depuis la session 4) — c'est ici qu'on modifie le contenu
+  js/app.js             routeur, sécurité, scroll-spy, affiches SVG
   assets/img/           13 figures extraites des PDF (WebP + repli PNG)
 ```
 
@@ -394,14 +394,68 @@ et sur `origin`.
 - `Portfolio PRD for Claude.md`
 - `CONVERSATION.md`
 - `README.md`
-- `CLAUDE.md` *(créé après le dernier push de la session 3 ; jamais commité
-  ni poussé, donc absent d'`origin` — rien à retirer, juste à exclure comme
-  les autres au prochain push forcé)*
-- `french-translation.md` *(créé sur la branche `fr-lang-removal` ; poussé
-  une première fois par erreur — présent dans le tout premier push de cette
-  branche puis retiré au push suivant. Gardé tracké dans l'historique local
-  de la branche, seulement exclu du snapshot poussé vers `origin`.)*
+- `CLAUDE.md` *(commité en session 3 — `d6de7ef` — et exclu comme les autres
+  depuis)*
+- `french-translation.md` *(créé sur la branche `fr-lang-removal` en session 4
+  — voir ci-dessous — pour archiver tout le contenu français retiré du site.
+  Poussé une première fois par erreur, retiré au push suivant. Gardé tracké
+  dans l'historique local de la branche, seulement exclu du snapshot poussé
+  vers `origin`.)*
 - `Contraintes.pdf`
 - `Exclusion des services.pdf`
 - `Services exclusion.pdf`
 - `Transfert de DME.pdf`
+
+*(Cette liste sert de référence pour chaque push forcé via `push-temp` —
+voir méthode ci-dessus. Vérifiée à jour en session 4 : confirmée absente
+d'`origin/fr-lang-removal`, `git ls-tree` à l'appui.)*
+
+### Session 4 — 18 août 2026
+
+**Retrait du français comme langue du site**, sur la branche `fr-lang-removal`
+(commit `8592e3b`, « Remove French as a site language, archive its content to
+french-translation.md »). Le site n'a plus qu'une langue : plus de bloc `fr:`/
+`en:` par entrée dans `content.js` (les entrées sont maintenant des objets
+plats), plus de `state.lang` ni de sélecteur de langue dans l'en-tête, plus de
+fonction de lookup `t()` dans `app.js` — `applyStaticI18n()` écrit directement
+les chaînes de `UI`. Tout le texte français d'origine est conservé tel quel
+dans `french-translation.md`, à la racine du dépôt, gardé strictement local
+(voir la liste ci-dessus). Conséquence pour les figures « annotées en
+français seulement » (Contraintes, Transfert de DME, voir 3.5) : la mention
+« Figure annotated in French » s'affiche désormais en permanence, puisqu'il
+n'y a plus d'autre langue vers laquelle basculer pour la comparer.
+
+**Étude de cas Contraintes : deux passes de retouche visuelle**, toujours sur
+`fr-lang-removal` :
+
+1. *Vidéo d'ouverture et grille Design — passe 1.* Recadrage de la vidéo
+   d'ouverture en 16:9 `cover` (pleine largeur), grille des Lottie en 2×2
+   « bleed » (pleine largeur de page, hors de la colonne), grille des
+   maquettes en disposition inégale, ajout d'un tiroir « See more » (`<details>`/
+   `<summary>`, icône `+`/`x`) pour la section mapping.
+2. *Passe 2, sur retour de Mar.* Chaque choix de la passe 1 revu : la vidéo
+   repasse en `object-fit: contain` (l'animation doit rester visible en
+   entier, quitte à laisser des bandes), la grille Lottie repasse en 1×4
+   empilée à la largeur du bloc Benchmark (le `--rail` bleed de la passe 1,
+   devenu inutile, entièrement retiré), les maquettes repassent en rangée
+   1×3 fixe à la même largeur, et l'icône `+`/`x` est remplacée par un
+   chevron Lucide animé (SVG inline, pas de dépendance CDN ajoutée).
+3. *Vidéo d'ouverture locale + astuce de couleur.* La vidéo (Contra) est
+   remplacée par le fichier local `assets/media/constraint-limit.mp4` (avec
+   `constraint-limit.jpg` en poster) — un point de moins hébergé chez Contra.
+   Cette vidéo est cadrée en portrait (524×600) : dans la boîte 16:9 en
+   `contain`, ça laisse de larges bandes de part et d'autre. Pour les rendre
+   invisibles, la couleur de fond de `.cs__hero-media .figure__frame` a été
+   réglée sur celle du fond propre de la vidéo — `#e9e1f9` — obtenue en
+   échantillonnant les pixels du poster directement dans Chrome (canvas +
+   `getImageData`, faute d'outil d'imagerie local dans ce bac à sable : ni
+   PIL, ni ffmpeg, ni ImageMagick). Premier essai à `#e5ddf5` (moyenne des
+   quatre coins de l'image) laissait une fine couture visible à l'écran ; les
+   coins étaient faussés par l'anti-aliasing JPEG en bordure. Corrigé en
+   échantillonnant une colonne verticale complète près du bord : la teinte
+   intérieure stable est `#e9e1f9`.
+
+**Git.** Toutes ces modifications commitées sur `fr-lang-removal`
+(`8592e3b`, `1c68dc0`, `53146d4`, `30eab8b`) puis poussées vers
+`origin/fr-lang-removal` via la méthode `push-temp` habituelle, en excluant
+désormais aussi `french-translation.md` (voir liste ci-dessus).
