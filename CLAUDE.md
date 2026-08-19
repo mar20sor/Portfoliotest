@@ -203,6 +203,32 @@ stylesheet value, and the observer re-fires on every layout change (breakpoint
 switch, font load, content change), so the two hardcoded fallback values in
 `styles.css` now only matter for the very first paint before JS runs.
 
+### Constraints card thumbnail (`.card__media video`, `styles.css`; `projectCard()`, `app.js`)
+
+The home page grid card for "Scheduling constraints" is the only card whose
+`cardMedia()` output is a `<video>` (see "Content model" above — it's driven
+by `heroMedia`, not the PDF-figure/poster fallback used by every other
+project). Its styling deviates from the rest of `.card__media` in three
+ways, all scoped so they can't leak onto other cards:
+
+- **`object-fit: contain`, not `cover`.** The source video is portrait
+  (narrower than the card's landscape box), so `cover` would crop it instead
+  of showing it whole — same reasoning as `.cs__hero-media` on the case
+  study page itself (see "Fragile external dependencies" below).
+- **Background color scoped via `data-slug`.** `projectCard()` stamps
+  `data-slug="${p.slug}"` on the card `<a>` specifically so
+  `.card[data-slug="constraints"] .card__media` can carry the `#e9e1f9`
+  letterbox-matching background without affecting the shared
+  `rgba(0,0,0,.12)` used by every other card's media box.
+- **`clip-path: inset(0 0 4% 0)` crops a border baked into the source
+  video.** The `constraint-limit.mp4` file itself has a faint horizontal
+  line near the bottom edge of its own frame (visible on inspection, not a
+  playback/encoding artifact) — since the video fills its box's full height
+  under `object-fit: contain` (letterboxed left/right only, not top/bottom),
+  clipping 4% off the bottom removes exactly that line and reveals the
+  matching `#e9e1f9` background behind it. If the source video is ever
+  re-exported without that border, this clip-path can likely be removed.
+
 ## Security
 
 - The CSP `<meta>` tag in `index.html` is the single source of truth for
@@ -217,6 +243,15 @@ switch, font load, content change), so the two hardcoded fallback values in
 - The visitor's first name (entered in the "portal" at load) goes through
   `cleanName()` — character whitelist + length cap — and is inserted via
   `textContent` only, never `innerHTML`. See `app.js` section 2.
+- **Deviation:** the original brief said the name should live "in a
+  variable, not a database" and disappear on reload (see the comment block
+  above `cleanName()` in `app.js`). Session 7 added `localStorage`
+  persistence with a 1-hour expiry (`readStoredVisitor()`/
+  `writeStoredVisitor()`, section 9) at explicit user request, so a reload
+  within the hour doesn't re-ask. It's a short whitelisted string, on the
+  visitor's own machine, never transmitted — the comment block documents
+  this as a conscious trade-off against the brief's stricter wording, not an
+  oversight.
 
 ## Fragile external dependencies
 

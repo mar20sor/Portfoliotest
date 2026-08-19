@@ -4,7 +4,7 @@
 > Il enregistre **ce qui a été décidé, pourquoi, et ce qui reste à faire**.
 > Si vous reprenez le projet dans une nouvelle session, lisez ce fichier d'abord.
 
-**Dernière mise à jour :** 19 août 2026 — session 6 (corrections du widget « sentence builder » sur retours directs de Mar : position du libellé des tâches, bug des losanges toujours tous visibles, recentrage de la pile sur le crochet, marges/paddings du bloc droit, fermeture des menus au clic extérieur, nav latérale mobile décollée de la barre du haut ; branche `module-modifications2` commitée, poussée vers `origin`, fusionnée dans `main`, `main` poussé vers `origin`, branche supprimée)
+**Dernière mise à jour :** 19 août 2026 — session 7 (vignette vidéo de la carte « Scheduling constraints » sur la page d'accueil : `object-fit: contain`, fond de la lettreboxe assorti à la vidéo, légère réduction de taille, puis recadrage au clip-path pour masquer une bordure présente dans le fichier source lui-même ; suppression du soulignement des titres d'étude de cas ; persistance du prénom du visiteur en `localStorage` avec expiration à 1h ; branche `Edit-constraint-thumbnail` commitée, poussée vers `origin`, fusionnée dans `main`, `main` poussé vers `origin`, branche supprimée)
 
 ---
 
@@ -734,3 +734,67 @@ moment de la fusion, voir l'avertissement en ouverture de session). Branche
 `module-modifications2` supprimée, en local et sur `origin`, sur demande
 explicite. La reconstruction de `CLAUDE.md`/`CONVERSATION.md` ci-dessus est
 un commit distinct, local à `main`, non poussé vers `origin`.
+
+### Session 7 — 19 août 2026 (branche `Edit-constraint-thumbnail`, fusionnée dans `main`)
+
+Trois demandes, sur la carte « Scheduling constraints » de la page
+d'accueil (`.card__media`, `styles.css` ; `projectCard()`/`cardMedia()`,
+`app.js`) et sur la persistance du prénom du visiteur.
+
+- **Vignette vidéo : `object-fit: contain`, fond assorti, taille réduite.**
+  La vidéo source est cadrée en portrait ; en `object-fit: cover` (réglage
+  d'origine, partagé avec les vignettes image des autres cartes) elle était
+  recadrée au lieu d'être montrée en entier. Passée à `object-fit: contain`,
+  ramenée à 92 % de la boîte (centrée via `display: flex` sur
+  `.card__media`) pour ne pas toucher les bords de la carte, et fond de la
+  boîte fixé à `#e9e1f9` — la même couleur, déjà documentée dans
+  `CLAUDE.md`, relevée sur le poster de cette vidéo et utilisée sur la page
+  d'étude de cas elle-même (`.cs__hero-media`). Cette dernière règle est
+  scopée à `.card[data-slug="constraints"] .card__media` : `projectCard()`
+  pose désormais un attribut `data-slug="${p.slug}"` sur chaque carte
+  spécifiquement pour permettre ce ciblage sans toucher le fond partagé
+  (`rgba(0,0,0,.12)`) des autres cartes.
+- **Bordure noire en bas de la vidéo : recadrée au clip-path.** Signalée
+  après coup par Mar. Vérifiée directement (chargement de la vidéo dans un
+  onglet, lecture pixel par pixel via zoom) : ce n'est ni un artefact de
+  lettreboxing ni un problème d'encodage/lecture, mais un fin liseré présent
+  dans le cadre du fichier source lui-même, près de son bord inférieur.
+  Comme la vidéo occupe toute la hauteur de sa boîte sous `object-fit:
+  contain` (lettreboxée seulement à gauche/droite, pas en haut/bas), un
+  `clip-path: inset(0 0 4% 0)` sur `.card__media video` retire exactement ce
+  liseré et révèle le fond `#e9e1f9` assorti derrière — sans toucher à
+  l'illustration (pile de losanges) elle-même, qui reste largement au-dessus
+  de cette marge. Voir la note dédiée dans `CLAUDE.md`.
+- **Soulignement des titres d'étude de cas supprimé.** `.card__title`
+  (utilisée à la fois par la grille principale et par les cartes « autres
+  études de cas » en pied de page) perdait son `text-decoration: underline;
+  text-underline-offset: 4px;` — retiré purement et simplement, sans
+  remplacement.
+- **Prénom du visiteur : persistance en `localStorage`, expiration 1h.**
+  Demande explicite de Mar, arrivée en cours de session : éviter de
+  redemander le prénom à chaque rechargement de page. Le brief d'origine
+  (cité dans le commentaire au-dessus de `cleanName()`, `app.js`) précisait
+  « sauvegarde dans une variable, pas dans une base de données » — c'est
+  documenté comme une déviation assumée plutôt qu'un oubli. Implémenté avec
+  `readStoredVisitor()`/`writeStoredVisitor()` (`app.js`, section 9) :
+  `writeStoredVisitor()` écrit `{ v: prénom, exp: Date.now() + 1h }` dans
+  `localStorage` à la soumission du portail ; `readStoredVisitor()` relit
+  cette valeur, la revalide via `cleanName()` (même méfiance que pour un
+  formulaire) et l'ignore si `exp` est dépassée. `setupGate().open()`
+  consulte `readStoredVisitor()` avant d'afficher le portail : si une valeur
+  valide existe, elle est appliquée directement (`state.visitor` + `render()`)
+  et le portail ne s'affiche pas du tout. Vérifié dans le navigateur :
+  prénom saisi, page rechargée, portail resté fermé, salutation correcte
+  affichée immédiatement.
+- **Note de test locale.** `python -m http.server` (utilisé pour la
+  prévisualisation locale, voir `CLAUDE.md`) ne gère pas les requêtes
+  `Range`, ce qui empêchait la vidéo de se charger pendant les vérifications
+  visuelles dans cette session — sans rapport avec le code du site, un
+  serveur de dev alternatif gérant `Range` (script Python jetable) a été
+  utilisé ponctuellement pour confirmer visuellement le rendu de la vidéo.
+  Aucun changement n'a été fait au site pour contourner cette limite.
+
+**État Git.** Commité sur `Edit-constraint-thumbnail`, poussé vers `origin`,
+fusionné dans `main` (`--no-ff`), `main` poussé vers `origin`. Branche
+`Edit-constraint-thumbnail` supprimée, en local et sur `origin`, sur demande
+explicite.
