@@ -1306,6 +1306,20 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    elements propres a ce widget (onglets, recherche, stepper, radio) ont leur
    propre prefixe ccomp__. */
 .ccomp { margin-block: var(--s6); font-family: 'Roboto', 'Segoe UI', sans-serif; }
+/* Cadre degrade, meme traitement que .cbuild__frame (rule-builder ci-dessus)
+   mais avec la texture propre a la maquette Figma "Components" (node
+   52:1781, fichier "Claude-portfolio-image-generation") — pas le degrade du
+   rule-builder, les deux widgets viennent de deux maquettes distinctes.
+   Contrairement a .cbuild__card (une seule carte blanche a 60%, centree),
+   les quatre panneaux flottent ici directement sur le fond pleine largeur,
+   comme dans la maquette source. */
+.ccomp__frame {
+  background-image: url('../assets/img/components-showcase-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  border-radius: 20px;
+  padding: clamp(20px, 4vw, 40px);
+}
 .ccomp__intro {
   font-size: var(--fs-small); color: var(--ink-faint);
   line-height: 1.5; font-family: var(--font);
@@ -1313,7 +1327,13 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 }
 .ccomp__grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s5) var(--s6); }
 .ccomp__panel { position: relative; min-width: 0; }
-.ccomp__trigger { width: 100%; justify-content: space-between; }
+/* Blanc plutot que le lavande pale de .cbuild__trigger (#f7f3fe, pense pour
+   flotter DANS une carte blanche) : sur la texture de .ccomp__frame, un
+   fond lavande se fondrait dans l'image — fidele au declencheur blanc a
+   bordure violette de la maquette (node 52:2141 etc.). */
+.ccomp__trigger { width: 100%; justify-content: space-between; background: #fff; }
+.ccomp__trigger:hover { background: #f7f3fe; }
+.ccomp__trigger[aria-expanded="true"] { background: #fff; }
 .ccomp__trigger-chevron { flex: none; width: 16px; height: 16px; pointer-events: none; }
 .ccomp__body {
   margin-top: 10px;

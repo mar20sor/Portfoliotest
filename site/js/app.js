@@ -1686,14 +1686,23 @@ function componentsShowcaseMarkup(cfg, parentCfg) {
       </div>
     </div>`;
 
+  // .ccomp__frame reprend le traitement de .cbuild__frame (image de fond,
+  // coins arrondis, padding) — mais avec la texture propre a la maquette
+  // "Components" (node 52:1781, fichier "Claude-portfolio-image-generation"),
+  // pas le degrade du rule-builder : les deux widgets viennent de deux
+  // maquettes Figma distinctes avec chacune leur propre fond. Contrairement
+  // a .cbuild__card (une seule carte blanche a 60%), les quatre panneaux
+  // flottent ici directement sur le fond, comme dans la maquette source.
   return `
     <div class="ccomp" data-role="components-showcase">
-      ${cfg.intro ? `<p class="ccomp__intro">${escapeAttr(cfg.intro)}</p>` : ''}
-      <div class="ccomp__grid">
-        ${physicianPanel}
-        ${constraintPanel}
-        ${taskPanel}
-        ${periodPanel}
+      <div class="ccomp__frame">
+        ${cfg.intro ? `<p class="ccomp__intro">${escapeAttr(cfg.intro)}</p>` : ''}
+        <div class="ccomp__grid">
+          ${physicianPanel}
+          ${constraintPanel}
+          ${taskPanel}
+          ${periodPanel}
+        </div>
       </div>
       ${cfg.caption ? `<p class="cbuild__caption">${escapeAttr(cfg.caption)}</p>` : ''}
     </div>`;
