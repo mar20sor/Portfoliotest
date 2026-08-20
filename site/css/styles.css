@@ -1330,17 +1330,15 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 }
 /* Positions absolues calquees sur la maquette Figma "Components" (node
    52:1781, canevas 1440x1024) : chaque .ccomp__panel reprend le
-   pourcentage x/y de son declencheur dans ce canevas (ex. Physicians a
-   x=103,y=179 -> left:7%, top:17.5%), ce qui recree l'agencement en
-   quinconce de la maquette (pas une grille 2x2 alignee) tout en restant
-   fluide a n'importe quelle largeur de cadre. .ccomp__grid n'est donc plus
-   une grille : c'est juste le conteneur de positionnement (position:
-   relative, pleine taille du cadre). */
+   pourcentage left de son declencheur (tous alignes sur le meme top:5%,
+   une seule rangee plutot que le quinconce de la maquette source).
+   .ccomp__grid n'est donc plus une grille : c'est juste le conteneur de
+   positionnement (position: relative, pleine taille du cadre). */
 .ccomp__grid { position: relative; width: 100%; height: 100%; }
-.ccomp__panel[data-role="physician-panel"] { left: 7%; top: 17.5%; }
-.ccomp__panel[data-role="task-panel"] { left: 40%; top: 10%; }
-.ccomp__panel[data-role="constraint-panel"] { left: 13%; top: 62%; }
-.ccomp__panel[data-role="period-panel"] { left: 60%; top: 56.5%; }
+.ccomp__panel[data-role="physician-panel"] { left: 1%; top: 5%; }
+.ccomp__panel[data-role="task-panel"] { left: 50%; top: 5%; }
+.ccomp__panel[data-role="constraint-panel"] { left: 24%; top: 5%; }
+.ccomp__panel[data-role="period-panel"] { left: 75%; top: 5%; }
 .ccomp__panel { position: absolute; min-width: 0; }
 /* Largeur au contenu (pas 100% de la colonne) : fidele aux declencheurs de
    la maquette Figma (node 52:1781), toujours plus etroits que le panneau
@@ -1358,12 +1356,24 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   background: #fff; border: 1px solid #eaeaf9; border-radius: 11px;
   box-shadow: var(--shadow);
   padding: 16px;
-  /* Plafonne la largeur des panneaux ancres a droite (task/period, left: 40%
-     et 60%) pour qu'un corps ouvert ne deborde jamais du cadre, sans quoi
-     il provoquerait un scroll horizontal. */
+  /* Plafonne la largeur des panneaux ancres pres du bord droit (task/period,
+     left: 50%/75%) pour qu'un corps ouvert ne deborde jamais du cadre, sans
+     quoi il provoquerait un scroll horizontal. */
   width: min(300px, calc(100vw - 64px));
 }
 .ccomp__body[hidden] { display: none; }
+/* Period (left: 75%) est trop pres du bord droit du cadre pour qu'un corps
+   de 300px s'ouvre vers la droite sans deborder (verifie : deborde des la
+   largeur de cadre proche du seuil mobile de 860px). Sorti du flux et
+   ancre a droite du declencheur (right: 0) plutot qu'a gauche, il s'ouvre
+   donc vers la gauche a la place. */
+.ccomp__panel[data-role="period-panel"] .ccomp__body {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: auto;
+  right: 0;
+  margin-top: 0;
+}
 .ccomp__field-label { font-size: 11px; color: #353a45; margin: 0 0 8px; }
 
 /* Bascule Physicians/Groups, Tasks/Shifts, Fixed period/Series : contrairement
@@ -1750,6 +1760,13 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
   .ccomp__frame { overflow-y: auto; }
   .ccomp__grid { display: flex; flex-direction: column; gap: var(--s5); height: auto; }
   .ccomp__panel { position: static; }
+  /* Period reprend le flux normal comme les trois autres panneaux : l'ancrage
+     a droite (right: 0) ci-dessus n'a de sens que quand le panneau est
+     positionne en absolu. */
+  .ccomp__panel[data-role="period-panel"] .ccomp__body {
+    position: static;
+    margin-top: 10px;
+  }
   .lottie-carousel { grid-template-columns: 1fr; }
   .lottie-carousel__tabs { flex-direction: row; flex-wrap: wrap; gap: var(--s4) var(--s5); }
 }
