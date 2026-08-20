@@ -723,6 +723,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .stat__l { font-size: var(--fs-small); color: var(--ink-soft); line-height: 1.4; }
 
+/* Meme composant, cite au fil d'une section (s.stats, voir content.js) plutot
+   qu'en en-tete : chiffres beaucoup plus petits pour ne pas concurrencer les
+   .stat de l'apercu, et une marge resserree puisqu'ils vivent entre deux
+   paragraphes plutot que sous leur propre titre "Impacts". */
+.stats--sec { margin-block: var(--s6); max-width: var(--measure); }
+.stats--sec .stat__n { font-size: clamp(1.6rem, 2.6vw, 2rem); margin-bottom: 0; }
+.stats--sec .stat__l { margin-top: 2px; }
+
 .cs__cta { display: flex; flex-wrap: wrap; gap: var(--s3); }
 
 /* ---- 8b. Le corps : nav laterale collante + sections ---- */

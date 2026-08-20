@@ -610,6 +610,12 @@ function pageCase(project) {
         ? `<ul class="cs-sec__list">${s.list.map(li => `<li>${escapeAttr(li)}</li>`).join('')}</ul>` : '';
       const mockups = s.mockups
         ? `<div class="cs-mockups">${s.mockups.map(figureFor).join('')}</div>` : '';
+      // Chiffres cites dans le texte, sortis en cartes (voir s.stats dans
+      // content.js) — meme balisage que les .stat d'en-tete, en plus petit.
+      const secStats = s.stats
+        ? `<div class="stats stats--sec">${s.stats.map(x =>
+            `<div class="stat"><div class="stat__n">${escapeAttr(x.n)}</div>
+             <div class="stat__l">${escapeAttr(x.l)}</div></div>`).join('')}</div>` : '';
       // Bloc "Visual helpers" : rendu apres le widget interactif (pas dans
       // body[]/lottieCarousel indexe par paragraphe) — voir s.helpers dans
       // content.js. Titre + texte dans le meme <p> (le titre reste en gras
@@ -623,6 +629,7 @@ function pageCase(project) {
         ${intro}
         ${list}
         ${parts}
+        ${secStats}
         ${mockups}
         ${s.image ? figureFor(s) : ''}
         ${s.builder ? constraintBuilderMarkup(s.builder) : ''}

@@ -203,6 +203,13 @@ export const HERO = {
                              (meme forme qu'une figure locale), rendu apres
                              tous les paragraphes dans une .media-grid — voir
                              pageCase() dans app.js.
+                   stats  -> tableau optionnel de { n, l }, meme forme que le
+                             `stats` racine d'un projet (chiffres d'en-tete)
+                             mais rendu EN PLUS PETIT au fil d'une section
+                             (modificateur .stats--sec), juste apres les
+                             paragraphes — pour sortir des chiffres cites dans
+                             le texte en cartes plutot que de les laisser
+                             uniquement en prose. Voir pageCase() dans app.js.
    heroMedia.hideCaption -> true pour garder l'aria-label (accessibilite)
                    tout en masquant la <figcaption> visible sous le media
                    (voir mediaMarkup() dans app.js).
@@ -261,12 +268,19 @@ export const PROJECTS = [
               /* Embed Figma en direct (fichier "Constraints-EN (Contra)",
                  node 1:351) plutot que l'ancienne capture statique
                  constraints-2-mapping.png : on peut zoomer/deplacer dans le
-                 canevas reel. URL au format officiel Figma
-                 (Partager > Integrer) — le fichier doit rester partage
-                 "Quiconque avec le lien peut voir", sinon l'iframe affiche un
-                 ecran de connexion a la place du canevas. Voir embedFor()
-                 dans app.js. */
-              embed: 'https://www.figma.com/embed?embed_host=share&url=https%3A%2F%2Fwww.figma.com%2Fdesign%2FgR8fLg7cuM7rXb1hiC0niz%2FConstraints-EN--Contra-%3Fnode-id%3D1-351%26t%3D8vKP4G8sb6aVxosG-1&page-selector=true',
+                 canevas reel. Le fichier doit rester partage "Quiconque avec
+                 le lien peut voir", sinon l'iframe affiche un ecran de
+                 connexion a la place du canevas. Voir embedFor() dans app.js.
+                 URL au format embed.figma.com/design/{file-key} (voir
+                 https://developers.figma.com/docs/embeds/embed-figma-file/)
+                 plutot que l'ancien www.figma.com/embed?embed_host=share&url=
+                 genere par "Partager > Integrer" dans l'appli Figma : ce
+                 dernier ignore silencieusement page-selector (confirme en
+                 testant les deux formats cote a cote — le param retombe a 0
+                 dans l'URL vers laquelle Figma redirige, quelle que soit la
+                 valeur envoyee), donc le selecteur de page ne s'affichait
+                 jamais malgre page-selector=true. */
+              embed: 'https://embed.figma.com/design/gR8fLg7cuM7rXb1hiC0niz/Constraints-EN--Contra-?node-id=1-351&embed-host=share&page-selector=true',
               caption: 'Worked example on the “limits” family: shared characteristics (task type, period type, member type) are extracted so they can be configured once.'
             },
             {
@@ -626,24 +640,51 @@ export const PROJECTS = [
         body: [
           'We built a 30-question survey to understand users’ habits, profiles and favourite features, with the UMUX usability scale embedded in it. Distributed on Twitter and LinkedIn, it gathered 815 responses, mostly from 16-to-25-year-olds — which incidentally tells you something about the platform’s average user age.',
           'Transposed onto the SUS scale, the result is 69.57. That is mediocre: it puts Soundcloud somewhere between the usability of Excel and an old GPS.',
-          'Three further numbers shaped what came next: 29.7% use another platform because they think it is better, 70% go through the search bar — so they already know what they came to hear — and 43.9% of weekly users listen for 11 to 30 minutes per session.',
+          'Three further numbers shaped what came next, isolating how people actually use the platform day to day.',
           'Our conclusion: Soundcloud is seen as an alternative to Spotify, Deezer or Apple Music rather than a primary service, and the app is used far more than the site. So the priority was the web interface, and the comments feature in particular.'
+        ],
+        // Les trois chiffres de la phrase precedente, sortis en cartes plutot
+        // que laisses dans le paragraphe — reprend le "component boxes" de la
+        // page source (marvinsrd.com/en/soundcloud-project), rendu avec le
+        // composant .stats deja utilise pour les chiffres d'en-tete (voir
+        // s.stats dans app.js/pageCase(), modificateur .stats--sec).
+        stats: [
+          { n: '29.7%', l: 'use another platform because they think it’s better' },
+          { n: '70%', l: 'go through the search bar — they already know what they came to hear' },
+          { n: '43.9%', l: 'of weekly users listen 11 to 30 minutes per session' }
+        ],
+        // Les deux visuels du calcul SUS (diapositives "SUS_UX_Calcul" et
+        // "SUS_UX_Scale" de la page source) : le detail du calcul UMUX -> SUS,
+        // puis Soundcloud replace sur l'echelle d'acceptabilite. Legendes
+        // volontairement muettes sur le chiffre exact (69,27 sur la diapo
+        // source contre 69.57 dans le texte ci-dessus, un ecart d'arrondi du
+        // document d'origine) pour ne pas contredire le corps du texte.
+        mockups: [
+          { image: 'soundcloud-sus-calc', caption: 'The UMUX-to-SUS calculation, from the two averaged questionnaire scores.' },
+          { image: 'soundcloud-sus-scale', caption: 'Soundcloud plotted on the SUS acceptability scale — high-marginal, next to Excel and old GPS units.' }
         ]
       },
       {
         id: 'tests', label: 'Testing', title: '2. User testing',
         body: [
           'We built a test scenario on the desktop version around three missions: find a specific artist and track, to assess where the search bar sits; start playback, the site’s primary function; and leave a comment at a specific moment in the track, the exclusive feature. Every tester got the same scenario, and was asked to narrate their actions out loud.',
-          'Across six testers, some of whom had never used the site: 83% success, one dropoff, and missions completed in 30 seconds to a minute.',
+          'Across six testers, some of whom had never used the site, the results:',
           'The positives were clear — finding a track is easy, and the play button is large enough to find without thinking. The negatives were just as clear: only people who already knew the platform managed to leave a comment, and there was recurring confusion between the artist page and search results.',
           'The most useful insight: users expected to comment the way they do on YouTube. They looked for a field under the player, not an interaction on the waveform.'
+        ],
+        stats: [
+          { n: '83%', l: 'mission success rate' },
+          { n: '1', l: 'dropoff, across six testers' },
+          { n: '30s–1min', l: 'to complete each mission' }
         ]
       },
       {
         id: 'solution', label: 'Solution', title: '3. Solution',
         body: [
           'We prototyped the fixes to make them manipulable rather than merely describable. Then I reworked the artist page, lifting the comment section up the right-hand side, level with the player, so it is visible without scrolling and reads like a conversation in progress.'
-        ]
+        ],
+        image: 'soundcloud-solution-design',
+        caption: 'The redesigned artist page: comments move up the right-hand side, level with the player.'
       }
     ],
     extLinks: [
