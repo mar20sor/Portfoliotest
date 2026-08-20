@@ -1479,6 +1479,61 @@ function taskTriggerLabel(vals, parentCfg, cfg) {
   if (list.length <= 2) return list.map(v => source.find(s => s.value === v).label).join(', ');
   return `${list.length} ${active ? 'tasks' : 'shifts'} selected`;
 }
+
+const pluralize = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+/* Croix reutilisee (assets/icons/constraint-clear.svg, deja utilisee par
+   .ccomp__search-clear) pour les pastilles ci-dessous — evite un second
+   asset identique. */
+const pillCrossIcon = '<img class="ccomp__pill-remove-icon" src="assets/icons/constraint-clear.svg" alt="" aria-hidden="true" width="10" height="10">';
+function pillHTML(scope, text, removeLabel, accent) {
+  return `
+    <span class="ccomp__pill${accent ? ' ccomp__pill--accent' : ''}">
+      <span class="ccomp__pill-label">${text}</span>
+      <span class="ccomp__pill-remove" data-pill-remove="${scope}" role="button" tabindex="0" aria-label="${removeLabel}">${pillCrossIcon}</span>
+    </span>`;
+}
+function physicianGroupsSize(vals, cfg) {
+  return vals.groups.reduce((sum, v) => {
+    const g = cfg.groups.find(g => g.value === v);
+    return sum + (g && g.size ? g.size : 0);
+  }, 0);
+}
+/* Pastilles croisees (node 58:2890, "Physician dropdown") : des que les
+   deux onglets (physiciens individuels ET groupes) ont au moins une
+   selection, le declencheur bascule du texte simple (physicianTriggerLabel,
+   qui ne montre que l'onglet actif) a un total ("N Total" = physiciens +
+   taille de chaque groupe selectionne, voir `size` dans content.js) plus une
+   pastille par categorie, chacune avec sa propre croix de suppression, plus
+   une croix globale qui vide les deux. Le total est une pure valeur
+   d'affichage : `size` est un chiffre d'exemple fixe par groupe, sans
+   roster reel derriere (la maquette elle-meme montre "223 Total" pour 4
+   personnes nommees dans toute la demo). */
+function physicianTriggerHTML(vals, parentCfg, cfg) {
+  if (!vals.physicians.length || !vals.groups.length) {
+    return escapeAttr(physicianTriggerLabel(vals, parentCfg, cfg));
+  }
+  const total = vals.physicians.length + physicianGroupsSize(vals, cfg);
+  return `
+    <span class="ccomp__pillrow">
+      <span class="ccomp__pill ccomp__pill--total"><span class="ccomp__pill-label">${total} Total</span></span>
+      ${pillHTML('physicians', pluralize(vals.physicians.length, 'Physician'), 'Remove all physicians', true)}
+      ${pillHTML('groups', pluralize(vals.groups.length, 'Group'), 'Remove all groups', true)}
+      <span class="ccomp__pill-remove ccomp__pill-remove--all" data-pill-remove="all" role="button" tabindex="0" aria-label="Clear physicians and groups">${pillCrossIcon}</span>
+    </span>`;
+}
+/* Meme principe (node 58:2870, "Task dropdown"), sans pastille Total : Tasks
+   et Shifts ne s'emboitent pas l'un dans l'autre comme Groups contient des
+   physiciens. */
+function taskTriggerHTML(vals, parentCfg, cfg) {
+  if (!vals.tasks.length || !vals.shifts.length) {
+    return escapeAttr(taskTriggerLabel(vals, parentCfg, cfg));
+  }
+  return `
+    <span class="ccomp__pillrow">
+      ${pillHTML('tasks', pluralize(vals.tasks.length, 'Task'), 'Remove all tasks', false)}
+      ${pillHTML('shifts', pluralize(vals.shifts.length, 'Shift'), 'Remove all shifts', false)}
+    </span>`;
+}
 /* Libelle du declencheur "period" : les 4 combinaisons possibles (mode
    fixe/serie x choix jours/periode nommee). Un jour picker vide ou a plus
    de 2 jours reprend la meme convention que physicianTriggerLabel/
@@ -1582,7 +1637,7 @@ function componentsShowcaseMarkup(cfg, parentCfg) {
     <div class="ccomp__panel" data-role="physician-panel">
       <button type="button" class="cbuild__select cbuild__trigger ccomp__trigger" data-role="physician-trigger"
               aria-haspopup="true" aria-expanded="false" aria-controls="ccomp-physician-body">
-        <span data-role="physician-trigger-label">${escapeAttr(physicianTriggerLabel(d, parentCfg, cfg))}</span>
+        <span class="ccomp__trigger-value" data-role="physician-trigger-value">${physicianTriggerHTML(d, parentCfg, cfg)}</span>
         ${fieldChevron}
       </button>
       <div class="ccomp__body" id="ccomp-physician-body" data-role="physician-body" hidden>
@@ -1615,7 +1670,7 @@ function componentsShowcaseMarkup(cfg, parentCfg) {
     <div class="ccomp__panel" data-role="task-panel">
       <button type="button" class="cbuild__select cbuild__trigger ccomp__trigger" data-role="task-trigger"
               aria-haspopup="true" aria-expanded="false" aria-controls="ccomp-task-body">
-        <span data-role="task-trigger-label">${escapeAttr(taskTriggerLabel(d, parentCfg, cfg))}</span>
+        <span class="ccomp__trigger-value" data-role="task-trigger-value">${taskTriggerHTML(d, parentCfg, cfg)}</span>
         ${fieldChevron}
       </button>
       <div class="ccomp__body" id="ccomp-task-body" data-role="task-body" hidden>
@@ -1719,14 +1774,20 @@ function setupSearchField({ input, ghost, clearBtn, getItems, onFilter, onAccept
   addCleanup(() => input.removeEventListener('input', onInput));
 
   // Enter accepte la suggestion affichee (node 21:496 : "type enter to
-  // select") ; Escape vide le champ plutot que de fermer tout le panneau —
-  // seul le clic exterieur (bindOutsideClose, pose par l'appelant) ferme le
-  // panneau lui-meme.
+  // select") ; Tab fait de meme (sans en faire une exigence : si aucune
+  // suggestion n'est affichee, Tab garde son comportement natif de
+  // navigation au clavier, on ne bloque preventDefault que quand il y a
+  // reellement quelque chose a completer). Escape vide le champ plutot que
+  // de fermer tout le panneau — seul le clic exterieur (bindOutsideClose,
+  // pose par l'appelant) ferme le panneau lui-meme.
   const onKeydown = (ev) => {
     if (ev.key === 'Enter') {
       ev.preventDefault();
       const suggestion = computeGhostSuggestion(input.value, getItems());
       if (suggestion) { onAccept(suggestion); clear(); }
+    } else if (ev.key === 'Tab') {
+      const suggestion = computeGhostSuggestion(input.value, getItems());
+      if (suggestion) { ev.preventDefault(); onAccept(suggestion); clear(); }
     } else if (ev.key === 'Escape') {
       clear();
     }
@@ -1772,7 +1833,7 @@ function setupComponentsShowcase() {
   /* ---- Physicians ---- */
   (() => {
     setupPanel('physician');
-    const triggerLabel = $('[data-role="physician-trigger-label"]', root);
+    const triggerValue = $('[data-role="physician-trigger-value"]', root);
     const physicianTab = $('[data-role="physician-tab"][data-value="physician"]', root);
     const groupTab = $('[data-role="physician-tab"][data-value="group"]', root);
     const physicianList = $('[data-role="physician-list"]', root);
@@ -1788,10 +1849,41 @@ function setupComponentsShowcase() {
     const activeSelected = () => vals.physicianTab === 'physician' ? vals.physicians : vals.groups;
 
     const refresh = () => {
-      triggerLabel.textContent = physicianTriggerLabel(vals, parentCfg, cfg);
+      triggerValue.innerHTML = physicianTriggerHTML(vals, parentCfg, cfg);
       physicianCount.textContent = String(vals.physicians.length);
       groupCount.textContent = String(vals.groups.length);
     };
+
+    // Croix des pastilles (voir physicianTriggerHTML) : reconstruites a
+    // chaque refresh() via innerHTML, donc ecoutees par delegation sur le
+    // conteneur plutot que rebindees a chaque fois. stopPropagation
+    // empeche le clic de remonter jusqu'au bouton .ccomp__trigger et de
+    // rouvrir/refermer le panneau au lieu de juste vider la pastille.
+    const onPillRemove = (scope) => {
+      if (scope === 'physicians' || scope === 'all') vals.physicians = [];
+      if (scope === 'groups' || scope === 'all') vals.groups = [];
+      $$('li[role="option"]', physicianList).forEach(opt => opt.setAttribute('aria-selected', String(vals.physicians.includes(opt.dataset.value))));
+      $$('li[role="option"]', groupList).forEach(opt => opt.setAttribute('aria-selected', String(vals.groups.includes(opt.dataset.value))));
+      refresh();
+    };
+    const onTriggerValueClick = (ev) => {
+      const remove = ev.target.closest('[data-pill-remove]');
+      if (!remove) return;
+      ev.stopPropagation();
+      onPillRemove(remove.dataset.pillRemove);
+    };
+    const onTriggerValueKeydown = (ev) => {
+      if (ev.key !== 'Enter' && ev.key !== ' ') return;
+      const remove = ev.target.closest('[data-pill-remove]');
+      if (!remove) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      onPillRemove(remove.dataset.pillRemove);
+    };
+    triggerValue.addEventListener('click', onTriggerValueClick);
+    triggerValue.addEventListener('keydown', onTriggerValueKeydown);
+    addCleanup(() => triggerValue.removeEventListener('click', onTriggerValueClick));
+    addCleanup(() => triggerValue.removeEventListener('keydown', onTriggerValueKeydown));
 
     const toggleValue = (opt) => {
       const value = opt.dataset.value;
@@ -1891,7 +1983,7 @@ function setupComponentsShowcase() {
   /* ---- Tasks ---- */
   (() => {
     setupPanel('task');
-    const triggerLabel = $('[data-role="task-trigger-label"]', root);
+    const triggerValue = $('[data-role="task-trigger-value"]', root);
     const taskTab = $('[data-role="task-tab"][data-value="task"]', root);
     const shiftTab = $('[data-role="task-tab"][data-value="shift"]', root);
     const taskList = $('[data-role="task-list"]', root);
@@ -1910,10 +2002,38 @@ function setupComponentsShowcase() {
     const activeSelected = () => vals.taskTab === 'task' ? vals.tasks : vals.shifts;
 
     const refresh = () => {
-      triggerLabel.textContent = taskTriggerLabel(vals, parentCfg, cfg);
+      triggerValue.innerHTML = taskTriggerHTML(vals, parentCfg, cfg);
       taskCount.textContent = String(vals.tasks.length);
       shiftCount.textContent = String(vals.shifts.length);
     };
+
+    // Meme delegation que le panneau Physicians ci-dessus (voir le
+    // commentaire pres de onTriggerValueClick).
+    const onPillRemove = (scope) => {
+      if (scope === 'tasks') vals.tasks = [];
+      if (scope === 'shifts') vals.shifts = [];
+      $$('li[role="option"]', taskList).forEach(opt => opt.setAttribute('aria-selected', String(vals.tasks.includes(opt.dataset.value))));
+      $$('li[role="option"]', shiftList).forEach(opt => opt.setAttribute('aria-selected', String(vals.shifts.includes(opt.dataset.value))));
+      refresh();
+    };
+    const onTriggerValueClick = (ev) => {
+      const remove = ev.target.closest('[data-pill-remove]');
+      if (!remove) return;
+      ev.stopPropagation();
+      onPillRemove(remove.dataset.pillRemove);
+    };
+    const onTriggerValueKeydown = (ev) => {
+      if (ev.key !== 'Enter' && ev.key !== ' ') return;
+      const remove = ev.target.closest('[data-pill-remove]');
+      if (!remove) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      onPillRemove(remove.dataset.pillRemove);
+    };
+    triggerValue.addEventListener('click', onTriggerValueClick);
+    triggerValue.addEventListener('keydown', onTriggerValueKeydown);
+    addCleanup(() => triggerValue.removeEventListener('click', onTriggerValueClick));
+    addCleanup(() => triggerValue.removeEventListener('keydown', onTriggerValueKeydown));
 
     const toggleValue = (opt) => {
       const value = opt.dataset.value;

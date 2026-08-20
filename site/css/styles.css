@@ -1347,10 +1347,57 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    pense pour flotter DANS une carte blanche) : sur la texture de
    .ccomp__frame, un fond lavande se fondrait dans l'image — fidele au
    declencheur blanc a bordure violette de la maquette (node 52:2141 etc.). */
-.ccomp__trigger { width: max-content; max-width: 100%; gap: 8px; background: #fff; }
+.ccomp__trigger {
+  width: max-content;
+  /* Plafonne aussi contre la largeur du viewport (pas juste 100% du panneau,
+     qui est lui-meme en width:auto quand le declencheur est positionne en
+     absolu — voir .ccomp__panel) : une rangee de pastilles (voir
+     .ccomp__pillrow ci-dessous) est plus large que le texte simple qu'elle
+     remplace et pourrait sinon deborder du cadre. */
+  max-width: min(340px, calc(100vw - 64px));
+  gap: 8px; background: #fff;
+}
 .ccomp__trigger:hover { background: #f7f3fe; }
 .ccomp__trigger[aria-expanded="true"] { background: #fff; }
 .ccomp__trigger-chevron { flex: none; width: 16px; height: 16px; pointer-events: none; }
+.ccomp__trigger-value { display: inline-flex; min-width: 0; }
+/* Physicians (left: 1%, voir .ccomp__panel[data-role="physician-panel"]) est
+   le seul declencheur dont la rangee de pastilles (4 segments : Total,
+   Physicians, Groups, croix globale) peut depasser les ~230px qui le
+   separent de Constraint (left: 24%, le voisin le plus proche) — verifie
+   en testant l'etat mixte : sans ce plafond plus etroit, la rangee de
+   pastilles chevauche visuellement Constraint. Task (left: 50% -> Period a
+   75%) a assez de marge et n'a pas besoin de ce resserrement. Les pastilles
+   passent alors a la ligne (voir flex-wrap sur .ccomp__pillrow) plutot que
+   de deborder. */
+.ccomp__panel[data-role="physician-panel"] .ccomp__trigger { max-width: min(170px, calc(100vw - 64px)); }
+/* Pastilles croisees des declencheurs Physicians/Tasks (physicianTriggerHTML/
+   taskTriggerHTML, app.js), reprenant node 58:2890/58:2870 : un texte simple
+   (physicianTriggerLabel/taskTriggerLabel) suffit tant qu'une seule des deux
+   categories a une selection ; des que les deux en ont une, le texte est
+   remplace par cette rangee de pastilles pour montrer les deux a la fois. */
+.ccomp__pillrow { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ccomp__pill {
+  display: inline-flex; align-items: stretch;
+  border-radius: 6px; overflow: hidden;
+  background: #f0f0fa; color: #371495;
+  font-size: 13px; font-weight: 500;
+}
+/* Physicians/Groups (accent) : violet plein + texte/croix blancs — contraste
+   avec la pastille Total, plus claire, juste a cote. */
+.ccomp__pill--accent { background: #6f69d5; color: #fff; }
+.ccomp__pill--total { padding-inline: 8px; }
+.ccomp__pill-label { display: inline-flex; align-items: center; padding: 4px 8px; white-space: nowrap; }
+/* Meme padding vertical que .ccomp__pill-label (4px) pour une hauteur
+   identique, que la croix soit imbriquee dans une .ccomp__pill (align-items:
+   stretch) ou seule dans .ccomp__pillrow (ccomp__pill-remove--all,
+   align-items:center — elle doit alors porter sa propre hauteur). */
+.ccomp__pill-remove {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 4px 6px; cursor: pointer;
+}
+.ccomp__pill--accent .ccomp__pill-remove-icon { filter: brightness(0) invert(1); }
+.ccomp__pill-remove--all { border-radius: 6px; background: #f0f0fa; }
 .ccomp__body {
   margin-top: 10px;
   background: #fff; border: 1px solid #eaeaf9; border-radius: 11px;

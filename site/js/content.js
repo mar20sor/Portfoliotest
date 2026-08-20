@@ -413,10 +413,16 @@ export const PROJECTS = [
           components: {
             caption: 'Component states — the same fields as the sentence above, shown open',
             intro: 'Each field owns its own search, multi-select and validation — this is what the pieces look like on their own.',
+            // `size` : nombre de physiciens que contient chaque groupe, pour
+            // le total affiche dans le declencheur (voir physicianTriggerHTML,
+            // app.js) quand physiciens ET groupes sont selectionnes en meme
+            // temps. Purement illustratif — il n'y a pas de roster reel de
+            // cette taille derriere (seuls les 4 physiciens de builder.physicians
+            // ci-dessus existent nommement dans cette demo).
             groups: [
-              { value: 'floor-2-team',  label: 'Floor 2 team' },
-              { value: 'on-call-pool',  label: 'On-call pool' },
-              { value: 'night-coverage', label: 'Night coverage' }
+              { value: 'floor-2-team',  label: 'Floor 2 team', size: 6 },
+              { value: 'on-call-pool',  label: 'On-call pool', size: 9 },
+              { value: 'night-coverage', label: 'Night coverage', size: 4 }
             ],
             shifts: [
               { value: 'day-shift',    label: 'Day shift' },
