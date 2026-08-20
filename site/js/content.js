@@ -243,7 +243,7 @@ export const PROJECTS = [
     ],
     sections: [
       {
-        id: 'audit', label: 'Process', title: '1. Process',
+        id: 'audit', label: 'Process', title: '2. Process',
         body: [
           'After discussing with members of the internal team, I identified that complexity was due to a great number of rules (24 in total), leading to redundancies and frequent agent configuration errors. Mapping and categorizing most used constraints with shared outcomes allowed me to group them together.'
         ],
@@ -261,9 +261,17 @@ export const PROJECTS = [
             {
               title: 'Mapping the 24 constraints',
               body: [
-                'I listed all 24 constraints and ranked them by usage frequency. To understand what each one acted on, I colour-coded them: green for time, purple for tasks, red for members and groups. This wasn’t decorative — it was there to make the characteristics that several rules shared visible at a glance.',
-                'Two interviews with managers filled in the end-user side. Then I drew each constraint as a flow, to see when each characteristic was selected and whether that moment mattered. The question underneath: can you configure one characteristic once for several rules applied together?',
-                'You can. That consolidation work is what took 24 rules down to 9.'
+                { intro: 'I listed all 24 constraints and ranked them by usage frequency. To understand what each one acted on, I colour-coded them:',
+                  tags: [
+                    { color: 'green', label: 'green', text: 'for time,' },
+                    { color: 'purple', label: 'purple', text: 'for tasks,' },
+                    { color: 'red', label: 'red', text: 'for members and groups,' }
+                  ] },
+                { intro: 'Then I drew each constraint as a flow (see Flow page), to identify :',
+                  list: [
+                    'when key parameters are selected during setup',
+                    'opportunities to batch-edit shared parameters across multiple rules'
+                  ] }
               ],
               /* Embed Figma en direct (fichier "Constraints-EN (Contra)",
                  node 1:351) plutot que l'ancienne capture statique
@@ -281,21 +289,22 @@ export const PROJECTS = [
                  valeur envoyee), donc le selecteur de page ne s'affichait
                  jamais malgre page-selector=true. */
               embed: 'https://embed.figma.com/design/gR8fLg7cuM7rXb1hiC0niz/Constraints-EN--Contra-?node-id=1-351&embed-host=share&page-selector=true',
-              caption: 'Worked example on the “limits” family: shared characteristics (task type, period type, member type) are extracted so they can be configured once.'
+              caption: 'Mapping and flow'
             },
             {
               title: 'Benchmark',
               body: [
-                'With the rules simplified, the remaining question was which interface model to use. I looked at how other products let non-experts configure complex sets of rules. The rule builder — Notion automations, Gmail advanced search — answers the same problem: many possible conditions, a user who only wants three of them.'
+                'With the rules simplified, the remaining question was which interface model to use. I looked at how other products let non-experts configure complex sets of rules.',
+                'A rule-builder interface emerged as the optimal solution for configuring constraints, balancing flexibility and simplicity.'
               ],
               image: 'constraints-3-benchmark', frOnly: true,
-              caption: 'Two references: building an automation in Notion, and Gmail’s advanced search.'
+              caption: 'Notion automation, Gmail’s advanced search, but also Mesh AI and Equina Scheduling which are constraint configuring softwares for hospitals.'
             }
           ]
         }
       },
       {
-        id: 'design', label: 'Solution', title: '2. Solution',
+        id: 'design', label: 'Solution', title: '3. Solution',
         /* `intro` s'affiche directement sous le titre de section, avant
            `body` — separe du systeme body/media/carousel indexe par
            paragraphe (voir plus bas) parce que cette phrase n'a pas de
@@ -304,7 +313,6 @@ export const PROJECTS = [
            partagent un seul <p>, separes par un <br> (voir pageCase() dans
            app.js) plutot que deux <p> distincts. */
         intro: [
-          'After benchmarking tools addressing similar needs, a rule-builder interface emerged as an optimal solution for the configuration.',
           'Several principles guided the interface design : '
         ],
         body: [],
@@ -313,10 +321,10 @@ export const PROJECTS = [
            qu'elle remplace ("Four principles drove the interfaces." retiree,
            la phrase d'intro annonce deja la liste). */
         list: [
-          'Characteristics only appear when they are needed (progressive disclosure).',
-          'The most common options are preselected by default.',
-          'The process is split into steps to stay digestible.',
-          'Contextual help and illustrations sit alongside configuration to reduce errors.'
+          { title: 'Progressive disclosure', body: 'Characteristics only appear when they are needed' },
+          { title: 'Pre-selection', body: 'The most common options are preselected by default.' },
+          { title: 'Stepper', body: 'The process is split into steps to stay digestible.' },
+          { title: 'Visual contextual helpers', body: 'Illustrations sit alongside configuration to reduce errors.' }
         ],
         /* Deux captures exportees depuis Figma (node 46:1093, "Images"),
            montrant l'interface de configuration reelle plutot que les
@@ -457,6 +465,14 @@ export const PROJECTS = [
           title: 'Visual helpers :',
           body: 'I created animated abstract illustrations, both to make each constraint identifiable  and to represent visually what it does.'
         }
+      },
+      {
+        id: 'takeaways', label: 'Takeaways', title: '4. Takeaways',
+        intro: [
+          'Working across 24 rules (more data points than I usually get) was a chance to exercise thematic analysis and systems thinking on a bigger scale.',
+          'If I did it again, I would flip the order : start from usage frequency and scope by impact first, even though I don\'t regret the path I took, but that\'s the lesson.'
+        ],
+        body: []
       }
     ]
   },

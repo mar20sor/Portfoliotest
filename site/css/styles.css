@@ -813,6 +813,40 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .cs-sec__list li { margin-bottom: 0; }
 
+/* Cartes des principes de conception (voir s.list dans content.js,
+   Constraints/design) : une grille de 4 plutot qu'une liste a puces —
+   titre en gras + description, sur un fond legerement teinte. */
+.cs-sec__cards {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s3);
+  margin: 0 0 var(--s4);
+}
+.cs-sec__card {
+  padding: var(--s4); border-radius: var(--radius-sm);
+  background: rgba(234, 234, 249, .5);
+}
+/* .cs-sec__card .cs-sec__card-title (0,2,0) plutot que .cs-sec__card-title
+   seul (0,1,0) : sinon perd face a .cs-sec p (0,1,1), qui matche aussi ce
+   <p>, et son margin-bottom:16px reapparait sous le titre. */
+.cs-sec__card .cs-sec__card-title { font-weight: var(--w-semibold); color: var(--ink); margin-bottom: 0; }
+.cs-sec__card-body { color: var(--ink-soft); font-size: var(--fs-small); margin-bottom: 0; }
+@media (max-width: 700px) {
+  .cs-sec__cards { grid-template-columns: 1fr 1fr; }
+}
+
+/* Etiquettes couleur inline (voir moreDrawer.items[].body, "Mapping the 24
+   constraints") : reprend le code couleur utilise dans la maquette Figma
+   source (temps/taches/membres) pour rendre visible d'un coup d'oeil ce que
+   chaque groupe de contraintes partage. */
+.cs-tag-list { margin: 0 0 var(--s4); padding-left: 1.2em; color: var(--ink-soft); list-style: disc; }
+.cs-tag-list li { margin-bottom: 0; }
+.cs-tag {
+  display: inline-flex; align-items: center; padding: 2px 4px;
+  border-radius: 3px; font-size: var(--fs-small);
+}
+.cs-tag--green  { background: #D7FFD7; color: #37A137; }
+.cs-tag--purple { background: #F2D9FF; color: #7057B2; }
+.cs-tag--red    { background: #FFDAC7; color: #C34E3B; }
+
 /* Les visuels extraits des PDF. Cadre blanc : les maquettes claires ont
    besoin d'un fond neutre pour ne pas se dissoudre dans le bleu. */
 .figure { margin-block: var(--s6); }

@@ -569,11 +569,12 @@ function pageCase(project) {
       </a>
       <ol>
         <li><a href="${base}#overview" data-spy="sec-overview">
+          <span class="cs-nav__num">01</span>
           <span>${escapeAttr(d.csOverview)}</span>
         </a></li>
         ${c.sections.map((s, i) => `
           <li><a href="${base}#${escapeAttr(s.id)}" data-spy="sec-${escapeAttr(s.id)}">
-            <span class="cs-nav__num">${String(i + 1).padStart(2, '0')}</span>
+            <span class="cs-nav__num">${String(i + 2).padStart(2, '0')}</span>
             <span>${escapeAttr(s.label)}</span>
           </a></li>`).join('')}
       </ol>
@@ -606,8 +607,15 @@ function pageCase(project) {
       }).join('');
 
       const intro = s.intro ? `<p>${s.intro.map(escapeAttr).join('<br>')}</p>` : '';
+      // s.list : cartes {title, body} (ex. les 4 principes de conception,
+      // Constraints/design) plutot qu'une liste a puces — voir s.list dans
+      // content.js et .cs-sec__cards dans styles.css.
       const list = s.list
-        ? `<ul class="cs-sec__list">${s.list.map(li => `<li>${escapeAttr(li)}</li>`).join('')}</ul>` : '';
+        ? `<div class="cs-sec__cards">${s.list.map(card => `
+            <div class="cs-sec__card">
+              <p class="cs-sec__card-title">${escapeAttr(card.title)}</p>
+              <p class="cs-sec__card-body">${escapeAttr(card.body)}</p>
+            </div>`).join('')}</div>` : '';
       const mockups = s.mockups
         ? `<div class="cs-mockups">${s.mockups.map(figureFor).join('')}</div>` : '';
       // Chiffres cites dans le texte, sortis en cartes (voir s.stats dans
@@ -817,11 +825,28 @@ function setupMoreDrawerEmbeds() {
    sa figure (ou embedFor() pour un canevas Figma en direct, voir it.embed)
    — sans son propre figureDrawer imbrique, l'ensemble etant deja derriere ce
    tiroir. */
+// Un paragraphe de moreDrawer.items[].body est soit une chaine simple (rendue
+// en <p>), soit un objet { intro, tags } / { intro, list } quand le texte a
+// besoin d'etiquettes couleur (voir .cs-tag, mapping des 24 contraintes) ou
+// d'une sous-liste a puces sous l'intro — voir content.js.
+function drawerBodyParagraph(p) {
+  if (typeof p === 'string') return `<p>${escapeAttr(p)}</p>`;
+  const intro = `<p>${escapeAttr(p.intro)}</p>`;
+  if (p.tags) {
+    return intro + `<ul class="cs-tag-list">${p.tags.map(tag => `
+      <li><span class="cs-tag cs-tag--${escapeAttr(tag.color)}">[ ${escapeAttr(tag.label)} ]</span> ${escapeAttr(tag.text)}</li>`).join('')}</ul>`;
+  }
+  if (p.list) {
+    return intro + `<ul class="cs-sec__list">${p.list.map(li => `<li>${escapeAttr(li)}</li>`).join('')}</ul>`;
+  }
+  return intro;
+}
+
 function moreDrawerMarkup(drawer) {
   const items = drawer.items.map(it => `
     <div class="cs-more__item">
       <h3 class="cs-more__title">${escapeAttr(it.title)}</h3>
-      ${it.body.map(p => `<p>${escapeAttr(p)}</p>`).join('')}
+      ${it.body.map(drawerBodyParagraph).join('')}
       ${it.embed ? embedFor(it) : (it.image ? figureFor(it) : '')}
     </div>`).join('');
   return `<details class="figure-drawer cs-more">
