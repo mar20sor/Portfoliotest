@@ -285,6 +285,98 @@ count with the browser rather than assuming the ratio still holds.
 inside `.cbuild__sentence` regardless of container width, rather than
 relying on the flex-wrap's natural (width-dependent) break point.
 
+### Components showcase widget (`componentsShowcaseMarkup()`/`setupComponentsShowcase()`, `app.js`; `.ccomp__*`, `styles.css`)
+
+A second, independent widget below the rule-builder in the Constraints case
+study (`builder.components` in `content.js`): four standalone fields
+(Physicians, Constraint type, Tasks, Period) that each open/close on their
+own — not a composed sentence like the rule-builder above them. Figma
+sources: node 52:1781 ("Components", frame appearance and background image —
+`assets/img/components-showcase-bg.jpg`, distinct from the rule-builder's own
+background) and node 21:797 ("Interactive components", open/close/hover
+behavior); node 58:2890/58:2870 for the pill designs described below.
+
+- **Panels are positioned absolutely, not with CSS Grid.** `.ccomp__grid` is
+  just a `position: relative` sizing box; each `.ccomp__panel` is `position:
+  absolute` with its own `left`/`top` (all at `top: 5%`, one row —
+  `left: 1% / 37% / 55% / 79%` for Physicians/Constraint/Tasks/Period). These
+  percentages aren't arbitrary or Figma-derived: they were widened from an
+  earlier, tighter 1/24/50/75 spread specifically to leave room for the
+  Physicians trigger's pill row (see below), sized against each trigger's
+  *measured* worst-case pixel width with this demo's data (4 physicians, 3
+  groups, 4 tasks, 3 shifts) — if you add more items to any of those lists
+  in `content.js`, re-measure rather than assuming the spacing still holds.
+- **`.ccomp__body` is `position: absolute` on every panel, not just its
+  closed trigger.** This looks redundant at first (why not let it sit in
+  normal flow under the trigger?) but it's load-bearing: `.ccomp__panel` has
+  no explicit width (shrink-to-fit, since it's absolutely positioned), so a
+  body that's wider than its own trigger — the 300px-wide `.ccomp__body` vs.
+  e.g. a ~225px Tasks trigger — would otherwise become the panel's widest
+  in-flow child and inflate the *closed* trigger's footprint the moment the
+  panel opens, overlapping whatever panel sits to its right even when the
+  trigger alone had enough clearance. Confirmed by testing: with the body
+  still in normal flow, opening Tasks alone (no pills) pushed into Period
+  despite spacing that was already sized for Tasks' pill row. Physicians/
+  Constraint/Tasks open their body left-aligned under the trigger (`left:
+  0`); Period overrides to `right: 0` instead (see next point).
+  `@media (max-width: 860px)` resets `.ccomp__body` back to `position:
+  static` for every panel, since the mobile layout is a plain stacked column
+  (see below) where this whole absolute-positioning scheme doesn't apply.
+- **Period's body is right-anchored, not left.** At `left: 79%`, a
+  left-anchored 300px body would overflow the frame's right edge on
+  narrower desktop widths (verified near the 860px breakpoint). Anchoring
+  its `.ccomp__body` to `right: 0` instead makes it open leftward off the
+  trigger, which stays inside the frame at any width the absolute-position
+  layout applies to.
+- **Cross-category pills (node 58:2890/58:2870).** The Physicians and Tasks
+  triggers each cover two tabs sharing one field (Physicians/Groups,
+  Tasks/Shifts — see `tabs()`/`switchTab` pattern, shared with the physician
+  tab-count pills). Their trigger label
+  (`physicianTriggerLabel()`/`taskTriggerLabel()`) normally just describes
+  whichever tab is active, but the moment *both* tabs have a selection, the
+  plain-text label is replaced by real pill markup instead
+  (`physicianTriggerHTML()`/`taskTriggerHTML()`, `pillHTML()`) so neither
+  selection is hidden behind the other. Two different shapes, matching the
+  two source nodes exactly rather than a single generic pattern:
+  - **Tasks** (node 58:2870): two flat, independent pills side by side
+    (`.ccomp__pillrow`) — "N Tasks ×" and "N Shifts ×".
+  - **Physicians** (node 58:2890): a *nested* structure, not a flat row —
+    `.ccomp__pillgroup` is the light wrapper that visually contains
+    everything: the bare "N Total" text (physicians selected + the `size`
+    of each selected group — a fixed illustrative number per group in
+    `content.js`, not a real roster; the Figma mock itself shows "223
+    Total" against 4 named physicians in the whole file), the two solid
+    accent pills ("N Physicians ×", "N Groups ×"), and a final bare "×"
+    that clears both at once. Don't flatten this back into a row of
+    sibling pills — the nesting is what makes "Total" read as a sum of the
+    two pills next to it rather than a third independent value.
+  - Each pill's "×" (`data-pill-remove`) fully clears that category
+    (`vals.physicians = []`, etc.) regardless of the "at least one must stay
+    checked" rule that applies to manual checkbox toggling in the list —
+    an explicit clear is allowed to go to zero. Clicks are intercepted with
+    `stopPropagation()` so they don't also toggle the trigger's own
+    open/close (delegated on `.ccomp__trigger-value`, since the pills are
+    rebuilt via `innerHTML` on every `refresh()` rather than diffed).
+  - **Switching to the *other*, empty tab must not look like the selection
+    was cleared.** `physicianTriggerLabel()`/`taskTriggerLabel()` used to
+    look only at the active tab's own list, so switching e.g. Physicians →
+    Groups when Groups was still empty showed a bare "Select groups"
+    placeholder even though physicians were still selected underneath.
+    Fixed via a shared `dualCategoryTriggerLabel()` helper: if the active
+    tab's list is empty but the *other* one isn't, it falls back to
+    describing that other list instead of the placeholder.
+- **Tab-to-complete in both search boxes** (`setupSearchField()`, shared by
+  Physicians and Tasks): Enter already accepted the ghost autocomplete
+  suggestion (node 21:496); Tab now does the same, but only when a
+  suggestion is actually showing — `preventDefault()` is conditional on
+  `computeGhostSuggestion()` returning something, so Tab still moves focus
+  normally the rest of the time instead of ever trapping the keyboard.
+- **Mobile fallback (`@media (max-width: 860px)`).** The whole
+  absolute-position scheme assumes a comfortably wide frame; below the
+  breakpoint `.ccomp__grid` becomes a plain `flex-direction: column` stack
+  and every `.ccomp__panel`/`.ccomp__body` reverts to `position: static`,
+  same as the rule-builder's own mobile behavior.
+
 ### Header height sync (`syncHeadHeight()`, `app.js`)
 
 `--head-h` (design token, `styles.css`) is read by `.cs-nav`'s sticky

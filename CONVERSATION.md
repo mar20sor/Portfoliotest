@@ -4,7 +4,7 @@
 > Il enregistre **ce qui a été décidé, pourquoi, et ce qui reste à faire**.
 > Si vous reprenez le projet dans une nouvelle session, lisez ce fichier d'abord.
 
-**Dernière mise à jour :** 20 août 2026 — session 8 (restructuration complète de l'étude de cas « Scheduling constraints » : sections « Process »/« Solution » réorganisées, tiroir « See more of the process » avec un item image et un item embed Figma en direct, widget « sentence builder » réduit à 60 % et retravaillé, listes à puces, deux bugs corrigés — iframe dans un `<details>` fermé, CSP sans `frame-src` — un point non résolu — rendu de l'embed Figma pas confirmé visuellement, à vérifier en production ; branche `constraint-structure` commitée, poussée vers `origin`, fusionnée dans `main`, `main` poussé vers `origin`, branche supprimée)
+**Dernière mise à jour :** 20 août 2026 — session 9 (nouveau widget « components showcase » sous le rule-builder de l'étude de cas « Scheduling constraints » : quatre champs autonomes Physicians/Constraint/Tasks/Period, cadre degrade Figma, positionnement absolu retravaille plusieurs fois, pastilles croisees Physicians/Tasks avec croix de suppression, correctif de chevauchement — corps de panneau sorti du flux ; branche `interactive-components` commitee, poussee vers `origin` via `push-temp`, supprimee en local)
 
 ---
 
@@ -257,6 +257,16 @@ l'étude de cas suivante · responsive · code annoté ligne à ligne.
    visuellement — voir « Constraints case study restructure » dans
    `CLAUDE.md` et le détail dans la session 8 ci-dessous. Si ça ne s'affiche
    toujours pas une fois déployé, revenir à une image statique.
+10. **Décider du sort du widget « components showcase » (branche
+    `interactive-components`).** Construit et vérifié sur sa propre branche
+    en session 9, poussée vers `origin` mais **jamais fusionnée dans
+    `main`** — le widget n'existe donc pas encore sur le site publié. Voir
+    « État Git » de la session 9 ci-dessous pour comment reprendre la
+    branche. La vérification visuelle de cette session a aussi été gênée
+    par un outil de capture d'écran automatisé instable (images blanches
+    intermittentes) — le rendu a été confirmé par mesures DOM
+    (`getBoundingClientRect`) plutôt que par captures dans certains cas ;
+    un coup d'œil manuel avant fusion reste préférable.
 
 ### Souhaitable
 
@@ -896,3 +906,101 @@ méthode `push-temp` habituelle (voir « Pushing to origin » dans
 tant que telle, seul `push-temp` y a été poussé puis supprimé). Mise à jour
 de `CLAUDE.md`/`CONVERSATION.md` : commit distinct, local à `main` — non
 poussé vers `origin`, comme d'habitude.
+
+---
+
+### Session 9 — 20 août 2026 (branche `interactive-components`, poussée vers `origin`, **non fusionnée dans `main`**)
+
+Nouveau widget « components showcase » (`builder.components` dans
+`content.js`) sous le rule-builder de l'étude de cas « Scheduling
+constraints » : quatre champs autonomes — Physicians, Constraint type,
+Tasks, Period — chacun ouvrable/fermable indépendamment, contrairement à la
+phrase composée du rule-builder juste au-dessus. Construit sur plusieurs
+demandes successives affinées au fil de la session ; voir la note dédiée
+« Components showcase widget » dans `CLAUDE.md` pour le détail technique.
+Contrairement à la session 8, **cette branche n'a pas été fusionnée dans
+`main`** — voir « État Git » ci-dessous.
+
+- **Création de la branche.** Le widget existait déjà dans l'arbre de
+  travail de `main`, non commité, au début de cette session — déplacé sur
+  une nouvelle branche `interactive-components` (`git checkout -b` emporte
+  les changements non commités avec lui) plutôt que commité directement sur
+  `main`, `main` restant propre à son dernier commit (`980fa51`).
+- **Cadre et positionnement.** Le widget a été enveloppé dans un cadre
+  `.ccomp__frame` au traitement degrade identique à `.cbuild__frame`
+  (rule-builder) mais avec sa propre texture de fond, propre à la maquette
+  Figma « Components » (node 52:1781) — pas le degrade du rule-builder, les
+  deux widgets viennent de deux maquettes distinctes. Hauteur fixée à 430px
+  (identique au rendu mesuré de `.cbuild__frame`, pour que les deux cadres
+  degrades du bloc « Solution » occupent le même gabarit vertical). Le
+  positionnement des quatre panneaux a été retravaillé trois fois : d'abord
+  une grille 2×2 CSS, puis un positionnement absolu calqué sur les
+  coordonnées x/y de la maquette Figma (quinconce), puis aligné sur une
+  seule rangée (`top: 5%`) à des pourcentages `left` explicitement demandés
+  (1/50/24/75), et enfin réécartés (1/37/55/79) pour laisser la place aux
+  pastilles du déclencheur Physicians — voir plus bas.
+- **Bug corrigé : le déclencheur Period n'était jamais mis à jour.** Codé en
+  dur sur le texte « Period », il ne reflétait jamais les jours/série/
+  période choisis. Ajout de `periodTriggerLabel()`, câblé dans les huit
+  points de changement d'état du panneau (jours, tout sélectionner, choix
+  fixe/série, période nommée, compteur de jours consécutifs).
+- **Paragraphes « Selected: ... » retirés des quatre panneaux.** Jugés
+  redondants une fois que chaque déclencheur affiche déjà la sélection
+  courante — `.ccomp__status` et les fonctions `*StatusText()` associées
+  supprimés (code mort, plus aucun appelant).
+- **Pastilles croisées Physicians/Tasks (node 58:2890/58:2870).** Les
+  déclencheurs Physicians et Tasks couvrent chacun deux onglets partageant
+  un seul champ (Physicians/Groups, Tasks/Shifts) ; leur texte ne montrait
+  jusque-là que l'onglet actif. Dès que les deux onglets ont une sélection,
+  le texte est remplacé par de vraies pastilles avec croix de suppression
+  individuelle (`physicianTriggerHTML()`/`taskTriggerHTML()`) — structure à
+  plat pour Tasks, structure imbriquée pour Physicians (un cadre « Total »
+  qui englobe visuellement les deux pastilles pleines, fidèle à la
+  maquette plutôt qu'aplati en rangée). Le total physicians+groupes utilise
+  un nouveau champ `size` par groupe dans `content.js` (chiffre d'exemple
+  fixe, sans roster réel derrière — comme la maquette elle-même). Bug
+  corrigé en cours de route : changer d'onglet vers l'onglet vide affichait
+  à tort « Select groups »/« Select shifts » même quand l'autre onglet avait
+  déjà une sélection — corrigé via `dualCategoryTriggerLabel()`, qui
+  retombe sur la description de l'autre liste plutôt que sur le texte
+  générique.
+- **Tab complète l'autocomplétion des deux champs de recherche**
+  (Physicians, Tasks), comme Enter le fait déjà — uniquement quand une
+  suggestion est réellement affichée, sinon Tab garde son comportement
+  natif de navigation au clavier.
+- **Bug de chevauchement découvert et corrigé (deux causes distinctes).**
+  Demandé de rendre le déclencheur Physicians flexible pour que ses
+  pastilles tiennent sur une seule ligne (au lieu de passer à la ligne en
+  dessous d'un plafond de largeur) : cela a révélé un vrai chevauchement
+  visuel avec le panneau Constraint voisin. Deux causes trouvées et
+  corrigées : (1) la largeur du déclencheur fermé peut atteindre ~345px
+  (4 physiciens + 3 groupes, le maximum des données de démo), plus large que
+  l'écart laissé par l'ancien espacement 24/50/75 — d'où le réécartage
+  1/37/55/79 mentionné plus haut, mesuré empiriquement plutôt que deviné ;
+  (2) `.ccomp__body` était un enfant normal du flux, donc un corps ouvert de
+  300px devenait le plus large enfant du panneau (`width: auto`, positionné
+  en absolu) dès qu'il dépassait la largeur du déclencheur fermé — ce qui
+  élargissait le panneau lui-même et le faisait chevaucher son voisin de
+  droite même quand le déclencheur seul tenait sans problème (vérifié avec
+  Tasks : déclencheur ~225px, corps 300px, chevauchement sur Period malgré
+  l'espacement déjà élargi pour le déclencheur). Corrigé en sortant tous les
+  corps du flux (`position: absolute`, déjà fait pour Period seul
+  auparavant pour une autre raison — débordement du bord droit du cadre —
+  généralisé aux trois autres). Revérifié avec chaque panneau ouvert et
+  chaque physicien/groupe/tâche/garde sélectionné en même temps : les
+  quatre écarts restent positifs.
+- **Légende changée.** « Component states — the same fields as the sentence
+  above, shown open » → « Component reflect real use cases in hospital ».
+
+**État Git — différent de la session 8.** Contrairement à `constraint-structure`
+(fusionnée dans `main` en session 8), `interactive-components` **n'a pas été
+fusionnée dans `main`** : `main` reste à son dernier commit d'avant cette
+session, sans le widget « components showcase ». La branche a été poussée
+vers `origin` via la méthode `push-temp` habituelle (voir « Pushing to
+origin » dans `CLAUDE.md`), puis supprimée en local — récupérable via
+`git checkout -b interactive-components origin/interactive-components` si
+besoin de reprendre ce travail plus tard (fusion dans `main` ou poursuite
+sur la branche). Mise à jour de `CLAUDE.md`/`CONVERSATION.md` : commitée sur
+`interactive-components` avant la bascule vers `push-temp`, donc présente
+dans l'historique de la branche poussée mais — comme d'habitude — exclue du
+contenu réellement envoyé à `origin` par la méthode `push-temp`.
