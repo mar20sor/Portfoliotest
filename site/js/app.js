@@ -1696,7 +1696,6 @@ function componentsShowcaseMarkup(cfg, parentCfg) {
   return `
     <div class="ccomp" data-role="components-showcase">
       <div class="ccomp__frame">
-        ${cfg.intro ? `<p class="ccomp__intro">${escapeAttr(cfg.intro)}</p>` : ''}
         <div class="ccomp__grid">
           ${physicianPanel}
           ${taskPanel}

@@ -1315,11 +1315,10 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    comme dans la maquette source. */
 /* Hauteur fixe, identique au rendu de .cbuild__frame (le rule-builder
    au-dessus) : les deux cadres degrades doivent occuper le meme gabarit
-   vertical dans la section, meme si leur contenu differe. Comme les
-   panneaux peuvent s'ouvrir et depasser cette hauteur (contrairement au
-   rule-builder, dont le contenu ne change jamais de taille), le cadre
-   scrolle en interne (overflow-y) plutot que de s'etirer ou de rogner le
-   contenu ouvert. */
+   vertical dans la section, meme si leur contenu differe. Les panneaux sont
+   positionnes en absolu (voir .ccomp__grid/.ccomp__panel plus bas) : un
+   panneau qui s'ouvre flotte donc par-dessus le cadre au lieu de pousser sa
+   hauteur — d'ou overflow: visible plutot qu'un scroll interne. */
 .ccomp__frame {
   background-image: url('../assets/img/components-showcase-bg.jpg');
   background-size: cover;
@@ -1327,24 +1326,22 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   border-radius: 20px;
   padding: clamp(20px, 4vw, 40px);
   height: 430px;
-  overflow-y: auto;
-  /* Centre le contenu (4 declencheurs fermes + intro, bien plus court que
-     430px) dans la hauteur fixe plutot que de le laisser colle en haut avec
-     un grand vide degrade en dessous. "safe center" (pas juste "center") :
-     des que des panneaux s'ouvrent et depassent la hauteur, revient a un
-     alignement "start" pour que le haut du contenu reste atteignable au
-     scroll — un simple "center" couperait le debut du contenu qui deborde. */
-  display: flex;
-  flex-direction: column;
-  justify-content: safe center;
+  overflow: visible;
 }
-.ccomp__intro {
-  font-size: var(--fs-small); color: var(--ink-faint);
-  line-height: 1.5; font-family: var(--font);
-  margin-bottom: var(--s4);
-}
-.ccomp__grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s5) var(--s6); }
-.ccomp__panel { position: relative; min-width: 0; }
+/* Positions absolues calquees sur la maquette Figma "Components" (node
+   52:1781, canevas 1440x1024) : chaque .ccomp__panel reprend le
+   pourcentage x/y de son declencheur dans ce canevas (ex. Physicians a
+   x=103,y=179 -> left:7%, top:17.5%), ce qui recree l'agencement en
+   quinconce de la maquette (pas une grille 2x2 alignee) tout en restant
+   fluide a n'importe quelle largeur de cadre. .ccomp__grid n'est donc plus
+   une grille : c'est juste le conteneur de positionnement (position:
+   relative, pleine taille du cadre). */
+.ccomp__grid { position: relative; width: 100%; height: 100%; }
+.ccomp__panel[data-role="physician-panel"] { left: 7%; top: 17.5%; }
+.ccomp__panel[data-role="task-panel"] { left: 40%; top: 10%; }
+.ccomp__panel[data-role="constraint-panel"] { left: 13%; top: 62%; }
+.ccomp__panel[data-role="period-panel"] { left: 60%; top: 56.5%; }
+.ccomp__panel { position: absolute; min-width: 0; }
 /* Largeur au contenu (pas 100% de la colonne) : fidele aux declencheurs de
    la maquette Figma (node 52:1781), toujours plus etroits que le panneau
    blanc qu'ils ouvrent en dessous — jamais etires a la largeur de leur
@@ -1361,6 +1358,10 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   background: #fff; border: 1px solid #eaeaf9; border-radius: 11px;
   box-shadow: var(--shadow);
   padding: 16px;
+  /* Plafonne la largeur des panneaux ancres a droite (task/period, left: 40%
+     et 60%) pour qu'un corps ouvert ne deborde jamais du cadre, sans quoi
+     il provoquerait un scroll horizontal. */
+  width: min(300px, calc(100vw - 64px));
 }
 .ccomp__body[hidden] { display: none; }
 .ccomp__field-label { font-size: 11px; color: #353a45; margin: 0 0 8px; }
@@ -1742,7 +1743,13 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
   .foot__grid { grid-template-columns: 1fr 1fr; }
   .cs-next__link { flex-direction: column; align-items: flex-start; }
   .cbuild__layout { grid-template-columns: 1fr; }
-  .ccomp__grid { grid-template-columns: 1fr; }
+  /* Sous 860px le cadre passe en pile normale (pas de positionnement absolu
+     façon Figma, qui suppose une largeur de cadre confortable) : chaque
+     panneau reprend le flux du document, l'un sous l'autre, et le cadre
+     retrouve son scroll interne puisque sa hauteur ne suit plus le contenu. */
+  .ccomp__frame { overflow-y: auto; }
+  .ccomp__grid { display: flex; flex-direction: column; gap: var(--s5); height: auto; }
+  .ccomp__panel { position: static; }
   .lottie-carousel { grid-template-columns: 1fr; }
   .lottie-carousel__tabs { flex-direction: row; flex-wrap: wrap; gap: var(--s4) var(--s5); }
 }
