@@ -411,7 +411,7 @@ export const PROJECTS = [
              frame "Components" (node 52:1781) pour l'apparence, frame
              "Interactive components" (node 21:797) pour le comportement. */
           components: {
-            caption: 'Component states — the same fields as the sentence above, shown open',
+            caption: 'Component reflect real use cases in hospital',
             intro: 'Each field owns its own search, multi-select and validation — this is what the pieces look like on their own.',
             // `size` : nombre de physiciens que contient chaque groupe, pour
             // le total affiche dans le declencheur (voir physicianTriggerHTML,

@@ -1328,17 +1328,21 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   height: 430px;
   overflow: visible;
 }
-/* Positions absolues calquees sur la maquette Figma "Components" (node
-   52:1781, canevas 1440x1024) : chaque .ccomp__panel reprend le
-   pourcentage left de son declencheur (tous alignes sur le meme top:5%,
-   une seule rangee plutot que le quinconce de la maquette source).
-   .ccomp__grid n'est donc plus une grille : c'est juste le conteneur de
-   positionnement (position: relative, pleine taille du cadre). */
+/* Positions absolues, une seule rangee (top:5%). Physicians et Tasks
+   affichent des pastilles sur une seule ligne des que les deux onglets
+   (physiciens+groupes / taches+gardes) ont une selection (voir
+   physicianTriggerHTML/taskTriggerHTML, app.js) : Physicians peut alors
+   grandir jusqu'a ~345px (4 physiciens + 3 groupes, le maximum des donnees
+   de demo) et Tasks jusqu'a ~225px. Les positions ci-dessous ont ete
+   ecartees (24/50/75 -> 37/55/79) pour garder un espace mesure a partir de
+   ces largeurs maximales, verifie sans chevauchement au lieu du quinconce
+   plus serre de la maquette Figma source (52:1781) — priorite donnee a la
+   lisibilite du contenu dynamique sur la fidelite exacte au pixel. */
 .ccomp__grid { position: relative; width: 100%; height: 100%; }
 .ccomp__panel[data-role="physician-panel"] { left: 1%; top: 5%; }
-.ccomp__panel[data-role="task-panel"] { left: 50%; top: 5%; }
-.ccomp__panel[data-role="constraint-panel"] { left: 24%; top: 5%; }
-.ccomp__panel[data-role="period-panel"] { left: 75%; top: 5%; }
+.ccomp__panel[data-role="task-panel"] { left: 55%; top: 5%; }
+.ccomp__panel[data-role="constraint-panel"] { left: 37%; top: 5%; }
+.ccomp__panel[data-role="period-panel"] { left: 79%; top: 5%; }
 .ccomp__panel { position: absolute; min-width: 0; }
 /* Largeur au contenu (pas 100% de la colonne) : fidele aux declencheurs de
    la maquette Figma (node 52:1781), toujours plus etroits que le panneau
@@ -1354,23 +1358,13 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
      absolu — voir .ccomp__panel) : une rangee de pastilles (voir
      .ccomp__pillrow ci-dessous) est plus large que le texte simple qu'elle
      remplace et pourrait sinon deborder du cadre. */
-  max-width: min(340px, calc(100vw - 64px));
+  max-width: min(360px, calc(100vw - 64px));
   gap: 8px; background: #fff;
 }
 .ccomp__trigger:hover { background: #f7f3fe; }
 .ccomp__trigger[aria-expanded="true"] { background: #fff; }
 .ccomp__trigger-chevron { flex: none; width: 16px; height: 16px; pointer-events: none; }
 .ccomp__trigger-value { display: inline-flex; min-width: 0; }
-/* Physicians (left: 1%, voir .ccomp__panel[data-role="physician-panel"]) est
-   le seul declencheur dont la rangee de pastilles (4 segments : Total,
-   Physicians, Groups, croix globale) peut depasser les ~230px qui le
-   separent de Constraint (left: 24%, le voisin le plus proche) — verifie
-   en testant l'etat mixte : sans ce plafond plus etroit, la rangee de
-   pastilles chevauche visuellement Constraint. Task (left: 50% -> Period a
-   75%) a assez de marge et n'a pas besoin de ce resserrement. Les pastilles
-   passent alors a la ligne (voir flex-wrap sur .ccomp__pillrow) plutot que
-   de deborder. */
-.ccomp__panel[data-role="physician-panel"] .ccomp__trigger { max-width: min(170px, calc(100vw - 64px)); }
 /* Pastilles croisees des declencheurs Physicians/Tasks (physicianTriggerHTML/
    taskTriggerHTML, app.js) : un texte simple (physicianTriggerLabel/
    taskTriggerLabel) suffit tant qu'une seule des deux categories a une
@@ -1382,9 +1376,13 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    texte "Total" qu'il contient, donc aucune bordure visible entre les deux)
    qui ENGLOBE le texte Total, les deux pastilles pleines Physicians/Groups
    et la croix globale. */
-.ccomp__pillrow { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ccomp__pillrow { display: inline-flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
+/* nowrap plutot que wrap : le declencheur Physicians doit rester lisible sur
+   une seule ligne (width: max-content sur .ccomp__trigger le laisse grandir
+   pour l'accueillir) plutot que d'empiler Total/Physicians/Groups/croix sur
+   plusieurs lignes. */
 .ccomp__pillgroup {
-  display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  display: inline-flex; align-items: center; gap: 4px; flex-wrap: nowrap;
   background: #f0f0fa; border-radius: 6px; padding: 4px; color: #371495;
 }
 .ccomp__pill {
@@ -1410,29 +1408,32 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   padding: 2px 6px; cursor: pointer;
 }
 .ccomp__pill--accent .ccomp__pill-remove-icon { filter: brightness(0) invert(1); }
+/* Sorti du flux (position: absolute) plutot que d'etre un enfant normal du
+   panneau : sinon, un corps ouvert de 300px devient l'enfant-en-flux le
+   plus large du panneau (voir .ccomp__panel, width: auto) des qu'il depasse
+   la largeur du declencheur ferme — ce qui elargit le panneau lui-meme et le
+   fait chevaucher son voisin de droite, meme quand le declencheur seul
+   tiendrait sans probleme. Verifie avec Tasks (declencheur ~225px, corps
+   300px) : sans ce retrait du flux, ouvrir Tasks chevauchait Period malgre
+   l'ecart calcule pour les seuls declencheurs. */
 .ccomp__body {
-  margin-top: 10px;
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
   background: #fff; border: 1px solid #eaeaf9; border-radius: 11px;
   box-shadow: var(--shadow);
   padding: 16px;
-  /* Plafonne la largeur des panneaux ancres pres du bord droit (task/period,
-     left: 50%/75%) pour qu'un corps ouvert ne deborde jamais du cadre, sans
-     quoi il provoquerait un scroll horizontal. */
+  /* Plafonne la largeur du corps pour qu'il ne deborde jamais du cadre a
+     droite, sans quoi il provoquerait un scroll horizontal. */
   width: min(300px, calc(100vw - 64px));
 }
 .ccomp__body[hidden] { display: none; }
-/* Period (left: 75%) est trop pres du bord droit du cadre pour qu'un corps
+/* Period (left: 79%) est trop pres du bord droit du cadre pour qu'un corps
    de 300px s'ouvre vers la droite sans deborder (verifie : deborde des la
-   largeur de cadre proche du seuil mobile de 860px). Sorti du flux et
-   ancre a droite du declencheur (right: 0) plutot qu'a gauche, il s'ouvre
-   donc vers la gauche a la place. */
-.ccomp__panel[data-role="period-panel"] .ccomp__body {
-  position: absolute;
-  top: calc(100% + 10px);
-  left: auto;
-  right: 0;
-  margin-top: 0;
-}
+   largeur de cadre proche du seuil mobile de 860px). Ancre a droite du
+   declencheur (right: 0) plutot qu'a gauche comme les trois autres
+   panneaux, il s'ouvre donc vers la gauche a la place. */
+.ccomp__panel[data-role="period-panel"] .ccomp__body { left: auto; right: 0; }
 .ccomp__field-label { font-size: 11px; color: #353a45; margin: 0 0 8px; }
 
 /* Bascule Physicians/Groups, Tasks/Shifts, Fixed period/Series : contrairement
@@ -1817,13 +1818,9 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
   .ccomp__frame { overflow-y: auto; }
   .ccomp__grid { display: flex; flex-direction: column; gap: var(--s5); height: auto; }
   .ccomp__panel { position: static; }
-  /* Period reprend le flux normal comme les trois autres panneaux : l'ancrage
-     a droite (right: 0) ci-dessus n'a de sens que quand le panneau est
-     positionne en absolu. */
-  .ccomp__panel[data-role="period-panel"] .ccomp__body {
-    position: static;
-    margin-top: 10px;
-  }
+  /* Chaque corps reprend le flux normal (l'ancrage left:0/right:0 ci-dessus
+     n'a de sens que quand le panneau est positionne en absolu). */
+  .ccomp__body { position: static; margin-top: 10px; }
   .lottie-carousel { grid-template-columns: 1fr; }
   .lottie-carousel__tabs { flex-direction: row; flex-wrap: wrap; gap: var(--s4) var(--s5); }
 }
