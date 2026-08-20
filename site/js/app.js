@@ -610,6 +610,12 @@ function pageCase(project) {
         ? `<ul class="cs-sec__list">${s.list.map(li => `<li>${escapeAttr(li)}</li>`).join('')}</ul>` : '';
       const mockups = s.mockups
         ? `<div class="cs-mockups">${s.mockups.map(figureFor).join('')}</div>` : '';
+      // Chiffres cites dans le texte, sortis en cartes (voir s.stats dans
+      // content.js) — meme balisage que les .stat d'en-tete, en plus petit.
+      const secStats = s.stats
+        ? `<div class="stats stats--sec">${s.stats.map(x =>
+            `<div class="stat"><div class="stat__n">${escapeAttr(x.n)}</div>
+             <div class="stat__l">${escapeAttr(x.l)}</div></div>`).join('')}</div>` : '';
       // Bloc "Visual helpers" : rendu apres le widget interactif (pas dans
       // body[]/lottieCarousel indexe par paragraphe) — voir s.helpers dans
       // content.js. Titre + texte dans le meme <p> (le titre reste en gras
@@ -623,9 +629,11 @@ function pageCase(project) {
         ${intro}
         ${list}
         ${parts}
+        ${secStats}
         ${mockups}
         ${s.image ? figureFor(s) : ''}
         ${s.builder ? constraintBuilderMarkup(s.builder) : ''}
+        ${s.builder && s.builder.components ? componentsShowcaseMarkup(s.builder.components, s.builder) : ''}
         ${helpers}
         ${s.moreDrawer ? moreDrawerMarkup(s.moreDrawer) : ''}`;
       secs.append(sec);
@@ -979,6 +987,22 @@ function taskCheckboxRows(items, selectedValues) {
     </li>`).join('');
 }
 
+/* Lignes du type de contrainte (icone + predicat + description) : factorisee
+   pour etre partagee entre constraintBuilderMarkup() (ou seule "Limit" reste
+   jamais reellement selectionnable, voir plus bas) et componentsShowcaseMarkup()
+   (ou les quatre types se selectionnent vraiment). */
+function constraintOptionRows(constraints, selectedValue) {
+  return constraints.map(c => `
+    <li role="option" data-value="${escapeAttr(c.value)}"
+        aria-selected="${c.value === selectedValue ? 'true' : 'false'}" tabindex="-1">
+      <span class="cbuild__opt-icon" aria-hidden="true">${c.icon ? `<img src="${escapeAttr(c.icon)}" alt="" width="20" height="20">` : ''}</span>
+      <span class="cbuild__opt-text">
+        <span class="cbuild__opt-predicate">${escapeAttr(c.predicate)}</span>
+        <span class="cbuild__opt-desc">${escapeAttr(c.description)}</span>
+      </span>
+    </li>`).join('');
+}
+
 /* Un champ "trigger + listbox" complet (physicien, tache, ou contrainte) —
    factorise parce que les trois partagent exactement la meme mecanique
    ARIA/CSS (cbuild__trigger, cbuild__listbox, role=listbox/option). */
@@ -1007,15 +1031,7 @@ function constraintBuilderMarkup(cfg) {
   // composant Figma node 18:254), mais cliquer dessus ne change jamais la
   // selection reelle (voir setupConstraintDropdown, app.js) : seule "Limit"
   // a une illustration dans la maquette source (node 18:383).
-  const constraintRows = cfg.constraints.map(c => `
-    <li role="option" data-value="${escapeAttr(c.value)}"
-        aria-selected="${c.value === d.constraint ? 'true' : 'false'}" tabindex="-1">
-      <span class="cbuild__opt-icon" aria-hidden="true">${c.icon ? `<img src="${escapeAttr(c.icon)}" alt="" width="20" height="20">` : ''}</span>
-      <span class="cbuild__opt-text">
-        <span class="cbuild__opt-predicate">${escapeAttr(c.predicate)}</span>
-        <span class="cbuild__opt-desc">${escapeAttr(c.description)}</span>
-      </span>
-    </li>`).join('');
+  const constraintRows = constraintOptionRows(cfg.constraints, d.constraint);
 
   const dayButtons = cfg.days.map(day => `
     <button type="button" class="cbuild__day${d.days.includes(day.value) ? ' is-on' : ''}"
@@ -1133,6 +1149,23 @@ function constraintBuilderMarkup(cfg) {
     </div>`;
 }
 
+/* Ferme UN champ (trigger + son contenu deplie) des qu'un clic tombe en
+   dehors de ces elements precis — meme si ce clic reste a l'interieur du
+   widget (ex. cliquer sur "Constraint parameters" pendant que la listbox
+   des taches est ouverte). mousedown plutot que click : se declenche avant
+   qu'un autre gestionnaire de clic n'ait la moindre chance d'interferer
+   (ex. stopPropagation), pattern standard pour ce genre de detection.
+   Hissee au niveau du module (pas locale a setupConstraintBuilder) : reprise
+   telle quelle par setupComponentsShowcase() plus bas. */
+function bindOutsideClose(elements, close) {
+  const onDocMouseDown = (ev) => {
+    if (elements.some(node => node && node.contains(ev.target))) return;
+    close();
+  };
+  document.addEventListener('mousedown', onDocMouseDown, true);
+  addCleanup(() => document.removeEventListener('mousedown', onDocMouseDown, true));
+}
+
 /* Cablage : trois champs "trigger + listbox" identiques (physicien, tache,
    type de contrainte — factorises dans setupDropdown ci-dessous), boutons de
    jours, tiroir conditionnel, phrase de synthese. Tout ecouteur passe par
@@ -1181,21 +1214,6 @@ function setupConstraintBuilder() {
   // ce que `closers` connait, et le clic exterieur (plus bas) fait la meme
   // chose.
   const closers = [];
-
-  // Ferme UN champ (trigger + son contenu deplie) des qu'un clic tombe en
-  // dehors de ces elements precis — meme si ce clic reste a l'interieur du
-  // widget (ex. cliquer sur "Constraint parameters" pendant que la listbox
-  // des taches est ouverte). mousedown plutot que click : se declenche avant
-  // qu'un autre gestionnaire de clic n'ait la moindre chance d'interferer
-  // (ex. stopPropagation), pattern standard pour ce genre de detection.
-  const bindOutsideClose = (elements, close) => {
-    const onDocMouseDown = (ev) => {
-      if (elements.some(el => el && el.contains(ev.target))) return;
-      close();
-    };
-    document.addEventListener('mousedown', onDocMouseDown, true);
-    addCleanup(() => document.removeEventListener('mousedown', onDocMouseDown, true));
-  };
 
   // Listbox a selection simple (physicien) : ferme au clic sur une option.
   const setupSingleSelectDropdown = (role, onSelect) => {
@@ -1411,6 +1429,862 @@ function setupConstraintBuilder() {
   addCleanup(() => selectAllBtn.removeEventListener('click', onSelectAll));
 }
 
+/* ==========================================================================
+   5e quinquies. VITRINE DE COMPOSANTS — quatre champs autonomes
+   --------------------------------------------------------------------------
+   Second widget, sous le rule-builder (voir s.builder.components dans
+   content.js) : contrairement a constraintBuilderMarkup() ci-dessus, ce n'est
+   pas une phrase composee mais quatre champs independants (physicien,
+   contrainte, taches, periode) — chacun s'ouvre/se ferme pour son propre
+   compte, plusieurs peuvent rester ouverts a la fois (pas de `closers`
+   partage). Reference Figma : fichier "Claude-portfolio-image-generation",
+   frame "Components" (node 52:1781) pour l'apparence, frame "Interactive
+   components" (node 21:797) pour le comportement (recherche, auto-suggestion,
+   bascules Physicians/Groups et Tasks/Shifts, Fixed period/Series).
+   ========================================================================== */
+
+/* Etat initial des quatre champs. Fonction plutot que litteral fige : reprise
+   telle quelle par componentsShowcaseMarkup() (rendu initial) ET
+   setupComponentsShowcase() (etat JS de depart), pour que les deux ne
+   divergent jamais. */
+function componentsShowcaseDefaults(cfg, parentCfg) {
+  return {
+    physicianTab: 'physician',
+    physicians: [parentCfg.physicians[1].value],
+    groups: [],
+    constraint: parentCfg.constraints[0].value,
+    taskTab: 'task',
+    tasks: [parentCfg.tasks[0].value],
+    shifts: [],
+    taskCount: 3,
+    periodMode: 'fixed',
+    fixedChoice: 'days',
+    seriesChoice: 'series',
+    days: [parentCfg.days[0].value, parentCfg.days[1].value],
+    specificPeriod: cfg.periods[0].value,
+    seriesDays: 5
+  };
+}
+
+/* Libelle du declencheur "physicien" : le nom si 1 ou 2 selectionnes, sinon
+   un compte ("4 physicians selected") — meme logique que taskFieldLabel()
+   pour le rule-builder, mais tenant compte de l'onglet actif (Physicians ou
+   Groups partagent le meme declencheur). Si l'onglet affiche est vide mais
+   que l'AUTRE categorie a deja une selection (l'utilisateur a juste bascule
+   d'onglet sans rien decocher), on continue de la montrer plutot que
+   d'afficher "Select ..." — ce texte donnerait a tort l'impression que tout
+   a ete efface. */
+function dualCategoryTriggerLabel(list, source, otherList, otherSource, word, otherWord, placeholder) {
+  const active = list.length ? { list, source, word } : otherList.length ? { list: otherList, source: otherSource, word: otherWord } : null;
+  if (!active) return placeholder;
+  if (active.list.length <= 2) return active.list.map(v => active.source.find(s => s.value === v).label).join(', ');
+  return `${active.list.length} ${active.word} selected`;
+}
+function physicianTriggerLabel(vals, parentCfg, cfg) {
+  const active = vals.physicianTab === 'physician';
+  const list = active ? vals.physicians : vals.groups;
+  const source = active ? parentCfg.physicians : cfg.groups;
+  const otherList = active ? vals.groups : vals.physicians;
+  const otherSource = active ? cfg.groups : parentCfg.physicians;
+  return dualCategoryTriggerLabel(list, source, otherList, otherSource,
+    active ? 'physicians' : 'groups', active ? 'groups' : 'physicians',
+    active ? 'Select physicians' : 'Select groups');
+}
+function taskTriggerLabel(vals, parentCfg, cfg) {
+  const active = vals.taskTab === 'task';
+  const list = active ? vals.tasks : vals.shifts;
+  const source = active ? parentCfg.tasks : cfg.shifts;
+  const otherList = active ? vals.shifts : vals.tasks;
+  const otherSource = active ? cfg.shifts : parentCfg.tasks;
+  return dualCategoryTriggerLabel(list, source, otherList, otherSource,
+    active ? 'tasks' : 'shifts', active ? 'shifts' : 'tasks',
+    active ? 'Select tasks' : 'Select shifts');
+}
+
+const pluralize = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+/* Croix reutilisee (assets/icons/constraint-clear.svg, deja utilisee par
+   .ccomp__search-clear) pour les pastilles ci-dessous — evite un second
+   asset identique. */
+const pillCrossIcon = '<img class="ccomp__pill-remove-icon" src="assets/icons/constraint-clear.svg" alt="" aria-hidden="true" width="10" height="10">';
+function pillHTML(scope, text, removeLabel, accent) {
+  return `
+    <span class="ccomp__pill${accent ? ' ccomp__pill--accent' : ''}">
+      <span class="ccomp__pill-label">${text}</span>
+      <span class="ccomp__pill-remove" data-pill-remove="${scope}" role="button" tabindex="0" aria-label="${removeLabel}">${pillCrossIcon}</span>
+    </span>`;
+}
+function physicianGroupsSize(vals, cfg) {
+  return vals.groups.reduce((sum, v) => {
+    const g = cfg.groups.find(g => g.value === v);
+    return sum + (g && g.size ? g.size : 0);
+  }, 0);
+}
+/* Pastilles croisees (node 58:2890, "Physician dropdown") : des que les
+   deux onglets (physiciens individuels ET groupes) ont au moins une
+   selection, le declencheur bascule du texte simple (physicianTriggerLabel,
+   qui ne montre que l'onglet actif) a un ".ccomp__pillgroup" — pas une
+   rangee a plat, mais un seul cadre clair qui ENGLOBE le texte "N Total"
+   (physiciens + taille de chaque groupe selectionne, voir `size` dans
+   content.js), les deux pastilles pleines Physicians/Groups (chacune avec
+   sa propre croix) et la croix globale qui vide les deux — structure fidele
+   a la maquette, pas une simplification a plat. Le total est une pure
+   valeur d'affichage : `size` est un chiffre d'exemple fixe par groupe,
+   sans roster reel derriere (la maquette elle-meme montre "223 Total" pour
+   4 personnes nommees dans toute la demo). */
+function physicianTriggerHTML(vals, parentCfg, cfg) {
+  if (!vals.physicians.length || !vals.groups.length) {
+    return escapeAttr(physicianTriggerLabel(vals, parentCfg, cfg));
+  }
+  const total = vals.physicians.length + physicianGroupsSize(vals, cfg);
+  return `
+    <span class="ccomp__pillgroup">
+      <span class="ccomp__pill-label">${total} Total</span>
+      ${pillHTML('physicians', pluralize(vals.physicians.length, 'Physician'), 'Remove all physicians', true)}
+      ${pillHTML('groups', pluralize(vals.groups.length, 'Group'), 'Remove all groups', true)}
+      <span class="ccomp__pill-remove" data-pill-remove="all" role="button" tabindex="0" aria-label="Clear physicians and groups">${pillCrossIcon}</span>
+    </span>`;
+}
+/* Meme principe (node 58:2870, "Task dropdown"), sans pastille Total : Tasks
+   et Shifts ne s'emboitent pas l'un dans l'autre comme Groups contient des
+   physiciens. */
+function taskTriggerHTML(vals, parentCfg, cfg) {
+  if (!vals.tasks.length || !vals.shifts.length) {
+    return escapeAttr(taskTriggerLabel(vals, parentCfg, cfg));
+  }
+  return `
+    <span class="ccomp__pillrow">
+      ${pillHTML('tasks', pluralize(vals.tasks.length, 'Task'), 'Remove all tasks', false)}
+      ${pillHTML('shifts', pluralize(vals.shifts.length, 'Shift'), 'Remove all shifts', false)}
+    </span>`;
+}
+/* Libelle du declencheur "period" : les 4 combinaisons possibles (mode
+   fixe/serie x choix jours/periode nommee). Un jour picker vide ou a plus
+   de 2 jours reprend la meme convention que physicianTriggerLabel/
+   taskTriggerLabel (noms si <=2, compte sinon) ; la serie affiche
+   "series of N day(s)" plutot qu'un compte de jours coches. */
+function periodTriggerLabel(vals, parentCfg, cfg) {
+  const dayLabel = () => {
+    if (!vals.days.length) return 'Select days';
+    if (vals.days.length <= 2) return vals.days.map(v => parentCfg.days.find(d => d.value === v).label).join(', ');
+    return `${vals.days.length} days selected`;
+  };
+  if (vals.periodMode === 'fixed') {
+    if (vals.fixedChoice === 'days') return dayLabel();
+    const p = cfg.periods.find(p => p.value === vals.specificPeriod);
+    return p ? p.label : 'Select period';
+  }
+  if (vals.seriesChoice === 'series') return `series of ${vals.seriesDays} day${vals.seriesDays === 1 ? '' : 's'}`;
+  return dayLabel();
+}
+
+/* Auto-suggestion des champs de recherche (physicien, tache — voir node
+   21:496 : "If Jean T is written, Jean Tremblay will be displayed in the
+   searchbox, type enter to select"). Prefixe insensible a la casse
+   uniquement : au dela d'une simple demo, une correspondance floue serait
+   plus une distraction qu'une aide. */
+function computeGhostSuggestion(query, items) {
+  if (!query) return null;
+  const q = query.toLowerCase();
+  const match = items.find(item => item.label.toLowerCase().startsWith(q));
+  if (!match || match.label.length <= query.length) return null;
+  return match;
+}
+
+/* Balisage initial. cfg = s.builder.components (groupes/gardes/periodes
+   nommees, propres a ce widget) ; parentCfg = s.builder (physiciens/taches/
+   contraintes/jours, partages avec le rule-builder juste au-dessus). */
+function componentsShowcaseMarkup(cfg, parentCfg) {
+  const d = componentsShowcaseDefaults(cfg, parentCfg);
+
+  // Pas cbuild__field-chevron (position:absolute, ancree a .cbuild__field) :
+  // les triggers ci-dessous n'ont pas ce wrapper, le chevron est un simple
+  // enfant flex de .ccomp__trigger (voir justify-content:space-between,
+  // styles.css).
+  const fieldChevron = `<img class="ccomp__trigger-chevron" src="assets/icons/constraint-chevron-down.svg" alt="" aria-hidden="true" width="16" height="16">`;
+
+  const searchBox = (role, placeholder) => `
+    <div class="ccomp__search">
+      <img class="ccomp__search-icon" src="assets/icons/constraint-search.svg" alt="" aria-hidden="true" width="14" height="14">
+      <span class="ccomp__search-field">
+        <input type="text" class="ccomp__search-input" data-role="${role}-search"
+               placeholder="${escapeAttr(placeholder)}" autocomplete="off" aria-label="${escapeAttr(placeholder)}">
+        <span class="ccomp__search-ghost" data-role="${role}-ghost" aria-hidden="true"></span>
+      </span>
+      <button type="button" class="ccomp__search-clear" data-role="${role}-clear" aria-label="Clear search" hidden>
+        <img src="assets/icons/constraint-clear.svg" alt="" aria-hidden="true" width="14" height="14">
+      </button>
+    </div>`;
+
+  // withCount : les onglets Physicians/Groups et Tasks/Shifts affichent le
+  // nombre selectionne dans chaque liste (voir node 21:496, "if more than 2
+  // ... a pill is displayed") ; Fixed period/Series n'a rien a compter, donc
+  // pas de pastille pour ce couple-la.
+  const tabs = (role, items, activeValue, withCount = true) => `
+    <div class="ccomp__tabs" role="tablist">
+      ${items.map(t => `
+        <button type="button" class="ccomp__tab${t.value === activeValue ? ' is-active' : ''}"
+                data-role="${role}-tab" data-value="${escapeAttr(t.value)}" aria-pressed="${t.value === activeValue}">
+          ${withCount ? `<span class="ccomp__tab-count" data-role="${role}-tab-count-${escapeAttr(t.value)}">0</span>` : ''}${escapeAttr(t.label)}
+        </button>`).join('')}
+    </div>`;
+
+  const stepper = (role, value, label) => `
+    <span class="ccomp__stepper">
+      <input type="text" inputmode="numeric" class="ccomp__stepper-input" data-role="${role}-stepper"
+             value="${escapeAttr(value)}" aria-label="${escapeAttr(label)}">
+      <span class="ccomp__stepper-arrows">
+        <button type="button" class="ccomp__stepper-btn ccomp__stepper-btn--up" data-role="${role}-stepper-up" aria-label="Increase"></button>
+        <button type="button" class="ccomp__stepper-btn ccomp__stepper-btn--down" data-role="${role}-stepper-down" aria-label="Decrease"></button>
+      </span>
+    </span>`;
+
+  const radioRow = (group, value, label, checked) => `
+    <button type="button" role="radio" class="ccomp__radio-row"
+            data-role="${group}-radio" data-value="${escapeAttr(value)}" aria-checked="${checked}">
+      <span class="ccomp__radio" aria-hidden="true"></span>
+      <span>${escapeAttr(label)}</span>
+    </button>`;
+
+  const staticLink = (label) => `<span class="ccomp__static-link">+ ${escapeAttr(label)}</span>`;
+
+  const dayButtonsHTML = (selected) => parentCfg.days.map(day => `
+    <button type="button" class="cbuild__day${selected.includes(day.value) ? ' is-on' : ''}"
+            data-day="${escapeAttr(day.value)}" aria-pressed="${selected.includes(day.value) ? 'true' : 'false'}">${escapeAttr(day.label)}</button>`).join('');
+
+  const dayPicker = (prefix, selected) => `
+    <button type="button" class="cbuild__select-all" data-role="${prefix}-select-all">${selected.length === parentCfg.days.length ? 'Unselect all' : 'Select all'}</button>
+    <div class="cbuild__days" data-role="${prefix}-days" role="group" aria-label="Applicable days">${dayButtonsHTML(selected)}</div>`;
+
+  /* ---- Physicians ---- */
+  const physicianPanel = `
+    <div class="ccomp__panel" data-role="physician-panel">
+      <button type="button" class="cbuild__select cbuild__trigger ccomp__trigger" data-role="physician-trigger"
+              aria-haspopup="true" aria-expanded="false" aria-controls="ccomp-physician-body">
+        <span class="ccomp__trigger-value" data-role="physician-trigger-value">${physicianTriggerHTML(d, parentCfg, cfg)}</span>
+        ${fieldChevron}
+      </button>
+      <div class="ccomp__body" id="ccomp-physician-body" data-role="physician-body" hidden>
+        ${tabs('physician', [{ value: 'physician', label: 'Physicians' }, { value: 'group', label: 'Groups' }], d.physicianTab)}
+        ${searchBox('physician', 'Search physicians')}
+        <ul class="ccomp__list" data-role="physician-list" role="listbox" aria-label="Physicians">${taskCheckboxRows(parentCfg.physicians, d.physicians)}</ul>
+        <ul class="ccomp__list" data-role="group-list" role="listbox" aria-label="Groups" hidden>${taskCheckboxRows(cfg.groups, d.groups)}</ul>
+      </div>
+    </div>`;
+
+  /* ---- Constraint type : ici les 4 types se selectionnent vraiment (voir
+     node 21:497, "Simple selectbox with hover state and selection on
+     click") — contrairement au rule-builder ou seule "Limit" a une
+     illustration a preserver. ---- */
+  const selectedConstraint = parentCfg.constraints.find(c => c.value === d.constraint);
+  const constraintPanel = `
+    <div class="ccomp__panel" data-role="constraint-panel">
+      <button type="button" class="cbuild__select cbuild__trigger ccomp__trigger" data-role="constraint-trigger"
+              aria-haspopup="true" aria-expanded="false" aria-controls="ccomp-constraint-body">
+        <span data-role="constraint-trigger-label">${escapeAttr(selectedConstraint.predicate)}</span>
+        ${fieldChevron}
+      </button>
+      <div class="ccomp__body" id="ccomp-constraint-body" data-role="constraint-body" hidden>
+        <ul class="ccomp__list" data-role="constraint-list" role="listbox" aria-label="Constraint type">${constraintOptionRows(parentCfg.constraints, d.constraint)}</ul>
+      </div>
+    </div>`;
+
+  /* ---- Tasks ---- */
+  const taskPanel = `
+    <div class="ccomp__panel" data-role="task-panel">
+      <button type="button" class="cbuild__select cbuild__trigger ccomp__trigger" data-role="task-trigger"
+              aria-haspopup="true" aria-expanded="false" aria-controls="ccomp-task-body">
+        <span class="ccomp__trigger-value" data-role="task-trigger-value">${taskTriggerHTML(d, parentCfg, cfg)}</span>
+        ${fieldChevron}
+      </button>
+      <div class="ccomp__body" id="ccomp-task-body" data-role="task-body" hidden>
+        <p class="ccomp__field-label">Tasks can be assigned ${stepper('task-count', d.taskCount, 'Maximum assignments')} times max in total</p>
+        ${tabs('task', [{ value: 'task', label: 'Tasks' }, { value: 'shift', label: 'Shifts' }], d.taskTab)}
+        ${searchBox('task', 'Search tasks')}
+        <ul class="ccomp__list" data-role="task-list" role="listbox" aria-label="Tasks">${taskCheckboxRows(parentCfg.tasks, d.tasks)}</ul>
+        <ul class="ccomp__list" data-role="shift-list" role="listbox" aria-label="Shifts" hidden>${taskCheckboxRows(cfg.shifts, d.shifts)}</ul>
+      </div>
+    </div>`;
+
+  /* ---- Period : deux etats bascules par un pill (Fixed period / Series),
+     chacun avec deux sous-choix a radio. Le picker de jours (node 21:501,
+     "like in fixed periods") est duplique une fois par sous-choix "Specific
+     day(s)" (fixe ET serie) plutot que deplace en DOM entre les deux — les
+     deux instances partagent le meme etat `vals.days` et sont resynchronisees
+     ensemble a chaque clic (voir setupComponentsShowcase). ---- */
+  const fixedDaysOpen = d.fixedChoice === 'days';
+  const fixedSpecificOpen = d.fixedChoice === 'specific';
+  const seriesSeriesOpen = d.seriesChoice === 'series';
+  const seriesDaysOpen = d.seriesChoice === 'days';
+  const periodNamedRadios = cfg.periods.map(p => radioRow('period-named', p.value, p.label, p.value === d.specificPeriod)).join('');
+  const periodPanel = `
+    <div class="ccomp__panel" data-role="period-panel">
+      <button type="button" class="cbuild__select cbuild__trigger ccomp__trigger" data-role="period-trigger"
+              aria-haspopup="true" aria-expanded="false" aria-controls="ccomp-period-body">
+        <span data-role="period-trigger-label">${escapeAttr(periodTriggerLabel(d, parentCfg, cfg))}</span>
+        ${fieldChevron}
+      </button>
+      <div class="ccomp__body" id="ccomp-period-body" data-role="period-body" hidden>
+        ${tabs('period-mode', [{ value: 'fixed', label: 'Fixed period' }, { value: 'series', label: 'Series' }], d.periodMode, false)}
+
+        <div data-role="period-fixed-group"${d.periodMode === 'fixed' ? '' : ' hidden'}>
+          <p class="ccomp__field-label">This limit applies to:</p>
+          ${radioRow('period-fixed', 'days', 'Specific day(s)', fixedDaysOpen)}
+          <div class="ccomp__nested" data-role="period-fixed-days-slot"${fixedDaysOpen ? '' : ' hidden'}>${dayPicker('period-fixed', d.days)}</div>
+          ${radioRow('period-fixed', 'specific', 'Specific period', fixedSpecificOpen)}
+          <div class="ccomp__nested" data-role="period-fixed-specific-slot"${fixedSpecificOpen ? '' : ' hidden'}>
+            ${periodNamedRadios}
+            <p class="ccomp__static-hint">To create a custom period, <span class="ccomp__static-inline">contact support</span>.</p>
+            ${staticLink('Add a time slot')}
+            ${staticLink('Add an exception')}
+          </div>
+        </div>
+
+        <div data-role="period-series-group"${d.periodMode === 'series' ? '' : ' hidden'}>
+          <p class="ccomp__field-label">This limit applies to:</p>
+          ${radioRow('period-series', 'series', 'A series of days', seriesSeriesOpen)}
+          <div class="ccomp__nested" data-role="period-series-slot"${seriesSeriesOpen ? '' : ' hidden'}>
+            <p class="ccomp__field-label">This constraint will apply for ${stepper('period-series-days', d.seriesDays, 'Consecutive days')} consecutive days</p>
+            ${staticLink('Add an exception')}
+          </div>
+          ${radioRow('period-series', 'days', 'Specific day(s)', seriesDaysOpen)}
+          <div class="ccomp__nested" data-role="period-series-days-slot"${seriesDaysOpen ? '' : ' hidden'}>${dayPicker('period-series', d.days)}</div>
+        </div>
+      </div>
+    </div>`;
+
+  // .ccomp__frame reprend le traitement de .cbuild__frame (image de fond,
+  // coins arrondis, padding) — mais avec la texture propre a la maquette
+  // "Components" (node 52:1781, fichier "Claude-portfolio-image-generation"),
+  // pas le degrade du rule-builder : les deux widgets viennent de deux
+  // maquettes Figma distinctes avec chacune leur propre fond. Contrairement
+  // a .cbuild__card (une seule carte blanche a 60%), les quatre panneaux
+  // flottent ici directement sur le fond, comme dans la maquette source.
+  return `
+    <div class="ccomp" data-role="components-showcase">
+      <div class="ccomp__frame">
+        <div class="ccomp__grid">
+          ${physicianPanel}
+          ${taskPanel}
+          ${constraintPanel}
+          ${periodPanel}
+        </div>
+      </div>
+      ${cfg.caption ? `<p class="cbuild__caption">${escapeAttr(cfg.caption)}</p>` : ''}
+    </div>`;
+}
+
+/* Cablage d'un champ de recherche (physicien ou tache) : filtrage en direct
+   de la liste visible + auto-suggestion (voir computeGhostSuggestion) + clic
+   sur "x" pour vider. Les deux widgets qui l'utilisent (physicien, tache)
+   partagent la meme mecanique — contrairement aux trois listbox du
+   rule-builder ci-dessus, qui restent explicites plutot que factorisees. */
+function setupSearchField({ input, ghost, clearBtn, getItems, onFilter, onAccept }) {
+  const renderGhost = () => {
+    const query = input.value;
+    const suggestion = computeGhostSuggestion(query, getItems());
+    if (!suggestion) { ghost.innerHTML = ''; return; }
+    const rest = suggestion.label.slice(query.length);
+    ghost.innerHTML = `<span class="ccomp__ghost-typed">${escapeAttr(query)}</span><span class="ccomp__ghost-rest">${escapeAttr(rest)}</span>`;
+  };
+  const clear = () => { input.value = ''; clearBtn.hidden = true; ghost.innerHTML = ''; onFilter(''); };
+
+  const onInput = () => {
+    clearBtn.hidden = !input.value;
+    renderGhost();
+    onFilter(input.value);
+  };
+  input.addEventListener('input', onInput);
+  addCleanup(() => input.removeEventListener('input', onInput));
+
+  // Enter accepte la suggestion affichee (node 21:496 : "type enter to
+  // select") ; Tab fait de meme (sans en faire une exigence : si aucune
+  // suggestion n'est affichee, Tab garde son comportement natif de
+  // navigation au clavier, on ne bloque preventDefault que quand il y a
+  // reellement quelque chose a completer). Escape vide le champ plutot que
+  // de fermer tout le panneau — seul le clic exterieur (bindOutsideClose,
+  // pose par l'appelant) ferme le panneau lui-meme.
+  const onKeydown = (ev) => {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      const suggestion = computeGhostSuggestion(input.value, getItems());
+      if (suggestion) { onAccept(suggestion); clear(); }
+    } else if (ev.key === 'Tab') {
+      const suggestion = computeGhostSuggestion(input.value, getItems());
+      if (suggestion) { ev.preventDefault(); onAccept(suggestion); clear(); }
+    } else if (ev.key === 'Escape') {
+      clear();
+    }
+  };
+  input.addEventListener('keydown', onKeydown);
+  addCleanup(() => input.removeEventListener('keydown', onKeydown));
+
+  const onClearClick = () => { clear(); input.focus(); };
+  clearBtn.addEventListener('click', onClearClick);
+  addCleanup(() => clearBtn.removeEventListener('click', onClearClick));
+}
+
+/* Cablage complet des quatre champs. */
+function setupComponentsShowcase() {
+  const root = $('[data-role="components-showcase"]');
+  if (!root) return;
+
+  const project = PROJECTS.find(p => p.slug === 'constraints');
+  const parentCfg = project.sections.find(s => s.id === 'design').builder;
+  const cfg = parentCfg.components;
+  if (!cfg) return;
+  const vals = componentsShowcaseDefaults(cfg, parentCfg);
+
+  // Un declencheur + panneau generique : ouverture/fermeture, clic exterieur,
+  // Escape. Chaque champ reste independant des trois autres (pas de
+  // `closers` partage, contrairement au rule-builder) : la maquette Figma
+  // montre les quatre panneaux ouverts simultanement.
+  const setupPanel = (role) => {
+    const trigger = $(`[data-role="${role}-trigger"]`, root);
+    const body = $(`[data-role="${role}-body"]`, root);
+    const close = () => { body.hidden = true; trigger.setAttribute('aria-expanded', 'false'); };
+    const open = () => { body.hidden = false; trigger.setAttribute('aria-expanded', 'true'); };
+    const onClick = () => { body.hidden ? open() : close(); };
+    trigger.addEventListener('click', onClick);
+    addCleanup(() => trigger.removeEventListener('click', onClick));
+    const onKeydown = (ev) => { if (ev.key === 'Escape' && !body.hidden) { close(); trigger.focus(); } };
+    body.addEventListener('keydown', onKeydown);
+    addCleanup(() => body.removeEventListener('keydown', onKeydown));
+    bindOutsideClose([trigger, body], close);
+    return { trigger, body, close, open };
+  };
+
+  /* ---- Physicians ---- */
+  (() => {
+    setupPanel('physician');
+    const triggerValue = $('[data-role="physician-trigger-value"]', root);
+    const physicianTab = $('[data-role="physician-tab"][data-value="physician"]', root);
+    const groupTab = $('[data-role="physician-tab"][data-value="group"]', root);
+    const physicianList = $('[data-role="physician-list"]', root);
+    const groupList = $('[data-role="group-list"]', root);
+    const physicianCount = $('[data-role="physician-tab-count-physician"]', root);
+    const groupCount = $('[data-role="physician-tab-count-group"]', root);
+    const search = $('[data-role="physician-search"]', root);
+    const ghost = $('[data-role="physician-ghost"]', root);
+    const clearBtn = $('[data-role="physician-clear"]', root);
+
+    const activeList = () => $$('li[role="option"]', vals.physicianTab === 'physician' ? physicianList : groupList);
+    const activeSource = () => vals.physicianTab === 'physician' ? parentCfg.physicians : cfg.groups;
+    const activeSelected = () => vals.physicianTab === 'physician' ? vals.physicians : vals.groups;
+
+    const refresh = () => {
+      triggerValue.innerHTML = physicianTriggerHTML(vals, parentCfg, cfg);
+      physicianCount.textContent = String(vals.physicians.length);
+      groupCount.textContent = String(vals.groups.length);
+    };
+
+    // Croix des pastilles (voir physicianTriggerHTML) : reconstruites a
+    // chaque refresh() via innerHTML, donc ecoutees par delegation sur le
+    // conteneur plutot que rebindees a chaque fois. stopPropagation
+    // empeche le clic de remonter jusqu'au bouton .ccomp__trigger et de
+    // rouvrir/refermer le panneau au lieu de juste vider la pastille.
+    const onPillRemove = (scope) => {
+      if (scope === 'physicians' || scope === 'all') vals.physicians = [];
+      if (scope === 'groups' || scope === 'all') vals.groups = [];
+      $$('li[role="option"]', physicianList).forEach(opt => opt.setAttribute('aria-selected', String(vals.physicians.includes(opt.dataset.value))));
+      $$('li[role="option"]', groupList).forEach(opt => opt.setAttribute('aria-selected', String(vals.groups.includes(opt.dataset.value))));
+      refresh();
+    };
+    const onTriggerValueClick = (ev) => {
+      const remove = ev.target.closest('[data-pill-remove]');
+      if (!remove) return;
+      ev.stopPropagation();
+      onPillRemove(remove.dataset.pillRemove);
+    };
+    const onTriggerValueKeydown = (ev) => {
+      if (ev.key !== 'Enter' && ev.key !== ' ') return;
+      const remove = ev.target.closest('[data-pill-remove]');
+      if (!remove) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      onPillRemove(remove.dataset.pillRemove);
+    };
+    triggerValue.addEventListener('click', onTriggerValueClick);
+    triggerValue.addEventListener('keydown', onTriggerValueKeydown);
+    addCleanup(() => triggerValue.removeEventListener('click', onTriggerValueClick));
+    addCleanup(() => triggerValue.removeEventListener('keydown', onTriggerValueKeydown));
+
+    const toggleValue = (opt) => {
+      const value = opt.dataset.value;
+      const selected = activeSelected();
+      const isOn = opt.getAttribute('aria-selected') === 'true';
+      if (isOn) {
+        // Le seuil minimal (au moins un coche) ne vaut que pour l'onglet
+        // Physicians, qui demarre deja peuple (voir componentsShowcaseDefaults) :
+        // Groups demarre vide, donc rien n'empeche de redescendre a zero.
+        if (vals.physicianTab === 'physician' && selected.length <= 1) return;
+        if (vals.physicianTab === 'physician') vals.physicians = vals.physicians.filter(v => v !== value);
+        else vals.groups = vals.groups.filter(v => v !== value);
+      } else {
+        if (vals.physicianTab === 'physician') vals.physicians = [...vals.physicians, value];
+        else vals.groups = [...vals.groups, value];
+      }
+      opt.setAttribute('aria-selected', String(!isOn));
+      refresh();
+    };
+
+    [physicianList, groupList].forEach(list => {
+      $$('li[role="option"]', list).forEach(opt => {
+        const onClick = () => toggleValue(opt);
+        opt.addEventListener('click', onClick);
+        addCleanup(() => opt.removeEventListener('click', onClick));
+      });
+    });
+
+    const switchTab = (tab) => {
+      vals.physicianTab = tab;
+      [physicianTab, groupTab].forEach(btn => {
+        const active = btn.dataset.value === tab;
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-pressed', String(active));
+      });
+      physicianList.hidden = tab !== 'physician';
+      groupList.hidden = tab !== 'group';
+      search.value = ''; clearBtn.hidden = true; ghost.innerHTML = '';
+      filterList('');
+      refresh();
+    };
+    [physicianTab, groupTab].forEach(btn => {
+      const onClick = () => switchTab(btn.dataset.value);
+      btn.addEventListener('click', onClick);
+      addCleanup(() => btn.removeEventListener('click', onClick));
+    });
+
+    // Filtrage en direct (node 21:496 : "Names have to disappear in real
+    // time based on the query written in the searchbox").
+    const filterList = (query) => {
+      const q = query.trim().toLowerCase();
+      activeList().forEach(opt => {
+        const label = opt.querySelector('.cbuild__opt-predicate').textContent.toLowerCase();
+        opt.hidden = q.length > 0 && !label.includes(q);
+      });
+    };
+
+    setupSearchField({
+      input: search, ghost, clearBtn,
+      getItems: activeSource,
+      onFilter: filterList,
+      onAccept: (item) => {
+        const list = activeSelected();
+        if (!list.includes(item.value)) {
+          if (vals.physicianTab === 'physician') vals.physicians = [...vals.physicians, item.value];
+          else vals.groups = [...vals.groups, item.value];
+        }
+        const opt = activeList().find(o => o.dataset.value === item.value);
+        if (opt) opt.setAttribute('aria-selected', 'true');
+        refresh();
+      }
+    });
+
+    refresh();
+  })();
+
+  /* ---- Constraint type : selection reelle (voir node 21:497), contrairement
+     au rule-builder ou seule "Limit" est reellement selectionnable. ---- */
+  (() => {
+    setupPanel('constraint');
+    const triggerLabel = $('[data-role="constraint-trigger-label"]', root);
+    const list = $('[data-role="constraint-list"]', root);
+    const options = $$('li[role="option"]', list);
+
+    options.forEach(opt => {
+      const onClick = () => {
+        vals.constraint = opt.dataset.value;
+        options.forEach(o => o.setAttribute('aria-selected', String(o === opt)));
+        const c = parentCfg.constraints.find(c => c.value === vals.constraint);
+        triggerLabel.textContent = c.predicate;
+      };
+      opt.addEventListener('click', onClick);
+      addCleanup(() => opt.removeEventListener('click', onClick));
+    });
+  })();
+
+  /* ---- Tasks ---- */
+  (() => {
+    setupPanel('task');
+    const triggerValue = $('[data-role="task-trigger-value"]', root);
+    const taskTab = $('[data-role="task-tab"][data-value="task"]', root);
+    const shiftTab = $('[data-role="task-tab"][data-value="shift"]', root);
+    const taskList = $('[data-role="task-list"]', root);
+    const shiftList = $('[data-role="shift-list"]', root);
+    const taskCount = $('[data-role="task-tab-count-task"]', root);
+    const shiftCount = $('[data-role="task-tab-count-shift"]', root);
+    const search = $('[data-role="task-search"]', root);
+    const ghost = $('[data-role="task-ghost"]', root);
+    const clearBtn = $('[data-role="task-clear"]', root);
+    const countInput = $('[data-role="task-count-stepper"]', root);
+    const countUp = $('[data-role="task-count-stepper-up"]', root);
+    const countDown = $('[data-role="task-count-stepper-down"]', root);
+
+    const activeList = () => $$('li[role="option"]', vals.taskTab === 'task' ? taskList : shiftList);
+    const activeSource = () => vals.taskTab === 'task' ? parentCfg.tasks : cfg.shifts;
+    const activeSelected = () => vals.taskTab === 'task' ? vals.tasks : vals.shifts;
+
+    const refresh = () => {
+      triggerValue.innerHTML = taskTriggerHTML(vals, parentCfg, cfg);
+      taskCount.textContent = String(vals.tasks.length);
+      shiftCount.textContent = String(vals.shifts.length);
+    };
+
+    // Meme delegation que le panneau Physicians ci-dessus (voir le
+    // commentaire pres de onTriggerValueClick).
+    const onPillRemove = (scope) => {
+      if (scope === 'tasks') vals.tasks = [];
+      if (scope === 'shifts') vals.shifts = [];
+      $$('li[role="option"]', taskList).forEach(opt => opt.setAttribute('aria-selected', String(vals.tasks.includes(opt.dataset.value))));
+      $$('li[role="option"]', shiftList).forEach(opt => opt.setAttribute('aria-selected', String(vals.shifts.includes(opt.dataset.value))));
+      refresh();
+    };
+    const onTriggerValueClick = (ev) => {
+      const remove = ev.target.closest('[data-pill-remove]');
+      if (!remove) return;
+      ev.stopPropagation();
+      onPillRemove(remove.dataset.pillRemove);
+    };
+    const onTriggerValueKeydown = (ev) => {
+      if (ev.key !== 'Enter' && ev.key !== ' ') return;
+      const remove = ev.target.closest('[data-pill-remove]');
+      if (!remove) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      onPillRemove(remove.dataset.pillRemove);
+    };
+    triggerValue.addEventListener('click', onTriggerValueClick);
+    triggerValue.addEventListener('keydown', onTriggerValueKeydown);
+    addCleanup(() => triggerValue.removeEventListener('click', onTriggerValueClick));
+    addCleanup(() => triggerValue.removeEventListener('keydown', onTriggerValueKeydown));
+
+    const toggleValue = (opt) => {
+      const value = opt.dataset.value;
+      const selected = activeSelected();
+      const isOn = opt.getAttribute('aria-selected') === 'true';
+      if (isOn) {
+        // Meme exception que pour Physicians/Groups ci-dessus : Shifts
+        // demarre vide, donc pas de seuil minimal pour cet onglet.
+        if (vals.taskTab === 'task' && selected.length <= 1) return;
+        if (vals.taskTab === 'task') vals.tasks = vals.tasks.filter(v => v !== value);
+        else vals.shifts = vals.shifts.filter(v => v !== value);
+      } else {
+        if (vals.taskTab === 'task') vals.tasks = [...vals.tasks, value];
+        else vals.shifts = [...vals.shifts, value];
+      }
+      opt.setAttribute('aria-selected', String(!isOn));
+      refresh();
+    };
+
+    [taskList, shiftList].forEach(list => {
+      $$('li[role="option"]', list).forEach(opt => {
+        const onClick = () => toggleValue(opt);
+        opt.addEventListener('click', onClick);
+        addCleanup(() => opt.removeEventListener('click', onClick));
+      });
+    });
+
+    const switchTab = (tab) => {
+      vals.taskTab = tab;
+      [taskTab, shiftTab].forEach(btn => {
+        const active = btn.dataset.value === tab;
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-pressed', String(active));
+      });
+      taskList.hidden = tab !== 'task';
+      shiftList.hidden = tab !== 'shift';
+      search.value = ''; clearBtn.hidden = true; ghost.innerHTML = '';
+      filterList('');
+      refresh();
+    };
+    [taskTab, shiftTab].forEach(btn => {
+      const onClick = () => switchTab(btn.dataset.value);
+      btn.addEventListener('click', onClick);
+      addCleanup(() => btn.removeEventListener('click', onClick));
+    });
+
+    const filterList = (query) => {
+      const q = query.trim().toLowerCase();
+      activeList().forEach(opt => {
+        const label = opt.querySelector('.cbuild__opt-predicate').textContent.toLowerCase();
+        opt.hidden = q.length > 0 && !label.includes(q);
+      });
+    };
+
+    setupSearchField({
+      input: search, ghost, clearBtn,
+      getItems: activeSource,
+      onFilter: filterList,
+      onAccept: (item) => {
+        const list = activeSelected();
+        if (!list.includes(item.value)) {
+          if (vals.taskTab === 'task') vals.tasks = [...vals.tasks, item.value];
+          else vals.shifts = [...vals.shifts, item.value];
+        }
+        const opt = activeList().find(o => o.dataset.value === item.value);
+        if (opt) opt.setAttribute('aria-selected', 'true');
+        refresh();
+      }
+    });
+
+    // Compteur "assigne au max N fois au total" : simple stepper +/- borne a
+    // [1, 99], pas de saisie libre (coherent avec l'icone chevron haut/bas de
+    // la maquette, sans champ editable a cote).
+    const setCount = (n) => {
+      vals.taskCount = Math.min(99, Math.max(1, n));
+      countInput.value = String(vals.taskCount);
+    };
+    const onUp = () => setCount(vals.taskCount + 1);
+    const onDown = () => setCount(vals.taskCount - 1);
+    countUp.addEventListener('click', onUp);
+    countDown.addEventListener('click', onDown);
+    addCleanup(() => countUp.removeEventListener('click', onUp));
+    addCleanup(() => countDown.removeEventListener('click', onDown));
+
+    refresh();
+  })();
+
+  /* ---- Period ---- */
+  (() => {
+    setupPanel('period');
+    const triggerLabel = $('[data-role="period-trigger-label"]', root);
+    const refreshLabel = () => { triggerLabel.textContent = periodTriggerLabel(vals, parentCfg, cfg); };
+    const modeTabs = $$('[data-role="period-mode-tab"]', root);
+    const fixedGroup = $('[data-role="period-fixed-group"]', root);
+    const seriesGroup = $('[data-role="period-series-group"]', root);
+
+    const fixedDaysSlot = $('[data-role="period-fixed-days-slot"]', root);
+    const fixedSpecificSlot = $('[data-role="period-fixed-specific-slot"]', root);
+    const seriesSeriesSlot = $('[data-role="period-series-slot"]', root);
+    const seriesDaysSlot = $('[data-role="period-series-days-slot"]', root);
+
+    const fixedDaysRadio = $('[data-role="period-fixed-radio"][data-value="days"]', root);
+    const fixedSpecificRadio = $('[data-role="period-fixed-radio"][data-value="specific"]', root);
+    const seriesSeriesRadio = $('[data-role="period-series-radio"][data-value="series"]', root);
+    const seriesDaysRadio = $('[data-role="period-series-radio"][data-value="days"]', root);
+
+    // Deux instances du picker de jours (fixe/serie, voir componentsShowcaseMarkup)
+    // partageant le meme `vals.days` : chaque clic met a jour les DEUX pour
+    // qu'elles restent identiques meme si on bascule Fixed/Series entre deux
+    // clics.
+    const dayGroups = [
+      { prefix: 'period-fixed', root: fixedDaysSlot },
+      { prefix: 'period-series', root: seriesDaysSlot }
+    ];
+    const refreshDayPickers = () => {
+      dayGroups.forEach(({ prefix, root: slot }) => {
+        $$('.cbuild__day', slot).forEach(btn => {
+          const on = vals.days.includes(btn.dataset.day);
+          btn.classList.toggle('is-on', on);
+          btn.setAttribute('aria-pressed', String(on));
+        });
+        const selectAll = $(`[data-role="${prefix}-select-all"]`, slot);
+        if (selectAll) selectAll.textContent = vals.days.length === parentCfg.days.length ? 'Unselect all' : 'Select all';
+      });
+    };
+    dayGroups.forEach(({ prefix, root: slot }) => {
+      $$('.cbuild__day', slot).forEach(btn => {
+        const onClick = () => {
+          const day = btn.dataset.day;
+          vals.days = vals.days.includes(day) ? vals.days.filter(v => v !== day) : [...vals.days, day];
+          refreshDayPickers();
+          refreshLabel();
+        };
+        btn.addEventListener('click', onClick);
+        addCleanup(() => btn.removeEventListener('click', onClick));
+      });
+      const selectAll = $(`[data-role="${prefix}-select-all"]`, slot);
+      const onSelectAll = () => {
+        const allOn = vals.days.length === parentCfg.days.length;
+        vals.days = allOn ? [] : parentCfg.days.map(d => d.value);
+        refreshDayPickers();
+        refreshLabel();
+      };
+      selectAll.addEventListener('click', onSelectAll);
+      addCleanup(() => selectAll.removeEventListener('click', onSelectAll));
+    });
+
+    // Periode nommee (Week A / Week B / Custom range) : simple radio, pas de
+    // contenu supplementaire a reveler (contrairement aux deux radios
+    // "Specific day(s)"/"A series of days").
+    $$('[data-role="period-named-radio"]', root).forEach(btn => {
+      const onClick = () => {
+        vals.specificPeriod = btn.dataset.value;
+        $$('[data-role="period-named-radio"]', root).forEach(o => o.setAttribute('aria-checked', String(o === btn)));
+        refreshLabel();
+      };
+      btn.addEventListener('click', onClick);
+      addCleanup(() => btn.removeEventListener('click', onClick));
+    });
+
+    const setFixedChoice = (choice) => {
+      vals.fixedChoice = choice;
+      fixedDaysRadio.setAttribute('aria-checked', String(choice === 'days'));
+      fixedSpecificRadio.setAttribute('aria-checked', String(choice === 'specific'));
+      fixedDaysSlot.hidden = choice !== 'days';
+      fixedSpecificSlot.hidden = choice !== 'specific';
+      refreshLabel();
+    };
+    const onFixedDaysClick = () => setFixedChoice('days');
+    const onFixedSpecificClick = () => setFixedChoice('specific');
+    fixedDaysRadio.addEventListener('click', onFixedDaysClick);
+    fixedSpecificRadio.addEventListener('click', onFixedSpecificClick);
+    addCleanup(() => fixedDaysRadio.removeEventListener('click', onFixedDaysClick));
+    addCleanup(() => fixedSpecificRadio.removeEventListener('click', onFixedSpecificClick));
+
+    const setSeriesChoice = (choice) => {
+      vals.seriesChoice = choice;
+      seriesSeriesRadio.setAttribute('aria-checked', String(choice === 'series'));
+      seriesDaysRadio.setAttribute('aria-checked', String(choice === 'days'));
+      seriesSeriesSlot.hidden = choice !== 'series';
+      seriesDaysSlot.hidden = choice !== 'days';
+      refreshLabel();
+    };
+    const onSeriesSeriesClick = () => setSeriesChoice('series');
+    const onSeriesDaysClick = () => setSeriesChoice('days');
+    seriesSeriesRadio.addEventListener('click', onSeriesSeriesClick);
+    seriesDaysRadio.addEventListener('click', onSeriesDaysClick);
+    addCleanup(() => seriesSeriesRadio.removeEventListener('click', onSeriesSeriesClick));
+    addCleanup(() => seriesDaysRadio.removeEventListener('click', onSeriesDaysClick));
+
+    const switchMode = (mode) => {
+      vals.periodMode = mode;
+      modeTabs.forEach(btn => {
+        const active = btn.dataset.value === mode;
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-pressed', String(active));
+      });
+      fixedGroup.hidden = mode !== 'fixed';
+      seriesGroup.hidden = mode !== 'series';
+      refreshLabel();
+    };
+    modeTabs.forEach(btn => {
+      const onClick = () => switchMode(btn.dataset.value);
+      btn.addEventListener('click', onClick);
+      addCleanup(() => btn.removeEventListener('click', onClick));
+    });
+
+    // Stepper "N jours consecutifs" (etat serie), meme mecanique que le
+    // compteur d'assignations du panneau Tasks.
+    const seriesDaysInput = $('[data-role="period-series-days-stepper"]', root);
+    const seriesDaysUp = $('[data-role="period-series-days-stepper-up"]', root);
+    const seriesDaysDown = $('[data-role="period-series-days-stepper-down"]', root);
+    const setSeriesDays = (n) => {
+      vals.seriesDays = Math.min(99, Math.max(1, n));
+      seriesDaysInput.value = String(vals.seriesDays);
+      refreshLabel();
+    };
+    const onSeriesUp = () => setSeriesDays(vals.seriesDays + 1);
+    const onSeriesDown = () => setSeriesDays(vals.seriesDays - 1);
+    seriesDaysUp.addEventListener('click', onSeriesUp);
+    seriesDaysDown.addEventListener('click', onSeriesDown);
+    addCleanup(() => seriesDaysUp.removeEventListener('click', onSeriesUp));
+    addCleanup(() => seriesDaysDown.removeEventListener('click', onSeriesDown));
+
+    refreshDayPickers();
+  })();
+}
+
 /* ---- 5f. Une page editoriale (A propos, article) ---- */
 function pageEditorial(key) {
   const d = t(), p = PAGES[key];
@@ -1616,6 +2490,7 @@ function render() {
     if (route.name === 'case') setupCaseBehaviours();
     if (route.name === 'case') setupMoreDrawerEmbeds();
     if (route.name === 'case' && route.project.slug === 'constraints') setupConstraintBuilder();
+    if (route.name === 'case' && route.project.slug === 'constraints') setupComponentsShowcase();
     if (route.name === 'case' && route.project.slug === 'constraints') setupLottieCarousel();
     setupScrollProgress();
     setupVideos();

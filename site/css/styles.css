@@ -723,6 +723,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .stat__l { font-size: var(--fs-small); color: var(--ink-soft); line-height: 1.4; }
 
+/* Meme composant, cite au fil d'une section (s.stats, voir content.js) plutot
+   qu'en en-tete : chiffres beaucoup plus petits pour ne pas concurrencer les
+   .stat de l'apercu, et une marge resserree puisqu'ils vivent entre deux
+   paragraphes plutot que sous leur propre titre "Impacts". */
+.stats--sec { margin-block: var(--s6); max-width: var(--measure); }
+.stats--sec .stat__n { font-size: clamp(1.6rem, 2.6vw, 2rem); margin-bottom: 0; }
+.stats--sec .stat__l { margin-top: 2px; }
+
 .cs__cta { display: flex; flex-wrap: wrap; gap: var(--s3); }
 
 /* ---- 8b. Le corps : nav laterale collante + sections ---- */
@@ -1088,7 +1096,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   overflow: hidden;
 }
 .cbuild__listbox[hidden] { display: none; }
-.cbuild__listbox li {
+/* .ccomp__list (vitrine de composants, plus bas) partage ces regles de ligne :
+   meme structure de <li role="option">, juste hors d'un popover absolu. */
+.cbuild__listbox li,
+.ccomp__list li {
   display: flex; align-items: center; gap: 6px;
   padding: 6px; border-radius: 4px;
   cursor: pointer;
@@ -1098,10 +1109,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
    sans rien changer (setupConstraintBuilder, app.js) — si aria-selected
    gardait ce style, la ligne "Limit" resterait visuellement "en survol" en
    permanence meme sans la souris dessus, ce qui n'est pas voulu. */
-.cbuild__listbox li:hover,
-.cbuild__listbox li:focus { outline: none; background: #f1ecfc; }
-.cbuild__listbox li:hover .cbuild__opt-predicate,
-.cbuild__listbox li:focus .cbuild__opt-predicate { color: #371495; }
+.cbuild__listbox li:hover, .ccomp__list li:hover,
+.cbuild__listbox li:focus, .ccomp__list li:focus { outline: none; background: #f1ecfc; }
+.cbuild__listbox li:hover .cbuild__opt-predicate, .ccomp__list li:hover .cbuild__opt-predicate,
+.cbuild__listbox li:focus .cbuild__opt-predicate, .ccomp__list li:focus .cbuild__opt-predicate { color: #371495; }
 .cbuild__opt-icon {
   width: 25px; height: 25px; flex: none;
   display: grid; place-items: center;
@@ -1293,6 +1304,275 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   color: #371495; font-weight: 400;
   padding: 3px 8px; border-radius: 6px;
 }
+
+/* ---- Vitrine de composants (componentsShowcaseMarkup()/setupComponentsShowcase(),
+   app.js), sous le rule-builder ci-dessus : quatre champs autonomes, pas une
+   phrase composee — chaque .ccomp__panel s'ouvre/se ferme independamment.
+   Reprend la palette/police du rule-builder (violet #371495, Roboto) pour
+   rester coherent avec le widget juste au-dessus, et reutilise ses classes
+   d'options (cbuild__opt-*, cbuild__day, cbuild__select-all) — seuls les
+   elements propres a ce widget (onglets, recherche, stepper, radio) ont leur
+   propre prefixe ccomp__. */
+.ccomp { margin-block: var(--s6); font-family: 'Roboto', 'Segoe UI', sans-serif; }
+/* Cadre degrade, meme traitement que .cbuild__frame (rule-builder ci-dessus)
+   mais avec la texture propre a la maquette Figma "Components" (node
+   52:1781, fichier "Claude-portfolio-image-generation") — pas le degrade du
+   rule-builder, les deux widgets viennent de deux maquettes distinctes.
+   Contrairement a .cbuild__card (une seule carte blanche a 60%, centree),
+   les quatre panneaux flottent ici directement sur le fond pleine largeur,
+   comme dans la maquette source. */
+/* Hauteur fixe, identique au rendu de .cbuild__frame (le rule-builder
+   au-dessus) : les deux cadres degrades doivent occuper le meme gabarit
+   vertical dans la section, meme si leur contenu differe. Les panneaux sont
+   positionnes en absolu (voir .ccomp__grid/.ccomp__panel plus bas) : un
+   panneau qui s'ouvre flotte donc par-dessus le cadre au lieu de pousser sa
+   hauteur — d'ou overflow: visible plutot qu'un scroll interne. */
+.ccomp__frame {
+  background-image: url('../assets/img/components-showcase-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  border-radius: 20px;
+  padding: clamp(20px, 4vw, 40px);
+  height: 430px;
+  overflow: visible;
+}
+/* Positions absolues, une seule rangee (top:5%). Physicians et Tasks
+   affichent des pastilles sur une seule ligne des que les deux onglets
+   (physiciens+groupes / taches+gardes) ont une selection (voir
+   physicianTriggerHTML/taskTriggerHTML, app.js) : Physicians peut alors
+   grandir jusqu'a ~345px (4 physiciens + 3 groupes, le maximum des donnees
+   de demo) et Tasks jusqu'a ~225px. Les positions ci-dessous ont ete
+   ecartees (24/50/75 -> 37/55/79) pour garder un espace mesure a partir de
+   ces largeurs maximales, verifie sans chevauchement au lieu du quinconce
+   plus serre de la maquette Figma source (52:1781) — priorite donnee a la
+   lisibilite du contenu dynamique sur la fidelite exacte au pixel. */
+.ccomp__grid { position: relative; width: 100%; height: 100%; }
+.ccomp__panel[data-role="physician-panel"] { left: 1%; top: 5%; }
+.ccomp__panel[data-role="task-panel"] { left: 55%; top: 5%; }
+.ccomp__panel[data-role="constraint-panel"] { left: 37%; top: 5%; }
+.ccomp__panel[data-role="period-panel"] { left: 79%; top: 5%; }
+.ccomp__panel { position: absolute; min-width: 0; }
+/* Largeur au contenu (pas 100% de la colonne) : fidele aux declencheurs de
+   la maquette Figma (node 52:1781), toujours plus etroits que le panneau
+   blanc qu'ils ouvrent en dessous — jamais etires a la largeur de leur
+   colonne. Blanc plutot que le lavande pale de .cbuild__trigger (#f7f3fe,
+   pense pour flotter DANS une carte blanche) : sur la texture de
+   .ccomp__frame, un fond lavande se fondrait dans l'image — fidele au
+   declencheur blanc a bordure violette de la maquette (node 52:2141 etc.). */
+.ccomp__trigger {
+  width: max-content;
+  /* Plafonne aussi contre la largeur du viewport (pas juste 100% du panneau,
+     qui est lui-meme en width:auto quand le declencheur est positionne en
+     absolu — voir .ccomp__panel) : une rangee de pastilles (voir
+     .ccomp__pillrow ci-dessous) est plus large que le texte simple qu'elle
+     remplace et pourrait sinon deborder du cadre. */
+  max-width: min(360px, calc(100vw - 64px));
+  gap: 8px; background: #fff;
+}
+.ccomp__trigger:hover { background: #f7f3fe; }
+.ccomp__trigger[aria-expanded="true"] { background: #fff; }
+.ccomp__trigger-chevron { flex: none; width: 16px; height: 16px; pointer-events: none; }
+.ccomp__trigger-value { display: inline-flex; min-width: 0; }
+/* Pastilles croisees des declencheurs Physicians/Tasks (physicianTriggerHTML/
+   taskTriggerHTML, app.js) : un texte simple (physicianTriggerLabel/
+   taskTriggerLabel) suffit tant qu'une seule des deux categories a une
+   selection ; des que les deux en ont une, le texte est remplace par ces
+   pastilles pour montrer les deux a la fois.
+   Task (node 58:2870) : deux pastilles independantes, cote a cote.
+   Physicians (node 58:2890) : structure imbriquee, pas une rangee de
+   pastilles a plat — .ccomp__pillgroup est le cadre clair (meme fond que le
+   texte "Total" qu'il contient, donc aucune bordure visible entre les deux)
+   qui ENGLOBE le texte Total, les deux pastilles pleines Physicians/Groups
+   et la croix globale. */
+.ccomp__pillrow { display: inline-flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
+/* nowrap plutot que wrap : le declencheur Physicians doit rester lisible sur
+   une seule ligne (width: max-content sur .ccomp__trigger le laisse grandir
+   pour l'accueillir) plutot que d'empiler Total/Physicians/Groups/croix sur
+   plusieurs lignes. */
+.ccomp__pillgroup {
+  display: inline-flex; align-items: center; gap: 4px; flex-wrap: nowrap;
+  background: #f0f0fa; border-radius: 6px; padding: 4px; color: #371495;
+}
+.ccomp__pill {
+  display: inline-flex; align-items: stretch;
+  border-radius: 6px; overflow: hidden;
+  background: #f0f0fa; color: #371495;
+  font-size: 11px; font-weight: 400;
+}
+/* Physicians/Groups (accent) : violet plein + texte/croix blancs — contraste
+   avec le texte Total et la croix globale, qui restent au fond clair de
+   .ccomp__pillgroup. */
+.ccomp__pill--accent { background: #6f69d5; color: #fff; }
+.ccomp__pill-label {
+  display: inline-flex; align-items: center; padding: 2px 8px; white-space: nowrap;
+  font-size: 11px; font-weight: 400; color: inherit;
+}
+/* Meme padding vertical que .ccomp__pill-label (2px) pour une hauteur
+   identique, que la croix soit imbriquee dans une .ccomp__pill (align-items:
+   stretch) ou seule dans .ccomp__pillgroup (ccomp__pill-remove--all,
+   align-items:center — elle doit alors porter sa propre hauteur). */
+.ccomp__pill-remove {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 6px; cursor: pointer;
+}
+.ccomp__pill--accent .ccomp__pill-remove-icon { filter: brightness(0) invert(1); }
+/* Sorti du flux (position: absolute) plutot que d'etre un enfant normal du
+   panneau : sinon, un corps ouvert de 300px devient l'enfant-en-flux le
+   plus large du panneau (voir .ccomp__panel, width: auto) des qu'il depasse
+   la largeur du declencheur ferme — ce qui elargit le panneau lui-meme et le
+   fait chevaucher son voisin de droite, meme quand le declencheur seul
+   tiendrait sans probleme. Verifie avec Tasks (declencheur ~225px, corps
+   300px) : sans ce retrait du flux, ouvrir Tasks chevauchait Period malgre
+   l'ecart calcule pour les seuls declencheurs. */
+.ccomp__body {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  background: #fff; border: 1px solid #eaeaf9; border-radius: 11px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+  /* Plafonne la largeur du corps pour qu'il ne deborde jamais du cadre a
+     droite, sans quoi il provoquerait un scroll horizontal. */
+  width: min(300px, calc(100vw - 64px));
+}
+.ccomp__body[hidden] { display: none; }
+/* Period (left: 79%) est trop pres du bord droit du cadre pour qu'un corps
+   de 300px s'ouvre vers la droite sans deborder (verifie : deborde des la
+   largeur de cadre proche du seuil mobile de 860px). Ancre a droite du
+   declencheur (right: 0) plutot qu'a gauche comme les trois autres
+   panneaux, il s'ouvre donc vers la gauche a la place. */
+.ccomp__panel[data-role="period-panel"] .ccomp__body { left: auto; right: 0; }
+.ccomp__field-label { font-size: 11px; color: #353a45; margin: 0 0 8px; }
+
+/* Bascule Physicians/Groups, Tasks/Shifts, Fixed period/Series : contrairement
+   a .cbuild__pill (simple etiquette dans la phrase de synthese), ces pastilles
+   sont de vrais boutons cliquables — l'onglet actif reste rempli, l'inactif
+   reste clair. */
+.ccomp__tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.ccomp__tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: inherit; font-size: 11px; color: #371495;
+  background: #eaeaf9; border: none; border-radius: 6px;
+  padding: 4px 11px; cursor: pointer;
+  transition: background .18s var(--ease), color .18s var(--ease);
+}
+.ccomp__tab:hover { background: #e0defa; }
+.ccomp__tab.is-active { background: #371495; color: #fff; }
+.ccomp__tab-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 14px; height: 14px; padding: 0 2px;
+  border-radius: 2px; background: #fff; color: #371495;
+  font-size: 9px; font-weight: 600;
+}
+
+/* Champ de recherche (physicien, tache) : icone + saisie + suggestion
+   fantome (le texte grise apres le curseur, voir setupSearchField() dans
+   app.js) + bouton "x" pour vider, affiche seulement quand le champ n'est
+   pas vide. */
+.ccomp__search {
+  display: flex; align-items: center; gap: 6px;
+  background: #f0f0fa; border: 2px solid transparent; border-radius: 6px;
+  padding: 6px 8px; margin-bottom: 10px;
+}
+.ccomp__search:focus-within { border-color: #594ccc; }
+.ccomp__search-icon { width: 13px; height: 13px; flex: none; }
+.ccomp__search-field { position: relative; flex: 1 1 auto; min-width: 0; }
+.ccomp__search-input {
+  position: relative; z-index: 1;
+  display: block; width: 100%;
+  font: inherit; font-size: 11px; color: #353a45;
+  background: transparent; border: none; padding: 0;
+}
+.ccomp__search-input:focus { outline: none; }
+/* Superposee derriere la saisie (z-index 0, fond transparent sur .ccomp__search-input
+   au-dessus) : seule la partie qui depasse le texte deja tape ("ccomp__ghost-rest")
+   reste visible, alignee au caractere pres car meme police/taille/padding. */
+.ccomp__search-ghost {
+  position: absolute; inset: 0; z-index: 0;
+  display: flex; align-items: center;
+  font: inherit; font-size: 11px; white-space: pre;
+  pointer-events: none;
+}
+.ccomp__ghost-typed { visibility: hidden; }
+.ccomp__ghost-rest { color: #9479f3; }
+.ccomp__search-clear {
+  flex: none; width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; padding: 0; cursor: pointer;
+}
+.ccomp__search-clear[hidden] { display: none; }
+.ccomp__search-clear img { width: 13px; height: 13px; }
+
+/* Liste d'options en flux normal (pas un popover absolu comme .cbuild__listbox :
+   quatre panneaux independants n'ont pas besoin de flotter au-dessus du
+   reste de la page). Les lignes elles-memes (<li role="option">) reutilisent
+   cbuild__opt-checkbox/opt-text/opt-predicate — voir taskCheckboxRows(),
+   app.js — et le survol partage avec .cbuild__listbox li plus haut. */
+.ccomp__list { display: grid; gap: 3px; max-height: 190px; overflow-y: auto; margin: 0 0 8px; padding: 0 2px 0 0; }
+.ccomp__list[hidden] { display: none; }
+/* Ligne masquee par le filtre de recherche (voir filterList(), app.js). */
+.ccomp__list li[hidden] { display: none; }
+
+/* Compteur +/- (assignations max, jours consecutifs) : une seule icone
+   chevron haut+bas (constraint-stepper.svg) coupee en deux moities cliquables
+   via background-position, plutot que deux icones separees. */
+.ccomp__stepper {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #f0f0fa; border-radius: 6px; padding: 6px 8px;
+  vertical-align: middle;
+}
+.ccomp__stepper-input {
+  width: 24px; font: inherit; font-size: 11px; color: #353a45;
+  background: transparent; border: none; padding: 0; text-align: center;
+}
+.ccomp__stepper-input:focus { outline: none; }
+.ccomp__stepper-arrows { display: flex; flex-direction: column; }
+.ccomp__stepper-btn {
+  width: 14px; height: 7px; padding: 0; border: none; background-color: transparent;
+  background-image: url('../assets/icons/constraint-stepper.svg');
+  background-size: 14px 14px; background-repeat: no-repeat;
+  cursor: pointer; opacity: .8;
+}
+.ccomp__stepper-btn:hover { opacity: 1; }
+.ccomp__stepper-btn--up { background-position: top; }
+.ccomp__stepper-btn--down { background-position: bottom; }
+
+/* Radios (periode) : meme logique que .cbuild__opt-checkbox (case decorative
+   pilotee par un attribut d'etat, ici aria-checked plutot que aria-selected),
+   mais ronds et sans <input> natif — bouton + role="radio", coherent avec
+   .cbuild__day (bouton + aria-pressed) plutot qu'un <input type="radio">
+   qu'il aurait fallu restyler entierement. */
+.ccomp__radio-row {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  font: inherit; font-size: 11px; color: #303030; text-align: left;
+  background: none; border: none; border-radius: 4px;
+  padding: 6px; margin: 0; cursor: pointer;
+}
+.ccomp__radio-row:hover { background: #f1ecfc; }
+.ccomp__radio {
+  position: relative; flex: none; width: 15px; height: 15px;
+  border: 1.5px solid #9479f3; border-radius: 50%; background: #fff;
+}
+.ccomp__radio-row[aria-checked="true"] .ccomp__radio { border-color: #371495; }
+.ccomp__radio-row[aria-checked="true"] .ccomp__radio::after {
+  content: ''; position: absolute; inset: 3px; border-radius: 50%; background: #371495;
+}
+/* Sous-contenu revele par un choix a radio (jours, periode nommee, stepper de
+   serie) : indente au niveau du libelle du radio parent (6px de padding +
+   15px de rond + 8px de gap, voir .ccomp__radio-row ci-dessus). */
+.ccomp__nested { margin: 2px 0 8px 29px; }
+.ccomp__nested[hidden] { display: none; }
+
+/* Liens/indications decoratifs ("Add a time slot", "contact support") : ni
+   l'un ni l'autre ne menent nulle part dans cette demo (voir node 21:499,
+   "add time slot is not an interactive option") — couleur plus pale et
+   cursor:default les distinguent volontairement des vrais liens cliquables
+   (cbuild__select-all, violet fonce #371495, soulignes au survol). */
+.ccomp__static-link, .ccomp__static-hint {
+  display: block; font-size: 11px; color: #9479f3; padding: 6px; margin: 0;
+  cursor: default;
+}
+.ccomp__static-inline { text-decoration: underline; text-decoration-style: dotted; }
 
 /* ---- Figure repliee dans un tiroir "En voir plus" ----------------------
    Pour une figure dense et facultative a la lecture (ex. le mapping des 24
@@ -1539,6 +1819,16 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
   .foot__grid { grid-template-columns: 1fr 1fr; }
   .cs-next__link { flex-direction: column; align-items: flex-start; }
   .cbuild__layout { grid-template-columns: 1fr; }
+  /* Sous 860px le cadre passe en pile normale (pas de positionnement absolu
+     façon Figma, qui suppose une largeur de cadre confortable) : chaque
+     panneau reprend le flux du document, l'un sous l'autre, et le cadre
+     retrouve son scroll interne puisque sa hauteur ne suit plus le contenu. */
+  .ccomp__frame { overflow-y: auto; }
+  .ccomp__grid { display: flex; flex-direction: column; gap: var(--s5); height: auto; }
+  .ccomp__panel { position: static; }
+  /* Chaque corps reprend le flux normal (l'ancrage left:0/right:0 ci-dessus
+     n'a de sens que quand le panneau est positionne en absolu). */
+  .ccomp__body { position: static; margin-top: 10px; }
   .lottie-carousel { grid-template-columns: 1fr; }
   .lottie-carousel__tabs { flex-direction: row; flex-wrap: wrap; gap: var(--s4) var(--s5); }
 }
