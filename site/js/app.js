@@ -1471,13 +1471,6 @@ function physicianTriggerLabel(vals, parentCfg, cfg) {
   if (list.length <= 2) return list.map(v => source.find(s => s.value === v).label).join(', ');
   return `${list.length} ${active ? 'physicians' : 'groups'} selected`;
 }
-function physicianStatusText(vals, parentCfg, cfg) {
-  const active = vals.physicianTab === 'physician';
-  const list = active ? vals.physicians : vals.groups;
-  const source = active ? parentCfg.physicians : cfg.groups;
-  if (!list.length) return `No ${active ? 'physicians' : 'groups'} selected.`;
-  return `Selected: ${list.map(v => source.find(s => s.value === v).label).join(', ')}.`;
-}
 function taskTriggerLabel(vals, parentCfg, cfg) {
   const active = vals.taskTab === 'task';
   const list = active ? vals.tasks : vals.shifts;
@@ -1486,24 +1479,24 @@ function taskTriggerLabel(vals, parentCfg, cfg) {
   if (list.length <= 2) return list.map(v => source.find(s => s.value === v).label).join(', ');
   return `${list.length} ${active ? 'tasks' : 'shifts'} selected`;
 }
-function taskStatusText(vals, parentCfg, cfg) {
-  const active = vals.taskTab === 'task';
-  const list = active ? vals.tasks : vals.shifts;
-  const source = active ? parentCfg.tasks : cfg.shifts;
-  if (!list.length) return `No ${active ? 'tasks' : 'shifts'} selected.`;
-  return `Selected: ${list.map(v => source.find(s => s.value === v).label).join(', ')}.`;
-}
-/* "This limit applies to..." — les 4 combinaisons possibles (mode fixe/serie
-   x choix jours/periode nommee) partagent formatDayRange() avec le
-   rule-builder ci-dessus pour la formule des jours. */
-function periodStatusText(vals, parentCfg, cfg) {
+/* Libelle du declencheur "period" : les 4 combinaisons possibles (mode
+   fixe/serie x choix jours/periode nommee). Un jour picker vide ou a plus
+   de 2 jours reprend la meme convention que physicianTriggerLabel/
+   taskTriggerLabel (noms si <=2, compte sinon) ; la serie affiche
+   "series of N day(s)" plutot qu'un compte de jours coches. */
+function periodTriggerLabel(vals, parentCfg, cfg) {
+  const dayLabel = () => {
+    if (!vals.days.length) return 'Select days';
+    if (vals.days.length <= 2) return vals.days.map(v => parentCfg.days.find(d => d.value === v).label).join(', ');
+    return `${vals.days.length} days selected`;
+  };
   if (vals.periodMode === 'fixed') {
-    if (vals.fixedChoice === 'days') return `Applies ${formatDayRange(vals.days, parentCfg.days)}.`;
+    if (vals.fixedChoice === 'days') return dayLabel();
     const p = cfg.periods.find(p => p.value === vals.specificPeriod);
-    return `Applies during ${p ? p.label : ''}.`;
+    return p ? p.label : 'Select period';
   }
-  if (vals.seriesChoice === 'series') return `Applies for ${vals.seriesDays} consecutive day${vals.seriesDays === 1 ? '' : 's'}.`;
-  return `Applies ${formatDayRange(vals.days, parentCfg.days)}.`;
+  if (vals.seriesChoice === 'series') return `series of ${vals.seriesDays} day${vals.seriesDays === 1 ? '' : 's'}`;
+  return dayLabel();
 }
 
 /* Auto-suggestion des champs de recherche (physicien, tache — voir node
@@ -1597,7 +1590,6 @@ function componentsShowcaseMarkup(cfg, parentCfg) {
         ${searchBox('physician', 'Search physicians')}
         <ul class="ccomp__list" data-role="physician-list" role="listbox" aria-label="Physicians">${taskCheckboxRows(parentCfg.physicians, d.physicians)}</ul>
         <ul class="ccomp__list" data-role="group-list" role="listbox" aria-label="Groups" hidden>${taskCheckboxRows(cfg.groups, d.groups)}</ul>
-        <p class="ccomp__status" data-role="physician-status" aria-live="polite">${escapeAttr(physicianStatusText(d, parentCfg, cfg))}</p>
       </div>
     </div>`;
 
@@ -1615,7 +1607,6 @@ function componentsShowcaseMarkup(cfg, parentCfg) {
       </button>
       <div class="ccomp__body" id="ccomp-constraint-body" data-role="constraint-body" hidden>
         <ul class="ccomp__list" data-role="constraint-list" role="listbox" aria-label="Constraint type">${constraintOptionRows(parentCfg.constraints, d.constraint)}</ul>
-        <p class="ccomp__status" data-role="constraint-status" aria-live="polite">${escapeAttr(selectedConstraint.name)} constraint selected.</p>
       </div>
     </div>`;
 
@@ -1633,7 +1624,6 @@ function componentsShowcaseMarkup(cfg, parentCfg) {
         ${searchBox('task', 'Search tasks')}
         <ul class="ccomp__list" data-role="task-list" role="listbox" aria-label="Tasks">${taskCheckboxRows(parentCfg.tasks, d.tasks)}</ul>
         <ul class="ccomp__list" data-role="shift-list" role="listbox" aria-label="Shifts" hidden>${taskCheckboxRows(cfg.shifts, d.shifts)}</ul>
-        <p class="ccomp__status" data-role="task-status" aria-live="polite">${escapeAttr(taskStatusText(d, parentCfg, cfg))}</p>
       </div>
     </div>`;
 
@@ -1652,7 +1642,7 @@ function componentsShowcaseMarkup(cfg, parentCfg) {
     <div class="ccomp__panel" data-role="period-panel">
       <button type="button" class="cbuild__select cbuild__trigger ccomp__trigger" data-role="period-trigger"
               aria-haspopup="true" aria-expanded="false" aria-controls="ccomp-period-body">
-        <span data-role="period-trigger-label">Period</span>
+        <span data-role="period-trigger-label">${escapeAttr(periodTriggerLabel(d, parentCfg, cfg))}</span>
         ${fieldChevron}
       </button>
       <div class="ccomp__body" id="ccomp-period-body" data-role="period-body" hidden>
@@ -1681,8 +1671,6 @@ function componentsShowcaseMarkup(cfg, parentCfg) {
           ${radioRow('period-series', 'days', 'Specific day(s)', seriesDaysOpen)}
           <div class="ccomp__nested" data-role="period-series-days-slot"${seriesDaysOpen ? '' : ' hidden'}>${dayPicker('period-series', d.days)}</div>
         </div>
-
-        <p class="ccomp__status" data-role="period-status" aria-live="polite">${escapeAttr(periodStatusText(d, parentCfg, cfg))}</p>
       </div>
     </div>`;
 
@@ -1785,7 +1773,6 @@ function setupComponentsShowcase() {
   (() => {
     setupPanel('physician');
     const triggerLabel = $('[data-role="physician-trigger-label"]', root);
-    const status = $('[data-role="physician-status"]', root);
     const physicianTab = $('[data-role="physician-tab"][data-value="physician"]', root);
     const groupTab = $('[data-role="physician-tab"][data-value="group"]', root);
     const physicianList = $('[data-role="physician-list"]', root);
@@ -1802,7 +1789,6 @@ function setupComponentsShowcase() {
 
     const refresh = () => {
       triggerLabel.textContent = physicianTriggerLabel(vals, parentCfg, cfg);
-      status.textContent = physicianStatusText(vals, parentCfg, cfg);
       physicianCount.textContent = String(vals.physicians.length);
       groupCount.textContent = String(vals.groups.length);
     };
@@ -1887,7 +1873,6 @@ function setupComponentsShowcase() {
   (() => {
     setupPanel('constraint');
     const triggerLabel = $('[data-role="constraint-trigger-label"]', root);
-    const status = $('[data-role="constraint-status"]', root);
     const list = $('[data-role="constraint-list"]', root);
     const options = $$('li[role="option"]', list);
 
@@ -1897,7 +1882,6 @@ function setupComponentsShowcase() {
         options.forEach(o => o.setAttribute('aria-selected', String(o === opt)));
         const c = parentCfg.constraints.find(c => c.value === vals.constraint);
         triggerLabel.textContent = c.predicate;
-        status.textContent = `${c.name} constraint selected.`;
       };
       opt.addEventListener('click', onClick);
       addCleanup(() => opt.removeEventListener('click', onClick));
@@ -1908,7 +1892,6 @@ function setupComponentsShowcase() {
   (() => {
     setupPanel('task');
     const triggerLabel = $('[data-role="task-trigger-label"]', root);
-    const status = $('[data-role="task-status"]', root);
     const taskTab = $('[data-role="task-tab"][data-value="task"]', root);
     const shiftTab = $('[data-role="task-tab"][data-value="shift"]', root);
     const taskList = $('[data-role="task-list"]', root);
@@ -1928,7 +1911,6 @@ function setupComponentsShowcase() {
 
     const refresh = () => {
       triggerLabel.textContent = taskTriggerLabel(vals, parentCfg, cfg);
-      status.textContent = taskStatusText(vals, parentCfg, cfg);
       taskCount.textContent = String(vals.tasks.length);
       shiftCount.textContent = String(vals.shifts.length);
     };
@@ -2022,7 +2004,8 @@ function setupComponentsShowcase() {
   /* ---- Period ---- */
   (() => {
     setupPanel('period');
-    const status = $('[data-role="period-status"]', root);
+    const triggerLabel = $('[data-role="period-trigger-label"]', root);
+    const refreshLabel = () => { triggerLabel.textContent = periodTriggerLabel(vals, parentCfg, cfg); };
     const modeTabs = $$('[data-role="period-mode-tab"]', root);
     const fixedGroup = $('[data-role="period-fixed-group"]', root);
     const seriesGroup = $('[data-role="period-series-group"]', root);
@@ -2062,7 +2045,7 @@ function setupComponentsShowcase() {
           const day = btn.dataset.day;
           vals.days = vals.days.includes(day) ? vals.days.filter(v => v !== day) : [...vals.days, day];
           refreshDayPickers();
-          status.textContent = periodStatusText(vals, parentCfg, cfg);
+          refreshLabel();
         };
         btn.addEventListener('click', onClick);
         addCleanup(() => btn.removeEventListener('click', onClick));
@@ -2072,7 +2055,7 @@ function setupComponentsShowcase() {
         const allOn = vals.days.length === parentCfg.days.length;
         vals.days = allOn ? [] : parentCfg.days.map(d => d.value);
         refreshDayPickers();
-        status.textContent = periodStatusText(vals, parentCfg, cfg);
+        refreshLabel();
       };
       selectAll.addEventListener('click', onSelectAll);
       addCleanup(() => selectAll.removeEventListener('click', onSelectAll));
@@ -2085,7 +2068,7 @@ function setupComponentsShowcase() {
       const onClick = () => {
         vals.specificPeriod = btn.dataset.value;
         $$('[data-role="period-named-radio"]', root).forEach(o => o.setAttribute('aria-checked', String(o === btn)));
-        status.textContent = periodStatusText(vals, parentCfg, cfg);
+        refreshLabel();
       };
       btn.addEventListener('click', onClick);
       addCleanup(() => btn.removeEventListener('click', onClick));
@@ -2097,7 +2080,7 @@ function setupComponentsShowcase() {
       fixedSpecificRadio.setAttribute('aria-checked', String(choice === 'specific'));
       fixedDaysSlot.hidden = choice !== 'days';
       fixedSpecificSlot.hidden = choice !== 'specific';
-      status.textContent = periodStatusText(vals, parentCfg, cfg);
+      refreshLabel();
     };
     const onFixedDaysClick = () => setFixedChoice('days');
     const onFixedSpecificClick = () => setFixedChoice('specific');
@@ -2112,7 +2095,7 @@ function setupComponentsShowcase() {
       seriesDaysRadio.setAttribute('aria-checked', String(choice === 'days'));
       seriesSeriesSlot.hidden = choice !== 'series';
       seriesDaysSlot.hidden = choice !== 'days';
-      status.textContent = periodStatusText(vals, parentCfg, cfg);
+      refreshLabel();
     };
     const onSeriesSeriesClick = () => setSeriesChoice('series');
     const onSeriesDaysClick = () => setSeriesChoice('days');
@@ -2130,7 +2113,7 @@ function setupComponentsShowcase() {
       });
       fixedGroup.hidden = mode !== 'fixed';
       seriesGroup.hidden = mode !== 'series';
-      status.textContent = periodStatusText(vals, parentCfg, cfg);
+      refreshLabel();
     };
     modeTabs.forEach(btn => {
       const onClick = () => switchMode(btn.dataset.value);
@@ -2146,7 +2129,7 @@ function setupComponentsShowcase() {
     const setSeriesDays = (n) => {
       vals.seriesDays = Math.min(99, Math.max(1, n));
       seriesDaysInput.value = String(vals.seriesDays);
-      status.textContent = periodStatusText(vals, parentCfg, cfg);
+      refreshLabel();
     };
     const onSeriesUp = () => setSeriesDays(vals.seriesDays + 1);
     const onSeriesDown = () => setSeriesDays(vals.seriesDays - 1);

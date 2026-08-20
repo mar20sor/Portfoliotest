@@ -1445,8 +1445,6 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 /* Ligne masquee par le filtre de recherche (voir filterList(), app.js). */
 .ccomp__list li[hidden] { display: none; }
 
-.ccomp__status { font-size: 11px; line-height: 1.6; color: #371495; margin: 0; }
-
 /* Compteur +/- (assignations max, jours consecutifs) : une seule icone
    chevron haut+bas (constraint-stepper.svg) coupee en deux moities cliquables
    via background-position, plutot que deux icones separees. */
