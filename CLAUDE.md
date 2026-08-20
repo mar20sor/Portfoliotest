@@ -376,6 +376,47 @@ behavior); node 58:2890/58:2870 for the pill designs described below.
   breakpoint `.ccomp__grid` becomes a plain `flex-direction: column` stack
   and every `.ccomp__panel`/`.ccomp__body` reverts to `position: static`,
   same as the rule-builder's own mobile behavior.
+- **Pill-remove hover states (`.ccomp__pill-remove:hover`).** Three colors,
+  not one — the cross's background needs to read differently depending on
+  what it sits on: `rgba(55,20,149,.12)` on light backgrounds (Tasks/Shifts
+  pills, the bare "Total"-clearing `×`), `#533EB5` on the solid accent pills
+  (Physicians/Groups, `#6f69d5` fill) — a color picked specifically to land
+  between the pill's own fill and the brand dark purple `#371495`, since
+  both endpoints were tried and rejected (`#655FCB` nearly matched the pill
+  fill and vanished; `#371495` read as too dark against it).
+- **The bare "Total"-clearing `×` needed `align-self: stretch`
+  (`.ccomp__pillgroup > .ccomp__pill-remove`).** `.ccomp__pillgroup` uses
+  `align-items: center`, so unlike the nested `.ccomp__pill`s (which stretch
+  themselves internally) this lone cross only took its own content height —
+  measured 14px against 21.6px for its siblings, so its hover fill visibly
+  fell short of matching height. Scoped to the direct-child selector so it
+  doesn't affect the nested per-category crosses, which already match.
+- **Numeric trigger labels are pills too, not just names.**
+  `dualCategoryTriggerLabel()` returns `{ text, word }` instead of a plain
+  string: `word` (the category name, already identical to the `scope`
+  `pillHTML()` expects) is only set when `text` is the numeric form ("3
+  physicians selected"), never for the ≤2-item name form, where a pill
+  would be nonsensical. `physicianTriggerHTML()`/`taskTriggerHTML()` wrap
+  the text in `pillHTML()` whenever `word` is present, even when only one of
+  the two tabs (Physicians/Groups, Tasks/Shifts) has a selection — matching
+  the pill treatment already used once *both* tabs are active.
+- **Group options show their member count in parentheses** ("Floor 2 team
+  (6)") via `taskCheckboxRows()` — shared by all four list bodies
+  (Physicians/Groups/Tasks/Shifts) — appending `(${item.size})` only when
+  `item.size` is set, which today is true only for `cfg.groups` entries in
+  `content.js`; harmless no-op for the other three lists.
+- **Physicians dropdown list hover is a distinct, darker purple
+  (`#ddd0fa`)**, not the `#f1ecfc` every other listbox in the widget uses —
+  scoped via `.ccomp__panel[data-role="physician-panel"] .ccomp__list
+  li:hover` rather than changing the shared rule, so Tasks/Shifts/Constraint/
+  Period keep the lighter default.
+- **`.ccomp__trigger` overrides its inherited padding to a uniform `6px`**
+  (was `6px 25px 6px 11px`, inherited from `.cbuild__select`/
+  `.cbuild__trigger` — sized for a chevron in *absolute* position, the
+  rule-builder's own pattern). Here the chevron is a real flex child
+  (`fieldChevron`, appended last in every trigger's markup), so the
+  asymmetric padding just left a 25px dead gap after it; symmetric padding
+  puts it flush against the edge, matching the 6px on the text side.
 
 ### SoundCloud case study visuals (`content.js`; `s.stats`/`pageCase()`, `app.js`)
 

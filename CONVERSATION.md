@@ -4,7 +4,7 @@
 > Il enregistre **ce qui a été décidé, pourquoi, et ce qui reste à faire**.
 > Si vous reprenez le projet dans une nouvelle session, lisez ce fichier d'abord.
 
-**Dernière mise à jour :** 20 août 2026 — session 10 (visuels SoundCloud importés de marvinsrd.com dans l'étude de cas SoundCloud ; correctif de l'embed Figma de l'étude de cas Contraintes — format d'URL `embed.figma.com` + CSP, sélecteur de page enfin visible ; branche `interactive-components` [widget « components showcase », session 9] fusionnée dans `main`, poussée vers `origin`, puis supprimée locale+distante ; `CLAUDE.md`/`CONVERSATION.md` recréés après un deuxième incident d'exclusion accidentelle ; nouvelle règle : mise à jour automatique de ces deux fichiers après chaque fusion dans `main`)
+**Dernière mise à jour :** 20 août 2026 — session 11 (widget « components showcase » : états de survol sur les croix des pastilles, effectif des groupes affiché entre parenthèses, libellés numériques du déclencheur transformés en pastilles, teinte de survol de la liste physicien, chevron recentré par un padding symétrique ; poussé vers `origin` via le snapshot `push-temp` habituel)
 
 ---
 
@@ -1066,3 +1066,58 @@ tout converge dans `main`.
   `CONVERSATION.md` automatiquement après chaque fusion dans `main`**, sans
   qu'il ait besoin de le redemander à chaque fois. Cette entrée en est la
   première application.
+
+### Session 11 — 20 août 2026 (polish du widget « components showcase », poussée vers `origin`)
+
+Pas de branche cette fois — commit direct sur `main`, snapshot `push-temp`
+habituel vers `origin`. Cinq retouches ciblées sur les pastilles/déclencheurs
+du widget, chacune demandée séparément et vérifiée en direct dans le
+navigateur (serveur local `python -m http.server`) avant le commit. Voir
+« Components showcase widget » dans `CLAUDE.md` pour le détail technique.
+
+- **États de survol sur les croix des pastilles** (`.ccomp__pill-remove`,
+  jusque-là sans aucun retour visuel). Trois variantes distinctes selon le
+  fond de la croix : `rgba(55,20,149,.12)` sur fond clair (pastilles
+  Tasks/Shifts, croix globale « Total »), `#533EB5` sur les pastilles accent
+  Physicians/Groups (fond plein `#6f69d5` — la première tentative,
+  `#655FCB`, s'y fondait presque, puis `#371495` a été jugée trop sombre ;
+  couleur intermédiaire retenue). Plusieurs allers-retours sur la teinte
+  exacte de cette dernière variante avant validation.
+- **Corrigé au passage : la croix globale « Total » (`data-pill-remove="all"`)
+  ne remplissait pas toute la hauteur de sa pastille au survol** (14px
+  mesurés contre 21,6px pour ses voisines) — `.ccomp__pillgroup` utilisait
+  `align-items: center`, qui laisse chaque enfant sa propre hauteur, alors
+  que les pastilles imbriquées s'étirent déjà via leur propre
+  `align-items: stretch`. Fixé par `align-self: stretch` ciblé sur cette
+  seule croix (`.ccomp__pillgroup > .ccomp__pill-remove`), sans toucher au
+  reste de la mise en page.
+- **Effectif des groupes affiché entre parenthèses** dans la liste du
+  dropdown Physicians ("Floor 2 team (6)") — `taskCheckboxRows()` (partagée
+  par les quatre listes du widget) ajoute `(N)` seulement quand `item.size`
+  existe, donc sans effet sur Physicians/Tasks/Shifts qui n'ont pas ce champ.
+- **Libellés numériques du déclencheur transformés en pastilles.** Quand une
+  seule des deux catégories (Physicians/Groups ou Tasks/Shifts) a une
+  sélection de plus de deux éléments, le déclencheur affichait un texte nu
+  ("3 physicians selected") au lieu de la pastille utilisée dès que les deux
+  catégories sont actives. `dualCategoryTriggerLabel()` retourne maintenant
+  `{ text, word }` plutôt qu'une simple chaîne — `word` porte le nom de
+  catégorie (identique au `scope` attendu par `pillHTML()`) uniquement quand
+  le texte est la forme numérique, jamais quand ce sont des noms (≤2
+  éléments, où une pastille n'aurait pas de sens).
+- **Teinte de survol de la liste Physicians rendue plus visible**
+  (`#ddd0fa`, remplace `#f1ecfc` — jugée trop proche du blanc du menu),
+  scopée au seul panneau Physicians via
+  `.ccomp__panel[data-role="physician-panel"] .ccomp__list li:hover`. Le
+  reste des listbox du widget garde la teinte d'origine.
+- **Chevron recentré en bout de champ.** `.ccomp__trigger` héritait du
+  padding `6px 25px 6px 11px` de `.cbuild__select`/`.cbuild__trigger` — pensé
+  pour un chevron en position absolue (widget rule-builder) — alors que son
+  propre chevron est un vrai enfant flex. Padding uniforme `6px` ajouté en
+  override pour coller le chevron au bord droit, symétrique au 6px du texte
+  à gauche.
+- **Incident en cours de session (hors scope de cette entrée) : un
+  `taskkill //IM python.exe //F` lancé pour arrêter le serveur de prévisualisation
+  a tué tous les processus Python de la machine (39 processus), pas
+  seulement celui du serveur.** Signalé immédiatement à Mar. Le serveur
+  suivant a été relancé en arrière-plan (`run_in_background`) pour éviter de
+  refaire ce genre de commande large la prochaine fois.
