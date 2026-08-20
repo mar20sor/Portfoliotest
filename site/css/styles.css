@@ -1088,7 +1088,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   overflow: hidden;
 }
 .cbuild__listbox[hidden] { display: none; }
-.cbuild__listbox li {
+/* .ccomp__list (vitrine de composants, plus bas) partage ces regles de ligne :
+   meme structure de <li role="option">, juste hors d'un popover absolu. */
+.cbuild__listbox li,
+.ccomp__list li {
   display: flex; align-items: center; gap: 6px;
   padding: 6px; border-radius: 4px;
   cursor: pointer;
@@ -1098,10 +1101,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
    sans rien changer (setupConstraintBuilder, app.js) — si aria-selected
    gardait ce style, la ligne "Limit" resterait visuellement "en survol" en
    permanence meme sans la souris dessus, ce qui n'est pas voulu. */
-.cbuild__listbox li:hover,
-.cbuild__listbox li:focus { outline: none; background: #f1ecfc; }
-.cbuild__listbox li:hover .cbuild__opt-predicate,
-.cbuild__listbox li:focus .cbuild__opt-predicate { color: #371495; }
+.cbuild__listbox li:hover, .ccomp__list li:hover,
+.cbuild__listbox li:focus, .ccomp__list li:focus { outline: none; background: #f1ecfc; }
+.cbuild__listbox li:hover .cbuild__opt-predicate, .ccomp__list li:hover .cbuild__opt-predicate,
+.cbuild__listbox li:focus .cbuild__opt-predicate, .ccomp__list li:focus .cbuild__opt-predicate { color: #371495; }
 .cbuild__opt-icon {
   width: 25px; height: 25px; flex: none;
   display: grid; place-items: center;
@@ -1293,6 +1296,165 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   color: #371495; font-weight: 400;
   padding: 3px 8px; border-radius: 6px;
 }
+
+/* ---- Vitrine de composants (componentsShowcaseMarkup()/setupComponentsShowcase(),
+   app.js), sous le rule-builder ci-dessus : quatre champs autonomes, pas une
+   phrase composee — chaque .ccomp__panel s'ouvre/se ferme independamment.
+   Reprend la palette/police du rule-builder (violet #371495, Roboto) pour
+   rester coherent avec le widget juste au-dessus, et reutilise ses classes
+   d'options (cbuild__opt-*, cbuild__day, cbuild__select-all) — seuls les
+   elements propres a ce widget (onglets, recherche, stepper, radio) ont leur
+   propre prefixe ccomp__. */
+.ccomp { margin-block: var(--s6); font-family: 'Roboto', 'Segoe UI', sans-serif; }
+.ccomp__intro {
+  font-size: var(--fs-small); color: var(--ink-faint);
+  line-height: 1.5; font-family: var(--font);
+  margin-bottom: var(--s4);
+}
+.ccomp__grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s5) var(--s6); }
+.ccomp__panel { position: relative; min-width: 0; }
+.ccomp__trigger { width: 100%; justify-content: space-between; }
+.ccomp__trigger-chevron { flex: none; width: 16px; height: 16px; pointer-events: none; }
+.ccomp__body {
+  margin-top: 10px;
+  background: #fff; border: 1px solid #eaeaf9; border-radius: 11px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.ccomp__body[hidden] { display: none; }
+.ccomp__field-label { font-size: 11px; color: #353a45; margin: 0 0 8px; }
+
+/* Bascule Physicians/Groups, Tasks/Shifts, Fixed period/Series : contrairement
+   a .cbuild__pill (simple etiquette dans la phrase de synthese), ces pastilles
+   sont de vrais boutons cliquables — l'onglet actif reste rempli, l'inactif
+   reste clair. */
+.ccomp__tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.ccomp__tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: inherit; font-size: 11px; color: #371495;
+  background: #eaeaf9; border: none; border-radius: 6px;
+  padding: 4px 11px; cursor: pointer;
+  transition: background .18s var(--ease), color .18s var(--ease);
+}
+.ccomp__tab:hover { background: #e0defa; }
+.ccomp__tab.is-active { background: #371495; color: #fff; }
+.ccomp__tab-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 14px; height: 14px; padding: 0 2px;
+  border-radius: 2px; background: #fff; color: #371495;
+  font-size: 9px; font-weight: 600;
+}
+
+/* Champ de recherche (physicien, tache) : icone + saisie + suggestion
+   fantome (le texte grise apres le curseur, voir setupSearchField() dans
+   app.js) + bouton "x" pour vider, affiche seulement quand le champ n'est
+   pas vide. */
+.ccomp__search {
+  display: flex; align-items: center; gap: 6px;
+  background: #f0f0fa; border: 2px solid transparent; border-radius: 6px;
+  padding: 6px 8px; margin-bottom: 10px;
+}
+.ccomp__search:focus-within { border-color: #594ccc; }
+.ccomp__search-icon { width: 13px; height: 13px; flex: none; }
+.ccomp__search-field { position: relative; flex: 1 1 auto; min-width: 0; }
+.ccomp__search-input {
+  position: relative; z-index: 1;
+  display: block; width: 100%;
+  font: inherit; font-size: 11px; color: #353a45;
+  background: transparent; border: none; padding: 0;
+}
+.ccomp__search-input:focus { outline: none; }
+/* Superposee derriere la saisie (z-index 0, fond transparent sur .ccomp__search-input
+   au-dessus) : seule la partie qui depasse le texte deja tape ("ccomp__ghost-rest")
+   reste visible, alignee au caractere pres car meme police/taille/padding. */
+.ccomp__search-ghost {
+  position: absolute; inset: 0; z-index: 0;
+  display: flex; align-items: center;
+  font: inherit; font-size: 11px; white-space: pre;
+  pointer-events: none;
+}
+.ccomp__ghost-typed { visibility: hidden; }
+.ccomp__ghost-rest { color: #9479f3; }
+.ccomp__search-clear {
+  flex: none; width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; padding: 0; cursor: pointer;
+}
+.ccomp__search-clear[hidden] { display: none; }
+.ccomp__search-clear img { width: 13px; height: 13px; }
+
+/* Liste d'options en flux normal (pas un popover absolu comme .cbuild__listbox :
+   quatre panneaux independants n'ont pas besoin de flotter au-dessus du
+   reste de la page). Les lignes elles-memes (<li role="option">) reutilisent
+   cbuild__opt-checkbox/opt-text/opt-predicate — voir taskCheckboxRows(),
+   app.js — et le survol partage avec .cbuild__listbox li plus haut. */
+.ccomp__list { display: grid; gap: 3px; max-height: 190px; overflow-y: auto; margin: 0 0 8px; padding: 0 2px 0 0; }
+.ccomp__list[hidden] { display: none; }
+/* Ligne masquee par le filtre de recherche (voir filterList(), app.js). */
+.ccomp__list li[hidden] { display: none; }
+
+.ccomp__status { font-size: 11px; line-height: 1.6; color: #371495; margin: 0; }
+
+/* Compteur +/- (assignations max, jours consecutifs) : une seule icone
+   chevron haut+bas (constraint-stepper.svg) coupee en deux moities cliquables
+   via background-position, plutot que deux icones separees. */
+.ccomp__stepper {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #f0f0fa; border-radius: 6px; padding: 6px 8px;
+  vertical-align: middle;
+}
+.ccomp__stepper-input {
+  width: 24px; font: inherit; font-size: 11px; color: #353a45;
+  background: transparent; border: none; padding: 0; text-align: center;
+}
+.ccomp__stepper-input:focus { outline: none; }
+.ccomp__stepper-arrows { display: flex; flex-direction: column; }
+.ccomp__stepper-btn {
+  width: 14px; height: 7px; padding: 0; border: none; background-color: transparent;
+  background-image: url('../assets/icons/constraint-stepper.svg');
+  background-size: 14px 14px; background-repeat: no-repeat;
+  cursor: pointer; opacity: .8;
+}
+.ccomp__stepper-btn:hover { opacity: 1; }
+.ccomp__stepper-btn--up { background-position: top; }
+.ccomp__stepper-btn--down { background-position: bottom; }
+
+/* Radios (periode) : meme logique que .cbuild__opt-checkbox (case decorative
+   pilotee par un attribut d'etat, ici aria-checked plutot que aria-selected),
+   mais ronds et sans <input> natif — bouton + role="radio", coherent avec
+   .cbuild__day (bouton + aria-pressed) plutot qu'un <input type="radio">
+   qu'il aurait fallu restyler entierement. */
+.ccomp__radio-row {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  font: inherit; font-size: 11px; color: #303030; text-align: left;
+  background: none; border: none; border-radius: 4px;
+  padding: 6px; margin: 0; cursor: pointer;
+}
+.ccomp__radio-row:hover { background: #f1ecfc; }
+.ccomp__radio {
+  position: relative; flex: none; width: 15px; height: 15px;
+  border: 1.5px solid #9479f3; border-radius: 50%; background: #fff;
+}
+.ccomp__radio-row[aria-checked="true"] .ccomp__radio { border-color: #371495; }
+.ccomp__radio-row[aria-checked="true"] .ccomp__radio::after {
+  content: ''; position: absolute; inset: 3px; border-radius: 50%; background: #371495;
+}
+/* Sous-contenu revele par un choix a radio (jours, periode nommee, stepper de
+   serie) : indente au niveau du libelle du radio parent (6px de padding +
+   15px de rond + 8px de gap, voir .ccomp__radio-row ci-dessus). */
+.ccomp__nested { margin: 2px 0 8px 29px; }
+.ccomp__nested[hidden] { display: none; }
+
+/* Liens/indications decoratifs ("Add a time slot", "contact support") : ni
+   l'un ni l'autre ne menent nulle part dans cette demo (voir node 21:499,
+   "add time slot is not an interactive option") — couleur plus pale et
+   cursor:default les distinguent volontairement des vrais liens cliquables
+   (cbuild__select-all, violet fonce #371495, soulignes au survol). */
+.ccomp__static-link, .ccomp__static-hint {
+  display: block; font-size: 11px; color: #9479f3; padding: 6px; margin: 0;
+  cursor: default;
+}
+.ccomp__static-inline { text-decoration: underline; text-decoration-style: dotted; }
 
 /* ---- Figure repliee dans un tiroir "En voir plus" ----------------------
    Pour une figure dense et facultative a la lecture (ex. le mapping des 24
@@ -1539,6 +1701,7 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
   .foot__grid { grid-template-columns: 1fr 1fr; }
   .cs-next__link { flex-direction: column; align-items: flex-start; }
   .cbuild__layout { grid-template-columns: 1fr; }
+  .ccomp__grid { grid-template-columns: 1fr; }
   .lottie-carousel { grid-template-columns: 1fr; }
   .lottie-carousel__tabs { flex-direction: row; flex-wrap: wrap; gap: var(--s4) var(--s5); }
 }

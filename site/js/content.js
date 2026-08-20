@@ -400,6 +400,34 @@ export const PROJECTS = [
             constraint: 'limit',
             tasks: ['care-floor-2'],
             days: ['mon', 'tue', 'wed', 'thu', 'fri']
+          },
+          /* Second widget, sous le rule-builder (voir componentsShowcaseMarkup()/
+             setupComponentsShowcase() dans app.js) : pas une phrase composee,
+             mais quatre champs autonomes (physiciens, contrainte, taches,
+             periode) qui reprennent les memes listes que `builder` ci-dessus
+             (physicians/constraints/tasks/days) — seules les listes propres a
+             ce widget (groupes, gardes, periodes nommees) sont definies ici.
+             Reference Figma : fichier "Claude-portfolio-image-generation",
+             frame "Components" (node 52:1781) pour l'apparence, frame
+             "Interactive components" (node 21:797) pour le comportement. */
+          components: {
+            caption: 'Component states — the same fields as the sentence above, shown open',
+            intro: 'Each field owns its own search, multi-select and validation — this is what the pieces look like on their own.',
+            groups: [
+              { value: 'floor-2-team',  label: 'Floor 2 team' },
+              { value: 'on-call-pool',  label: 'On-call pool' },
+              { value: 'night-coverage', label: 'Night coverage' }
+            ],
+            shifts: [
+              { value: 'day-shift',    label: 'Day shift' },
+              { value: 'evening-shift', label: 'Evening shift' },
+              { value: 'night-shift',  label: 'Night shift' }
+            ],
+            periods: [
+              { value: 'week-a',       label: 'Week A' },
+              { value: 'week-b',       label: 'Week B' },
+              { value: 'custom-range', label: 'Custom range' }
+            ]
           }
         },
         /* Rendu apres le widget interactif (voir pageCase() dans app.js) :
