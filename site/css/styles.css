@@ -1113,6 +1113,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cbuild__listbox li:focus, .ccomp__list li:focus { outline: none; background: #f1ecfc; }
 .cbuild__listbox li:hover .cbuild__opt-predicate, .ccomp__list li:hover .cbuild__opt-predicate,
 .cbuild__listbox li:focus .cbuild__opt-predicate, .ccomp__list li:focus .cbuild__opt-predicate { color: #371495; }
+/* Physician dropdown (Physicians/Groups list) : #f1ecfc ci-dessus est trop
+   proche du blanc du corps du menu pour marquer l'etat de survol de facon
+   fiable — teinte plus soutenue ici, scopee au panneau physicien seul (le
+   reste des listbox du widget garde #f1ecfc). */
+.ccomp__panel[data-role="physician-panel"] .ccomp__list li:hover,
+.ccomp__panel[data-role="physician-panel"] .ccomp__list li:focus { background: #ddd0fa; }
 .cbuild__opt-icon {
   width: 25px; height: 25px; flex: none;
   display: grid; place-items: center;
@@ -1368,6 +1374,12 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
      remplace et pourrait sinon deborder du cadre. */
   max-width: min(360px, calc(100vw - 64px));
   gap: 8px; background: #fff;
+  /* Ecrase le padding 6px/25px/6px/11px herite de .cbuild__select/
+     .cbuild__trigger (pense pour un chevron en position absolue, voir
+     .cbuild__field-chevron) : ici le chevron est un vrai enfant flex (voir
+     fieldChevron, app.js), donc un padding symetrique de 6px le colle au
+     bord droit au lieu de laisser un vide de 25px apres lui. */
+  padding: 6px;
 }
 .ccomp__trigger:hover { background: #f7f3fe; }
 .ccomp__trigger[aria-expanded="true"] { background: #fff; }
@@ -1393,6 +1405,14 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   display: inline-flex; align-items: center; gap: 4px; flex-wrap: nowrap;
   background: #f0f0fa; border-radius: 6px; padding: 4px; color: #371495;
 }
+/* La croix globale (data-pill-remove="all") est le seul enfant direct de
+   .ccomp__pillgroup qui ne soit pas deja etire par un align-items:stretch
+   interne (contrairement aux .ccomp__pill imbriquees) : sous
+   align-items:center, elle ne portait que sa propre hauteur (14px mesures)
+   contre 21.6px pour ses voisines, ce qui tronquait le fond de survol.
+   align-self:stretch l'aligne sur la meme hauteur que "N Total" et les
+   pastilles Physicians/Groups. */
+.ccomp__pillgroup > .ccomp__pill-remove { align-self: stretch; }
 .ccomp__pill {
   display: inline-flex; align-items: stretch;
   border-radius: 6px; overflow: hidden;
@@ -1407,14 +1427,18 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   display: inline-flex; align-items: center; padding: 2px 8px; white-space: nowrap;
   font-size: 11px; font-weight: 400; color: inherit;
 }
-/* Meme padding vertical que .ccomp__pill-label (2px) pour une hauteur
-   identique, que la croix soit imbriquee dans une .ccomp__pill (align-items:
-   stretch) ou seule dans .ccomp__pillgroup (ccomp__pill-remove--all,
-   align-items:center — elle doit alors porter sa propre hauteur). */
 .ccomp__pill-remove {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 2px 6px; cursor: pointer;
+  border-radius: 4px;
+  transition: background .15s var(--ease);
 }
+.ccomp__pill-remove:hover { background: rgba(55,20,149,.12); }
+/* Accent (violet plein, texte/croix blancs) : la teinte sombre ci-dessus
+   deviendrait invisible sur ce fond — teinte intermediaire entre le fond
+   #6f69d5 et le violet fonce #371495 pour rester visible sans trop
+   assombrir. */
+.ccomp__pill--accent .ccomp__pill-remove:hover { background: #533EB5; }
 .ccomp__pill--accent .ccomp__pill-remove-icon { filter: brightness(0) invert(1); }
 /* Sorti du flux (position: absolute) plutot que d'etre un enfant normal du
    panneau : sinon, un corps ouvert de 300px devient l'enfant-en-flux le

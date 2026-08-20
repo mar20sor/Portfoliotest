@@ -983,7 +983,7 @@ function taskCheckboxRows(items, selectedValues) {
       <span class="cbuild__opt-checkbox" aria-hidden="true">
         <img class="cbuild__opt-check" src="assets/icons/constraint-check.svg" alt="" width="12" height="10">
       </span>
-      <span class="cbuild__opt-text"><span class="cbuild__opt-predicate">${escapeAttr(item.label)}</span></span>
+      <span class="cbuild__opt-text"><span class="cbuild__opt-predicate">${escapeAttr(item.label)}${item.size ? ` (${item.size})` : ''}</span></span>
     </li>`).join('');
 }
 
@@ -1474,11 +1474,17 @@ function componentsShowcaseDefaults(cfg, parentCfg) {
    d'onglet sans rien decocher), on continue de la montrer plutot que
    d'afficher "Select ..." — ce texte donnerait a tort l'impression que tout
    a ete efface. */
+/* `word` (deja identique a la `scope` attendue par pillHTML : 'physicians'/
+   'groups'/'tasks'/'shifts') est reporte dans le retour uniquement quand le
+   libelle est la forme numerique ("N X selected") — c'est ce champ qui dit
+   aux fonctions triggerHTML ci-dessous d'habiller le texte dans une pastille
+   plutot que de l'afficher nu ; les noms (<=2 elements) restent du texte
+   simple, un nombre n'a de sens que dans une pastille. */
 function dualCategoryTriggerLabel(list, source, otherList, otherSource, word, otherWord, placeholder) {
   const active = list.length ? { list, source, word } : otherList.length ? { list: otherList, source: otherSource, word: otherWord } : null;
-  if (!active) return placeholder;
-  if (active.list.length <= 2) return active.list.map(v => active.source.find(s => s.value === v).label).join(', ');
-  return `${active.list.length} ${active.word} selected`;
+  if (!active) return { text: placeholder, word: null };
+  if (active.list.length <= 2) return { text: active.list.map(v => active.source.find(s => s.value === v).label).join(', '), word: null };
+  return { text: `${active.list.length} ${active.word} selected`, word: active.word };
 }
 function physicianTriggerLabel(vals, parentCfg, cfg) {
   const active = vals.physicianTab === 'physician';
@@ -1533,7 +1539,9 @@ function physicianGroupsSize(vals, cfg) {
    4 personnes nommees dans toute la demo). */
 function physicianTriggerHTML(vals, parentCfg, cfg) {
   if (!vals.physicians.length || !vals.groups.length) {
-    return escapeAttr(physicianTriggerLabel(vals, parentCfg, cfg));
+    const label = physicianTriggerLabel(vals, parentCfg, cfg);
+    if (label.word) return pillHTML(label.word, label.text, `Remove all ${label.word}`, true);
+    return escapeAttr(label.text);
   }
   const total = vals.physicians.length + physicianGroupsSize(vals, cfg);
   return `
@@ -1549,7 +1557,9 @@ function physicianTriggerHTML(vals, parentCfg, cfg) {
    physiciens. */
 function taskTriggerHTML(vals, parentCfg, cfg) {
   if (!vals.tasks.length || !vals.shifts.length) {
-    return escapeAttr(taskTriggerLabel(vals, parentCfg, cfg));
+    const label = taskTriggerLabel(vals, parentCfg, cfg);
+    if (label.word) return pillHTML(label.word, label.text, `Remove all ${label.word}`, false);
+    return escapeAttr(label.text);
   }
   return `
     <span class="ccomp__pillrow">
