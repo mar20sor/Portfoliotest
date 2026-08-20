@@ -266,7 +266,7 @@ export const PROJECTS = [
                  "Quiconque avec le lien peut voir", sinon l'iframe affiche un
                  ecran de connexion a la place du canevas. Voir embedFor()
                  dans app.js. */
-              embed: 'https://www.figma.com/embed?embed_host=share&url=https%3A%2F%2Fwww.figma.com%2Fdesign%2FgR8fLg7cuM7rXb1hiC0niz%2FConstraints-EN--Contra-%3Fnode-id%3D1-351%26t%3D8vKP4G8sb6aVxosG-1',
+              embed: 'https://www.figma.com/embed?embed_host=share&url=https%3A%2F%2Fwww.figma.com%2Fdesign%2FgR8fLg7cuM7rXb1hiC0niz%2FConstraints-EN--Contra-%3Fnode-id%3D1-351%26t%3D8vKP4G8sb6aVxosG-1&page-selector=true',
               caption: 'Worked example on the “limits” family: shared characteristics (task type, period type, member type) are extracted so they can be configured once.'
             },
             {
