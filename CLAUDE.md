@@ -91,6 +91,22 @@ the section's first paragraph by `lottieCarouselMarkup()`/
 see its animation) rather than the static `media` grid, so it also stays
 outside the `media` pipeline.
 
+A section may also carry: `intro` (array of sentences, joined with `<br>`
+inside a single `<p>`, rendered right under the section title, before
+`body[]` — independent of the paragraph-indexed `media`/`lottieCarousel`
+system so it survives edits to `body`); `list` (array of strings rendered as
+a bulleted `<ul class="cs-sec__list">`, right after `intro` — note the global
+reset (`ul,ol { list-style: none }` in `styles.css`) strips bullets by
+default, so `.cs-sec__list` explicitly restores `list-style: disc`);
+`mockups` (array of `{ image, caption }`, rendered via `figureFor()` inside a
+`.cs-mockups` wrapper — stacked full-width, no `.figure__frame`
+border/padding/background, unlike the default boxed-frame figure treatment);
+and `helpers` (`{ title, body }`, rendered as a single `<p><strong>title</strong><br>body</p>`
+after `s.builder`, followed by `s.lottieCarousel` if present — this is where
+the carousel now lives, no longer tied to `body[0]`). See "Constraints case
+study restructure" below for the full picture of how these fit together on
+that one project.
+
 ### French removal (commit `8592e3b`, merged to `main`)
 
 The site was originally bilingual (`fr:`/`en:` blocks per content entry,
@@ -188,6 +204,87 @@ Two non-obvious things about how it's positioned:
   the markup — the opposite of the intended "top card of the stack is in
   front" look.
 
+### Constraints case study restructure (`content.js`, `moreDrawerMarkup()`/`embedFor()`/`setupMoreDrawerEmbeds()`, `app.js`)
+
+The "Process" section's two former sub-sections ("Mapping the 24 constraints",
+"Benchmark") now live inside a `moreDrawer` field (`{ label, items: [{ title,
+body[], image|embed, caption }] }`), collapsed behind one `<details
+class="figure-drawer cs-more">` at the end of the section rather than as
+separate nav entries. Two things worth knowing if you touch this:
+
+- **An item can render an `<img>` (via `figureFor()`) or a live Figma canvas
+  (via `embedFor()`, if it has `embed` instead of `image`) — never both.**
+  `embedFor()` wraps an `<iframe>` in a `.cs-more__embed` box sized by
+  `aspect-ratio` (not a fixed height), so it stays proportional at any column
+  width.
+- **The iframe's `src` is deferred, not set in the initial markup.** An
+  `<iframe>` created inside a closed `<details>` (`display: none` by default)
+  never fires its network request, even after the `<details>` is later
+  opened — unlike an `<img>`, which loads its resource regardless of
+  visibility. `embedFor()` therefore renders `data-embed-src` instead of
+  `src`, and `setupMoreDrawerEmbeds()` (called for every case-study route,
+  wired in the router) listens for each `.cs-more`'s `toggle` event and
+  promotes `data-embed-src` → `src` the first time it opens — this also
+  means visitors who never expand the drawer never load Figma's embed at
+  all. Don't move `src` back into `embedFor()`'s initial markup without
+  re-testing this.
+- **Embed URL format.** Figma's official `Partager > Intégrer` link shape:
+  `https://www.figma.com/embed?embed_host=share&url=<url-encoded file URL>`.
+  Verified as a *direct* top-level navigation (loads the real canvas, no
+  login wall — the file is link-shared).
+- **`frame-src` had to be added to the CSP `<meta>` tag (`index.html`).**
+  Without an explicit `frame-src`, CSP falls back to `default-src 'self'`,
+  which silently blocks framing *any* external origin — this would have
+  broken the embed on the real deployed site regardless of any other
+  factor, not just in local testing. Added `frame-src
+  https://www.figma.com;` alongside the other directives. If you add a
+  second embeddable origin later, extend this list rather than widening it
+  to `https:` generally.
+- **Still not fully visually confirmed end-to-end.** Even after the CSP fix
+  (no more CSP violations in the console), the iframe never finished
+  painting during this session's local testing — the automated test browser
+  tab timed out / became unresponsive while Figma's canvas was loading, and
+  `performance.getEntriesByType('resource')` showed only a handful of
+  `initiatorType: 'iframe'` resource loads before that. This looks like a
+  WebGL/GPU-compositing constraint specific to the sandboxed browser-
+  automation environment used for testing, not a code defect — but that's
+  an inference, not a confirmation. **Check this on the real deployed URL in
+  an ordinary browser before considering it done**; if it's still broken
+  there, fall back to a static image export like the one it replaced.
+
+### Constraint-builder card sizing (`.cbuild__card`, `styles.css`)
+
+The card is intentionally *not* full-width inside `.cbuild__frame`: `width:
+60%; margin-inline: auto;`, with every font-size/padding/gap/icon-size
+declaration inside `.cbuild__card` pre-multiplied by the same ~0.6–0.7 scale
+factor (see the comment above `.cbuild__card`) rather than left at the
+widget's original Figma-fidelity sizes. **`zoom` was tried first and
+rejected** — it's the obvious one-property way to scale a whole subtree
+(font, padding, icons, layout all at once), but a block element with `width:
+auto` inside a `zoom`ed ancestor still resolves to 100% of the *available*
+width via the normal shrink-to-fit algorithm once its content's natural
+width exceeds that available space (true here: `.cbuild__sentence` wants to
+be wide). Confirmed empirically — `getBoundingClientRect().width` stayed
+exactly equal to the frame's inner width regardless of the `zoom` value.
+Hence the manual per-declaration scaling instead, which is layout-correct
+(no reserved-but-unused whitespace) and handles the widget's dynamic height
+(day-picker drawer expanding/collapsing) natively.
+
+`.cbuild__layout`'s `grid-template-columns` ratio (`5fr 3.5fr` as of this
+writing) was tuned, not guessed: the goal was the bottom-right recap
+sentence ("Marc Tremblay will be limited to the task Care - Floor 2 from
+Monday to Friday.") wrapping to exactly 2 lines. Equal columns (`4fr 4fr`)
+achieve that too but push the left column's fields onto 4 lines instead of
+2; `5fr 3.5fr` was the narrowest right column that still gets 2 lines on the
+recap without over-squeezing the left side — if you change the recap
+sentence's default values (`builder.default` in `content.js`), re-check line
+count with the browser rather than assuming the ratio still holds.
+
+`.cbuild__break` (an empty `<span class="cbuild__break">` with `flex-basis:
+100%; height: 0;`) forces "the task [...] from [...]" onto its own line
+inside `.cbuild__sentence` regardless of container width, rather than
+relying on the flex-wrap's natural (width-dependent) break point.
+
 ### Header height sync (`syncHeadHeight()`, `app.js`)
 
 `--head-h` (design token, `styles.css`) is read by `.cs-nav`'s sticky
@@ -239,7 +336,10 @@ ways, all scoped so they can't leak onto other cards:
   (Raleway, plus Roboto — loaded only for the constraint-builder widget, to
   match its Figma source — both pulled from the same stylesheet link in
   `index.html`), `unpkg.com`/`cdn.jsdelivr.net` (`dotlottie-wc` + its WASM
-  runtime), `media.contra.com` (Constraints project video/images).
+  runtime), `media.contra.com` (Constraints project video/images),
+  `www.figma.com` (`frame-src` only — the live Figma embed in the
+  Constraints "See more" drawer, see "Constraints case study restructure"
+  below).
 - The visitor's first name (entered in the "portal" at load) goes through
   `cleanName()` — character whitelist + length cap — and is inserted via
   `textContent` only, never `innerHTML`. See `app.js` section 2.
@@ -255,14 +355,22 @@ ways, all scoped so they can't leak onto other cards:
 
 ## Fragile external dependencies
 
-- **Constraints project's 3 gallery (mockup) images**: hosted on Contra
-  (`media.contra.com`), not versioned in this repo. If that project is
-  deleted/renamed on Contra, or the CDN changes URLs, these break silently.
-  The hero video is no longer on this list — it was moved to a local asset
-  (`assets/media/constraint-limit.mp4`) so it always renders; see the
-  `.cs__hero-media` comment in `styles.css` for why the frame background is
-  `#e9e1f9` (sampled from the video's own poster frame, to hide the
-  letterboxing from a portrait video in a 16:9 box).
+- **Constraints project's Solution-section mockups are local now, not
+  Contra.** The old 3-image Contra gallery (`media.contra.com`) was replaced
+  with 2 locally-hosted images (`s.mockups` in `content.js`, exported from
+  Figma) — no longer a fragile dependency. The hero video is likewise local
+  (`assets/media/constraint-limit.mp4`); see the `.cs__hero-media` comment in
+  `styles.css` for why the frame background is `#e9e1f9` (sampled from the
+  video's own poster frame, to hide the letterboxing from a portrait video
+  in a 16:9 box). `media.contra.com` remains in the CSP `img-src`/`media-src`
+  only because other projects may still reference it — grep `content.js` for
+  `MEDIA.` before assuming it's fully unused.
+- **The live Figma embed (Constraints "See more" drawer) *is* a new fragile
+  dependency** — unlike everything else on this list, it's not a static
+  asset but a live, unversioned third-party canvas: if the source Figma file
+  is deleted, renamed, or its link-sharing is turned off, the embed breaks
+  with no local fallback. Its actual rendering also isn't fully confirmed
+  yet — see "Constraints case study restructure" above.
 - **Raleway and Roboto fonts**: loaded from Google Fonts — the only other
   external origin besides Contra and the Lottie CDN; couldn't be
   self-hosted in this sandboxed dev environment.

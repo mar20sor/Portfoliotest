@@ -98,6 +98,7 @@ export const UI = {
   csRole: 'Role', csDuration: 'Duration', csTeam: 'Team', csTools: 'Tools', csYear: 'Year',
   csProblem: 'The problem',
   csOutcome: 'The outcome',
+  csImpacts: 'Impacts',
   csOverview: 'Overview',
   csNext: 'Next project',
   csBack: 'Back',
@@ -172,7 +173,9 @@ export const HERO = {
      poster    : { label, figure } -> texte affiche sur l'affiche generee
      title, client, tagline, tags, gist, problem, outcome, stats, sections :
        tout le contenu redactionnel.
-       gist      : les 4 lignes de metadonnees (role, duree, equipe, outils)
+       gist      : les lignes de metadonnees (role, duree, equipe, et
+                   optionnellement outils — `tools` est facultatif ; sans
+                   lui pageCase() omet simplement cette ligne, voir app.js)
        problem   : 1-2 phrases. Le "pourquoi ce projet existe".
        outcome   : 1-2 phrases. Le "qu'est-ce qui a change".
        stats     : chiffres marquants (facultatif) — c'est ce qu'un recruteur retient
@@ -185,6 +188,24 @@ export const HERO = {
                    figureDrawer -> true pour cacher la figure derriere un
                              <details> "See more" plutot que l'afficher
                              directement (voir figureFor() dans app.js)
+                   moreDrawer -> { label, items: [{ title, body, image?,
+                             frOnly?, caption? }] } optionnel. Regroupe des
+                             etapes secondaires (pas d'entree propre dans la
+                             nav laterale) derriere un <details> place a la
+                             fin de CETTE section, avec son propre libelle de
+                             sommaire — voir moreDrawerMarkup() dans app.js.
+                   intro  -> tableau de paragraphes optionnel, affiche juste
+                             sous le titre de section, avant `body` — hors du
+                             systeme d'indexation par paragraphe (media[i],
+                             lottieCarousel), pour du texte de tete sans media
+                             associe.
+                   mockups -> tableau optionnel de { image, caption, frOnly? }
+                             (meme forme qu'une figure locale), rendu apres
+                             tous les paragraphes dans une .media-grid — voir
+                             pageCase() dans app.js.
+   heroMedia.hideCaption -> true pour garder l'aria-label (accessibilite)
+                   tout en masquant la <figcaption> visible sous le media
+                   (voir mediaMarkup() dans app.js).
    -------------------------------------------------------------------------- */
 export const PROJECTS = [
 
@@ -196,84 +217,128 @@ export const PROJECTS = [
     client: 'Petal',
     tagline: 'Redesigning a rule-making engine, reducing rules from **24 to 9**.',
     tags: ['Systems design', 'Research', 'Healthcare SaaS'],
-    gist: { role: 'UX / UI, research', duration: '4 months', team: '1 designer, 1 PM', tools: 'Figma, Jitter, interviews' },
+    gist: { role: 'UX / UI, research', duration: '4 months', team: '1 designer, 1 PM' },
     // The opening visual. It doubles as the card thumbnail on the homepage.
     // Local file rather than the Contra CDN id: no external dependency, and
     // it's the one visual in the repo with a matching poster frame (see
     // .cs__hero-media background in styles.css, sampled from this jpg).
+    // `hideCaption` keeps the aria-label (mediaMarkup() reuses `caption` as
+    // the video's accessible name) while dropping the visible <figcaption>
+    // legend below the poster.
     heroMedia: { type: 'video', src: 'assets/media/constraint-limit.mp4',
-      poster: 'assets/media/constraint-limit.jpg', caption: 'Configuring a constraint, end to end' },
-    problem: 'Constraints are the rules applied to staff availability to build a fair schedule — “a member cannot work two consecutive periods”, for instance. They were configured by hand by Petal’s internal teams: slow, expensive, and so redundant that several different rules led to the same result. Agents made mistakes.',
-    outcome: 'I reduced the 24 constraints to 9 (and the 8 most-used to 3) by identifying the characteristics they shared, then designed a rule builder clinic managers can operate themselves — without going through an agent.',
+      poster: 'assets/media/constraint-limit.jpg', caption: 'Configuring a constraint, end to end',
+      hideCaption: true },
+    problem: 'Constraints are the rules applied to staff availability to build a fair schedule (ex: a member cannot work two consecutive periods). They were configured by Petal’s internal teams for hospitals because they were complicated to use and so redundant that several different rules led to the same result.',
+    outcome: 'I reduced the 24 constraints to 9 by identifying the characteristics they shared, then designed a rule builder clinic managers can operate themselves without going through an agent.',
     stats: [
       { n: '24 → 9', l: 'constraints after consolidation' },
-      { n: '8 → 3', l: 'for the most-used ones' },
-      { n: '4 months', l: 'from scoping to handoff' }
+      { n: '8 → 3', l: 'for the most-used ones' }
     ],
     sections: [
       {
-        id: 'audit', label: 'Scoping', title: '1. Scoping and audit',
+        id: 'audit', label: 'Process', title: '1. Process',
         body: [
-          'I started by interviewing the internal deployment team, because they were the ones paying the price of the complexity. I wanted numbers, not impressions: which rules are actually used, how long it takes to configure one clinic, how many rules a full facility needs, and how schedules reach them in the first place.',
-          'This scoping surfaced the most useful finding of the project: not all the rules were in use. Part of the catalogue existed without ever having been applied.'
-        ]
-      },
-      {
-        id: 'mapping', label: 'Mapping', title: '2. Mapping the 24 constraints',
-        body: [
-          'I listed all 24 constraints and ranked them by usage frequency. To understand what each one acted on, I colour-coded them: green for time, purple for tasks, red for members and groups. This wasn’t decorative — it was there to make the characteristics that several rules shared visible at a glance.',
-          'Two interviews with managers filled in the end-user side. Then I drew each constraint as a flow, to see when each characteristic was selected and whether that moment mattered. The question underneath: can you configure one characteristic once for several rules applied together?',
-          'You can. That consolidation work is what took 24 rules down to 9.'
+          'After discussing with members of the internal team, I identified that complexity was due to a great number of rules (24 in total), leading to redundancies and frequent agent configuration errors. Mapping and categorizing most used constraints with shared outcomes allowed me to group them together.'
         ],
-        image: 'constraints-2-mapping', frOnly: true, figureDrawer: true,
-        caption: 'Worked example on the “limits” family: shared characteristics (task type, period type, member type) are extracted so they can be configured once.'
-      },
-      {
-        id: 'benchmark', label: 'Benchmark', title: '3. Benchmark',
-        body: [
-          'With the rules simplified, the remaining question was which interface model to use. I looked at how other products let non-experts configure complex sets of rules. The rule builder — Notion automations, Gmail advanced search — answers the same problem: many possible conditions, a user who only wants three of them.'
-        ],
-        image: 'constraints-3-benchmark', frOnly: true,
-        caption: 'Two references: building an automation in Notion, and Gmail’s advanced search.'
-      },
-      {
-        id: 'design', label: 'Design', title: '4. Design',
-        body: [
-          'I created animated abstract illustrations, both to make each constraint identifiable at a glance and to represent visually what it does.',
-          'Four principles drove the interfaces. Characteristics only appear when they are needed (progressive disclosure). The most common options are preselected by default. The process is split into steps to stay digestible. Contextual help and illustrations sit alongside configuration to reduce errors.',
-          'I explored two directions. The first shows parameters and result side by side. The second shows parameters contextually and restates the rule as a plain-language sentence — “Marc Tremblay cannot be assigned to Care - Floor 2 from Monday to Friday.” That sentence is the important piece: it lets a manager verify what they just built without re-reading every field.',
-          'I also looked at configuring several rules in a single pass, to speed up setting up a whole facility.'
-        ],
-        /* `media` place des visuels APRÈS un paragraphe précis : la clé est
-           l'index du paragraphe (0 = le premier). C'est ce qui permet de
-           respecter l'ordre de la page Contra — illustrations, puis
-           principes, puis captures — sans découper la section en deux. */
-        media: {
-          2: [
-            { type: 'image', id: 'ytoa4swb5caon0onh5yb', caption: 'Constraints list' },
-            { type: 'image', id: 'mcpbonwlpodke4hgyjaq', caption: 'Constraint configuration' },
-            { type: 'image', id: 'qkmo6j2mbfagfqbt0hti', caption: 'Components' }
+        /* La pile de losanges — anciennement les sections "2. Mapping" et
+           "3. Benchmark" — vit maintenant derriere ce tiroir plutot que comme
+           deux entrees separees de la nav laterale (demande explicite).
+           `items` reprend leurs title/body/image tels quels ; le flag
+           `figureDrawer` de l'image "mapping" a ete retire — elle etait deja
+           cachee derriere son propre <details> imbrique, ce qui aurait
+           desormais fait un tiroir dans un tiroir. Voir moreDrawerMarkup()
+           dans app.js. */
+        moreDrawer: {
+          label: 'See more of the process',
+          items: [
+            {
+              title: 'Mapping the 24 constraints',
+              body: [
+                'I listed all 24 constraints and ranked them by usage frequency. To understand what each one acted on, I colour-coded them: green for time, purple for tasks, red for members and groups. This wasn’t decorative — it was there to make the characteristics that several rules shared visible at a glance.',
+                'Two interviews with managers filled in the end-user side. Then I drew each constraint as a flow, to see when each characteristic was selected and whether that moment mattered. The question underneath: can you configure one characteristic once for several rules applied together?',
+                'You can. That consolidation work is what took 24 rules down to 9.'
+              ],
+              /* Embed Figma en direct (fichier "Constraints-EN (Contra)",
+                 node 1:351) plutot que l'ancienne capture statique
+                 constraints-2-mapping.png : on peut zoomer/deplacer dans le
+                 canevas reel. URL au format officiel Figma
+                 (Partager > Integrer) — le fichier doit rester partage
+                 "Quiconque avec le lien peut voir", sinon l'iframe affiche un
+                 ecran de connexion a la place du canevas. Voir embedFor()
+                 dans app.js. */
+              embed: 'https://www.figma.com/embed?embed_host=share&url=https%3A%2F%2Fwww.figma.com%2Fdesign%2FgR8fLg7cuM7rXb1hiC0niz%2FConstraints-EN--Contra-%3Fnode-id%3D1-351%26t%3D8vKP4G8sb6aVxosG-1',
+              caption: 'Worked example on the “limits” family: shared characteristics (task type, period type, member type) are extracted so they can be configured once.'
+            },
+            {
+              title: 'Benchmark',
+              body: [
+                'With the rules simplified, the remaining question was which interface model to use. I looked at how other products let non-experts configure complex sets of rules. The rule builder — Notion automations, Gmail advanced search — answers the same problem: many possible conditions, a user who only wants three of them.'
+              ],
+              image: 'constraints-3-benchmark', frOnly: true,
+              caption: 'Two references: building an automation in Notion, and Gmail’s advanced search.'
+            }
           ]
-        },
-        /* Carrousel des 4 illustrations animees (paragraphe 0, meme place que
-           l'ancien media[0]) : un seul JSON Lottie visible a la fois, choisi
-           en cliquant son libelle (figma node 34:817). N'est pas dans
-           media[] : ce n'est plus une grille statique mais un etat exclusif
-           (voir lottieCarouselMarkup()/setupLottieCarousel() dans app.js). */
+        }
+      },
+      {
+        id: 'design', label: 'Solution', title: '2. Solution',
+        /* `intro` s'affiche directement sous le titre de section, avant
+           `body` — separe du systeme body/media/carousel indexe par
+           paragraphe (voir plus bas) parce que cette phrase n'a pas de
+           media associe et doit rester au tout debut, quel que soit ce
+           qui est ajoute/retire dans `body` par la suite. Les deux elements
+           partagent un seul <p>, separes par un <br> (voir pageCase() dans
+           app.js) plutot que deux <p> distincts. */
+        intro: [
+          'After benchmarking tools addressing similar needs, a rule-builder interface emerged as an optimal solution for the configuration.',
+          'Several principles guided the interface design : '
+        ],
+        body: [],
+        /* Les quatre principes, en liste a puces (ul/li) plutot qu'un
+           paragraphe : rendue juste apres `intro`, comme l'ancien body[0]
+           qu'elle remplace ("Four principles drove the interfaces." retiree,
+           la phrase d'intro annonce deja la liste). */
+        list: [
+          'Characteristics only appear when they are needed (progressive disclosure).',
+          'The most common options are preselected by default.',
+          'The process is split into steps to stay digestible.',
+          'Contextual help and illustrations sit alongside configuration to reduce errors.'
+        ],
+        /* Deux captures exportees depuis Figma (node 46:1093, "Images"),
+           montrant l'interface de configuration reelle plutot que les
+           anciennes captures Contra du media[] retire. Locales (assets/img/,
+           paire webp+png comme les figures extraites des PDF) plutot que
+           distantes : meme raisonnement que pour heroMedia, pas de
+           dependance externe. Rendues apres tous les paragraphes (voir
+           pageCase() dans app.js) via figureFor(), regroupees dans une
+           .media-grid — puis le widget interactif juste en dessous. */
+        mockups: [
+          { image: 'constraints-solution-list', caption: 'Constraints list' },
+          { image: 'constraints-solution-configure', caption: 'Configure a constraint' }
+        ],
+        /* Carrousel des 4 illustrations animees : un seul JSON Lottie visible
+           a la fois, choisi en cliquant son libelle (figma node 34:817).
+           N'est plus rattache a un paragraphe de body[] (deplace apres le
+           widget interactif, voir `helpers` plus bas) : ce n'est pas une
+           grille statique mais un etat exclusif (voir
+           lottieCarouselMarkup()/setupLottieCarousel() dans app.js). */
         lottieCarousel: [
           { src: 'assets/media/Blocking-complete lottie.json', label: 'Blocking' },
           { src: 'assets/media/Protection-(hollow).json', label: 'Protection' },
           { src: 'assets/media/Spacing lottie.json', label: 'Spacing' },
           { src: 'assets/media/Availability.json', label: 'Availability' }
         ],
-        /* Widget interactif : le "sentence builder" decrit au paragraphe 3
-           ("...restates the rule as a plain-language sentence..."). N'est
-           PAS un media (voir constraintBuilderMarkup()/setupConstraintBuilder()
-           dans app.js) : rendu apres la figure des mockups, pas entre deux
-           paragraphes, donc en dehors du systeme media[]/mediaGroup(). */
+        /* Widget interactif : le "sentence builder". N'est PAS un media (voir
+           constraintBuilderMarkup()/setupConstraintBuilder() dans app.js) :
+           rendu apres la figure des mockups, pas entre deux paragraphes,
+           donc en dehors du systeme media[]/mediaGroup(). L'intro ne
+           renvoie plus a "the direction described above" (le paragraphe qui
+           la decrivait a ete retire) : reformulee pour rester autonome.
+           `caption` remplace l'ancien `title` : affiche sous le widget,
+           comme une figcaption, plutot qu'en kicker au-dessus. */
         builder: {
-          title: 'Try the sentence-builder direction',
-          intro: 'A simplified version of the second direction described above — the same example from the paragraph, editable.',
+          caption: 'Interactive rule-builder',
+          intro: 'Configuring a rule restates it as a plain-language sentence — try it below, editable.',
 
           physicians: [
             { value: 'marc-tremblay', label: 'Marc Tremblay' },
@@ -336,6 +401,13 @@ export const PROJECTS = [
             tasks: ['care-floor-2'],
             days: ['mon', 'tue', 'wed', 'thu', 'fri']
           }
+        },
+        /* Rendu apres le widget interactif (voir pageCase() dans app.js) :
+           titre en gras (meme taille que le paragraphe, pas de kicker
+           dedie) suivi du texte, puis le carrousel des 4 Lottie. */
+        helpers: {
+          title: 'Visual helpers :',
+          body: 'I created animated abstract illustrations, both to make each constraint identifiable  and to represent visually what it does.'
         }
       }
     ]

@@ -509,7 +509,7 @@ function pageCase(project) {
       <div><dt>${escapeAttr(d.csRole)}</dt><dd>${escapeAttr(c.gist.role)}</dd></div>
       <div><dt>${escapeAttr(d.csDuration)}</dt><dd>${escapeAttr(c.gist.duration)}</dd></div>
       <div><dt>${escapeAttr(d.csTeam)}</dt><dd>${escapeAttr(c.gist.team)}</dd></div>
-      <div><dt>${escapeAttr(d.csTools)}</dt><dd>${escapeAttr(c.gist.tools)}</dd></div>
+      ${c.gist.tools ? `<div><dt>${escapeAttr(d.csTools)}</dt><dd>${escapeAttr(c.gist.tools)}</dd></div>` : ''}
     </dl>
 
     <div class="pair">
@@ -517,7 +517,7 @@ function pageCase(project) {
       <div class="pair__out"><h2>${escapeAttr(d.csOutcome)}</h2><p>${escapeAttr(c.outcome)}</p></div>
     </div>
 
-    ${stats ? `<div class="stats">${stats}</div>` : ''}
+    ${stats ? `<h2 class="stats__title">${escapeAttr(d.csImpacts)}</h2><div class="stats">${stats}</div>` : ''}
 
     <div class="cs__cta">
       ${(c.extLinks || []).map(l =>
@@ -602,15 +602,32 @@ function pageCase(project) {
          l'ordre exact d'une page source sans decouper la section. */
       const parts = s.body.map((p, i) => {
         const after = s.media && s.media[i] ? mediaGroup(s.media[i]) : '';
-        const carousel = s.lottieCarousel && i === 0 ? lottieCarouselMarkup(s.lottieCarousel) : '';
-        return `<p>${escapeAttr(p)}</p>${after}${carousel}`;
+        return `<p>${escapeAttr(p)}</p>${after}`;
       }).join('');
+
+      const intro = s.intro ? `<p>${s.intro.map(escapeAttr).join('<br>')}</p>` : '';
+      const list = s.list
+        ? `<ul class="cs-sec__list">${s.list.map(li => `<li>${escapeAttr(li)}</li>`).join('')}</ul>` : '';
+      const mockups = s.mockups
+        ? `<div class="cs-mockups">${s.mockups.map(figureFor).join('')}</div>` : '';
+      // Bloc "Visual helpers" : rendu apres le widget interactif (pas dans
+      // body[]/lottieCarousel indexe par paragraphe) — voir s.helpers dans
+      // content.js. Titre + texte dans le meme <p> (le titre reste en gras
+      // via <strong>, meme taille que le reste du paragraphe).
+      const helpers = s.helpers
+        ? `<p><strong>${escapeAttr(s.helpers.title)}</strong><br>${escapeAttr(s.helpers.body)}</p>
+           ${s.lottieCarousel ? lottieCarouselMarkup(s.lottieCarousel) : ''}` : '';
 
       sec.innerHTML = `
         <h2 class="cs-sec__title">${escapeAttr(s.title)}</h2>
+        ${intro}
+        ${list}
         ${parts}
+        ${mockups}
         ${s.image ? figureFor(s) : ''}
-        ${s.builder ? constraintBuilderMarkup(s.builder) : ''}`;
+        ${s.builder ? constraintBuilderMarkup(s.builder) : ''}
+        ${helpers}
+        ${s.moreDrawer ? moreDrawerMarkup(s.moreDrawer) : ''}`;
       secs.append(sec);
     });
     content.append(secs);
@@ -702,9 +719,12 @@ function mediaMarkup(m) {
               data-autoplay aria-label="${cap}" disablepictureinpicture></video>`
     : `<img src="${url}" alt="${cap}" loading="lazy" decoding="async">`;
   const kind = m.type === 'lottie' ? 'figure figure--remote figure--lottie' : 'figure figure--remote';
+  // `hideCaption` : garde `cap` comme aria-label/alt (accessibilite) mais
+  // masque la <figcaption> visible — utile pour un media d'ouverture qui
+  // n'a pas besoin de legende affichee sous lui.
   return `<figure class="${kind}">
       <div class="figure__frame">${inner}</div>
-      ${cap ? `<figcaption>${cap}</figcaption>` : ''}
+      ${cap && !m.hideCaption ? `<figcaption>${cap}</figcaption>` : ''}
     </figure>`;
 }
 
@@ -744,6 +764,62 @@ function figureFor(s) {
   return s.figureDrawer
     ? `<details class="figure-drawer"><summary>${escapeAttr(t().figureSeeMore)}${chevronIcon('figure-drawer__chevron')}</summary>${figure}</details>`
     : figure;
+}
+
+/* Canevas Figma en direct (iframe officielle "Partager > Integrer"), pour un
+   item de moreDrawer qui pointe vers un fichier Figma plutot qu'une image
+   exportee (voir it.embed dans content.js). aspect-ratio plutot qu'une
+   hauteur fixe : garde l'iframe proportionnee a n'importe quelle largeur de
+   colonne sans JS de mesure. */
+function embedFor(s) {
+  // Pas de `src` au depart (voir data-embed-src) : l'iframe nait a l'interieur
+  // du <details> "See more" ferme par defaut, donc display:none. Un iframe
+  // demarre ainsi ne navigue jamais vers son src meme apres ouverture du
+  // tiroir (contrairement a <img>, qui charge son image quelle que soit sa
+  // visibilite) — d'ou l'affectation differee au premier "toggle", voir
+  // setupMoreDrawerEmbeds() plus bas.
+  return `
+    <figure class="figure cs-more__embed-figure">
+      <div class="cs-more__embed">
+        <iframe data-embed-src="${escapeAttr(s.embed)}" title="${escapeAttr(s.title)}" allowfullscreen></iframe>
+      </div>
+      <figcaption>${escapeAttr(s.caption || '')}</figcaption>
+    </figure>`;
+}
+
+/* Charge les iframes Figma d'un tiroir "See more" (voir embedFor() ci-dessus)
+   au premier "toggle" vers l'etat ouvert, plutot qu'a l'affichage initial de
+   la page : evite le piege display:none-a-la-creation, et epargne la requete
+   Figma aux visiteurs qui n'ouvrent jamais le tiroir. */
+function setupMoreDrawerEmbeds() {
+  $$('.cs-more').forEach(details => {
+    const load = () => {
+      if (!details.open) return;
+      $$('iframe[data-embed-src]', details).forEach(f => { f.src = f.dataset.embedSrc; });
+    };
+    load();
+    details.addEventListener('toggle', load);
+  });
+}
+
+/* Tiroir "See more of the process" (voir content.js, champ `moreDrawer`
+   d'une section) : regroupe des etapes secondaires qui n'ont plus leur
+   propre entree dans la nav laterale, derriere un unique <details> place a
+   la fin de la section qui les porte. Chaque item reutilise figureFor() pour
+   sa figure (ou embedFor() pour un canevas Figma en direct, voir it.embed)
+   — sans son propre figureDrawer imbrique, l'ensemble etant deja derriere ce
+   tiroir. */
+function moreDrawerMarkup(drawer) {
+  const items = drawer.items.map(it => `
+    <div class="cs-more__item">
+      <h3 class="cs-more__title">${escapeAttr(it.title)}</h3>
+      ${it.body.map(p => `<p>${escapeAttr(p)}</p>`).join('')}
+      ${it.embed ? embedFor(it) : (it.image ? figureFor(it) : '')}
+    </div>`).join('');
+  return `<details class="figure-drawer cs-more">
+      <summary>${escapeAttr(drawer.label)}${chevronIcon('figure-drawer__chevron')}</summary>
+      <div class="cs-more__body">${items}</div>
+    </details>`;
 }
 
 // Chevron Lucide (icone "chevron-down", licence MIT) : un <path> copie
@@ -1007,7 +1083,6 @@ function constraintBuilderMarkup(cfg) {
 
   return `
     <div class="constraint-builder" data-constraint-builder>
-      <p class="cbuild__intro">${escapeAttr(cfg.title)}</p>
       <div class="cbuild__frame">
         <div class="cbuild__card">
           <div class="cbuild__layout">
@@ -1017,6 +1092,7 @@ function constraintBuilderMarkup(cfg) {
                 Physician(s)
                 ${physicianField}
                 ${constraintField}
+                <span class="cbuild__break" aria-hidden="true"></span>
                 <span data-role="task-word">${d.tasks.length > 1 ? 'the tasks' : 'the task'}</span>
                 ${taskField}
                 from
@@ -1053,6 +1129,7 @@ function constraintBuilderMarkup(cfg) {
           </div>
         </div>
       </div>
+      <p class="cbuild__caption">${escapeAttr(cfg.caption)}</p>
     </div>`;
 }
 
@@ -1537,6 +1614,7 @@ function render() {
     main.focus({ preventScroll: true });
 
     if (route.name === 'case') setupCaseBehaviours();
+    if (route.name === 'case') setupMoreDrawerEmbeds();
     if (route.name === 'case' && route.project.slug === 'constraints') setupConstraintBuilder();
     if (route.name === 'case' && route.project.slug === 'constraints') setupLottieCarousel();
     setupScrollProgress();

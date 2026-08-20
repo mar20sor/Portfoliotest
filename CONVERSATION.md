@@ -4,7 +4,7 @@
 > Il enregistre **ce qui a été décidé, pourquoi, et ce qui reste à faire**.
 > Si vous reprenez le projet dans une nouvelle session, lisez ce fichier d'abord.
 
-**Dernière mise à jour :** 19 août 2026 — session 7 (vignette vidéo de la carte « Scheduling constraints » sur la page d'accueil : `object-fit: contain`, fond de la lettreboxe assorti à la vidéo, légère réduction de taille, puis recadrage au clip-path pour masquer une bordure présente dans le fichier source lui-même ; suppression du soulignement des titres d'étude de cas ; persistance du prénom du visiteur en `localStorage` avec expiration à 1h ; branche `Edit-constraint-thumbnail` commitée, poussée vers `origin`, fusionnée dans `main`, `main` poussé vers `origin`, branche supprimée)
+**Dernière mise à jour :** 20 août 2026 — session 8 (restructuration complète de l'étude de cas « Scheduling constraints » : sections « Process »/« Solution » réorganisées, tiroir « See more of the process » avec un item image et un item embed Figma en direct, widget « sentence builder » réduit à 60 % et retravaillé, listes à puces, deux bugs corrigés — iframe dans un `<details>` fermé, CSP sans `frame-src` — un point non résolu — rendu de l'embed Figma pas confirmé visuellement, à vérifier en production ; branche `constraint-structure` commitée, poussée vers `origin`, fusionnée dans `main`, `main` poussé vers `origin`, branche supprimée)
 
 ---
 
@@ -251,12 +251,18 @@ l'étude de cas suivante · responsive · code annoté ligne à ligne.
 7. **Vérifier le lien du CV.** Il pointe encore vers `marvinsrd.com/documents/`.
 8. **Tester sur un vrai téléphone.** Le responsive a été vérifié par le code,
    pas sur un appareil.
+9. **Vérifier le rendu de l'embed Figma en production** (étude de cas
+   Contraintes, tiroir « See more of the process », premier item). Corrigé
+   pendant la session 8 (`frame-src` manquant en CSP) mais jamais confirmé
+   visuellement — voir « Constraints case study restructure » dans
+   `CLAUDE.md` et le détail dans la session 8 ci-dessous. Si ça ne s'affiche
+   toujours pas une fois déployé, revenir à une image statique.
 
 ### Souhaitable
 
-9. Figures anglaises pour Contraintes et Transfert de DME (voir 3.5).
-10. Compresser davantage les images si le temps de chargement gêne.
-11. Ajouter une image `og:image` pour les partages LinkedIn.
+10. Figures anglaises pour Contraintes et Transfert de DME (voir 3.5).
+11. Compresser davantage les images si le temps de chargement gêne.
+12. Ajouter une image `og:image` pour les partages LinkedIn.
 
 ---
 
@@ -798,3 +804,95 @@ d'accueil (`.card__media`, `styles.css` ; `projectCard()`/`cardMedia()`,
 fusionné dans `main` (`--no-ff`), `main` poussé vers `origin`. Branche
 `Edit-constraint-thumbnail` supprimée, en local et sur `origin`, sur demande
 explicite.
+
+### Session 8 — 20 août 2026 (branche `constraint-structure`, fusionnée dans `main`)
+
+Restructuration en profondeur de l'étude de cas « Scheduling constraints »
+(`content.js` → section `constraints`), en une longue série de demandes
+successives et affinées au fil de la session plutôt qu'une seule spécification
+initiale — voir le détail par sous-thème ci-dessous.
+
+- **En-tête et gist.** Légende « Configuring a constraint, end to end » sous
+  la vidéo poster retirée (`heroMedia.hideCaption: true` — la légende reste
+  en `aria-label` pour l'accessibilité, juste plus affichée visuellement) ;
+  `tools` retiré du gist (`gist.tools` redevenu optionnel dans `pageCase()` —
+  la ligne « Tools » du tableau ne s'affiche plus que si le champ existe,
+  sans affecter les autres projets qui le renseignent toujours) ; textes
+  `problem`/`outcome` remplacés mot pour mot par ceux fournis.
+- **Stats.** Chiffres bleus agrandis (`clamp` doublé, `1.6rem/3.2vw/2.2rem`
+  → `3.2rem/6.4vw/4.4rem` — même mesure vw/rem, plancher garanti ≥ 50px) ;
+  entrée « 4 months » retirée ; section renommée « Impacts »
+  (`d.csImpacts`, nouveau libellé dans `UI`).
+- **Section « Process » (ex « Scoping and audit »).** Renommée, texte
+  remplacé, et son ancien contenu détaillé (« 2. Mapping the 24 constraints »,
+  « 3. Benchmark ») déplacé derrière un tiroir `<details>` unique
+  (`moreDrawer`, voir `moreDrawerMarkup()` dans `app.js` et la note dédiée
+  dans `CLAUDE.md`) plutôt que deux entrées de nav séparées — chaque item du
+  tiroir garde son propre titre/paragraphes/figure.
+- **Section « Solution » (ex « Design »).** Plusieurs allers-retours :
+  paragraphes retirés puis un nouveau `intro` ajouté sous le titre ; « Four
+  principles drove the interfaces. » retiré et le reste transformé en liste
+  à puces (`s.list`, nouveau champ — voir `CLAUDE.md`) ; l'ancienne grille de
+  3 images Contra remplacée par 2 mockups locaux exportés depuis Figma
+  (`s.mockups`, dans un `.cs-mockups` plein cadre sans bordure/padding, pas
+  la grille `.media-grid` partagée) ; les mockups re-exportés une seconde
+  fois quand le fichier Figma source a changé côté Mar, et réordonnés
+  (« Constraints list » avant « Configure a constraint »).
+- **Widget « sentence builder » (`.constraint-builder`).** Plusieurs
+  itérations de taille : réduit à 70 % puis 60 % (voir la note dédiée dans
+  `CLAUDE.md` sur pourquoi `zoom` a été essayé puis abandonné — un bloc
+  `width: auto` reste calé à 100 % du conteneur via shrink-to-fit dès que son
+  contenu non enveloppé est plus large, `zoom` ou pas), centré ; l'écart
+  entre `.cbuild__left`/`.cbuild__right` ajusté trois fois (30px → 20px) et
+  le ratio des colonnes retouché (`5fr 3fr` → `4fr 4fr` → `5fr 3.5fr`,
+  cherché empiriquement pour que la phrase récapitulative tienne sur
+  exactement 2 lignes sans casser la colonne de gauche sur 4) ; « the task »
+  forcé sur sa propre ligne via `.cbuild__break` (item flex de largeur 100 %,
+  hauteur nulle) plutôt que de dépendre du retour à la ligne naturel ; titre
+  « Try the sentence-builder direction » retiré, remplacé par une légende
+  « Interactive rule-builder » sous le cadre (`cbuild__title` → `cbuild__caption`,
+  déplacée de kicker au-dessus à figcaption en-dessous).
+- **Bloc « Visual helpers ».** Sorti du système `body[]`/`lottieCarousel`
+  indexé par paragraphe (où il vivait comme `body[0]`) et déplacé après le
+  widget interactif (`s.helpers`, nouveau champ — titre en gras et texte
+  dans le même `<p>`, séparés par un `<br>`, suivis du carrousel Lottie).
+- **Bug CSS découvert et corrigé : listes à puces invisibles.** Le reset
+  global `ul,ol { list-style: none }` (`styles.css`) retirait les puces de
+  `.cs-sec__list` sans que ce soit voulu pour cette liste précise — corrigé
+  en restaurant `list-style: disc` explicitement sur cette classe.
+- **Bug JS découvert et corrigé : iframe dans un `<details>` fermé ne
+  charge jamais.** En remplaçant l'image « Mapping the 24 constraints » du
+  tiroir par un canevas Figma en direct (embed officiel `figma.com/embed`,
+  fichier « Constraints EN (Contra) », node 1:351), l'iframe restait
+  visuellement cassée même après ouverture du tiroir : un `<iframe>` créé
+  dans un `<details>` fermé (`display: none`) ne déclenche jamais sa requête
+  réseau, contrairement à une `<img>`. Corrigé avec `data-embed-src` (pas de
+  `src` initial) + `setupMoreDrawerEmbeds()`, qui promeut `data-embed-src` →
+  `src` au premier `toggle` vers l'état ouvert du `<details>` — voir la note
+  dédiée dans `CLAUDE.md`.
+- **Bug de sécurité découvert et corrigé en cours de route : CSP sans
+  `frame-src`.** Le même embed Figma restait bloqué même après le correctif
+  ci-dessus : la CSP de `index.html` n'avait pas de directive `frame-src`,
+  donc retombait sur `default-src 'self'`, qui interdit d'encadrer n'importe
+  quelle origine externe — cela aurait cassé l'embed une fois déployé, pas
+  seulement en test local. Ajout de `frame-src https://www.figma.com;`.
+- **Non résolu en fin de session : rendu de l'embed Figma pas confirmé
+  visuellement.** Même après le correctif CSP (plus aucune violation dans la
+  console), l'iframe n'a jamais fini de peindre pendant les vérifications de
+  cette session — l'onglet de test automatisé devenait instable/non
+  réactif pendant le chargement du canevas Figma, avec seulement une
+  poignée de requêtes réseau observées (`performance.getEntriesByType`)
+  avant blocage. Hypothèse retenue : contrainte WebGL/GPU propre à
+  l'environnement de test automatisé (sandbox), pas un défaut du code — mais
+  ce n'est qu'une hypothèse. **À vérifier sur l'URL réellement déployée,
+  dans un navigateur ordinaire**, avant de considérer ce point terminé ; si
+  ça casse aussi en production, revenir à une image statique exportée
+  (comme celle que cet embed remplace).
+
+**État Git.** Commité sur `constraint-structure`, poussé vers `origin` via la
+méthode `push-temp` habituelle (voir « Pushing to origin » dans
+`CLAUDE.md`), fusionné dans `main`, `main` poussé vers `origin`. Branche
+`constraint-structure` supprimée en local (jamais existé sur `origin` en
+tant que telle, seul `push-temp` y a été poussé puis supprimé). Mise à jour
+de `CLAUDE.md`/`CONVERSATION.md` : commit distinct, local à `main` — non
+poussé vers `origin`, comme d'habitude.

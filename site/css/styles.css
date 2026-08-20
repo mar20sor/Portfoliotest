@@ -706,13 +706,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .pair__out p { color: var(--ink); }
 
 /* Les chiffres marquants : ce que le recruteur retiendra. */
+.stats__title { font-size: var(--fs-h3); font-weight: var(--w-semibold); margin-bottom: var(--s4); }
 .stats {
   display: grid; gap: var(--s5);
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   margin-bottom: var(--s7);
 }
 .stat__n {
-  font-size: clamp(1.6rem, 3.2vw, 2.2rem); font-weight: var(--w-semibold);
+  /* Plancher a 3.2rem (51.2px, >= 50px demandes) quel que soit le viewport —
+     meme mesure clamp(rem, vw, rem) qu'avant, valeurs doublees. */
+  font-size: clamp(3.2rem, 6.4vw, 4.4rem); font-weight: var(--w-semibold);
   line-height: 1.05; color: var(--accent);
   /* Aligne les chiffres sur une meme largeur quand plusieurs se suivent. */
   font-variant-numeric: tabular-nums;
@@ -789,6 +792,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cs-sec__title { font-size: var(--fs-h2); margin-bottom: var(--s4); font-weight: var(--w-medium); }
 .cs-sec p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }
 .cs-sec p:last-child { margin-bottom: 0; }
+/* Meme mesure/couleur que .cs-sec p, avec les puces natives ul : liste des
+   quatre principes (voir s.list dans content.js), a la place d'un paragraphe
+   unique. */
+.cs-sec__list {
+  max-width: var(--measure); margin: 0 0 var(--s4); padding-left: 1.2em;
+  color: var(--ink-soft);
+  /* Le reset global (ul,ol { list-style:none } plus haut dans ce fichier)
+     retire les puces par defaut : on les restaure ici, cette liste-ci n'est
+     pas decorative. */
+  list-style: disc;
+}
+.cs-sec__list li { margin-bottom: 0; }
 
 /* Les visuels extraits des PDF. Cadre blanc : les maquettes claires ont
    besoin d'un fond neutre pour ne pas se dissoudre dans le bleu. */
@@ -858,6 +873,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .media-grid .figure { margin-block: 0; }
 .media-single { margin-block: var(--s6); }
 
+/* Maquettes du rule-builder (constraints, section design) : pleine largeur,
+   empilees, sans cadre — ce sont deja des captures d'ecran nettes qui n'ont
+   pas besoin du fond/liser/marge des .figure standard. */
+.cs-mockups { margin-block: var(--s6); }
+.cs-mockups .figure { margin-block: var(--s5); }
+.cs-mockups .figure:first-child { margin-top: 0; }
+.cs-mockups .figure:last-child { margin-bottom: 0; }
+.cs-mockups .figure__frame { padding: 0; border: none; border-radius: 0; background: none; }
+.cs-mockups .figure img { width: 100%; border-radius: var(--radius-sm); }
+
 /* Le media d'ouverture d'une etude de cas : pleine largeur, juste sous
    le sous-titre (voir pageCase() dans app.js — deplace ici volontairement,
    au lieu du bas de l'en-tete, pour ancrer la page des l'arrivee). */
@@ -883,28 +908,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
   object-fit: contain;
 }
 
-/* ---- Contraintes, section "Design" : mosaique des captures --------------
-   Ciblage par ID de section plutot qu'une classe dediee dans mediaGroup()
-   (app.js) : seule cette section a un groupe de medias a traiter
-   differemment des autres, une nouvelle classe pour un cas unique aurait
-   complexifie le generateur pour rien.
-   Ne deborde pas de la colonne de contenu : sa largeur reste celle de la
-   figure du Benchmark juste au-dessus, pour que l'oeil retrouve la meme
-   largeur de page tout du long de la section. Les 4 illustrations animees
-   qui occupaient jadis media[0] sont maintenant le carrousel ci-dessous
-   (.lottie-carousel), plus une grille statique. */
-#sec-design .media-grid {
-  /* Les 3 captures sur une seule rangee (jamais de retour a la ligne, a la
-     difference d'une grille auto-adaptative) : ensemble, elles retrouvent
-     la largeur totale de la figure du Benchmark. object-fit: cover les
-     recadre a une taille identique malgre des captures d'ecran de
-     proportions differentes a l'origine. */
-  grid-template-columns: repeat(3, 1fr);
-}
-#sec-design .media-grid .figure--remote img {
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-}
+/* ---- Contraintes, section "Solution" : les deux captures (mockups,
+   content.js) -------------------------------------------------------------
+   Aucune regle dediee necessaire : ce sont des figures locales normales
+   (figureFor(), meme cadre blanc que Mapping/Benchmark) regroupees dans la
+   .media-grid generique — sa grille auto-adaptative (voir plus haut) les
+   place cote a cote sur desktop et les empile sur mobile sans media query
+   propre. Les 4 illustrations animees qui occupaient jadis media[0] sont le
+   carrousel ci-dessous (.lottie-carousel). */
 
 /* ---- Contraintes, section "Design" : carrousel des 4 illustrations
    animees (voir lottieCarouselMarkup()/setupLottieCarousel() dans app.js,
@@ -981,11 +992,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
    les tokens du site (--accent bleu, Raleway) — c'est la seule zone du site
    qui deroge au design system, deliberement, pour ce widget precis. */
 .constraint-builder { margin-block: var(--s6); font-family: 'Roboto', 'Segoe UI', sans-serif; }
-.cbuild__intro {
-  font-size: var(--fs-tiny); font-weight: var(--w-semibold);
-  text-transform: uppercase; letter-spacing: .06em;
-  color: var(--ink-faint); margin-bottom: var(--s4);
-  font-family: var(--font);
+/* Legende sous le widget, meme traitement que .figure figcaption (police du
+   site, pas Roboto — coherent avec les legendes des mockups juste au-dessus). */
+.cbuild__caption {
+  margin-top: var(--s3);
+  font-size: var(--fs-small); color: var(--ink-faint);
+  line-height: 1.5; font-family: var(--font);
 }
 
 /* Le cadre degrade (image de fond identique a la maquette) dans lequel la
@@ -997,39 +1009,53 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-radius: 20px;
   padding: clamp(20px, 4vw, 56px);
 }
+/* Carte reduite a 70% de sa taille d'origine (largeur, police, illustration,
+   espacements — chaque valeur ci-dessous est la valeur d'origine * .7),
+   centree dans le cadre degrade. zoom aurait ete plus simple, mais un bloc
+   width:auto rempli quand meme 100% du cadre (shrink-to-fit resout a la
+   largeur disponible des que le contenu non enveloppe est plus large qu'elle) :
+   d'ou un width explicite plutot qu'un simple zoom. */
 .cbuild__card {
+  width: 60%;
+  margin-inline: auto;
   background: #fff;
   border: 1px solid #eaeaf9;
-  border-radius: 16px;
-  padding: 24px;
+  border-radius: 11px;
+  padding: 17px;
   color: #303030;
 }
-.cbuild__card-title { font-size: 20px; font-weight: 500; margin-bottom: 16px; }
+.cbuild__card-title { font-size: 14px; font-weight: 500; margin-bottom: 11px; }
 
 /* Deux colonnes : la phrase a gauche, l'apercu (illustration + recap) a
    droite, dans un ratio proche de celui de la maquette (550:332) — replie a
    une colonne sous 860px (regle ajoutee dans le bloc @media existant, pas un
    nouveau point de rupture). */
-.cbuild__layout { display: grid; grid-template-columns: 5fr 3fr; gap: 32px; align-items: start; }
+.cbuild__layout { display: grid; grid-template-columns: 5fr 3.5fr; gap: 20px; align-items: start; }
 
 .cbuild__sentence {
-  font-size: 16px; line-height: 1.7; color: #303030;
-  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  font-size: 11px; line-height: 1.7; color: #303030;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 7px;
 }
+/* Force "the task [...] from [...]" sur sa propre ligne, quelle que soit la
+   largeur disponible : un item flex de largeur 100% et hauteur nulle avant
+   lui suffit a le pousser a la ligne suivante (flex-wrap), sans dependre du
+   retour a la ligne naturel qui variait avec la largeur du champ physicien/
+   contrainte. */
+.cbuild__break { flex-basis: 100%; height: 0; }
 .cbuild__field { display: inline-flex; align-items: center; position: relative; }
 .cbuild__field--constraint { position: relative; }
 .cbuild__field-chevron {
-  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-  width: 20px; height: 20px; pointer-events: none;
+  position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px; pointer-events: none;
 }
 
 .cbuild__select {
-  font: inherit; font-size: 16px;
+  font: inherit; font-size: 11px;
   color: #371495;
   background: #f7f3fe;
   border: 2px solid transparent;
-  border-radius: 4px;
-  padding: 8px 36px 8px 16px;
+  border-radius: 3px;
+  padding: 6px 25px 6px 11px;
   appearance: none;
   cursor: pointer;
   transition: border-color .18s var(--ease), background .18s var(--ease);
@@ -1038,22 +1064,22 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cbuild__select:focus-visible { outline: none; border-color: #371495; background: #fff; }
 .cbuild__trigger {
   display: inline-flex; align-items: center;
-  background: #f7f3fe; border: 2px solid transparent; border-radius: 4px;
-  padding: 8px 36px 8px 16px; font: inherit; font-size: 16px; color: #371495; cursor: pointer;
+  background: #f7f3fe; border: 2px solid transparent; border-radius: 3px;
+  padding: 6px 25px 6px 11px; font: inherit; font-size: 11px; color: #371495; cursor: pointer;
   transition: border-color .18s var(--ease), background .18s var(--ease);
 }
 .cbuild__trigger:hover { background: #eee4fc; }
 .cbuild__trigger[aria-expanded="true"] { background: #fff; border-color: #371495; }
 
 .cbuild__listbox {
-  position: absolute; z-index: 5; top: calc(100% + 8px); left: 0;
-  min-width: 260px; width: max-content; max-width: min(380px, 90vw);
+  position: absolute; z-index: 5; top: calc(100% + 6px); left: 0;
+  min-width: 182px; width: max-content; max-width: min(266px, 90vw);
   background: #fff;
   border: 1px solid #eaeaf9;
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow: var(--shadow);
-  padding: 8px;
-  display: grid; gap: 4px;
+  padding: 6px;
+  display: grid; gap: 3px;
   /* Empeche tout contenu (ex. la description de "Blocking", la plus longue
      des cinq) de deborder du popover arrondi : sans overflow:hidden ici et
      min-width:0 sur .cbuild__opt-text plus bas, un flex item garde sa
@@ -1063,8 +1089,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .cbuild__listbox[hidden] { display: none; }
 .cbuild__listbox li {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px; border-radius: 6px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px; border-radius: 4px;
   cursor: pointer;
 }
 /* Survol violet clair. Ne depend plus de aria-selected : dans le menu du
@@ -1077,27 +1103,27 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cbuild__listbox li:hover .cbuild__opt-predicate,
 .cbuild__listbox li:focus .cbuild__opt-predicate { color: #371495; }
 .cbuild__opt-icon {
-  width: 36px; height: 36px; flex: none;
+  width: 25px; height: 25px; flex: none;
   display: grid; place-items: center;
-  background: #eaeaf9; border-radius: 4px;
+  background: #eaeaf9; border-radius: 3px;
 }
-.cbuild__opt-icon img { width: 20px; height: 20px; }
+.cbuild__opt-icon img { width: 14px; height: 14px; }
 /* Case a cocher decorative (taches, multi-selection) : l'etat reel est
    porte par aria-selected sur le <li> (voir taskCheckboxRows, app.js) ; ici
    on ne fait que dessiner un carre qui se remplit en fonction de cet
    attribut, cochee ou non. */
 .cbuild__opt-checkbox {
-  width: 20px; height: 20px; flex: none;
+  width: 14px; height: 14px; flex: none;
   display: flex; align-items: center; justify-content: center;
-  border: 1.5px solid #9479f3; border-radius: 6px;
+  border: 1.5px solid #9479f3; border-radius: 4px;
   background: #fff;
 }
 li[aria-selected="true"] .cbuild__opt-checkbox { background: #371495; border-color: #371495; }
-.cbuild__opt-check { width: 12px; height: 10px; display: block; opacity: 0; }
+.cbuild__opt-check { width: 8px; height: 7px; display: block; opacity: 0; }
 li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 .cbuild__opt-text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
-.cbuild__opt-predicate { font-size: 14px; line-height: 20px; color: #353a45; overflow-wrap: break-word; }
-.cbuild__opt-desc { font-size: 12px; line-height: 18px; color: #353a45; overflow-wrap: break-word; }
+.cbuild__opt-predicate { font-size: 10px; line-height: 14px; color: #353a45; overflow-wrap: break-word; }
+.cbuild__opt-desc { font-size: 8px; line-height: 13px; color: #353a45; overflow-wrap: break-word; }
 
 /* ---- Panneau "Limit constraint" (jours) --------------------------------
    Une seule boite (chevron + contenu), separee de la phrase : le champ
@@ -1106,8 +1132,8 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    "Days" en titre, puis le picker), comme dans la maquette Figma (node
    18:169) plutot que la fusion "resume + tiroir" des versions precedentes. */
 .cbuild__constraint-info {
-  margin-top: 24px; padding: 24px;
-  background: rgba(238,232,253,.5); border-radius: 4px;
+  margin-top: 17px; padding: 17px;
+  background: rgba(238,232,253,.5); border-radius: 3px;
 }
 /* Le panneau entier (tete + corps) est masque par defaut ([hidden] sur
    .cbuild__constraint-info, voir constraintBuilderMarkup()/setupConstraintBuilder()
@@ -1116,27 +1142,27 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    sous-etat visible en permanence. */
 .cbuild__constraint-info[hidden] { display: none; }
 .cbuild__info-head { display: flex; align-items: center; }
-.cbuild__info-body { min-width: 0; margin-top: 24px; }
+.cbuild__info-body { min-width: 0; margin-top: 17px; }
 .cbuild__info-body[hidden] { display: none; }
 .cbuild__drawer-kicker {
-  display: flex; align-items: center; gap: 4px;
-  font-size: 14px; color: #371495; margin: 0;
+  display: flex; align-items: center; gap: 3px;
+  font-size: 10px; color: #371495; margin: 0;
 }
 /* .cbuild__info-body prefixe : sans lui, la specificite d'un simple .cbuild__drawer-title
    (0,1,0) perd face a .cs-sec p (0,1,1) — le <p> generique des sections de cas —
    et margin-bottom repasse a var(--s4) malgre cette regle. */
-.cbuild__info-body .cbuild__drawer-title { font-size: 20px; font-weight: 500; color: #303030; margin: 0; }
-.cbuild__drawer-hint { font-size: 16px; color: #303030; margin: 0 0 24px; }
+.cbuild__info-body .cbuild__drawer-title { font-size: 14px; font-weight: 500; color: #303030; margin: 0; }
+.cbuild__drawer-hint { font-size: 11px; color: #303030; margin: 0 0 17px; }
 .cbuild__select-all {
-  display: block; font: inherit; font-size: 16px; line-height: 16px;
-  color: #371495; background: none; border: none; padding: 0; margin: 0 0 12px;
+  display: block; font: inherit; font-size: 11px; line-height: 11px;
+  color: #371495; background: none; border: none; padding: 0; margin: 0 0 8px;
   cursor: pointer;
 }
 .cbuild__select-all:hover { text-decoration: underline; }
-.cbuild__days { display: flex; flex-wrap: wrap; gap: 8px; }
+.cbuild__days { display: flex; flex-wrap: wrap; gap: 6px; }
 .cbuild__day {
-  font: inherit; font-size: 16px; text-transform: uppercase;
-  padding: 8px; min-width: 42px; border-radius: 4px;
+  font: inherit; font-size: 11px; text-transform: uppercase;
+  padding: 6px; min-width: 29px; border-radius: 3px;
   border: 1.5px solid #9479f3; background: transparent; color: #371495;
   cursor: pointer; transition: background .18s var(--ease), color .18s var(--ease);
 }
@@ -1159,12 +1185,12 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   display: flex; flex-direction: column; align-items: center; text-align: center;
 }
 .cbuild__illu {
-  width: 100%; margin-bottom: 16px;
+  width: 100%; margin-bottom: 11px;
   display: flex; align-items: center; justify-content: center;
-  background: #e8e2fb; border-radius: 10px; padding: 24px 16px;
+  background: #e8e2fb; border-radius: 7px; padding: 17px 11px;
 }
 .cbuild__illu-graphic {
-  position: relative; width: 100%; max-width: 210px;
+  position: relative; width: 100%; max-width: 147px;
   aspect-ratio: 244 / 262.989;
   margin-inline: auto;
   /* --illu-count (mis a jour par updatePreview(), app.js) pilote --illu-base
@@ -1224,7 +1250,7 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 }
 .cbuild__illu-bracket-label {
   position: absolute; left: 84.84%; top: 52.48%; transform: translateY(-50%);
-  font-size: 16px; color: rgba(55,20,149,.7); white-space: nowrap;
+  font-size: 11px; color: rgba(55,20,149,.7); white-space: nowrap;
 }
 /* Time a gauche, Tasks a droite (au-dessus des losanges) — fidele a la
    maquette Figma (node 18:383) : le libelle des taches n'est plus empile
@@ -1245,27 +1271,27 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 .cbuild__illu-label { position: absolute; text-align: left; }
 .cbuild__illu-label--time { top: 0; left: 0; }
 .cbuild__illu-label--tasks { top: 80%; right: 25%; }
-.cbuild__illu-label dt { font-size: 12px; color: rgba(55,20,149,.8); }
-.cbuild__illu-label dd { font-size: 16px; font-weight: 500; color: #371495; margin: 0; white-space: nowrap; }
+.cbuild__illu-label dt { font-size: 8px; color: rgba(55,20,149,.8); }
+.cbuild__illu-label dd { font-size: 11px; font-weight: 500; color: #371495; margin: 0; white-space: nowrap; }
 /* .cbuild__right prefixe pour la meme raison que .cbuild__info-body plus
    haut : .cs-sec p (0,1,1) bat sinon un simple .cbuild__preview-title
    (0,1,0) et margin-bottom repasse a var(--s4). */
-.cbuild__right .cbuild__preview-title { align-self: flex-start; text-align: left; font-size: 20px; font-weight: 500; color: #303030; margin: 0 0 12px; }
+.cbuild__right .cbuild__preview-title { align-self: flex-start; text-align: left; font-size: 14px; font-weight: 500; color: #303030; margin: 0 0 8px; }
 .cbuild__recap {
-  /* +4px par rapport a la simple ligne 1.6 : espace un peu plus les lignes
-     de la phrase quand elle passe a la ligne (pastilles + texte se
-     touchaient visuellement d'une ligne a l'autre). */
-  font-size: 16px; line-height: calc(1.6em + 4px); color: #303030; text-align: left; margin: 0;
+  /* +4px (0.7 * 4 ≈ 3px) par rapport a la simple ligne 1.6 : espace un peu
+     plus les lignes de la phrase quand elle passe a la ligne (pastilles +
+     texte se touchaient visuellement d'une ligne a l'autre). */
+  font-size: 11px; line-height: calc(1.6em + 3px); color: #303030; text-align: left; margin: 0;
 }
 .cbuild__pill {
   display: inline-flex; align-items: center;
   /* marge verticale : sans elle, deux pastilles sur deux lignes consecutives
      de la phrase (quand elle passe a la ligne) se touchent quasiment — voir
      leur hauteur (padding + ligne) face a line-height de .cbuild__recap. */
-  margin-block: 4px;
+  margin-block: 3px;
   background: #e3defb;
   color: #371495; font-weight: 400;
-  padding: 4px 12px; border-radius: 8px;
+  padding: 3px 8px; border-radius: 6px;
 }
 
 /* ---- Figure repliee dans un tiroir "En voir plus" ----------------------
@@ -1294,6 +1320,28 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 }
 .figure-drawer[open] .figure-drawer__chevron { transform: rotate(180deg); }
 .figure-drawer .figure { margin-top: var(--s3); margin-bottom: 0; }
+
+/* ---- Tiroir "See more of the process" (.cs-more, content.js: moreDrawer) -
+   Meme <details> que .figure-drawer ci-dessus (styles de summary/chevron
+   partages), mais son contenu est fait de plusieurs etapes completes
+   (titre + paragraphes + figure) plutot que d'une seule figure. */
+.cs-more__body { margin-top: var(--s5); }
+.cs-more__item + .cs-more__item { margin-top: var(--s7); }
+.cs-more__title { font-size: var(--fs-h3); font-weight: var(--w-medium); margin-bottom: var(--s3); }
+/* Images du tiroir (mapping des 24 contraintes, benchmark) sans le cadre
+   standard de .figure__frame (fond, liser, padding) : ce sont deja des
+   captures nettes, pas des maquettes claires ayant besoin d'un fond neutre. */
+.cs-more .figure__frame { padding: 0; border: none; background: none; }
+/* Canevas Figma en direct (voir embedFor() dans app.js) : aspect-ratio plutot
+   qu'une hauteur fixe, pour rester proportionne quelle que soit la largeur
+   de la colonne (tiroir en pleine largeur ou repli mobile). */
+.cs-more__embed {
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--frame-bg);
+}
+.cs-more__embed iframe { width: 100%; height: 100%; border: none; display: block; }
 
 /* La vignette video des cartes de projet (uniquement "Scheduling
    constraints", seul projet avec heroMedia de type video). object-fit:
