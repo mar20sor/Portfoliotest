@@ -1462,22 +1462,36 @@ function componentsShowcaseDefaults(cfg, parentCfg) {
 /* Libelle du declencheur "physicien" : le nom si 1 ou 2 selectionnes, sinon
    un compte ("4 physicians selected") — meme logique que taskFieldLabel()
    pour le rule-builder, mais tenant compte de l'onglet actif (Physicians ou
-   Groups partagent le meme declencheur). */
+   Groups partagent le meme declencheur). Si l'onglet affiche est vide mais
+   que l'AUTRE categorie a deja une selection (l'utilisateur a juste bascule
+   d'onglet sans rien decocher), on continue de la montrer plutot que
+   d'afficher "Select ..." — ce texte donnerait a tort l'impression que tout
+   a ete efface. */
+function dualCategoryTriggerLabel(list, source, otherList, otherSource, word, otherWord, placeholder) {
+  const active = list.length ? { list, source, word } : otherList.length ? { list: otherList, source: otherSource, word: otherWord } : null;
+  if (!active) return placeholder;
+  if (active.list.length <= 2) return active.list.map(v => active.source.find(s => s.value === v).label).join(', ');
+  return `${active.list.length} ${active.word} selected`;
+}
 function physicianTriggerLabel(vals, parentCfg, cfg) {
   const active = vals.physicianTab === 'physician';
   const list = active ? vals.physicians : vals.groups;
   const source = active ? parentCfg.physicians : cfg.groups;
-  if (!list.length) return active ? 'Select physicians' : 'Select groups';
-  if (list.length <= 2) return list.map(v => source.find(s => s.value === v).label).join(', ');
-  return `${list.length} ${active ? 'physicians' : 'groups'} selected`;
+  const otherList = active ? vals.groups : vals.physicians;
+  const otherSource = active ? cfg.groups : parentCfg.physicians;
+  return dualCategoryTriggerLabel(list, source, otherList, otherSource,
+    active ? 'physicians' : 'groups', active ? 'groups' : 'physicians',
+    active ? 'Select physicians' : 'Select groups');
 }
 function taskTriggerLabel(vals, parentCfg, cfg) {
   const active = vals.taskTab === 'task';
   const list = active ? vals.tasks : vals.shifts;
   const source = active ? parentCfg.tasks : cfg.shifts;
-  if (!list.length) return active ? 'Select tasks' : 'Select shifts';
-  if (list.length <= 2) return list.map(v => source.find(s => s.value === v).label).join(', ');
-  return `${list.length} ${active ? 'tasks' : 'shifts'} selected`;
+  const otherList = active ? vals.shifts : vals.tasks;
+  const otherSource = active ? cfg.shifts : parentCfg.tasks;
+  return dualCategoryTriggerLabel(list, source, otherList, otherSource,
+    active ? 'tasks' : 'shifts', active ? 'shifts' : 'tasks',
+    active ? 'Select tasks' : 'Select shifts');
 }
 
 const pluralize = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -1501,24 +1515,26 @@ function physicianGroupsSize(vals, cfg) {
 /* Pastilles croisees (node 58:2890, "Physician dropdown") : des que les
    deux onglets (physiciens individuels ET groupes) ont au moins une
    selection, le declencheur bascule du texte simple (physicianTriggerLabel,
-   qui ne montre que l'onglet actif) a un total ("N Total" = physiciens +
-   taille de chaque groupe selectionne, voir `size` dans content.js) plus une
-   pastille par categorie, chacune avec sa propre croix de suppression, plus
-   une croix globale qui vide les deux. Le total est une pure valeur
-   d'affichage : `size` est un chiffre d'exemple fixe par groupe, sans
-   roster reel derriere (la maquette elle-meme montre "223 Total" pour 4
-   personnes nommees dans toute la demo). */
+   qui ne montre que l'onglet actif) a un ".ccomp__pillgroup" — pas une
+   rangee a plat, mais un seul cadre clair qui ENGLOBE le texte "N Total"
+   (physiciens + taille de chaque groupe selectionne, voir `size` dans
+   content.js), les deux pastilles pleines Physicians/Groups (chacune avec
+   sa propre croix) et la croix globale qui vide les deux — structure fidele
+   a la maquette, pas une simplification a plat. Le total est une pure
+   valeur d'affichage : `size` est un chiffre d'exemple fixe par groupe,
+   sans roster reel derriere (la maquette elle-meme montre "223 Total" pour
+   4 personnes nommees dans toute la demo). */
 function physicianTriggerHTML(vals, parentCfg, cfg) {
   if (!vals.physicians.length || !vals.groups.length) {
     return escapeAttr(physicianTriggerLabel(vals, parentCfg, cfg));
   }
   const total = vals.physicians.length + physicianGroupsSize(vals, cfg);
   return `
-    <span class="ccomp__pillrow">
-      <span class="ccomp__pill ccomp__pill--total"><span class="ccomp__pill-label">${total} Total</span></span>
+    <span class="ccomp__pillgroup">
+      <span class="ccomp__pill-label">${total} Total</span>
       ${pillHTML('physicians', pluralize(vals.physicians.length, 'Physician'), 'Remove all physicians', true)}
       ${pillHTML('groups', pluralize(vals.groups.length, 'Group'), 'Remove all groups', true)}
-      <span class="ccomp__pill-remove ccomp__pill-remove--all" data-pill-remove="all" role="button" tabindex="0" aria-label="Clear physicians and groups">${pillCrossIcon}</span>
+      <span class="ccomp__pill-remove" data-pill-remove="all" role="button" tabindex="0" aria-label="Clear physicians and groups">${pillCrossIcon}</span>
     </span>`;
 }
 /* Meme principe (node 58:2870, "Task dropdown"), sans pastille Total : Tasks

@@ -1372,32 +1372,44 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    de deborder. */
 .ccomp__panel[data-role="physician-panel"] .ccomp__trigger { max-width: min(170px, calc(100vw - 64px)); }
 /* Pastilles croisees des declencheurs Physicians/Tasks (physicianTriggerHTML/
-   taskTriggerHTML, app.js), reprenant node 58:2890/58:2870 : un texte simple
-   (physicianTriggerLabel/taskTriggerLabel) suffit tant qu'une seule des deux
-   categories a une selection ; des que les deux en ont une, le texte est
-   remplace par cette rangee de pastilles pour montrer les deux a la fois. */
-.ccomp__pillrow { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+   taskTriggerHTML, app.js) : un texte simple (physicianTriggerLabel/
+   taskTriggerLabel) suffit tant qu'une seule des deux categories a une
+   selection ; des que les deux en ont une, le texte est remplace par ces
+   pastilles pour montrer les deux a la fois.
+   Task (node 58:2870) : deux pastilles independantes, cote a cote.
+   Physicians (node 58:2890) : structure imbriquee, pas une rangee de
+   pastilles a plat — .ccomp__pillgroup est le cadre clair (meme fond que le
+   texte "Total" qu'il contient, donc aucune bordure visible entre les deux)
+   qui ENGLOBE le texte Total, les deux pastilles pleines Physicians/Groups
+   et la croix globale. */
+.ccomp__pillrow { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ccomp__pillgroup {
+  display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  background: #f0f0fa; border-radius: 6px; padding: 4px; color: #371495;
+}
 .ccomp__pill {
   display: inline-flex; align-items: stretch;
   border-radius: 6px; overflow: hidden;
   background: #f0f0fa; color: #371495;
-  font-size: 13px; font-weight: 500;
+  font-size: 11px; font-weight: 400;
 }
 /* Physicians/Groups (accent) : violet plein + texte/croix blancs — contraste
-   avec la pastille Total, plus claire, juste a cote. */
+   avec le texte Total et la croix globale, qui restent au fond clair de
+   .ccomp__pillgroup. */
 .ccomp__pill--accent { background: #6f69d5; color: #fff; }
-.ccomp__pill--total { padding-inline: 8px; }
-.ccomp__pill-label { display: inline-flex; align-items: center; padding: 4px 8px; white-space: nowrap; }
-/* Meme padding vertical que .ccomp__pill-label (4px) pour une hauteur
+.ccomp__pill-label {
+  display: inline-flex; align-items: center; padding: 2px 8px; white-space: nowrap;
+  font-size: 11px; font-weight: 400; color: inherit;
+}
+/* Meme padding vertical que .ccomp__pill-label (2px) pour une hauteur
    identique, que la croix soit imbriquee dans une .ccomp__pill (align-items:
-   stretch) ou seule dans .ccomp__pillrow (ccomp__pill-remove--all,
+   stretch) ou seule dans .ccomp__pillgroup (ccomp__pill-remove--all,
    align-items:center — elle doit alors porter sa propre hauteur). */
 .ccomp__pill-remove {
   display: inline-flex; align-items: center; justify-content: center;
-  padding: 4px 6px; cursor: pointer;
+  padding: 2px 6px; cursor: pointer;
 }
 .ccomp__pill--accent .ccomp__pill-remove-icon { filter: brightness(0) invert(1); }
-.ccomp__pill-remove--all { border-radius: 6px; background: #f0f0fa; }
 .ccomp__body {
   margin-top: 10px;
   background: #fff; border: 1px solid #eaeaf9; border-radius: 11px;
