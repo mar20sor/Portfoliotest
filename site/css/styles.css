@@ -1313,12 +1313,30 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    Contrairement a .cbuild__card (une seule carte blanche a 60%, centree),
    les quatre panneaux flottent ici directement sur le fond pleine largeur,
    comme dans la maquette source. */
+/* Hauteur fixe, identique au rendu de .cbuild__frame (le rule-builder
+   au-dessus) : les deux cadres degrades doivent occuper le meme gabarit
+   vertical dans la section, meme si leur contenu differe. Comme les
+   panneaux peuvent s'ouvrir et depasser cette hauteur (contrairement au
+   rule-builder, dont le contenu ne change jamais de taille), le cadre
+   scrolle en interne (overflow-y) plutot que de s'etirer ou de rogner le
+   contenu ouvert. */
 .ccomp__frame {
   background-image: url('../assets/img/components-showcase-bg.jpg');
   background-size: cover;
   background-position: center;
   border-radius: 20px;
   padding: clamp(20px, 4vw, 40px);
+  height: 430px;
+  overflow-y: auto;
+  /* Centre le contenu (4 declencheurs fermes + intro, bien plus court que
+     430px) dans la hauteur fixe plutot que de le laisser colle en haut avec
+     un grand vide degrade en dessous. "safe center" (pas juste "center") :
+     des que des panneaux s'ouvrent et depassent la hauteur, revient a un
+     alignement "start" pour que le haut du contenu reste atteignable au
+     scroll — un simple "center" couperait le debut du contenu qui deborde. */
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
 }
 .ccomp__intro {
   font-size: var(--fs-small); color: var(--ink-faint);
@@ -1327,11 +1345,14 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 }
 .ccomp__grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s5) var(--s6); }
 .ccomp__panel { position: relative; min-width: 0; }
-/* Blanc plutot que le lavande pale de .cbuild__trigger (#f7f3fe, pense pour
-   flotter DANS une carte blanche) : sur la texture de .ccomp__frame, un
-   fond lavande se fondrait dans l'image — fidele au declencheur blanc a
-   bordure violette de la maquette (node 52:2141 etc.). */
-.ccomp__trigger { width: 100%; justify-content: space-between; background: #fff; }
+/* Largeur au contenu (pas 100% de la colonne) : fidele aux declencheurs de
+   la maquette Figma (node 52:1781), toujours plus etroits que le panneau
+   blanc qu'ils ouvrent en dessous — jamais etires a la largeur de leur
+   colonne. Blanc plutot que le lavande pale de .cbuild__trigger (#f7f3fe,
+   pense pour flotter DANS une carte blanche) : sur la texture de
+   .ccomp__frame, un fond lavande se fondrait dans l'image — fidele au
+   declencheur blanc a bordure violette de la maquette (node 52:2141 etc.). */
+.ccomp__trigger { width: max-content; max-width: 100%; gap: 8px; background: #fff; }
 .ccomp__trigger:hover { background: #f7f3fe; }
 .ccomp__trigger[aria-expanded="true"] { background: #fff; }
 .ccomp__trigger-chevron { flex: none; width: 16px; height: 16px; pointer-events: none; }

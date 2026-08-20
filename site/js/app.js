@@ -1699,8 +1699,8 @@ function componentsShowcaseMarkup(cfg, parentCfg) {
         ${cfg.intro ? `<p class="ccomp__intro">${escapeAttr(cfg.intro)}</p>` : ''}
         <div class="ccomp__grid">
           ${physicianPanel}
-          ${constraintPanel}
           ${taskPanel}
+          ${constraintPanel}
           ${periodPanel}
         </div>
       </div>
