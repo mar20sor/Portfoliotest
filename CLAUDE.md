@@ -252,6 +252,46 @@ separate nav entries. Two things worth knowing if you touch this:
   promoted) in a real browser tab and screenshotting the result — not just
   checking for the absence of CSP console errors.
 
+### moreDrawer rich body items, `s.list` cards, and nav renumbering (`content.js`; `drawerBodyParagraph()`/`moreDrawerMarkup()`, `app.js`; `.cs-tag`/`.cs-sec__cards`, `styles.css`) — session 12
+
+- **`moreDrawer.items[].body` items can now be a plain string (unchanged,
+  renders as `<p>`) or an object.** `{ intro, tags: [{color, label, text}] }`
+  renders the intro `<p>` followed by a `<ul class="cs-tag-list">` of
+  color-coded inline badges (`.cs-tag--green/purple/red` — literal hex values
+  copied from the source Figma node, not tied to the site's `--accent`
+  tokens, since they're a one-off legend not a reusable palette).
+  `{ intro, list: [...] }` renders the intro `<p>` followed by a plain
+  `<ul class="cs-sec__list">` sub-list. Dispatched by the new
+  `drawerBodyParagraph()` helper — keep using it (not a hand-rolled `<p>`)
+  for any future drawer item that needs either shape.
+- **`s.list` changed shape: `string[]` → `{title, body}[]`, rendered as a
+  4-up `.cs-sec__cards` grid instead of a bullet list.** Checked before
+  changing it: `s.list` was used by exactly one section (Constraints/design)
+  in the whole of `content.js`, so this wasn't a breaking change elsewhere —
+  if a future case study wants a plain bullet list again, don't reuse `list`
+  for it without re-checking that assumption still holds.
+- **`.cs-sec__card-title` must be written `.cs-sec__card .cs-sec__card-title`
+  (specificity 0,2,0), not `.cs-sec__card-title` alone (0,1,0).** The generic
+  `.cs-sec p { margin-bottom: var(--s4) }` (0,1,1) also matches this `<p>`
+  and otherwise wins, reintroducing a 16px gap under the title the rule was
+  meant to remove. Same trap as the `.cbuild__preview-title` case already
+  documented further down this file — check `.cs-sec p`'s specificity before
+  trusting a bare class selector to override it anywhere inside `.cs-sec`.
+- **Sidebar nav numbering: "Overview" now gets `01` instead of no number**,
+  and every `c.sections[i]` badge shifted from `i+1` to `i+2` to stay
+  sequential. This lives in the *shared* `pageCase()` nav-building code, so
+  it applies to every case study with `sections`, not just Constraints —
+  intentional, for a consistent numbering scheme site-wide. Section `title`
+  strings (the in-page `<h2>`, e.g. `"1. Process"`) are separate static text
+  and were updated by hand to match (`"1. Process"` → `"2. Process"` etc.);
+  they don't derive from the nav index, so a new section's `title` number
+  must be kept in sync manually.
+- **Constraints case study now has a 4th section, `id: 'takeaways'`**, using
+  `intro` (not `body`) for its two-line reflection — `intro` already joins
+  its array items with a real `<br>` after escaping each one individually,
+  which was exactly what the requested two-sentence paragraph needed, with
+  no renderer changes.
+
 ### Constraint-builder card sizing (`.cbuild__card`, `styles.css`)
 
 The card is intentionally *not* full-width inside `.cbuild__frame`: `width:

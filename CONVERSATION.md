@@ -4,7 +4,7 @@
 > Il enregistre **ce qui a été décidé, pourquoi, et ce qui reste à faire**.
 > Si vous reprenez le projet dans une nouvelle session, lisez ce fichier d'abord.
 
-**Dernière mise à jour :** 20 août 2026 — session 11 (widget « components showcase » : états de survol sur les croix des pastilles, effectif des groupes affiché entre parenthèses, libellés numériques du déclencheur transformés en pastilles, teinte de survol de la liste physicien, chevron recentré par un padding symétrique ; poussé vers `origin` via le snapshot `push-temp` habituel)
+**Dernière mise à jour :** 21 août 2026 — session 12 (page Figma "Case study" recréée avec le widget components-showcase componentisé (5 composants + variants) ; contenu du site réécrit d'après 3 maquettes Figma — Mapping/Benchmark/liste des 4 principes — plus une nouvelle section Takeaways et renumérotation de la nav latérale ; poussé vers `origin` via le snapshot `push-temp` habituel, fusionné dans `main`)
 
 ---
 
@@ -1121,3 +1121,72 @@ navigateur (serveur local `python -m http.server`) avant le commit. Voir
   seulement celui du serveur.** Signalé immédiatement à Mar. Le serveur
   suivant a été relancé en arrière-plan (`run_in_background`) pour éviter de
   refaire ce genre de commande large la prochaine fois.
+
+### Session 12 — 21 août 2026 (branche `constraint-case-layout`, fusionnée dans `main`)
+
+**Contexte.** Deux volets distincts dans la même session : (1) recréer la
+page complète de l'étude de cas Constraints dans Figma (fichier "Claude
+portfolio image generation", nouvelle page "Case study"), et (2) réécrire
+plusieurs blocs de texte du site à partir de maquettes Figma pointées par
+Mar, plus l'ajout d'une section "Takeaways".
+
+**Volet Figma (recréation de la page).**
+- Nouvelle page "Case study" dans le fichier `itn1kZeKMMFva4PUSX9hlS`.
+- Capture pixel-perfect de la page live (`generate_figma_design`, via un
+  ajout temporaire et révoqué du script `capture.js` + assouplissement CSP
+  dans `index.html`, jamais commité) utilisée uniquement comme référence de
+  mise en page, puis supprimée une fois la reconstruction validée — suit le
+  workflow parallèle recommandé par la skill `figma-generate-design`.
+- Reconstruction complète en auto-layout, calques nommés d'après les
+  classes CSS/rôles HTML (`case__hero`, `ccomp__panel[data-role=...]`, etc.).
+- Widget "components showcase" (`.ccomp__*`) entièrement componentisé : 5
+  composants Figma avec variants (`ccomp/pill` Style×Hover, `ccomp/list-row`,
+  `ccomp/tab`, `ccomp/radio-row`, `ccomp/trigger` Default/Hover/Expanded),
+  regroupés dans une Section "Design system — Components showcase widget".
+  Les 4 panneaux (Physician/Task/Constraint/Period) sont assemblés à partir
+  d'instances de ces composants ; un seul panneau (Physicians) reste ouvert
+  dans la démo pour éviter le chevauchement observé quand les 4 corps
+  s'ouvrent simultanément sur la largeur réelle du site.
+- Tiroir "See more of the process" également recréé ouvert, avec le
+  contenu complet des deux sous-items (Mapping, Benchmark).
+- Aucun changement de code : ce volet est resté entièrement dans Figma.
+
+**Volet contenu du site (implémenté, poussé).**
+- Sentence "After benchmarking tools..." retirée de l'intro de la section
+  Solution (redondante avec la phrase suivante).
+- **Mapping the 24 constraints** (tiroir "See more") : texte remplacé
+  d'après le node Figma 80:504 — liste à puces avec étiquettes couleur
+  inline (`[ green ]`/`[ purple ]`/`[ red ]`) + sous-liste "to identify".
+  Nouveau modèle de contenu : `moreDrawer.items[].body` accepte désormais,
+  en plus d'une simple chaîne, un objet `{ intro, tags }` ou
+  `{ intro, list }` — géré par la nouvelle fonction `drawerBodyParagraph()`
+  dans `app.js`. Nouvelles classes CSS `.cs-tag`/`.cs-tag-list` (couleurs
+  vert `#D7FFD7`/`#37A137`, violet `#F2D9FF`/`#7057B2`, rouge
+  `#FFDAC7`/`#C34E3B`, reprises telles quelles du node Figma).
+- **Benchmark** (tiroir "See more") : texte et légende remplacés d'après
+  le node Figma 80:512.
+- **Liste des 4 principes** (section Solution) : `s.list` passe d'une
+  liste à puces (`string[]`) à une grille de 4 cartes (`{title, body}[]`),
+  d'après le node Figma 80:523 — nouvelles classes `.cs-sec__cards`/
+  `.cs-sec__card`. `s.list` n'était utilisé que par cette section (vérifié
+  avant de changer sa forme), donc aucun autre projet affecté.
+  `.cs-sec__card-title` doit être écrit `.cs-sec__card .cs-sec__card-title`
+  (0,2,0) pour battre `.cs-sec p` (0,1,1) qui lui ajoutait sinon 16px de
+  marge basse parasite — même piège de spécificité déjà documenté ailleurs
+  dans `styles.css` (voir commentaire ligne ~1200).
+- **Nav latérale renumérotée + section Takeaways.** "Overview" porte
+  désormais le badge `01` (au lieu d'être sans numéro) ; les sections du
+  processus décalent d'un cran (`i + 2` au lieu de `i + 1`). Titres H2
+  correspondants mis à jour (`1. Process` → `2. Process`, `2. Solution` →
+  `3. Solution`). Nouvelle 4ᵉ section `takeaways` (id/label/title
+  `4. Takeaways`) utilisant le champ `intro` existant (déjà supporté par le
+  renderer, deux lignes jointes par un vrai `<br>`) plutôt que `body`, pour
+  obtenir le saut de ligne demandé sans ajouter de nouveau mécanisme. Ce
+  changement de numérotation dans la nav est partagé par tous les projets
+  `sections` (pas seulement Constraints) — jugé cohérent puisqu'il rend la
+  numérotation continue partout, pas une exception propre à ce projet.
+
+**Poussé vers `origin`** via le snapshot `push-temp` habituel (un seul
+commit `5fac280`, tout le volet contenu ci-dessus), puis fusionné en
+fast-forward dans `main` local et branche `constraint-case-layout`
+supprimée.
