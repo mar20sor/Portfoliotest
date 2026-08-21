@@ -160,6 +160,7 @@ html[data-theme="light"] {
   --line-soft:   rgba(16,35,63,.09);
   --veil:        rgba(16,35,63,.04);
   --veil-strong: rgba(32,120,240,.07);
+  --warning-tint: rgba(218,30,40,.08);
 
   --accent:      #2078F0;
   --accent-ink:  #FFFFFF;
@@ -800,9 +801,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cs-sec__title { font-size: var(--fs-h2); margin-bottom: var(--s4); font-weight: var(--w-medium); }
 .cs-sec p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }
 .cs-sec p:last-child { margin-bottom: 0; }
-/* Meme mesure/couleur que .cs-sec p, avec les puces natives ul : liste des
-   quatre principes (voir s.list dans content.js), a la place d'un paragraphe
-   unique. */
+/* Meme mesure/couleur que .cs-sec p, avec les puces natives ul : liste a
+   puces generique (voir s.bullets dans content.js, et p.list des items de
+   moreDrawer), a la place d'un paragraphe unique. */
 .cs-sec__list {
   max-width: var(--measure); margin: 0 0 var(--s4); padding-left: 1.2em;
   color: var(--ink-soft);
@@ -833,6 +834,33 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .cs-sec__cards { grid-template-columns: 1fr 1fr; }
 }
 
+/* Bloc "definitions" a cote du texte (voir s.aside dans content.js,
+   Services exclusion/Design) : texte a gauche, encart teinte a droite.
+   Reutilise --veil-strong, deja le token du bloc "mis en avant" (voir
+   .pair__out/.todo) plutot qu'une nouvelle couleur. */
+.cs-sec__row { display: flex; gap: var(--s6); align-items: flex-start; margin-bottom: var(--s4); }
+.cs-sec__row-text { flex: 2 1 0; min-width: 0; }
+.cs-sec__row-text p:last-child { margin-bottom: 0; }
+.cs-sec__aside {
+  flex: 1 1 0; min-width: 0;
+  background: var(--veil-strong); border-radius: var(--radius-sm); padding: var(--s5);
+  display: flex; flex-direction: column; gap: var(--s4);
+}
+.cs-sec__aside p { margin: 0; color: var(--ink); font-size: var(--fs-small); }
+@media (max-width: 700px) {
+  .cs-sec__row { flex-direction: column; }
+}
+
+/* Encart d'avertissement (voir s.callout dans content.js, Services
+   exclusion/Release) : icone + texte sur fond teinte. */
+.cs-callout {
+  display: flex; gap: var(--s3); align-items: flex-start;
+  background: var(--warning-tint); border-radius: var(--radius-sm);
+  padding: var(--s4) var(--s5); margin-bottom: var(--s4);
+}
+.cs-callout p { margin: 0; color: var(--ink-soft); }
+.cs-callout__icon { flex-shrink: 0; width: 20px; height: 20px; margin-top: 2px; color: #DA1E28; }
+
 /* Etiquettes couleur inline (voir moreDrawer.items[].body, "Mapping the 24
    constraints") : reprend le code couleur utilise dans la maquette Figma
    source (temps/taches/membres) pour rendre visible d'un coup d'oeil ce que
@@ -858,6 +886,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   overflow: hidden;
 }
 .figure img { border-radius: var(--radius-sm); }
+/* `bare` (voir s.bare dans content.js / figureFor() dans app.js) : meme
+   suppression de cadre que .cs-mockups/.cs-more, mais utilisable sur une
+   figure isolee (pas forcement dans un regroupement .cs-mockups). */
+.figure--bare .figure__frame { padding: 0; border: none; border-radius: 0; background: none; }
 .figure figcaption {
   margin-top: var(--s3);
   font-size: var(--fs-small); color: var(--ink-faint);
@@ -949,6 +981,30 @@ button { font: inherit; color: inherit; cursor: pointer; }
   aspect-ratio: 16 / 9;
   object-fit: contain;
 }
+/* Hero passe en Lottie (assets/media/constraint-limit.json, meme 524x600
+   que l'ancienne video) : dotlottie-wc ne supporte pas object-fit comme
+   <video> (voir la note pres de .figure--lottie plus haut — son <canvas>
+   interne se contente de remplir sa boite hote, quitte a l'ecraser), donc
+   le "contain" dans la boite 16:9 se refait a la main : le cadre devient la
+   boite 16:9 (position:relative), et le <dotlottie-wc> a l'interieur garde
+   son propre ratio natif et se centre dessus.
+   Ceci annule aussi le fond/liser retire par .figure--lottie (pense pour
+   les Lottie d'icones transparentes du carrousel de contraintes) : ce
+   Lottie-ci a un fond opaque comme la video qu'il remplace. */
+.cs__hero-media .figure--lottie .figure__frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--frame-line);
+}
+.cs__hero-media .figure--lottie dotlottie-wc {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  aspect-ratio: 524 / 600;
+  width: auto; height: 100%; max-width: 100%;
+  /* meme liser sombre au bord inferieur que sur l'ancienne video (voir
+     .card__media dotlottie-wc plus bas) : le fichier source le porte aussi. */
+  clip-path: inset(0 0 4% 0);
+}
 
 /* ---- Contraintes, section "Solution" : les deux captures (mockups,
    content.js) -------------------------------------------------------------
@@ -1020,6 +1076,86 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .lottie-carousel__tab:hover { color: var(--accent); }
 .lottie-carousel__tab.is-active { color: var(--accent); }
+
+/* ---- Deux figures cote a cote, meme gabarit (voir s.image + s.carousel
+   ensemble dans content.js, Services exclusion/Concept) : le "Before" et le
+   carrousel "After" partagent la meme largeur ET la meme hauteur pour
+   s'aligner. Le ratio des sources (997x936, meme export Figma pour les 5
+   images) pilote la hauteur des deux colonnes — pas de mesure JS. */
+.cs-sec__media-pair {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--s5);
+  margin-block: var(--s6); align-items: start;
+}
+.cs-sec__media-pair .figure,
+.cs-sec__media-pair .cs-carousel { margin-block: 0; }
+.cs-sec__media-pair .figure__frame,
+.cs-sec__media-pair .cs-carousel__stage { aspect-ratio: 997 / 936; }
+.cs-sec__media-pair .figure__frame picture { display: block; height: 100%; }
+.cs-sec__media-pair .figure__frame img,
+.cs-sec__media-pair .cs-carousel__panel img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+@media (max-width: 700px) {
+  .cs-sec__media-pair { grid-template-columns: 1fr; }
+}
+
+/* ---- Carrousel d'images statiques (voir carouselMarkup()/
+   setupImageCarousel() dans app.js, s.carousel dans content.js) : les
+   panneaux vivent tous cote a cote dans .cs-carousel__track, qui glisse via
+   transform (voir goTo() dans setupImageCarousel()) — c'est ce qui donne
+   l'animation de glissement, plutot qu'un simple hidden/is-active qui
+   couperait net d'une image a l'autre. Fleches en vis-a-vis + puces
+   incrustees en bas de la scene (pas sous la figure) : cf.
+   amylalai.com/stitch-fromhome. */
+.cs-carousel { margin-block: var(--s6); }
+.cs-carousel__stage {
+  position: relative; overflow: hidden; border-radius: var(--radius-sm);
+  background: var(--frame-bg);
+}
+.cs-carousel__track {
+  display: flex; height: 100%;
+  transition: transform .45s cubic-bezier(.4, 0, .2, 1);
+}
+.cs-carousel__panel { flex: 0 0 100%; min-width: 0; }
+.cs-carousel__panel img { display: block; width: 100%; height: 100%; }
+.cs-carousel__arrow {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(255, 255, 255, .85); border: 1px solid var(--frame-line);
+  color: var(--ink); cursor: pointer; box-shadow: var(--shadow);
+  transition: background .18s var(--ease), transform .18s var(--ease);
+}
+.cs-carousel__arrow:hover { background: #FFFFFF; }
+.cs-carousel__arrow--prev { left: var(--s4); }
+.cs-carousel__arrow--next { right: var(--s4); }
+.cs-carousel__arrow-icon { width: 18px; height: 18px; }
+.cs-carousel__arrow--prev .cs-carousel__arrow-icon { transform: rotate(90deg); }
+.cs-carousel__arrow--next .cs-carousel__arrow-icon { transform: rotate(-90deg); }
+.cs-carousel figcaption {
+  margin-top: var(--s3); font-size: var(--fs-small); color: var(--ink-faint);
+}
+/* Puces incrustees : pilule sombre translucide pour rester lisibles quelle
+   que soit la capture affichee dessous (fond blanc ou bleu clair selon
+   l'etape). */
+.cs-carousel__dots {
+  position: absolute; left: 50%; bottom: var(--s3); transform: translateX(-50%); z-index: 2;
+  display: flex; align-items: center; gap: var(--s3);
+  padding: 6px 10px; border-radius: var(--radius-pill);
+  background: rgba(16, 35, 63, .45); backdrop-filter: blur(4px);
+}
+.cs-carousel__dot {
+  width: 7px; height: 7px; border-radius: 50%; padding: 0;
+  background: rgba(255, 255, 255, .5); border: none; cursor: pointer;
+  transition: background .18s var(--ease), transform .18s var(--ease);
+}
+.cs-carousel__dot:hover { background: rgba(255, 255, 255, .8); }
+.cs-carousel__dot.is-active { background: #FFFFFF; transform: scale(1.3); }
+@media (max-width: 700px) {
+  .cs-carousel__arrow { width: 32px; height: 32px; }
+  .cs-carousel__arrow--prev { left: var(--s2); }
+  .cs-carousel__arrow--next { right: var(--s2); }
+}
 
 /* ---- Contraintes, section "Design" : demo interactif "sentence builder" --
    Widget autonome (voir constraintBuilderMarkup()/setupConstraintBuilder()
@@ -1700,6 +1836,18 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   transition: transform .5s var(--ease);
 }
 .card:hover .card__media video { transform: scale(1.03); }
+
+/* Meme vignette, en Lottie (voir cardMedia() dans app.js) : dotlottie-wc ne
+   supporte pas object-fit, donc on lui donne directement son propre ratio
+   natif (524/600, comme .cs__hero-media plus bas) plutot que d'etirer la
+   boite flex — .card__media centre deja son contenu (display:flex). */
+.card__media dotlottie-wc {
+  aspect-ratio: 524 / 600;
+  width: auto; height: 92%;
+  clip-path: inset(0 0 4% 0);
+  transition: transform .5s var(--ease);
+}
+.card:hover .card__media dotlottie-wc { transform: scale(1.03); }
 
 /* ---- 8d. Le pied d'etude de cas : les autres projets ----
    Trois cartes plutot qu'un seul lien : arrive au bout d'une lecture longue,

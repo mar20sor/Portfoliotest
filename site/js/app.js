@@ -373,11 +373,16 @@ function cardMedia(p) {
   //    en sourdine, uniquement quand la carte est a l'ecran (setupVideos).
   if (c.heroMedia) {
     const url = escapeAttr(mediaUrl(c.heroMedia));
-    return c.heroMedia.type === 'video'
-      ? `<video src="${url}" muted loop playsinline preload="metadata"
+    if (c.heroMedia.type === 'video') {
+      return `<video src="${url}" muted loop playsinline preload="metadata"
                 data-autoplay aria-hidden="true" tabindex="-1"
-                disablepictureinpicture></video>`
-      : `<img src="${url}" alt="" loading="lazy" decoding="async">`;
+                disablepictureinpicture></video>`;
+    }
+    if (c.heroMedia.type === 'lottie') {
+      const lottiePlay = prefersReducedMotion() ? 'controls' : 'autoplay loop';
+      return `<dotlottie-wc src="${url}" ${lottiePlay} aria-hidden="true"></dotlottie-wc>`;
+    }
+    return `<img src="${url}" alt="" loading="lazy" decoding="async">`;
   }
 
   const sections = c.sections || [];
@@ -499,13 +504,14 @@ function pageCase(project) {
 
   hw.insertAdjacentHTML('beforeend', `
     ${c.isDraft ? `<p style="margin-bottom:var(--s4)"><span class="draft-badge">${escapeAttr(d.draftBadge)}</span></p>` : ''}
-    <p class="cs__client">${escapeAttr(c.client)}</p>
+    ${c.gist.company ? '' : `<p class="cs__client">${escapeAttr(c.client)}</p>`}
     <h1 class="cs__title">${escapeAttr(c.title)}</h1>
     <p class="cs__tagline">${emphasize(c.tagline)}</p>
 
     ${c.heroMedia ? `<div class="cs__hero-media">${mediaMarkup(c.heroMedia)}</div>` : ''}
 
     <dl class="gist">
+      ${c.gist.company ? `<div><dt>${escapeAttr(d.csCompany)}</dt><dd><a href="${escapeAttr(c.gist.company.href)}" target="_blank" rel="noopener">${escapeAttr(c.gist.company.label)}</a></dd></div>` : ''}
       <div><dt>${escapeAttr(d.csRole)}</dt><dd>${escapeAttr(c.gist.role)}</dd></div>
       <div><dt>${escapeAttr(d.csDuration)}</dt><dd>${escapeAttr(c.gist.duration)}</dd></div>
       <div><dt>${escapeAttr(d.csTeam)}</dt><dd>${escapeAttr(c.gist.team)}</dd></div>
@@ -603,7 +609,7 @@ function pageCase(project) {
          l'ordre exact d'une page source sans decouper la section. */
       const parts = s.body.map((p, i) => {
         const after = s.media && s.media[i] ? mediaGroup(s.media[i]) : '';
-        return `<p>${escapeAttr(p)}</p>${after}`;
+        return `<p>${emphasize(p)}</p>${after}`;
       }).join('');
 
       const intro = s.intro ? `<p>${s.intro.map(escapeAttr).join('<br>')}</p>` : '';
@@ -616,6 +622,11 @@ function pageCase(project) {
               <p class="cs-sec__card-title">${escapeAttr(card.title)}</p>
               <p class="cs-sec__card-body">${escapeAttr(card.body)}</p>
             </div>`).join('')}</div>` : '';
+      // s.bullets : vraie liste a puces (ex. Services exclusion/Fixes),
+      // contrairement a s.list ci-dessus qui rend des cartes. Reutilise
+      // .cs-sec__list, deja dans styles.css mais orpheline jusqu'ici.
+      const bullets = s.bullets
+        ? `<ul class="cs-sec__list">${s.bullets.map(b => `<li>${emphasize(b)}</li>`).join('')}</ul>` : '';
       const mockups = s.mockups
         ? `<div class="cs-mockups">${s.mockups.map(figureFor).join('')}</div>` : '';
       // Chiffres cites dans le texte, sortis en cartes (voir s.stats dans
@@ -632,14 +643,49 @@ function pageCase(project) {
         ? `<p><strong>${escapeAttr(s.helpers.title)}</strong><br>${escapeAttr(s.helpers.body)}</p>
            ${s.lottieCarousel ? lottieCarouselMarkup(s.lottieCarousel) : ''}` : '';
 
+      // s.aside : bloc "definitions" a cote du texte (ex. Services
+      // exclusion/Design) — voir .cs-sec__row/.cs-sec__aside dans
+      // styles.css. Enveloppe `parts` au lieu de le rendre pleine largeur.
+      const partsBlock = s.aside
+        ? `<div class="cs-sec__row">
+             <div class="cs-sec__row-text">${parts}</div>
+             <div class="cs-sec__aside">${s.aside.map(a =>
+               `<p><strong>${escapeAttr(a.term)}: </strong>${escapeAttr(a.body)}</p>`).join('')}</div>
+           </div>`
+        : parts;
+
+      // s.callout : encart d'avertissement (ex. Services exclusion/Release)
+      // — remplace une figure quand le point a illustrer est un constat
+      // plutot qu'une capture. Voir .cs-callout dans styles.css.
+      const callout = s.callout
+        ? `<div class="cs-callout">${alertCircleIcon('cs-callout__icon')}<p>${escapeAttr(s.callout.text)}</p></div>` : '';
+
+      // s.afterFigure : paragraphe(s) apres la figure de section (ex.
+      // Services exclusion/Scoping) — cas normalement couvert par
+      // s.media (indexe par paragraphe) mais celui-ci vise une figure
+      // locale (s.image/figureFor), pas un media distant.
+      const afterFigure = s.afterFigure
+        ? s.afterFigure.map(p => `<p>${emphasize(p)}</p>`).join('') : '';
+
+      // Figure + carrousel cote a cote, meme gabarit (ex. Services
+      // exclusion/Concept, Before + le carrousel des 4 etapes) — voir
+      // .cs-sec__media-pair dans styles.css. Sinon, chacun garde son rendu
+      // normal en pleine largeur.
+      const mediaBlock = (s.image && s.carousel)
+        ? `<div class="cs-sec__media-pair">${figureFor(s)}${carouselMarkup(s.carousel)}</div>`
+        : `${s.image ? figureFor(s) : ''}${s.carousel ? carouselMarkup(s.carousel) : ''}`;
+
       sec.innerHTML = `
         <h2 class="cs-sec__title">${escapeAttr(s.title)}</h2>
         ${intro}
         ${list}
-        ${parts}
+        ${bullets}
+        ${partsBlock}
+        ${callout}
         ${secStats}
         ${mockups}
-        ${s.image ? figureFor(s) : ''}
+        ${mediaBlock}
+        ${afterFigure}
         ${s.builder ? constraintBuilderMarkup(s.builder) : ''}
         ${s.builder && s.builder.components ? componentsShowcaseMarkup(s.builder.components, s.builder) : ''}
         ${helpers}
@@ -764,18 +810,30 @@ function mediaGroup(list) {
    lecture continue du texte. Natif = clavier et lecteurs d'ecran gratuits,
    aucun JS de plus a ecrire. */
 function figureFor(s) {
-  const base = `assets/img/${s.image}`;
   const note = s.frOnly
     ? `<span class="figure__note">${escapeAttr(t().csFigureFR)}</span>` : '';
+  // `caption` accepte soit une chaine (cas courant), soit {title, body}
+  // pour une legende sur deux lignes (ex. Before/After, Services exclusion).
+  const captionText = typeof s.caption === 'object' ? s.caption.title : (s.caption || '');
+  const captionHTML = typeof s.caption === 'object'
+    ? `<strong>${escapeAttr(s.caption.title)}</strong><br>${escapeAttr(s.caption.body)}`
+    : escapeAttr(s.caption || '');
+  // `s.image` se terminant par .svg (export Figma direct, ex. le schema
+  // Services exclusion/Context) : pas de paire webp/png, un seul fichier
+  // vectoriel servi tel quel.
+  const media = s.image.endsWith('.svg')
+    ? `<img src="assets/img/${s.image}" alt="${escapeAttr(captionText)}" loading="lazy" decoding="async">`
+    : `<picture>
+          <source srcset="assets/img/${s.image}.webp" type="image/webp">
+          <img src="assets/img/${s.image}.png" alt="${escapeAttr(captionText)}" loading="lazy" decoding="async">
+        </picture>`;
+  // `bare` retire le cadre (fond/liser/padding) standard de .figure__frame —
+  // pour un visuel deja net qui n'a pas besoin de ce fond neutre, sans
+  // passer par le regroupement .cs-mockups (qui l'applique par defaut).
   const figure = `
-    <figure class="figure">
-      <div class="figure__frame">
-        <picture>
-          <source srcset="${base}.webp" type="image/webp">
-          <img src="${base}.png" alt="${escapeAttr(s.caption || '')}" loading="lazy" decoding="async">
-        </picture>
-      </div>
-      <figcaption>${escapeAttr(s.caption || '')}${note}</figcaption>
+    <figure class="figure${s.bare ? ' figure--bare' : ''}">
+      <div class="figure__frame">${media}</div>
+      <figcaption>${captionHTML}${note}</figcaption>
     </figure>`;
   return s.figureDrawer
     ? `<details class="figure-drawer"><summary>${escapeAttr(t().figureSeeMore)}${chevronIcon('figure-drawer__chevron')}</summary>${figure}</details>`
@@ -867,6 +925,15 @@ function chevronIcon(cls) {
       aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
 }
 
+/* Icone alerte pour .cs-callout (voir s.callout dans content.js) — matches
+   Figma node 114:9047 (cercle + point d'exclamation). */
+function alertCircleIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+}
+
 /* Carrousel des 4 illustrations Lottie (section "design", meme place que
    l'ancien media[0] — voir content.js). N'entre pas dans mediaMarkup()/
    mediaGroup() : contrairement a une grille statique, un seul panneau est
@@ -929,6 +996,82 @@ function setupLottieCarousel() {
       };
       tab.addEventListener('click', onClick);
       addCleanup(() => tab.removeEventListener('click', onClick));
+    });
+  });
+}
+
+/* Carrousel d'images statiques (ex. Services exclusion/Concept, les 4 etapes
+   du nouveau wizard — voir s.carousel dans content.js). Panneaux alignes
+   cote a cote dans .cs-carousel__track (pas de hidden/is-active par
+   panneau comme .lottie-carousel ci-dessus) : glisser le track via
+   transform est ce qui produit l'animation de glissement (voir goTo() dans
+   setupImageCarousel()). Fleches prev/next + puces incrustees en bas de la
+   scene plutot que des onglets textuels. */
+function carouselMarkup(items) {
+  const panels = items.map((item, i) => `
+    <div class="cs-carousel__panel" data-role="carousel-panel"
+         data-index="${i}" data-caption="${escapeAttr(item.caption || '')}">
+      <picture>
+        <source srcset="assets/img/${item.image}.webp" type="image/webp">
+        <img src="assets/img/${item.image}.png" alt="${escapeAttr(item.caption || '')}" loading="lazy" decoding="async">
+      </picture>
+    </div>`).join('');
+  const dots = items.map((item, i) => `
+    <button type="button" class="cs-carousel__dot${i === 0 ? ' is-active' : ''}" data-role="carousel-dot"
+            data-index="${i}" aria-label="${escapeAttr(t().csCarouselGoTo)} ${i + 1}"
+            aria-current="${i === 0 ? 'true' : 'false'}"></button>`).join('');
+  return `
+    <figure class="cs-carousel" data-role="carousel">
+      <div class="cs-carousel__stage">
+        <div class="cs-carousel__track" data-role="carousel-track">${panels}</div>
+        <button type="button" class="cs-carousel__arrow cs-carousel__arrow--prev" data-role="carousel-prev"
+                aria-label="${escapeAttr(t().csCarouselPrev)}">${chevronIcon('cs-carousel__arrow-icon')}</button>
+        <button type="button" class="cs-carousel__arrow cs-carousel__arrow--next" data-role="carousel-next"
+                aria-label="${escapeAttr(t().csCarouselNext)}">${chevronIcon('cs-carousel__arrow-icon')}</button>
+        <div class="cs-carousel__dots" role="tablist" aria-label="${escapeAttr(t().csCarouselDots)}">${dots}</div>
+      </div>
+      <figcaption data-role="carousel-caption">${escapeAttr(items[0].caption || '')}</figcaption>
+    </figure>`;
+}
+
+/* Cablage : fleches et puces font toutes deux avancer le meme etat
+   (goTo), les fleches bouclant aux deux bouts. Meme scoping par racine et
+   meme addCleanup() que setupLottieCarousel(). */
+function setupImageCarousel() {
+  $$('[data-role="carousel"]').forEach(root => {
+    const track = $('[data-role="carousel-track"]', root);
+    const panels = $$('[data-role="carousel-panel"]', root);
+    const dots = $$('[data-role="carousel-dot"]', root);
+    const caption = $('[data-role="carousel-caption"]', root);
+    const prev = $('[data-role="carousel-prev"]', root);
+    const next = $('[data-role="carousel-next"]', root);
+    let current = 0;
+
+    const goTo = index => {
+      current = index;
+      track.style.transform = `translateX(-${current * 100}%)`;
+      panels.forEach((p, i) => p.setAttribute('aria-hidden', String(i !== current)));
+      dots.forEach((d, i) => {
+        const active = i === current;
+        d.classList.toggle('is-active', active);
+        d.setAttribute('aria-current', String(active));
+      });
+      if (caption) caption.textContent = panels[current].dataset.caption || '';
+    };
+
+    goTo(0);
+
+    const onPrev = () => goTo((current - 1 + panels.length) % panels.length);
+    const onNext = () => goTo((current + 1) % panels.length);
+    prev.addEventListener('click', onPrev);
+    next.addEventListener('click', onNext);
+    addCleanup(() => prev.removeEventListener('click', onPrev));
+    addCleanup(() => next.removeEventListener('click', onNext));
+
+    dots.forEach((dot, i) => {
+      const onClick = () => goTo(i);
+      dot.addEventListener('click', onClick);
+      addCleanup(() => dot.removeEventListener('click', onClick));
     });
   });
 }
@@ -2527,6 +2670,7 @@ function render() {
     if (route.name === 'case' && route.project.slug === 'constraints') setupConstraintBuilder();
     if (route.name === 'case' && route.project.slug === 'constraints') setupComponentsShowcase();
     if (route.name === 'case' && route.project.slug === 'constraints') setupLottieCarousel();
+    if (route.name === 'case' && route.project.slug === 'services-exclusion') setupImageCarousel();
     setupScrollProgress();
     setupVideos();
   };

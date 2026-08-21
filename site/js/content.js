@@ -95,7 +95,7 @@ export const UI = {
   readFull: 'Read the full process',
 
   csGist: 'The gist',
-  csRole: 'Role', csDuration: 'Duration', csTeam: 'Team', csTools: 'Tools', csYear: 'Year',
+  csRole: 'Role', csDuration: 'Duration', csTeam: 'Team', csTools: 'Tools', csCompany: 'Company', csYear: 'Year',
   csProblem: 'The problem',
   csOutcome: 'The outcome',
   csImpacts: 'Impacts',
@@ -106,6 +106,8 @@ export const UI = {
   csSections: 'Sections on this page',
   csFigureFR: 'Figure annotated in French',
   figureSeeMore: 'See more',
+  csCarouselPrev: 'Previous slide', csCarouselNext: 'Next slide',
+  csCarouselDots: 'Slides', csCarouselGoTo: 'Go to slide',
 
   footerSitemap: 'Sitemap',
   footerContact: 'Get in touch',
@@ -224,7 +226,8 @@ export const PROJECTS = [
     client: 'Petal',
     tagline: 'Redesigning a rule-making engine, reducing rules from **24 to 9**.',
     tags: ['Systems design', 'Research', 'Healthcare SaaS'],
-    gist: { role: 'UX / UI, research', duration: '4 months', team: '1 designer, 1 PM' },
+    gist: { role: 'UX / UI, research', duration: '4 months', team: '1 designer, 1 PM',
+      company: { label: 'Petal', href: 'https://www.petal-health.com/en/' } },
     // The opening visual. It doubles as the card thumbnail on the homepage.
     // Local file rather than the Contra CDN id: no external dependency, and
     // it's the one visual in the repo with a matching poster frame (see
@@ -232,8 +235,8 @@ export const PROJECTS = [
     // `hideCaption` keeps the aria-label (mediaMarkup() reuses `caption` as
     // the video's accessible name) while dropping the visible <figcaption>
     // legend below the poster.
-    heroMedia: { type: 'video', src: 'assets/media/constraint-limit.mp4',
-      poster: 'assets/media/constraint-limit.jpg', caption: 'Configuring a constraint, end to end',
+    heroMedia: { type: 'lottie', src: 'assets/media/constraint-limit.json',
+      caption: 'Configuring a constraint, end to end',
       hideCaption: true },
     problem: 'Constraints are the rules applied to staff availability to build a fair schedule (ex: a member cannot work two consecutive periods). They were configured by Petal’s internal teams for hospitals because they were complicated to use and so redundant that several different rules led to the same result.',
     outcome: 'I reduced the 24 constraints to 9 by identifying the characteristics they shared, then designed a rule builder clinic managers can operate themselves without going through an agent.',
@@ -483,53 +486,79 @@ export const PROJECTS = [
     poster: { label: 'Ship. Watch. Fix.', figure: 'wizard' },
     title: 'Services exclusion',
     client: 'Petal',
-    tagline: 'A **4-step** wizard that shipped, was misread, and got fixed.',
+    tagline: 'Designing, then fixing a **4-step** wizard to bring clarity to hospital managers.',
     tags: ['Wizard', 'User testing', 'Iteration'],
-    gist: { role: 'UX / UI', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer', tools: 'Figma' },
-    problem: 'In the HUB — the platform that synchronises clinics and hospitals across Québec — some services are no longer used, or only temporarily, like a seasonal flu clinic. They skew a clinic’s statistics, but can only be deleted in the EMR, which is a heavy procedure for medical staff. So they needed to be excluded from synchronisation without being deleted — inside a modal already carrying several other steps.',
-    outcome: 'A four-step wizard that makes exclusion explicit. After release, testing surfaced a usage error we hadn’t anticipated: we inverted the selection logic and added a warning.',
-    stats: [
-      { n: '4 steps', l: 'instead of a single screen' },
-      { n: '3 months', l: 'from scoping to iteration' },
-      { n: '1 failure', l: 'caught after release' }
-    ],
+    gist: { role: 'UX / UI', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer',
+      company: { label: 'Petal', href: 'https://www.petal-health.com/en/' } },
+    problem: 'In the HUB, some services are no longer used, or only temporarily (like a seasonal flu clinic). They skew a clinic’s statistics, but can only be deleted in the EMR, which is a heavy procedure for medical staff. So they needed to be excluded from synchronization setup without being deleted, inside a modal already carrying many steps.',
+    outcome: 'A clearer four-step wizard that makes exclusion explicit. After release surfaced a usage error we hadn’t anticipated. So we inverted the selection logic and added a warning to make sure it was well used.',
     sections: [
       {
-        id: 'kickoff', label: 'Scoping', title: '1. Kickoff and scoping',
+        id: 'kickoff', label: 'Context', title: '1. Context : the current synchronization flow',
         body: [
-          'The PM sets out needs and goals, and the team lists the technical constraints. Here, only one really mattered: the solution had to fit inside the HUB’s existing synchronisation modal. No new page, no new flow.',
-          'This is also when we mapped the full journey, from first EMR connection through to viewing the data. Seeing exclusion in its place in that chain is what surfaced the real problem: we were adding a step to a process that was already heavy.'
+          'Synchronization is the process of importing hospitals data (appointments, patients, services and suppliers) through their EMR, at Québec’s scale. It’s only during this process that staff members can edit their services through a modal.'
         ],
-        image: 'exclusion-1-kickoff-en',
-        caption: 'The HUB synchronisation journey. Exclusion attaches to the service configuration step.'
+        // Export SVG direct de Figma (node 114:10812, meme fichier que la
+        // maquette) : le schema du flux de synchronisation.
+        image: 'exclusion-1-context-en.svg', bare: true,
+        caption: 'HUB synchronisation : exclusion and deactivation are added to the service configuration step.',
+        afterFigure: [
+          'During that process, managers were only configuring the services that would be active, the others were deactivated.'
+        ]
       },
       {
-        id: 'design', label: 'Design', title: '2. Design',
+        id: 'design', label: 'Concept', title: '2. First concept',
         body: [
-          'The real challenge wasn’t technical. Managers are only used to configuring the services that will be active. We had to make them understand they could also deactivate and exclude unused ones — without making an already dense interface denser.',
-          'I split the process into explicitly named steps: excluded services, inactive services, active services, confirmation. Explanatory copy sits with each step, modified services stay selectable, and a final screen summarises what is about to happen before confirmation.'
+          'We introduced **exclusion** as an additional step separated from **deactivation** to bring clarity.',
+          'Operations are explained, and it’s possible to go back through the process in case of error. What could go wrong ?'
         ],
-        image: 'exclusion-2-design-en',
-        caption: 'Before / after. The single screen becomes a wizard where every step has a name.'
+        aside: [
+          { term: 'Exclusion', body: 'Services brought out of synchronization and stats, they can only be reactivated manually.' },
+          { term: 'Deactivation', body: 'Temporary unused service, can be reactivated through sync if necessary.' }
+        ],
+        // Avant : l'ancien ecran a une seule etape (Figma node 112:3873,
+        // export PNG@2x -> webp, comme le reste des figures locales : les
+        // exports SVG directs de ces captures denses pesaient 500-870Ko
+        // chacun et ralentissaient le rendu).
+        image: 'exclusion-2-before-en', bare: true,
+        caption: 'Before: only one step configuration',
+        // Apres : les 4 etapes du nouveau wizard (section "Caroussel",
+        // Figma node 116:10862, exportees individuellement en PNG@2x/webp)
+        // — un carrousel plutot que 4 figures empilees. Voir
+        // carouselMarkup()/setupImageCarousel() dans app.js.
+        carousel: [
+          { image: 'exclusion-2-step1-en', caption: 'Step 1 — Excluded services' },
+          { image: 'exclusion-2-step2-en', caption: 'Step 2 — Deactivated services' },
+          { image: 'exclusion-2-step3-en', caption: 'Step 3 — Active services' },
+          { image: 'exclusion-2-step4-en', caption: 'Step 4 — Confirmation' }
+        ]
       },
       {
-        id: 'ship', label: 'Release', title: '3. Handoff and release',
+        id: 'ship', label: 'Problem', title: '3. A new problem arises',
         body: [
-          'After review, the design went to development. I worked alongside the developer to make sure what shipped matched the intent — not just the mockups.',
-          'Then the problem showed up. We had added a checkbox to select which services to exclude. Managers did not read it the way we had imagined.'
+          'After release, an issue showed up :'
         ],
-        image: 'exclusion-3-ship-en',
-        caption: 'The inline feedback confirming a service has been excluded.'
+        callout: {
+          text: 'Managers were clicking “select all” as a reflex without reading through, excluding every single service from synchronization ...'
+        }
       },
       {
-        id: 'iterate', label: 'Iteration', title: '4. Testing and back to design',
+        id: 'iterate', label: 'Fixes', title: '4. Fixes',
+        intro: ['Three fixes :'],
+        bullets: [
+          'Removed “select all” from the inactive services list.',
+          'Inverted the logic: the user now unchecks the services they want to exclude, which makes the action deliberate.',
+          'Added a warning showing how many services are about to be excluded.'
+        ],
+        body: [],
+        image: 'exclusion-4-test-en', bare: true,
+        caption: 'After the fixes'
+      },
+      {
+        id: 'takeaways', label: 'Takeaways', title: '5. Takeaways',
         body: [
-          'We ran the exclusion and deactivation process again with several clinics. The finding was unambiguous: most managers clicked the “select all” box automatically, excluding every single service from synchronisation. A reflex, not a decision.',
-          'Three fixes. We removed “select all” from the inactive services list. We inverted the logic: the user now unchecks the services they want to exclude, which makes the action deliberate. And we added a warning showing how many services are about to be excluded.',
           'This is the project I bring up most readily in interviews. Not because the first version was good, but because the testing setup caught a mistake before it cost somebody their data.'
-        ],
-        image: 'exclusion-4-test-en',
-        caption: 'After iteration: the warning counts excluded services to reduce the risk of error.'
+        ]
       }
     ]
   },
