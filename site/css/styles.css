@@ -1157,6 +1157,216 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .cs-carousel__arrow--next { right: var(--s2); }
 }
 
+/* ---- Services exclusion, section "Fixes" : demo interactif "modal
+   behavior" (voir exclModalMarkup()/setupExclModal() dans app.js, s.modal
+   dans content.js) -----------------------------------------------------
+   Remplace l'ancienne capture exclusion-4-test-en. Meme traitement que le
+   sentence builder des contraintes juste en dessous : widget autonome,
+   fidelite aux couleurs/tailles/police EXACTES de la maquette Figma (get_
+   design_context sur les nodes 114:9541 et 114:9958, "Core modal", fichier
+   "Claude portfolio image generation") plutot qu'aux tokens du site —
+   Roboto, encre #434C5C, bleu interactif #2E8BE0 (Primary/60), bandeau
+   degrade #3B6CC9 -> #224B96 (Global/Tertiary), liseres #C2D3FF
+   (Secondary/85) / #D7E2FF (Secondary/90), entete de tableau #E0EEFF
+   (Primary/93), icone d'avertissement #F3B248. Coefficient d'echelle 1.6
+   applique a toutes les valeurs de la maquette (400px de large dans
+   Figma -> 640px ici) pour rester lisible a taille d'ecran normale. Coins
+   carres partout (pas de border-radius sur la carte/l'entete/le pied) :
+   fidele a la maquette, qui n'en a nulle part sur ce composant. */
+.excl-modal-frame {
+  margin-block: var(--s6);
+  background: #E9F2FE;
+  padding: clamp(16px, 4vw, 40px);
+  display: flex; justify-content: center;
+}
+.excl-modal {
+  width: 100%; max-width: 640px;
+  background: #FFFFFF;
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+}
+.excl-modal__header {
+  display: flex; align-items: center; position: relative;
+  height: 42px; padding: 0 17px;
+  background: linear-gradient(90deg, #3B6CC9, #224B96);
+  color: #FFFFFF;
+}
+/* flex:1 + text-align:center centre horizontalement sur toute la largeur de
+   l'entete (pas seulement l'espace restant a cote du bouton fermer, qui
+   reste positionne independamment) ; align-items:center sur l'entete centre
+   verticalement. */
+/* .excl-modal .excl-modal__title (0,2,0) plutot que .excl-modal__title seul
+   (0,1,0) : sinon perd face a .cs-sec p (0,1,1), voir CLAUDE.md — meme piege
+   que celui deja documente pour .cbuild__preview-title, ici particulierement
+   visible puisque .cs-sec p imposerait --ink-soft a la place du blanc voulu
+   sur fond bleu. Meme raison pour heading/desc/learn-more/count/warning
+   plus bas : tous des <p>. */
+.excl-modal .excl-modal__title { flex: 1; text-align: center; color: #FFFFFF; font-size: 13.5px; font-weight: 500; margin: 0; }
+.excl-modal__close {
+  position: absolute; right: 17px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0; margin: 0;
+  background: none; border: none; border-radius: 6px;
+  color: inherit; cursor: pointer;
+  transition: background .18s var(--ease);
+}
+.excl-modal__close:hover { background: rgba(255, 255, 255, .15); }
+.excl-modal__close-icon { width: 16px; height: 16px; }
+
+/* Zone F7F9FD sous l'entete (voir .excl-modal-frame plus haut, meme
+   couleur : celle de la maquette Figma "en dessous du conteneur") : abrite
+   le fil d'etapes (HORS du conteneur blanc, voir plus bas) et le
+   conteneur lui-meme. padding-bottom: 17px, meme valeur que les autres
+   espacements de la modale — le conteneur (donc .excl-modal__rows, quelle
+   que soit sa position de defilement) se termine toujours a 17px du pied,
+   cet espace faisant partie de la surface et non du contenu qui defile. */
+.excl-modal__surface {
+  background: #F7F9FD;
+  padding: 14px 17px 17px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+/* Fil d'etapes : seule "Excluded services" est active (is-active) — le
+   comportement decrit par le node Figma ne concerne que cette premiere
+   etape, inutile de simuler une navigation qui n'existe pas dans la
+   source. Meme couleur d'encre pour les 4 libelles (voir la maquette) :
+   seul le remplissage du cercle numerote distingue l'etape active. */
+.excl-modal__stepper {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: 8px; font-size: 11px; color: #434C5C;
+}
+.excl-modal__step { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.excl-modal__step.is-active { font-weight: 500; }
+.excl-modal__step-n {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  background: #A0A5AD; color: #FFFFFF; font-size: 10px;
+}
+.excl-modal__step.is-active .excl-modal__step-n { background: #224B96; }
+.excl-modal__step-sep { width: 32px; height: 1px; flex-shrink: 0; background: rgba(58, 108, 201, .25); }
+
+/* Le conteneur blanc (equivalent du frame "Content" de la maquette) : seul
+   element du corps de la modale a porter un fond et une ombre — le reste de
+   .excl-modal__surface reste visible en #F7F9FD tout autour. */
+.excl-modal__container {
+  background: #FFFFFF;
+  box-shadow: 0 1px 5px rgba(58, 108, 201, .15);
+}
+
+.excl-modal__titre { padding: 21px 17px 18px; border-bottom: 1px solid #C2D3FF; }
+.excl-modal .excl-modal__heading { font-size: 17px; font-weight: 500; color: #434C5C; margin: 0 0 8px; }
+.excl-modal .excl-modal__desc { font-size: 12px; line-height: 17px; color: #434C5C; margin: 0 0 8px; }
+.excl-modal .excl-modal__learn-more { font-size: 12px; line-height: 17px; color: #2E8BE0; margin: 0; }
+
+.excl-modal__toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s3); flex-wrap: wrap; padding: 10px 17px;
+}
+.excl-modal .excl-modal__count { font-size: 13.5px; color: #434C5C; margin: 0; }
+/* Decoratif — aucun <input> : la barre de recherche n'est pas fonctionnelle
+   dans la maquette source (annotation "Searchbar doesnt work" sur le node
+   Figma), un vrai champ inerte induirait l'utilisateur en erreur. Icone
+   apres le texte (pas avant) : ordre exact de la maquette. */
+.excl-modal__search {
+  display: inline-flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 230px; max-width: 100%;
+  padding: 8px; border: 1px solid #C2D3FF; border-radius: 5px;
+  font-size: 12px; color: #A1A6AE;
+}
+.excl-modal__search-icon { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* padding-left = padding de .excl-modal__row (17px) + largeur de la case
+   (17px) + son gap avec le texte (24px) : aligne "Service name" tel qu'il
+   apparait au-dessus avec .excl-modal__row-name en dessous. */
+.excl-modal__table-head {
+  padding: 10px 17px 10px 58px;
+  background: #E0EEFF;
+  font-size: 10px; color: #434C5C; margin: 0;
+}
+/* Seule partie scrollable de la modale (le reste — entete, fil d'etapes,
+   titre, barre d'outils, pied — reste fixe) : hauteur limitee, coupee a mi-
+   hauteur d'une ligne (210px = 4 lignes de 47px + ~22px de la 5e) plutot que
+   pile sur une limite de ligne, pour signaler qu'il y a d'autres services
+   plus bas sans avoir besoin de la barre de defilement (masquee dans les 3
+   moteurs : scrollbar-width, -ms-overflow-style, ::-webkit-scrollbar — le
+   defilement reste possible, juste sans son indicateur visuel). L'espace de
+   17px avant le pied vient de .excl-modal__surface (voir plus haut), pas
+   d'un padding ici : il reste donc constant, que la liste soit scrollee ou
+   non. */
+.excl-modal__rows {
+  max-height: 210px; overflow-y: auto;
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.excl-modal__rows::-webkit-scrollbar { display: none; }
+.excl-modal__row {
+  display: flex; align-items: center; gap: 24px;
+  height: 47px; padding: 0 17px;
+  border-bottom: 1px solid #D7E2FF; cursor: pointer;
+  transition: background .15s var(--ease);
+}
+.excl-modal__row:last-child { border-bottom: none; }
+.excl-modal__row:hover { background: #FAFBFE; }
+
+/* Case a cocher reproduisant le composant "Select" de la maquette (carre
+   arrondi, pas la case native du navigateur) : l'<input> reste le vrai
+   controle (focus clavier, evenement change pour setupExclModal()), rendu
+   invisible mais toujours cliquable/tactile ; .excl-modal__checkbox est sa
+   seule representation visuelle, pilotee par le combinateur + adjacent. */
+.excl-modal__checkbox-wrap { position: relative; width: 17px; height: 17px; flex-shrink: 0; }
+.excl-modal__checkbox-input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.excl-modal__checkbox {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  border: 1px solid #2E8BE0; border-radius: 5px; background: #FFFFFF; pointer-events: none;
+}
+.excl-modal__checkbox-icon { width: 11px; height: 11px; color: #FFFFFF; opacity: 0; }
+.excl-modal__checkbox-input:checked + .excl-modal__checkbox { background: #2E8BE0; }
+.excl-modal__checkbox-input:checked + .excl-modal__checkbox .excl-modal__checkbox-icon { opacity: 1; }
+.excl-modal__checkbox-input:focus-visible + .excl-modal__checkbox { outline: 2px solid #2E8BE0; outline-offset: 2px; }
+
+.excl-modal__row-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.excl-modal__row-name { font-size: 12px; font-weight: 500; color: #434C5C; }
+.excl-modal__row-code { font-size: 12px; font-weight: 400; color: #434C5C; }
+/* Rappel affiche quand la ligne est decochee (donc exclue) — voir
+   setupExclModal() : tag.hidden = cb.checked. Texte italique nu, sans
+   badge/fond : fidele a la maquette (aucun style de puce sur ce texte). */
+.excl-modal__row-tag {
+  flex-shrink: 0; margin-left: auto; font-size: 12px; font-style: italic;
+  color: #434C5C; text-align: right; white-space: nowrap;
+}
+
+.excl-modal__footer {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: var(--s3); padding: 17px;
+  box-shadow: 0 -2px 4px rgba(58, 108, 201, .15);
+}
+.excl-modal .excl-modal__warning {
+  display: flex; align-items: center; gap: 8px; margin: 0;
+  font-size: 12px; color: #434C5C;
+}
+/* Specificite egale (0,0,1,0) que la regle [hidden] du navigateur, mais les
+   styles auteur l'emportent toujours sur ceux du navigateur : sans cette
+   regle explicite, le display:flex ci-dessus resterait actif malgre
+   [hidden] (meme piege que .cbuild__illu-layer[hidden], voir CLAUDE.md). */
+.excl-modal__warning[hidden] { display: none; }
+/* Pas de `color` : le SVG fourni peint son propre remplissage (#F3B248),
+   il n'utilise pas currentColor — voir warningTriangleIcon() dans app.js. */
+.excl-modal__warning-icon { width: 11px; height: 11px; flex-shrink: 0; }
+.excl-modal__actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.excl-modal__cancel {
+  background: none; border: none; font: inherit; font-size: 12px;
+  color: #2E8BE0; cursor: pointer; padding: 8px;
+}
+.excl-modal__next {
+  background: #2E8BE0; color: #FFFFFF; border: none; border-radius: 2px;
+  font: inherit; font-size: 12px; font-weight: 500; cursor: pointer;
+  padding: 8px 17px; transition: background .18s var(--ease);
+}
+.excl-modal__next:hover { background: #224B96; }
+
+@media (max-width: 700px) {
+  .excl-modal__toolbar { flex-direction: column; align-items: flex-start; }
+  .excl-modal__table-head { padding-left: 17px; }
+  .excl-modal__row { gap: 12px; }
+}
+
 /* ---- Contraintes, section "Design" : demo interactif "sentence builder" --
    Widget autonome (voir constraintBuilderMarkup()/setupConstraintBuilder()
    dans app.js), rendu APRES figureFor(s) dans pageCase() plutot que via

@@ -688,6 +688,7 @@ function pageCase(project) {
         ${afterFigure}
         ${s.builder ? constraintBuilderMarkup(s.builder) : ''}
         ${s.builder && s.builder.components ? componentsShowcaseMarkup(s.builder.components, s.builder) : ''}
+        ${s.modal ? exclModalMarkup(s.modal) : ''}
         ${helpers}
         ${s.moreDrawer ? moreDrawerMarkup(s.moreDrawer) : ''}`;
       secs.append(sec);
@@ -934,6 +935,51 @@ function alertCircleIcon(cls) {
       <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
 }
 
+/* Icones pour exclModalMarkup() (voir plus bas) : triangle d'avertissement
+   du pied de modale (node Figma 114:10388), croix de fermeture et loupe de
+   recherche — la barre de recherche et le bouton fermer sont decoratifs
+   (non fonctionnels dans la maquette source), voir le commentaire au-dessus
+   de exclModalMarkup(). */
+/* SVG exact fourni par l'utilisateur (export Figma du node d'avertissement,
+   fond deja peint en #F3B248 dans les <path>/<rect> — pas currentColor). */
+function warningTriangleIcon(cls) {
+  return `<svg class="${cls}" width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M5.26316 8.66783C4.89967 8.66783 4.60527 8.37342 4.60527 8.00994C4.60527 7.64645 4.89967 7.35204 5.26316 7.35204C5.62665 7.35204 5.92105 7.64645 5.92105 8.00994C5.92105 8.37342 5.62665 8.66783 5.26316 8.66783V8.66783ZM4.76974 3.2731H5.75658V5.1152C5.75658 6.16783 5.50987 6.69415 5.50987 6.69415H5.01645C5.01645 6.69415 4.76974 6.16783 4.76974 5.1152V3.2731ZM10.3862 8.84481L5.85987 1.08033C5.69507 0.797767 5.47763 0.656977 5.26053 0.657964C5.04507 0.658951 4.82994 0.79974 4.66645 1.08033L0.140133 8.84481C0.0444097 9.00862 -0.000327147 9.16389 1.80052e-06 9.30171C0.000988643 9.63691 0.271383 9.86849 0.736844 9.86849H9.78948C10.2549 9.86849 10.5253 9.63691 10.5263 9.30139C10.5266 9.16389 10.4819 9.00862 10.3862 8.84481V8.84481Z" fill="#F3B248"/>
+<mask id="mask0_114_10350" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="11" height="10">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M5.26316 8.66783C4.89967 8.66783 4.60527 8.37342 4.60527 8.00994C4.60527 7.64645 4.89967 7.35204 5.26316 7.35204C5.62665 7.35204 5.92105 7.64645 5.92105 8.00994C5.92105 8.37342 5.62665 8.66783 5.26316 8.66783V8.66783ZM4.76974 3.2731H5.75658V5.1152C5.75658 6.16783 5.50987 6.69415 5.50987 6.69415H5.01645C5.01645 6.69415 4.76974 6.16783 4.76974 5.1152V3.2731ZM10.3862 8.84481L5.85987 1.08033C5.69507 0.797767 5.47763 0.656977 5.26053 0.657964C5.04507 0.658951 4.82994 0.79974 4.66645 1.08033L0.140133 8.84481C0.0444097 9.00862 -0.000327147 9.16389 1.80052e-06 9.30171C0.000988643 9.63691 0.271383 9.86849 0.736844 9.86849H9.78948C10.2549 9.86849 10.5253 9.63691 10.5263 9.30139C10.5266 9.16389 10.4819 9.00862 10.3862 8.84481V8.84481Z" fill="white"/>
+</mask>
+<g mask="url(#mask0_114_10350)">
+<rect width="10.5263" height="10.5263" fill="#F3B248"/>
+</g>
+</svg>`;
+}
+/* SVG exact fourni par l'utilisateur : le rect masque (fill="white") est
+   au-dessus du path de base (fill="#434C5C") et couvre exactement la meme
+   forme, donc le rendu final est blanc — coherent avec l'usage sur le
+   bandeau bleu (meme technique de calque "Fill/Primary/White" que Figma
+   utilise pour les icones adaptables au fond). */
+function closeIcon(cls) {
+  return `<svg class="${cls}" width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M5.72837 5.26324L10.43 0.561595C10.5586 0.432977 10.5586 0.225082 10.43 0.0964638C10.3014 -0.0321546 10.0935 -0.0321546 9.96489 0.0964638L5.26324 4.79811L0.561595 0.0964638C0.432977 -0.0321546 0.225082 -0.0321546 0.0964638 0.0964638C-0.0321546 0.225082 -0.0321546 0.432977 0.0964638 0.561595L4.79811 5.26324L0.0964638 9.96488C-0.0321546 10.0935 -0.0321546 10.3014 0.0964638 10.43C0.160609 10.4942 0.244819 10.5264 0.32903 10.5264C0.41324 10.5264 0.497451 10.4942 0.561595 10.43L5.26324 5.72837L9.96489 10.43C10.029 10.4942 10.1132 10.5264 10.1975 10.5264C10.2817 10.5264 10.3659 10.4942 10.43 10.43C10.5586 10.3014 10.5586 10.0935 10.43 9.96488L5.72837 5.26324Z" fill="#434C5C"/>
+<mask id="mask0_114_10250" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="11" height="11">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M5.72837 5.26324L10.43 0.561595C10.5586 0.432977 10.5586 0.225082 10.43 0.0964638C10.3014 -0.0321546 10.0935 -0.0321546 9.96489 0.0964638L5.26324 4.79811L0.561595 0.0964638C0.432977 -0.0321546 0.225082 -0.0321546 0.0964638 0.0964638C-0.0321546 0.225082 -0.0321546 0.432977 0.0964638 0.561595L4.79811 5.26324L0.0964638 9.96488C-0.0321546 10.0935 -0.0321546 10.3014 0.0964638 10.43C0.160609 10.4942 0.244819 10.5264 0.32903 10.5264C0.41324 10.5264 0.497451 10.4942 0.561595 10.43L5.26324 5.72837L9.96489 10.43C10.029 10.4942 10.1132 10.5264 10.1975 10.5264C10.2817 10.5264 10.3659 10.4942 10.43 10.43C10.5586 10.3014 10.5586 10.0935 10.43 9.96488L5.72837 5.26324Z" fill="white"/>
+</mask>
+<g mask="url(#mask0_114_10250)">
+<rect width="10.5263" height="10.5263" fill="white"/>
+</g>
+</svg>`;
+}
+function searchIcon(cls) {
+  return `<svg class="${cls}" width="9" height="9" viewBox="0 0 9 9" fill="none" aria-hidden="true">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M0.526316 3.33211C0.526316 1.785 1.785 0.526316 3.33184 0.526316C4.87895 0.526316 6.13737 1.785 6.13737 3.33211C6.13737 4.87921 4.87895 6.13789 3.33184 6.13789C1.785 6.13789 0.526316 4.87921 0.526316 3.33211M8.34316 7.97132L5.85211 5.505C6.35632 4.92105 6.66368 4.16237 6.66368 3.33211C6.66368 1.49474 5.16921 0 3.33184 0C1.49474 0 0 1.49474 0 3.33211C0 5.16921 1.49474 6.66421 3.33184 6.66421C4.14974 6.66421 4.89842 6.36684 5.47895 5.87605L7.97263 8.34526C8.02395 8.39632 8.09105 8.42158 8.1579 8.42158C8.22553 8.42158 8.29342 8.39553 8.34474 8.34342C8.44711 8.24026 8.44632 8.07368 8.34316 7.97132" fill="#2E8BE0"/>
+</svg>`;
+}
+function checkIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`;
+}
+
 /* Carrousel des 4 illustrations Lottie (section "design", meme place que
    l'ancien media[0] — voir content.js). N'entre pas dans mediaMarkup()/
    mediaGroup() : contrairement a une grille statique, un seul panneau est
@@ -1073,6 +1119,122 @@ function setupImageCarousel() {
       dot.addEventListener('click', onClick);
       addCleanup(() => dot.removeEventListener('click', onClick));
     });
+  });
+}
+
+/* ==========================================================================
+   5e quater. LA MODALE D'EXCLUSION — widget interactif
+   --------------------------------------------------------------------------
+   Un seul cas d'usage (section "iterate" de l'etude de cas Services
+   exclusion) : voir s.modal dans content.js et l'appel dans pageCase().
+   Reproduit le comportement du node Figma 114:10388 ("Modal behavior") —
+   a l'ouverture tous les services sont coches (c'est le fix, voir
+   s.bullets de la meme section : la logique a ete inversee), decocher une
+   ligne l'exclut de la synchronisation, affiche un rappel sur cette ligne
+   et met a jour l'avertissement du pied de modale en direct.
+
+   Couleurs/tailles/police copiees a l'identique du node Figma (get_design_
+   context sur 114:9541 et 114:9958, les deux "Core modal") plutot que des
+   tokens du site — meme choix deliberement que constraintBuilderMarkup()
+   plus bas pour la meme raison (fidelite pixel a une maquette precise) :
+   Roboto, ink #434C5C, bleu interactif #2E8BE0, bandeau degrade
+   #3B6CC9->#224B96, liserés #C2D3FF/#D7E2FF, entete de tableau #E0EEFF,
+   icone d'avertissement #F3B248. Coefficient d'echelle 1.6 applique a
+   toutes les valeurs de la maquette (400px de large dans Figma -> 640px
+   ici) pour rester lisible a taille d'ecran normale.
+
+   La barre de recherche, le bouton de fermeture et Cancel/Next sont du
+   chrome decoratif (memes elements non fonctionnels dans le prototype
+   Figma source, annotes "Searchbar doesnt work" / "next button doesnt
+   bring anywhere when clicked") : rendus sans <input>/gestionnaire pour ne
+   pas laisser croire qu'ils font quelque chose. Seules les cases a cocher
+   sont reellement interactives. */
+function exclModalMarkup(cfg) {
+  const rows = cfg.services.map(s => `
+    <label class="excl-modal__row" data-role="excl-row">
+      <span class="excl-modal__checkbox-wrap">
+        <input type="checkbox" class="excl-modal__checkbox-input" data-role="excl-checkbox" checked>
+        <span class="excl-modal__checkbox" aria-hidden="true">${checkIcon('excl-modal__checkbox-icon')}</span>
+      </span>
+      <span class="excl-modal__row-text">
+        <span class="excl-modal__row-name">${escapeAttr(s.name)}</span>
+        <span class="excl-modal__row-code">${escapeAttr(s.code)}</span>
+      </span>
+      <span class="excl-modal__row-tag" data-role="excl-tag" hidden>Excluded from synchronization</span>
+    </label>`).join('');
+
+  // Meme incoherence de taille de police que la source Figma entre l'etape
+  // active et les 3 suivantes (voir le commentaire au-dessus) : ignoree ici,
+  // .excl-modal__step applique une taille uniforme aux 4 libelles.
+  const steps = ['Excluded services', 'Deactivated services', 'Active services', 'Confirmation'];
+  const stepper = steps.map((label, i) => `
+      <span class="excl-modal__step${i === 0 ? ' is-active' : ''}">
+        <span class="excl-modal__step-n" aria-hidden="true">${i + 1}</span>${escapeAttr(label)}
+      </span>`).join('<span class="excl-modal__step-sep" aria-hidden="true"></span>');
+
+  return `
+    <div class="excl-modal-frame">
+      <div class="excl-modal" role="group" aria-label="Interactive recreation of the ‘Services setting’ modal">
+        <div class="excl-modal__header">
+          <p class="excl-modal__title">Services setting</p>
+          <button type="button" class="excl-modal__close" aria-label="Close">${closeIcon('excl-modal__close-icon')}</button>
+        </div>
+        <div class="excl-modal__surface">
+          <div class="excl-modal__stepper">${stepper}</div>
+          <div class="excl-modal__container">
+            <div class="excl-modal__titre">
+              <p class="excl-modal__heading">Select services to exclude from synchronisation</p>
+              <p class="excl-modal__desc">First, identify services to be permanently excluded from patient visibility and reporting. These services will never auto-activate. You must manually update their status if later offering them to patients. Excluded services appear in the inactive services list.</p>
+              <p class="excl-modal__learn-more">Learn more.</p>
+            </div>
+            <div class="excl-modal__toolbar">
+              <p class="excl-modal__count" data-role="excl-count">${cfg.services.length} imported services</p>
+              <span class="excl-modal__search" aria-hidden="true">Search by service name${searchIcon('excl-modal__search-icon')}</span>
+            </div>
+            <div class="excl-modal__table-head">Service name</div>
+            <div class="excl-modal__rows">${rows}</div>
+          </div>
+        </div>
+        <div class="excl-modal__footer">
+          <p class="excl-modal__warning" data-role="excl-warning" hidden>${warningTriangleIcon('excl-modal__warning-icon')}<span data-role="excl-warning-text"></span></p>
+          <span class="excl-modal__actions">
+            <button type="button" class="excl-modal__cancel">Cancel</button>
+            <button type="button" class="excl-modal__next">Next</button>
+          </span>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* Cablage : une seule fonction update() recalculee a chaque changement de
+   case, plutot qu'un gestionnaire par ligne — a l'echelle de ~8 lignes le
+   recalcul complet est instantane et evite de traquer un etat separe de
+   celui deja porte par les checkbox elles-memes (source unique de verite). */
+function setupExclModal() {
+  $$('.excl-modal').forEach(root => {
+    const checkboxes = $$('[data-role="excl-checkbox"]', root);
+    const warning = $('[data-role="excl-warning"]', root);
+    const warningText = $('[data-role="excl-warning-text"]', root);
+
+    const update = () => {
+      let excludedCount = 0;
+      checkboxes.forEach(cb => {
+        const tag = cb.closest('[data-role="excl-row"]').querySelector('[data-role="excl-tag"]');
+        tag.hidden = cb.checked;
+        if (!cb.checked) excludedCount++;
+      });
+      warning.hidden = excludedCount === 0;
+      if (excludedCount > 0) {
+        warningText.textContent = `${excludedCount} service${excludedCount > 1 ? 's' : ''} will be excluded from synchronization`;
+      }
+    };
+
+    checkboxes.forEach(cb => {
+      cb.addEventListener('change', update);
+      addCleanup(() => cb.removeEventListener('change', update));
+    });
+
+    update();
   });
 }
 
@@ -2671,6 +2833,7 @@ function render() {
     if (route.name === 'case' && route.project.slug === 'constraints') setupComponentsShowcase();
     if (route.name === 'case' && route.project.slug === 'constraints') setupLottieCarousel();
     if (route.name === 'case' && route.project.slug === 'services-exclusion') setupImageCarousel();
+    if (route.name === 'case' && route.project.slug === 'services-exclusion') setupExclModal();
     setupScrollProgress();
     setupVideos();
   };

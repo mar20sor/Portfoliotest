@@ -551,8 +551,31 @@ export const PROJECTS = [
           'Added a warning showing how many services are about to be excluded.'
         ],
         body: [],
-        image: 'exclusion-4-test-en', bare: true,
-        caption: 'After the fixes'
+        // Modale interactive (remplace l'ancienne capture exclusion-4-test-en)
+        // reproduisant le comportement du node Figma 114:10388 : a
+        // l'ouverture tous les services sont coches (donc synchronises),
+        // decocher un service l'exclut, affiche un rappel sur sa ligne et
+        // met a jour l'avertissement en pied de modale. Voir
+        // exclModalMarkup()/setupExclModal() dans app.js. Liste et ordre
+        // copies du node Figma (Core modal, 114:9541/114:9958), noms
+        // traduits en anglais d'apres la vraie capture produit
+        // exclusion-2-step2-en.png (Follow-up, Pregnancy follow-up,
+        // Emergency, Adult/Child seasonal flu vaccine) — les 4 restants
+        // (absences, rencontre administrative) n'y figurent pas, traduits
+        // par analogie avec le meme registre.
+        modal: {
+          services: [
+            { name: 'Follow-up', code: '000000' },
+            { name: 'Holiday absence', code: '000000' },
+            { name: 'Parental leave absence', code: '000000' },
+            { name: 'Pregnancy follow-up', code: '000000' },
+            { name: 'Emergency', code: '000000' },
+            { name: 'Vacation absence', code: '000000' },
+            { name: 'Administrative meeting', code: '000000' },
+            { name: 'Adult seasonal flu vaccine', code: '000000' },
+            { name: 'Child seasonal flu vaccine', code: '000000' }
+          ]
+        }
       },
       {
         id: 'takeaways', label: 'Takeaways', title: '5. Takeaways',
