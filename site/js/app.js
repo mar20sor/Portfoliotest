@@ -462,23 +462,6 @@ function pageHome() {
   return page;
 }
 
-/* ---- 5d. Une page de liste (Projets / A cote) ---- */
-function pageList(kind) {
-  const d = t();
-  const page = el('div', { class: 'section' });
-  const w = el('div', { class: 'wrap' });
-  w.insertAdjacentHTML('beforeend', `
-    <div class="section__head">
-      <h1>${escapeAttr(kind === 'work' ? d.workTitle : d.sideTitle)}</h1>
-      <p>${escapeAttr(kind === 'work' ? d.workIntro : d.sideIntro)}</p>
-    </div>`);
-  const grid = el('div', { class: 'cards' });
-  PROJECTS.filter(p => p.kind === kind).forEach(p => grid.append(projectCard(p)));
-  w.append(grid);
-  page.append(w);
-  return page;
-}
-
 /* ---- 5e. Une etude de cas ----
    Structure : en-tete "30 secondes", puis grille [nav laterale | sections],
    puis lien vers le projet suivant. */
@@ -570,7 +553,7 @@ function pageCase(project) {
     // gap, projets sans sections).
     const nav = el('nav', { class: 'cs-nav', 'aria-label': d.csSections });
     nav.innerHTML = `
-      <a class="cs-nav__back" href="#/${escapeAttr(c.kind)}">
+      <a class="cs-nav__back" href="#/#${escapeAttr(c.kind)}">
         <span aria-hidden="true">←</span> ${escapeAttr(d.csBack)}
       </a>
       <ol>
@@ -2687,8 +2670,8 @@ function buildFooter() {
           <h3>${escapeAttr(d.footerSitemap)}</h3>
           <ul>
             <li><a href="#/">${escapeAttr(d.navHome)}</a></li>
-            <li><a href="#/work">${escapeAttr(d.navWork)}</a></li>
-            <li><a href="#/side">${escapeAttr(d.navSide)}</a></li>
+            <li><a href="#/#work">${escapeAttr(d.navWork)}</a></li>
+            <li><a href="#/#side">${escapeAttr(d.navSide)}</a></li>
             <li><a href="#/about">${escapeAttr(d.navAbout)}</a></li>
             <li><a href="#/gap">${escapeAttr(HERO.gapLink)}</a></li>
           </ul>
@@ -2745,7 +2728,6 @@ function parseRoute(hash) {
   if (parts[0] === 'about')                     return { name: 'about' };
   if (parts[0] === 'gap')                       return { name: 'gap' };
   if (parts[0] === 'work' || parts[0] === 'side') {
-    if (!parts[1]) return { name: 'list', kind: parts[0] };
     const p = PROJECTS.find(x => x.slug === parts[1] && x.kind === parts[0]);
     return p ? { name: 'case', project: p } : { name: '404' };
   }
@@ -2763,8 +2745,6 @@ function render() {
   let node, title = SITE.name;
   switch (route.name) {
     case 'home':  node = pageHome();                    break;
-    case 'list':  node = pageList(route.kind);
-                  title = `${route.kind === 'work' ? t().workTitle : t().sideTitle} — ${SITE.name}`; break;
     case 'case':  node = pageCase(route.project);
                   title = `${route.project.title} — ${SITE.name}`; break;
     case 'about': node = pageEditorial('about');
@@ -2894,7 +2874,7 @@ function readHeadHeight() {
 
 /* Souligne l'entree de menu correspondant a la page affichee. */
 function markActiveNav(route) {
-  const map = { home: 'home', list: route.kind, case: route.project?.kind, about: 'about', gap: null };
+  const map = { home: 'home', case: route.project?.kind, about: 'about', gap: null };
   const current = map[route.name] ?? null;
   $$('.site-nav a[data-nav]').forEach(a => {
     if (a.dataset.nav === current) a.setAttribute('aria-current', 'page');
@@ -2914,7 +2894,7 @@ function setupBackLink(route) {
   const deep = ['case', 'about', 'gap'].includes(route.name) && !hasOwnBackLink;
   link.hidden = !deep;
   if (!deep) return;
-  link.href = route.name === 'case' ? `#/${route.project.kind}` : '#/';
+  link.href = route.name === 'case' ? `#/#${route.project.kind}` : '#/';
 }
 
 function closeMobileNav() {
