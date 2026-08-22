@@ -1507,11 +1507,58 @@ function setupConstraintBuilder() {
   const previewTitle = $('[data-role="preview-title"]', root);
   const illuBracketLabel = $('[data-role="illu-bracket-label"]', root);
 
+  // Minuteurs de sortie (un par losange, voir updatePreview ci-dessous) :
+  // trace pour pouvoir les annuler si l'etat re-change avant la fin du
+  // fondu, et pour les vider au demontage du widget.
+  const illuHideTimers = illuDiamonds.map(() => null);
+  addCleanup(() => illuHideTimers.forEach(id => clearTimeout(id)));
+
   const updatePreview = () => {
     const constraint = cfg.constraints.find(c => c.value === vals.constraint);
     illuDays.textContent = formatDayRange(vals.days, cfg.days);
     illuTask.textContent = taskFieldLabel(cfg, vals.tasks);
-    illuDiamonds.forEach((img, i) => { img.hidden = i >= vals.tasks.length; });
+    // Losange nouvellement revele (etait hidden, ne l'est plus) : meme depart
+    // que la pile compacte de heroMedia (constraint-limit.json, frame ~3) —
+    // un seul losange au pivot central (top:35%, cf. --illu-base ci-dessous
+    // quand --illu-count:1), invisible, avant de glisser vers son etage.
+    // L'inline top/opacity fixe cet etat de depart ; le retirer au frame
+    // suivant laisse la transition CSS (.cbuild__illu-layer) l'animer vers le
+    // top final regle par sa classe --slotN — chaque losange glisse donc
+    // separement, certains vers le haut, d'autres vers le bas, exactement
+    // comme la pile qui se separe dans le Lottie.
+    // Sortie symetrique : un losange retire glisse D'ABORD vers ce meme pivot
+    // en s'estompant, et ne passe hidden qu'une fois la transition terminee
+    // (450ms = duree de la transition "top" ci-dessous, styles.css). Sans ce
+    // delai, hidden=true immediat coupait le losange en plein vol pendant que
+    // les autres etaient encore en train de se recentrer — il semblait
+    // disparaitre au milieu de l'animation plutot que la terminer.
+    illuDiamonds.forEach((img, i) => {
+      const shouldShow = i < vals.tasks.length;
+      clearTimeout(illuHideTimers[i]);
+      if (shouldShow) {
+        if (img.hidden) {
+          img.hidden = false;
+          img.style.top = '35%';
+          img.style.opacity = '0';
+          void img.offsetWidth;
+          requestAnimationFrame(() => { img.style.top = ''; img.style.opacity = ''; });
+        } else {
+          // Deja visible (ou en cours de sortie annulee par un re-ajout
+          // rapide) : pas besoin du reflow ci-dessus, juste s'assurer qu'il
+          // vise bien son etage final.
+          img.style.top = '';
+          img.style.opacity = '';
+        }
+      } else if (!img.hidden) {
+        img.style.top = '35%';
+        img.style.opacity = '0';
+        illuHideTimers[i] = setTimeout(() => {
+          img.hidden = true;
+          img.style.top = '';
+          img.style.opacity = '';
+        }, 450);
+      }
+    });
     // --illu-count pilote --illu-base (styles.css) : garde le tas de losanges
     // visibles centre sur le crochet "Limit" quel que soit leur nombre,
     // plutot que de toujours empiler depuis le meme losange du bas.

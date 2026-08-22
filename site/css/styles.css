@@ -1621,6 +1621,15 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 .cbuild__illu-layer {
   position: absolute; left: 24.06%; width: 43.48%; height: auto;
   display: block; transform: rotate(45deg);
+  /* Meme langage que le losange collant de heroMedia (constraint-limit.json) :
+     un losange qui apparait part du meme pivot (top:35%, voir --illu-base
+     ci-dessus quand --illu-count:1) que les autres avant de glisser vers son
+     etage — setupConstraintBuilder() pose top/opacity inline pour l'etat de
+     depart, cette transition anime le retour vers l'etage cible (slotN) une
+     fois l'inline retire. Couvre aussi le recentrage : quand --illu-count
+     change, TOUS les losanges deja visibles glissent en douceur vers leur
+     nouveau --illu-base au lieu de sauter. */
+  transition: top .45s cubic-bezier(.22,1,.36,1), opacity .3s ease;
 }
 /* display:block ci-dessus bat la regle UA [hidden]{display:none} (une regle
    auteur l'emporte toujours sur l'UA, meme a specificite egale) : sans cette
