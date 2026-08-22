@@ -446,7 +446,7 @@ function pageHome() {
   /* --- Les deux listes de projets, filtrees par `kind` --- */
   for (const kind of ['work', 'side']) {
     const list = PROJECTS.filter(p => p.kind === kind);
-    const sec = el('section', { class: 'section', id: kind });
+    const sec = el('section', { class: 'section', id: `sec-${kind}` });
     const w = el('div', { class: 'wrap' });
     w.insertAdjacentHTML('beforeend', `
       <div class="section__head">
@@ -1160,7 +1160,7 @@ function exclModalMarkup(cfg) {
         <span class="excl-modal__row-name">${escapeAttr(s.name)}</span>
         <span class="excl-modal__row-code">${escapeAttr(s.code)}</span>
       </span>
-      <span class="excl-modal__row-tag" data-role="excl-tag" hidden>Excluded from synchronization</span>
+      <span class="excl-modal__row-tag" data-role="excl-tag" hidden>Excluded<br class="excl-modal__row-tag-break">from synchronization</span>
     </label>`).join('');
 
   // Meme incoherence de taille de police que la source Figma entre l'etape
@@ -2894,7 +2894,7 @@ function readHeadHeight() {
 
 /* Souligne l'entree de menu correspondant a la page affichee. */
 function markActiveNav(route) {
-  const map = { home: null, list: route.kind, case: route.project?.kind, about: 'about', gap: null };
+  const map = { home: 'home', list: route.kind, case: route.project?.kind, about: 'about', gap: null };
   const current = map[route.name] ?? null;
   $$('.site-nav a[data-nav]').forEach(a => {
     if (a.dataset.nav === current) a.setAttribute('aria-current', 'page');

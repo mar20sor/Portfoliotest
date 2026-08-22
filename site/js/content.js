@@ -241,8 +241,7 @@ export const PROJECTS = [
     problem: 'Constraints are the rules applied to staff availability to build a fair schedule (ex: a member cannot work two consecutive periods). They were configured by Petal’s internal teams for hospitals because they were complicated to use and so redundant that several different rules led to the same result.',
     outcome: 'I reduced the 24 constraints to 9 by identifying the characteristics they shared, then designed a rule builder clinic managers can operate themselves without going through an agent.',
     stats: [
-      { n: '24 → 9', l: 'constraints after consolidation' },
-      { n: '8 → 3', l: 'for the most-used ones' }
+      { n: '24 → 9', l: 'constraints after consolidation' }
     ],
     sections: [
       {

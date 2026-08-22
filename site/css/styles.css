@@ -1331,6 +1331,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   flex-shrink: 0; margin-left: auto; font-size: 12px; font-style: italic;
   color: #434C5C; text-align: right; white-space: nowrap;
 }
+/* Force-break hidden by default (desktop keeps the tag on one line) — shown
+   only in the mobile breakpoint below, where the two-line tag frees up
+   horizontal space for .excl-modal__row-text. */
+.excl-modal__row-tag-break { display: none; }
 
 .excl-modal__footer {
   display: flex; align-items: center; justify-content: space-between;
@@ -1365,6 +1369,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .excl-modal__toolbar { flex-direction: column; align-items: flex-start; }
   .excl-modal__table-head { padding-left: 17px; }
   .excl-modal__row { gap: 12px; }
+  .excl-modal__row, .excl-modal__row * { font-size: 10px; }
+  .excl-modal__row-tag-break { display: block; }
+  .excl-modal__step-sep { display: none; }
 }
 
 /* ---- Contraintes, section "Design" : demo interactif "sentence builder" --
@@ -2235,6 +2242,7 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
   .foot__grid { grid-template-columns: 1fr 1fr; }
   .cs-next__link { flex-direction: column; align-items: flex-start; }
   .cbuild__layout { grid-template-columns: 1fr; }
+  .cbuild__card { width: 100%; }
   /* Sous 860px le cadre passe en pile normale (pas de positionnement absolu
      façon Figma, qui suppose une largeur de cadre confortable) : chaque
      panneau reprend le flux du document, l'un sous l'autre, et le cadre
