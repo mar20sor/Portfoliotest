@@ -1178,11 +1178,20 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: #E9F2FE;
   padding: clamp(16px, 4vw, 40px);
   display: flex; justify-content: center;
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 .excl-modal {
   width: 100%; max-width: 640px;
   background: #FFFFFF;
   font-family: 'Roboto', 'Segoe UI', sans-serif;
+}
+/* Desktop only : `zoom` plutot que `transform: scale()` — zoom participe a
+   la mise en page (la boite se redimensionne réellement, comme un Scale (K)
+   dans Figma) alors que transform ne redimensionne que visuellement et
+   laisse un vide reserve autour, ce qui aurait casse le centrage du cadre. */
+@media (min-width: 861px) {
+  .excl-modal { zoom: 0.75; }
 }
 .excl-modal__header {
   display: flex; align-items: center; position: relative;
@@ -1471,7 +1480,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   min-width: 182px; width: max-content; max-width: min(266px, 90vw);
   background: #fff;
   border: 1px solid #eaeaf9;
-  border-radius: 6px;
+  border-radius: 4px;
   box-shadow: var(--shadow);
   padding: 6px;
   display: grid; gap: 3px;
@@ -1510,8 +1519,29 @@ button { font: inherit; color: inherit; cursor: pointer; }
   width: 25px; height: 25px; flex: none;
   display: grid; place-items: center;
   background: #eaeaf9; border-radius: 3px;
+  transition: background-color .18s var(--ease);
 }
-.cbuild__opt-icon img { width: 14px; height: 14px; }
+/* Glyphe masque (voir constraintOptionRows(), app.js) : mask-image decoupe
+   la forme de l'icone source (--opt-icon-src) et background-color en pilote
+   la couleur — c'est ce qui permet au survol ci-dessous d'inverser bg/glyphe
+   sans dupliquer les SVG en variante claire/foncee. */
+.cbuild__opt-icon-glyph {
+  width: 14px; height: 14px;
+  background-color: #594CCC;
+  -webkit-mask-image: var(--opt-icon-src); mask-image: var(--opt-icon-src);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center; mask-position: center;
+  -webkit-mask-size: contain; mask-size: contain;
+  transition: background-color .18s var(--ease);
+}
+.cbuild__listbox li:hover .cbuild__opt-icon, .ccomp__list li:hover .cbuild__opt-icon,
+.cbuild__listbox li:focus .cbuild__opt-icon, .ccomp__list li:focus .cbuild__opt-icon {
+  background-color: #594CCC;
+}
+.cbuild__listbox li:hover .cbuild__opt-icon-glyph, .ccomp__list li:hover .cbuild__opt-icon-glyph,
+.cbuild__listbox li:focus .cbuild__opt-icon-glyph, .ccomp__list li:focus .cbuild__opt-icon-glyph {
+  background-color: #EAEAF9;
+}
 /* Case a cocher decorative (taches, multi-selection) : l'etat reel est
    porte par aria-selected sur le <li> (voir taskCheckboxRows, app.js) ; ici
    on ne fait que dessiner un carre qui se remplit en fonction de cet
@@ -1658,12 +1688,58 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 .cbuild__illu-layer--slot1 { z-index: 3; }
 .cbuild__illu-layer--slot2 { z-index: 2; }
 .cbuild__illu-layer--slot3 { z-index: 1; }
-.cbuild__illu-rule {
-  position: absolute; left: 11.68%; top: 16.54%; width: 70.08%; height: 75.29%; display: block;
+/* Ligne de reference pointillee (gauche), toujours pleine hauteur : ancien
+   "Line 13" du SVG (constraint-illu-rule.svg, retire — voir le commentaire
+   dans app.js), reproduit en CSS pur. */
+.cbuild__illu-guide {
+  position: absolute; left: 13%; top: 20%; height: 75.29%;
+  border-left: 1.5px dashed #371495; display: block;
 }
+/* Crochet "Limit" (droite) : sa hauteur suit --illu-count (calc ci-dessous)
+   au lieu d'etre figee comme l'ancien SVG — plus de taches coches = crochet
+   plus grand, du plus petit (une tache) au plus grand (cfg.maxTasks, 4),
+   toujours centre sur le VRAI centre de la pile de losanges quel que soit
+   --illu-count (pas seulement a 1 tache) :
+
+   .cbuild__illu-layer fait width:43.48%, donc 43.48% * (244/262.989) =
+   40.34% de la HAUTEUR du cadre (top/height sont relatifs a cette hauteur)
+   — un carre dont le centre (que rotate(45deg) ne deplace pas) est a la
+   moitie de cote sous son `top`, soit --illu-base + 20.17% pour le losange
+   du HAUT de la pile (slot0, a --illu-base). Le losange du BAS de la pile
+   (slot le plus eleve visible, a --illu-base + (--illu-count-1)*7%) a donc
+   son centre a --illu-base + 20.17% + (--illu-count-1)*7%. Le centre de la
+   pile entiere est la moyenne des deux : --illu-base + 20.17% +
+   (--illu-count-1)*3.5% — cette derniere partie s'annule exactement avec
+   --illu-base (calc(35% - (--illu-count-1)*3.5%) plus haut), donc ce centre
+   est fixe (55.17%) quel que soit --illu-count : c'est le pivot sur lequel
+   `top` ci-dessous centre le crochet (pivot - height/2), pas sur --illu-base
+   seul (qui n'est que le HAUT de la pile, pas son centre). Meme pivot pour
+   .cbuild__illu-bracket-label (juste en dessous), qui reste donc ancre au
+   milieu du crochet a 1 tache comme a 4. border-right sert de hampe
+   verticale (equivalent de l'ancien "Line 10" du SVG retire), ::before/
+   ::after des courtes barres horizontales en haut/bas ("Line 11"/
+   "Line 12") — memes proportions que l'ancien SVG (crochet cote droit,
+   x∈[78.04%, 81.76%]). */
+.cbuild__illu-bracket {
+  position: absolute; left: 78.07%; width: 3.69%;
+  top: calc(var(--illu-base) + 20.17% + (var(--illu-count) - 1) * 3.5% - (10% + (var(--illu-count) - 1) * 7% + 20px) / 2);
+  height: calc(10% + (var(--illu-count) - 1) * 7% + 20px);
+  border-right: 1.5px solid rgba(55,20,149,.7);
+  transition: top .45s cubic-bezier(.22,1,.36,1), height .45s cubic-bezier(.22,1,.36,1);
+}
+.cbuild__illu-bracket::before,
+.cbuild__illu-bracket::after {
+  content: ''; position: absolute; left: 0; right: 0;
+  border-top: 1.5px solid rgba(55,20,149,.7);
+}
+.cbuild__illu-bracket::before { top: 0; }
+.cbuild__illu-bracket::after { bottom: 0; }
 .cbuild__illu-bracket-label {
-  position: absolute; left: 84.84%; top: 52.48%; transform: translateY(-50%);
+  position: absolute; left: 84.84%;
+  top: calc(var(--illu-base) + 20.17% + (var(--illu-count) - 1) * 3.5%);
+  transform: translateY(-50%);
   font-size: 11px; color: rgba(55,20,149,.7); white-space: nowrap;
+  transition: top .45s cubic-bezier(.22,1,.36,1);
 }
 /* Time a gauche, Tasks a droite (au-dessus des losanges) — fidele a la
    maquette Figma (node 18:383) : le libelle des taches n'est plus empile
@@ -1673,14 +1749,10 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    deplace horizontalement pour rester a droite (elle epouse la largeur de
    son contenu), mais le texte a l'interieur ne se retourne pas.
 
-   right:25% (et non 0) pour ne jamais toucher le petit crochet vertical de
-   .cbuild__illu-rule : ce crochet (les 2 courtes lignes horizontales +
-   segment vertical du SVG source, cote droit) n'occupe qu'une bande etroite
-   x∈[78.04%, 81.76%] de la largeur de l'illustration (calcule depuis son
-   propre viewBox 171x198 : le crochet vit en x=162..171/171, reporte dans le
-   cadre de .cbuild__illu-rule lui-meme a 11.68%..81.76%). Le bord droit du
-   libelle doit donc rester sous ~78% ; right:25% le place a 75%, avec une
-   marge de securite. */
+   right:25% (et non 0) pour ne jamais toucher le crochet "Limit" vertical de
+   .cbuild__illu-bracket : sa bande occupe x∈[78.07%, 81.76%] de la largeur
+   de l'illustration. Le bord droit du libelle doit donc rester sous ~78% ;
+   right:25% le place a 75%, avec une marge de securite. */
 .cbuild__illu-label { position: absolute; text-align: left; }
 .cbuild__illu-label--time { top: 0; left: 0; }
 .cbuild__illu-label--tasks { top: 80%; right: 25%; }
@@ -1848,7 +1920,7 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   position: absolute;
   top: calc(100% + 10px);
   left: 0;
-  background: #fff; border: 1px solid #eaeaf9; border-radius: 11px;
+  background: #fff; border: 1px solid #eaeaf9; border-radius: 4px;
   box-shadow: var(--shadow);
   padding: 16px;
   /* Plafonne la largeur du corps pour qu'il ne deborde jamais du cadre a

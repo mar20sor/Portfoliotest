@@ -579,7 +579,8 @@ export const PROJECTS = [
       {
         id: 'takeaways', label: 'Takeaways', title: '5. Takeaways',
         body: [
-          'This is the project I bring up most readily in interviews. Not because the first version was good, but because the testing setup caught a mistake before it cost somebody their data.'
+          'This project confirmed that users don’t read. The “select all” incident was proof that clear labels aren’t enough, actions need visible feedback and signals.',
+          'It also sharpened how I think about testing, especially for critical processes. Testing earlier would have told us whether keeping the screens managers already knew (instead of introducing a new four-step wizard) was the safer choice.'
         ]
       }
     ]

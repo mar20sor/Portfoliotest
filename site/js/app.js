@@ -1303,12 +1303,24 @@ function taskCheckboxRows(items, selectedValues) {
 /* Lignes du type de contrainte (icone + predicat + description) : factorisee
    pour etre partagee entre constraintBuilderMarkup() (ou seule "Limit" reste
    jamais reellement selectionnable, voir plus bas) et componentsShowcaseMarkup()
-   (ou les quatre types se selectionnent vraiment). */
+   (ou les quatre types se selectionnent vraiment).
+   L'icone est un <span> masque (mask-image, --opt-icon-src) plutot qu'un
+   <img> : un <img> pointe vers un SVG dont les couleurs sont figees dans le
+   fichier, donc pas re-teignable en CSS — le survol (styles.css) inverse
+   les couleurs du chip (bg <-> glyphe), ce qui exige que le glyphe soit une
+   forme masquee dont on pilote juste le background-color. "../" devant
+   c.icon (contrairement aux <img src> du reste du fichier, relatifs a la
+   page) : un url() dans une custom property se resout relatif a la feuille
+   de style qui la CONSOMME via var() (styles.css, dans css/), pas relatif a
+   la page qui la DEFINIT ici — meme convention que les autres url() de
+   styles.css (ex. constraint-builder-bg.png). Sans le "../", le mask
+   pointait vers css/assets/... (404) et le glyphe ne s'affichait pas du
+   tout, hover ou pas. */
 function constraintOptionRows(constraints, selectedValue) {
   return constraints.map(c => `
     <li role="option" data-value="${escapeAttr(c.value)}"
         aria-selected="${c.value === selectedValue ? 'true' : 'false'}" tabindex="-1">
-      <span class="cbuild__opt-icon" aria-hidden="true">${c.icon ? `<img src="${escapeAttr(c.icon)}" alt="" width="20" height="20">` : ''}</span>
+      <span class="cbuild__opt-icon" aria-hidden="true">${c.icon ? `<span class="cbuild__opt-icon-glyph" style="--opt-icon-src: url('../${escapeAttr(c.icon)}')"></span>` : ''}</span>
       <span class="cbuild__opt-text">
         <span class="cbuild__opt-predicate">${escapeAttr(c.predicate)}</span>
         <span class="cbuild__opt-desc">${escapeAttr(c.description)}</span>
@@ -1379,8 +1391,10 @@ function constraintBuilderMarkup(cfg) {
   // deja a 45°/135° dans son propre viewBox — sans rotation CSS, la forme
   // rendue est donc un losange penche, pas la forme "debout" (pointes en
   // haut/bas/gauche/droite) de la maquette ; la rotation ramene ces
-  // diagonales a 0°/90°. La ligne pointillee + crochet reste (constraint-
-  // illu-rule.svg).
+  // diagonales a 0°/90°. La ligne pointillee (.cbuild__illu-guide) et le
+  // crochet "Limit" (.cbuild__illu-bracket) sont batis en CSS plutot qu'en
+  // SVG statique : le crochet doit suivre --illu-count (hauteur + position,
+  // voir styles.css), ce qu'une image ne peut pas faire.
   const layerAssets = [
     'assets/icons/constraint-illu-layer-3.svg',
     'assets/icons/constraint-illu-layer-2.svg',
@@ -1395,7 +1409,8 @@ function constraintBuilderMarkup(cfg) {
     <div class="cbuild__illu" aria-hidden="true">
       <div class="cbuild__illu-graphic" data-role="illu-graphic" style="--illu-count: ${d.tasks.length}">
         ${diamondLayers}
-        <img class="cbuild__illu-rule" src="assets/icons/constraint-illu-rule.svg" alt="">
+        <span class="cbuild__illu-guide" aria-hidden="true"></span>
+        <span class="cbuild__illu-bracket" data-role="illu-bracket" aria-hidden="true"></span>
         <span class="cbuild__illu-bracket-label" data-role="illu-bracket-label">${escapeAttr(selectedConstraint.name)}</span>
         <div class="cbuild__illu-label cbuild__illu-label--time">
           <dt>Time</dt><dd data-role="illu-days">${escapeAttr(formatDayRange(d.days, cfg.days))}</dd>
