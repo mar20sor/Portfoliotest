@@ -594,7 +594,7 @@ export const PROJECTS = [
     client: 'Petal',
     tagline: 'Turning admin access from a fixed role into a **right** any member can hold.',
     tags: ['Access control', 'Component reuse', 'Healthcare SaaS'],
-    gist: { role: 'UX / UI', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer', tools: 'Figma' },
+    gist: { role: 'UX / UI', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer' },
     problem: 'Clinics and hospitals lacked control over the registration process, as it happened outside the platform, and the permissions system required more clarity and granularity.',
     outcome: 'We redefined the permission system and implemented a new registration process so that managers, according to their authorization level, can add different types of member.',
     sections: [
@@ -754,8 +754,17 @@ export const PROJECTS = [
         body: [
           'To reflect the decisions we had taken concerning admin being a right rather than a role, I modified the role management table as well as the member list:',
           'The licence management indicator is shown as a tag in the member list.',
-          'For the table, the challenge was to give the ability to still keep a role, while being able to have the licence manager right (we didn’t want to go into a full setting table as there would be no benefits to have roles in this case). So we implemented it as a right, with the same tag.'
-        ]
+          'For the table, the challenge was to give the ability to still keep a role, while being able to have the licence manager right (I didn’t want to go into a full setting table as there would be no benefits to have roles in this case). So I implemented it as a right, with the same tag.'
+        ],
+        // 2 captures Figma (node 250:11947 "Manager tag" et 250:11948 "Role
+        // table") : la 1ere porte deja une pastille "1" annotant le tag dans
+        // la liste des membres — reprise ici sur le paragraphe qui l'explique
+        // via s.numbered plutot que dupliquee dans le texte.
+        figureAfter: [
+          { after: 0, image: 'licence-10-manager-tag-en', bare: true },
+          { after: 1, image: 'licence-11-role-table-en', bare: true }
+        ],
+        numbered: { 1: 1 }
       },
       {
         id: 'takeaways', label: 'Takeaways', title: '5. Takeaways',

@@ -599,7 +599,10 @@ function pageCase(project) {
       // inseree apres le paragraphe d'index `after` — comme s.terms mais
       // pour une image plutot qu'un bloc terme/definition (ex. Licence
       // management/Before, la capture de l'ancienne page de modification).
-      const figureAfterBlock = s.figureAfter ? figureFor(s.figureAfter) : '';
+      // Accepte soit un objet unique, soit un tableau (ex. Admin model : une
+      // figure apres le 1er paragraphe, une autre apres le 2e).
+      const figuresAfterList = s.figureAfter
+        ? (Array.isArray(s.figureAfter) ? s.figureAfter : [s.figureAfter]) : [];
 
       /* Les paragraphes, avec les medias intercales aux positions indiquees
          par `s.media`. La cle de cet objet est l'index du paragraphe apres
@@ -608,8 +611,17 @@ function pageCase(project) {
       const parts = s.body.map((p, i) => {
         const after = s.media && s.media[i] ? mediaGroup(s.media[i]) : '';
         const terms = s.terms && s.terms.after === i ? termsBlock : '';
-        const figure = s.figureAfter && s.figureAfter.after === i ? figureAfterBlock : '';
-        return `<p>${emphasize(p)}</p>${after}${terms}${figure}`;
+        const figure = figuresAfterList.filter(f => f.after === i).map(figureFor).join('');
+        // s.numbered : { [paragraphIndex]: n } — accole une pastille
+        // numerotee violette (meme style que .cs-timeline__constraint-num)
+        // au paragraphe, pour faire echo a un numero deja present dans une
+        // figure juste au-dessus (ex. Admin model, pastille "1" de la
+        // capture Figma reprise ici sur le paragraphe qui l'explique).
+        const num = s.numbered && s.numbered[i];
+        const paragraph = num
+          ? `<div class="cs-sec__num-row"><span class="cs-sec__num" aria-hidden="true">${num}</span><p>${emphasize(p)}</p></div>`
+          : `<p>${emphasize(p)}</p>`;
+        return `${paragraph}${after}${terms}${figure}`;
       }).join('');
 
       const intro = s.intro ? `<p>${s.intro.map(escapeAttr).join('<br>')}</p>` : '';
@@ -890,7 +902,7 @@ function figureFor(s) {
   const figure = `
     <figure class="figure${s.bare ? ' figure--bare' : ''}">
       <div class="figure__frame">${media}</div>
-      <figcaption>${captionHTML}${note}</figcaption>
+      ${captionHTML || note ? `<figcaption>${captionHTML}${note}</figcaption>` : ''}
     </figure>`;
   return s.figureDrawer
     ? `<details class="figure-drawer"><summary>${escapeAttr(t().figureSeeMore)}${chevronIcon('figure-drawer__chevron')}</summary>${figure}</details>`

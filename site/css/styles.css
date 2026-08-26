@@ -801,6 +801,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cs-sec__title { font-size: var(--fs-h2); margin-bottom: var(--s4); font-weight: var(--w-medium); }
 .cs-sec p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }
 .cs-sec p:last-child { margin-bottom: 0; }
+/* s.numbered (voir app.js) : pastille numerotee violette accolee a un
+   paragraphe, meme style que .cs-timeline__constraint-num — pour faire echo
+   a un numero deja present dans une figure au-dessus (ex. Admin model). */
+.cs-sec__num-row { display: flex; align-items: flex-start; gap: var(--s3); }
+.cs-sec__num {
+  flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; margin-top: 2px;
+  background: #7F5DDD; color: #fff; font-size: var(--fs-small); font-weight: var(--w-semibold);
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+}
 /* Meme mesure/couleur que .cs-sec p, avec les puces natives ul : liste a
    puces generique (voir s.bullets dans content.js, et p.list des items de
    moreDrawer), a la place d'un paragraphe unique. */
