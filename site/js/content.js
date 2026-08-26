@@ -586,48 +586,94 @@ export const PROJECTS = [
     ]
   },
 
-  /* ===================== PETAL — TRANSFERT DE DME ======================= */
+  /* ===================== PETAL — GESTION DES LICENCES =================== */
   {
-    slug: 'emr-transfer', kind: 'work', accent: 'c', year: '2024',
-    poster: { label: 'Attendre, mais voir', figure: 'steps' },
-    title: 'EMR transfer',
+    slug: 'licence-management', kind: 'work', accent: 'c', year: '2024',
+    poster: { label: 'Role → right', figure: 'steps' },
+    title: 'Licence management',
     client: 'Petal',
-    tagline: 'Making a **3-week** transfer legible when the user has no control over it.',
-    tags: ['Long-running process', 'Transparency', 'Healthcare SaaS'],
-    gist: { role: 'UX / UI', duration: '4 months', team: '1 designer, 1 PM, 1 technical writer', tools: 'Figma' },
-    problem: 'Clinics wanted to be able to change EMR inside the HUB. The process could only be run by the deployment team, locally: heavy, one to three weeks or more, and necessarily carried out with an internal agent assigned to it. The manager who requested it had no way to act — but still needed visibility.',
-    outcome: 'A tracking interface showing the four steps of the transfer, current progress, source and destination EMR, and giving the manager the one action they actually have left: stopping the process.',
+    tagline: 'Turning admin access from a fixed role into a **right** any member can hold.',
+    tags: ['Access control', 'Component reuse', 'Healthcare SaaS'],
+    gist: { role: 'UX / UI', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer', tools: 'Figma' },
+    problem: 'Clinics and hospitals lacked control over the registration process, as it happened outside the platform, and the permissions system required more clarity and granularity.',
+    outcome: 'We redefined the permission system and implemented a new registration process so that managers, according to their authorization level, can add different types of member.',
     stats: [
-      { n: '1 to 3 weeks', l: 'actual transfer duration' },
-      { n: '4 steps', l: 'made visible to the manager' },
-      { n: '0 actions', l: 'available — hence the problem' }
+      { n: '3 roles → 1 right', l: 'admin access reframed as a right, not a role' },
+      { n: '2-pass search', l: 'service-scoped, then platform-wide' },
+      { n: '1 shared component', l: 'serving both planners and admins' }
     ],
     sections: [
       {
-        id: 'kickoff', label: 'Scoping', title: '1. Kickoff and scoping',
+        id: 'definitions', label: 'Definitions', title: '1. Definitions : how did it work before ? (from role to rule)',
         body: [
-          'The PM defines success conditions and constraints. We drafted a first outline of the steps and documents an EMR change requires, then split the project into sections.',
-          'The design question was an unusual one, and that is what drew me in: how do you make a multi-step process feel fluid and transparent when the user cannot act on it at all? Three constraints stacked up — the manager waits on an agent’s actions, has no sense of remaining time, and the steps are numerous.'
+          'In this project, as a designer, I translated the requirements into interfaces and assisted the PM in decision-making.',
+          '**Different types of users and possibilities**',
+          'Before, 3 roles existed, which identified permissions and the type of people they can invite:',
+          '**Administrators** had full licence managing rights: they can add any member (new or existing, in or outside the hospital), edit or delete members, grant licence managing rights to others, and set access permissions. They are typically managers responsible for onboarding staff and provisioning tool access.',
+          '**Planners** had partial rights, as they are responsible for staff scheduling, sometimes at a service level, and could add already active members elsewhere in the hospital to their schedule.',
+          '**Regular staff** (clinicians, and non-admin operational staff) had no licence-management rights at all.',
+          '**The format wasn’t reflecting reality**',
+          'Only the Administrator role had add-rights, when in reality, clinicians HR, cost-management staffer, whose job is provisioning access for clinicians, could also need it.',
+          'The process wasn’t reflecting that reality, as the role managing interface was rigid, only allowing to select a role, not to set a right.',
+          '**In result:** Administrator as role → adding members as a right.',
+          '**Planners**: responsible for building the schedule. Can only add existing members in a group / hospital.',
+          '**Planners edit access** → Planners register existing members.',
+          '**Admin role → Admin rights (licence manager)**: can add anybody.',
+          '**Hospital/Institution/group**: can add anybody.'
+        ],
+        image: 'licence-1-role-right', bare: true,
+        caption: 'Reframing admin access: a fixed role becomes one addable right.'
+      },
+      {
+        id: 'before', label: 'Before', title: '2. Before: a modification page, not a registration flow',
+        body: [
+          '**The screens before**',
+          'Before this project, registration was operated through an external software with Petal deployment team.',
+          'Planners could only go to the detail page of an already-existing member to edit their access, in a multi-page flow containing an information and services/team page, as well as role select.',
+          '**The problem was:** the page is not a registration page, but a modification page.'
         ]
       },
       {
-        id: 'benchmark', label: 'Benchmark', title: '2. Benchmark',
+        id: 'design', label: 'Design', title: '2. Same page, different component (Design trials)',
         body: [
-          'I studied software and platforms where a comparable operation is already illustrated, noting the design patterns used — mostly setup and progress screens.',
-          'The benchmark mainly settled an internal debate. Since the manager cannot act, we had to be clear without drowning them in noise: surfacing every technical micro-step would only have added anxiety. As a team we chose which steps to show, and which to keep internal.'
+          'The registration flow needed one component that could serve both planners and admins with minimum differences to facilitate implementation, while the possible actions weren’t the same for both.',
+          '**Isolate the identifier: the mail**',
+          'I started by isolating the mail input as it is the main identifier (for confidentiality, licence numbers aren’t accessible information even though they are unique) for both planners and admins.',
+          '**Work on the component**',
+          'Then I worked on the planner flow first, as it carries more constraints (the planner can only add internal existing members).',
+          'The first idea was a filtered autosuggest: no button, live background search, surfacing only members the planner has rights to add. It brought several problems:',
+          '**Legibility**: with no button, how do we know there’s an error or if the entry is incomplete, or that anything happened at all from a technical standpoint?',
+          '**Terminology**: should the component be approached as a search or a dropdown list? We opted for a searchbox (wiki).',
+          '**No result** can be seen as a dead end: the "contact support" as a listbox result in case there is no match found was as unclear and easy to miss.',
+          '**Privacy**: should a planner be able to search any email within their group at all, as some doctors want to keep it private?',
+          '**Technical cost**: live background search on a big database on every keystroke is a technical challenge.',
+          'It also presented several issues for the admin flow (as we wanted as little differences in both cases as possible for implementation):',
+          'For performance issues, the search ran in two passes (service-scoped, then platform-wide),',
+          'adding a new member was buried behind a link displayed after the two passes searches rather than being a first-level action.',
+          'For these reasons, we chose to add a button to trigger the search, and then show what are the possible actions.',
+          'The button’s label was also part of a small decision process:',
+          '"Valider" implied confirming a finished process;',
+          '"Search" implied the field was purely about searching a member, not adding.',
+          'We landed on "Add a member" because the operation is fundamentally about adding a member; matching an existing one is just an edge case.'
         ],
-        image: 'emr-2-benchmark', frOnly: true,
-        caption: 'Setup and progress screens collected during the benchmark.'
+        image: 'licence-2-search-flow', bare: true,
+        caption: 'The button-triggered, two-pass search: service-scoped first, then platform-wide.'
       },
       {
-        id: 'design', label: 'Design', title: '3. Exploration and design',
+        id: 'admin', label: 'Admin model', title: 'Admin as a rule, not a role.',
         body: [
-          'I started by shaping the information visible during the transfer. The entry screen shows the EMR the clinic currently uses and the history of changes already made — context that was entirely missing before.',
-          'Once the new EMR is selected, the manager picks a transition date and uploads the required documents. Confirming starts the process: the destination EMR appears, along with the four steps to clear — acknowledgement of the request, creation of a new instance, configuration, data migration. The clinic is flagged as mid-transition.',
-          'Two decisions matter here. The manager keeps the ability to stop the process and to change the go-live date: those are the only real levers, so they stay permanently visible. And every step carries a last-updated date, which replaces the duration estimate we could not give honestly.'
-        ],
-        image: 'emr-3-design', frOnly: true,
-        caption: 'Current EMR and change history, then step-by-step tracking of the transfer.'
+          'To reflect the decisions we had taken concerning admin being a right rather than a role, we modified the role management table as well as the member list:',
+          'The licence management indicator is shown as a tag in the member list.',
+          'For the table, the challenge was to give the ability to still keep a role, while being able to have the licence manager right (we didn’t want to go into a full setting table as there would be no benefits to have roles in this case). So we implemented it as a right, with the same tag.',
+          'We used the same iconography across different products.'
+        ]
+      },
+      {
+        id: 'takeaways', label: 'Takeaways', title: '5. Takeaways',
+        body: [
+          'The real design decision here wasn’t the shared component or the button copy — it was reframing admin from a role into a right. Once that was settled, the search flow, the labelling, and the table all followed from it.',
+          'If I did it again, I’d push to measure the live-database search cost before assuming it and designing the two-pass fallback around that assumption.'
+        ]
       }
     ]
   },
