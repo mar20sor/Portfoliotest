@@ -637,7 +637,7 @@ function pageCase(project) {
       // the identifier").
       const timeline = s.timeline
         ? `<div class="cs-timeline">${s.timeline.map(item => `
-            <div class="cs-timeline__row">
+            <div class="cs-timeline__row${item.image ? ' cs-timeline__row--figure' : ''}">
               <div class="cs-timeline__line-col"><div class="cs-timeline__line"></div></div>
               <div class="cs-timeline__content">
                 ${item.thumb === false ? '' : item.image

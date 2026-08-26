@@ -647,7 +647,9 @@ export const PROJECTS = [
             title: 'Isolate the identifier: the mail',
             // Capture Figma (node 216:7373, "Ajouter un membre" - le champ
             // Courriel isole en recherche), texte francais original traduit
-            // en anglais avant export, recadree en carre pour le placeholder.
+            // en anglais avant export. Voir .cs-timeline__row--figure dans
+            // app.js/styles.css : cette entree garde le ratio natif de
+            // l'image (pas de recadrage carre) et passe au-dessus du texte.
             image: 'licence-4-mail-search-en',
             body: [
               'I started by isolating the mail input as it is the main identifier (for confidentiality, licence numbers aren’t accessible information even though they are unique) for both planners and admins.'
