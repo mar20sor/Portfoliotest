@@ -672,6 +672,7 @@ function pageCase(project) {
                           <div class="cs-timeline__constraint-body">
                             ${(c.body || [c.text]).map(p => `<p>${emphasize(p)}</p>`).join('')}
                             ${c.list ? `<ul class="cs-sec__list">${c.list.map(li => `<li>${emphasize(li)}</li>`).join('')}</ul>` : ''}
+                            ${c.bodyAfterList ? c.bodyAfterList.map(p => `<p>${emphasize(p)}</p>`).join('') : ''}
                           </div>
                         </li>`).join('')}</ul>` : ''}
                   ${item.imagesAfter
