@@ -906,7 +906,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cs-timeline__row:last-child .cs-timeline__line-col,
 .cs-timeline__row:last-child .cs-timeline__content { padding-bottom: 0; }
 .cs-timeline__line-col { display: none; position: relative; }
-.cs-timeline__line { width: 1px; height: 100%; background: var(--line); }
+/* Absolument positionnee sur toute la hauteur de .cs-timeline__line-col (y
+   compris son padding-bottom) plutot que height:100% (qui ne remplit que la
+   content-box et laissait un trou visible au niveau du padding, a chaque
+   jonction entre deux entrees) : le trait reste continu d'un bout a l'autre
+   de la timeline. */
+.cs-timeline__line { position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; transform: translateX(-50%); background: var(--line); }
 /* Point plein marquant le debut de chaque entree (voir reference utilisateur
    : carte "stream of thought"), aligne sur la 1ere ligne du titre/paragraphe
    grace au meme top que le haut de .cs-timeline__content (siblings de grille,
