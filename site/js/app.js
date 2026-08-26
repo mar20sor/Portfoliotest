@@ -586,13 +586,24 @@ function pageCase(project) {
     c.sections.forEach(s => {
       const sec = el('section', { class: 'cs-sec', id: `sec-${s.id}` });
 
+      // s.terms : blocs terme/definition alignes horizontalement, inseres
+      // apres le paragraphe d'index `after` (ex. Licence management/
+      // Definitions, les 3 personas) — <dl> plutot que .cs-sec__aside car le
+      // contenu est dans le flux normal de lecture, pas en marge du texte.
+      // Voir .cs-sec__terms/.cs-sec__term dans styles.css.
+      const termsBlock = s.terms
+        ? `<div class="cs-sec__terms">${s.terms.items.map(t =>
+            `<dl class="cs-sec__term"><dt>${escapeAttr(t.term)}</dt><dd>${escapeAttr(t.body)}</dd></dl>`).join('')}</div>`
+        : '';
+
       /* Les paragraphes, avec les medias intercales aux positions indiquees
          par `s.media`. La cle de cet objet est l'index du paragraphe apres
          lequel le groupe doit s'afficher — c'est ce qui permet de reproduire
          l'ordre exact d'une page source sans decouper la section. */
       const parts = s.body.map((p, i) => {
         const after = s.media && s.media[i] ? mediaGroup(s.media[i]) : '';
-        return `<p>${emphasize(p)}</p>${after}`;
+        const terms = s.terms && s.terms.after === i ? termsBlock : '';
+        return `<p>${emphasize(p)}</p>${after}${terms}`;
       }).join('');
 
       const intro = s.intro ? `<p>${s.intro.map(escapeAttr).join('<br>')}</p>` : '';

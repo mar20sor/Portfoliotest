@@ -609,11 +609,14 @@ export const PROJECTS = [
           'The process wasn’t reflecting that reality, as the role managing interface was rigid, only allowing to select a role, not to set a right.',
           '**In result:** Administrator as role → adding members as a right.'
         ],
-        aside: [
-          { term: 'Administrators', body: 'had full licence managing rights: they can add any member (new or existing, in or outside the hospital), edit or delete members, grant licence managing rights to others, and set access permissions. They are typically managers responsible for onboarding staff and provisioning tool access.' },
-          { term: 'Planners', body: 'had partial rights, as they are responsible for staff scheduling, sometimes at a service level, and could add already active members elsewhere in the hospital to their schedule.' },
-          { term: 'Regular staff', body: '(clinicians, and non-admin operational staff) had no licence-management rights at all.' }
-        ],
+        terms: {
+          after: 2,
+          items: [
+            { term: 'Administrators', body: 'had full licence managing rights: they can add any member (new or existing, in or outside the hospital), edit or delete members, grant licence managing rights to others, and set access permissions. They are typically managers responsible for onboarding staff and provisioning tool access.' },
+            { term: 'Planners', body: 'had partial rights, as they are responsible for staff scheduling, sometimes at a service level, and could add already active members elsewhere in the hospital to their schedule.' },
+            { term: 'Regular staff', body: '(clinicians, and non-admin operational staff) had no licence-management rights at all.' }
+          ]
+        },
         image: 'licence-1-role-right.svg', bare: true,
         caption: 'Reframing admin access: a fixed role becomes one addable right.'
       },

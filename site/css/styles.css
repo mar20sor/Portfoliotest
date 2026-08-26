@@ -835,10 +835,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 /* Bloc "definitions" a cote du texte (voir s.aside dans content.js,
-   Services exclusion/Design, Licence management/Definitions) : texte a
-   gauche, encart teinte a droite. Couleur dediee (pas --veil-strong, qui
-   reste au bloc "mis en avant" .pair__out/.todo) : #E9F2FE fixe pour tous
-   les .cs-sec__aside, quel que soit le projet. */
+   Services exclusion/Design) : texte a gauche, encart teinte a droite.
+   Couleur dediee (pas --veil-strong, qui reste au bloc "mis en avant"
+   .pair__out/.todo) : #E9F2FE fixe pour tous les .cs-sec__aside/.cs-sec__term,
+   quel que soit le projet. */
 .cs-sec__row { display: flex; gap: var(--s6); align-items: flex-start; margin-bottom: var(--s4); }
 .cs-sec__row-text { flex: 2 1 0; min-width: 0; }
 .cs-sec__row-text p:last-child { margin-bottom: 0; }
@@ -850,6 +850,25 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cs-sec__aside p { margin: 0; color: var(--ink); font-size: var(--fs-small); }
 @media (max-width: 700px) {
   .cs-sec__row { flex-direction: column; }
+}
+
+/* Blocs terme/definition alignes horizontalement, dans le flux normal du
+   texte (voir s.terms dans content.js, Licence management/Definitions) —
+   <dl> plutot que .cs-sec__aside : contrairement au bloc ci-dessus, ce
+   contenu n'est pas en marge du texte mais insere entre deux paragraphes,
+   donc pas d'.aside semantique ici. Meme teinte #E9F2FE que .cs-sec__aside
+   pour rester coherent visuellement. */
+.cs-sec__terms { display: flex; gap: var(--s5); margin: var(--s2) 0 var(--s5); }
+.cs-sec__term {
+  flex: 1 1 0; min-width: 0; margin: 0;
+  background: #E9F2FE; border-radius: var(--radius-sm); padding: var(--s5);
+}
+.cs-sec__term dt { font-weight: var(--w-semibold); color: var(--ink); }
+.cs-sec__term dd {
+  margin: var(--s2) 0 0; color: var(--ink); font-size: var(--fs-small);
+}
+@media (max-width: 700px) {
+  .cs-sec__terms { flex-direction: column; }
 }
 
 /* Encart d'avertissement (voir s.callout dans content.js, Services
