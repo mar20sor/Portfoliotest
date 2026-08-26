@@ -835,15 +835,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 /* Bloc "definitions" a cote du texte (voir s.aside dans content.js,
-   Services exclusion/Design) : texte a gauche, encart teinte a droite.
-   Reutilise --veil-strong, deja le token du bloc "mis en avant" (voir
-   .pair__out/.todo) plutot qu'une nouvelle couleur. */
+   Services exclusion/Design, Licence management/Definitions) : texte a
+   gauche, encart teinte a droite. Couleur dediee (pas --veil-strong, qui
+   reste au bloc "mis en avant" .pair__out/.todo) : #E9F2FE fixe pour tous
+   les .cs-sec__aside, quel que soit le projet. */
 .cs-sec__row { display: flex; gap: var(--s6); align-items: flex-start; margin-bottom: var(--s4); }
 .cs-sec__row-text { flex: 2 1 0; min-width: 0; }
 .cs-sec__row-text p:last-child { margin-bottom: 0; }
 .cs-sec__aside {
   flex: 1 1 0; min-width: 0;
-  background: var(--veil-strong); border-radius: var(--radius-sm); padding: var(--s5);
+  background: #E9F2FE; border-radius: var(--radius-sm); padding: var(--s5);
   display: flex; flex-direction: column; gap: var(--s4);
 }
 .cs-sec__aside p { margin: 0; color: var(--ink); font-size: var(--fs-small); }
@@ -860,6 +861,40 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .cs-callout p { margin: 0; color: var(--ink-soft); }
 .cs-callout__icon { flex-shrink: 0; width: 20px; height: 20px; margin-top: 2px; color: #DA1E28; }
+
+/* Timeline de processus (voir s.timeline dans content.js, Licence
+   management/Design trials) : reprend le gabarit repere sur bevyip.com/about
+   (grid grid-cols-1 md:grid-cols-[max-content_1px_1fr] md:gap-x-10), sans la
+   colonne de date (jamais remplie -> la piste max-content s'ecrase a 0) ni
+   le bouton/etat hover de la source. Le trait vertical tient sur la hauteur
+   de sa ligne de grille grace au stretch par defaut de `align-items`, et le
+   padding-bottom partage entre la colonne trait et la colonne contenu fait
+   que le trait couvre aussi l'espacement avant l'entree suivante. */
+.cs-timeline { margin-block: var(--s6); }
+.cs-timeline__row {
+  display: grid; grid-template-columns: 1fr; row-gap: var(--s5);
+}
+.cs-timeline__row:last-child .cs-timeline__line-col,
+.cs-timeline__row:last-child .cs-timeline__content { padding-bottom: 0; }
+.cs-timeline__line-col { display: none; }
+.cs-timeline__line { width: 1px; height: 100%; background: var(--line); }
+.cs-timeline__content {
+  display: flex; flex-direction: column; gap: var(--s5); min-width: 0;
+  padding-bottom: var(--s7);
+}
+.cs-timeline__thumb {
+  flex-shrink: 0; width: 100%; aspect-ratio: 1 / 1; border-radius: var(--radius-sm);
+  background: var(--veil); border: 1px solid var(--line);
+}
+.cs-timeline__title { font-weight: var(--w-semibold); color: var(--ink); margin-bottom: var(--s2); }
+.cs-timeline__text p { margin-bottom: var(--s3); }
+.cs-timeline__text p:last-child { margin-bottom: 0; }
+@media (min-width: 701px) {
+  .cs-timeline__row { grid-template-columns: max-content 1px 1fr; column-gap: var(--s7); row-gap: 0; }
+  .cs-timeline__line-col { display: grid; grid-column: 2; justify-items: center; padding-bottom: var(--s7); }
+  .cs-timeline__content { grid-column: 3; flex-direction: row; gap: var(--s6); padding-bottom: var(--s7); }
+  .cs-timeline__thumb { width: 160px; }
+}
 
 /* Etiquettes couleur inline (voir moreDrawer.items[].body, "Mapping the 24
    constraints") : reprend le code couleur utilise dans la maquette Figma

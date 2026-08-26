@@ -612,6 +612,22 @@ function pageCase(project) {
         ? `<ul class="cs-sec__list">${s.bullets.map(b => `<li>${emphasize(b)}</li>`).join('')}</ul>` : '';
       const mockups = s.mockups
         ? `<div class="cs-mockups">${s.mockups.map(figureFor).join('')}</div>` : '';
+      // s.timeline : suite d'etapes en ligne de temps (ex. Licence
+      // management/Design trials) — voir .cs-timeline dans styles.css.
+      // `thumb: false` sur une entree permet d'omettre son placeholder
+      // d'image, sinon un rectangle gris de remplissage est affiche.
+      const timeline = s.timeline
+        ? `<div class="cs-timeline">${s.timeline.map(item => `
+            <div class="cs-timeline__row">
+              <div class="cs-timeline__line-col"><div class="cs-timeline__line"></div></div>
+              <div class="cs-timeline__content">
+                ${item.thumb === false ? '' : '<div class="cs-timeline__thumb" aria-hidden="true"></div>'}
+                <div class="cs-timeline__text">
+                  <p class="cs-timeline__title">${escapeAttr(item.title)}</p>
+                  ${item.body.map(p => `<p>${emphasize(p)}</p>`).join('')}
+                </div>
+              </div>
+            </div>`).join('')}</div>` : '';
       // Chiffres cites dans le texte, sortis en cartes (voir s.stats dans
       // content.js) — meme balisage que les .stat d'en-tete, en plus petit.
       const secStats = s.stats
@@ -667,6 +683,7 @@ function pageCase(project) {
         ${callout}
         ${secStats}
         ${mockups}
+        ${timeline}
         ${mediaBlock}
         ${afterFigure}
         ${s.builder ? constraintBuilderMarkup(s.builder) : ''}
