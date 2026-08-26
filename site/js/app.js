@@ -595,6 +595,11 @@ function pageCase(project) {
         ? `<div class="cs-sec__terms">${s.terms.items.map(t =>
             `<dl class="cs-sec__term"><dt>${escapeAttr(t.term)}</dt><dd>${escapeAttr(t.body)}</dd></dl>`).join('')}</div>`
         : '';
+      // s.figureAfter : une figure locale (webp/png ou svg, via figureFor())
+      // inseree apres le paragraphe d'index `after` — comme s.terms mais
+      // pour une image plutot qu'un bloc terme/definition (ex. Licence
+      // management/Before, la capture de l'ancienne page de modification).
+      const figureAfterBlock = s.figureAfter ? figureFor(s.figureAfter) : '';
 
       /* Les paragraphes, avec les medias intercales aux positions indiquees
          par `s.media`. La cle de cet objet est l'index du paragraphe apres
@@ -603,7 +608,8 @@ function pageCase(project) {
       const parts = s.body.map((p, i) => {
         const after = s.media && s.media[i] ? mediaGroup(s.media[i]) : '';
         const terms = s.terms && s.terms.after === i ? termsBlock : '';
-        return `<p>${emphasize(p)}</p>${after}${terms}`;
+        const figure = s.figureAfter && s.figureAfter.after === i ? figureAfterBlock : '';
+        return `<p>${emphasize(p)}</p>${after}${terms}${figure}`;
       }).join('');
 
       const intro = s.intro ? `<p>${s.intro.map(escapeAttr).join('<br>')}</p>` : '';
@@ -626,13 +632,20 @@ function pageCase(project) {
       // s.timeline : suite d'etapes en ligne de temps (ex. Licence
       // management/Design trials) — voir .cs-timeline dans styles.css.
       // `thumb: false` sur une entree permet d'omettre son placeholder
-      // d'image, sinon un rectangle gris de remplissage est affiche.
+      // d'image ; `image: 'name'` (paire webp+png, assets/img/) remplace le
+      // rectangle gris par la vraie capture (ex. la 1ere entree, "isolate
+      // the identifier").
       const timeline = s.timeline
         ? `<div class="cs-timeline">${s.timeline.map(item => `
             <div class="cs-timeline__row">
               <div class="cs-timeline__line-col"><div class="cs-timeline__line"></div></div>
               <div class="cs-timeline__content">
-                ${item.thumb === false ? '' : '<div class="cs-timeline__thumb" aria-hidden="true"></div>'}
+                ${item.thumb === false ? '' : item.image
+                  ? `<picture class="cs-timeline__thumb">
+                       <source srcset="assets/img/${item.image}.webp" type="image/webp">
+                       <img src="assets/img/${item.image}.png" alt="" loading="lazy" decoding="async">
+                     </picture>`
+                  : '<div class="cs-timeline__thumb" aria-hidden="true"></div>'}
                 <div class="cs-timeline__text">
                   <p class="cs-timeline__title">${escapeAttr(item.title)}</p>
                   ${item.body.map(p => `<p>${emphasize(p)}</p>`).join('')}

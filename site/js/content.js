@@ -627,7 +627,15 @@ export const PROJECTS = [
           'Before this project, registration was operated through an external software with Petal deployment team.',
           'Planners could only go to the detail page of an already-existing member to edit their access, in a multi-page flow containing an information and services/team page, as well as role select.',
           '**The problem was:** the page is not a registration page, but a modification page.'
-        ]
+        ],
+        // Capture ecran de l'ancienne page (fournie par l'utilisateur,
+        // texte francais original traduit en anglais avant export) —
+        // inseree apres le 3e paragraphe via s.figureAfter.
+        figureAfter: {
+          after: 2,
+          image: 'licence-3-member-edit-before-en', bare: true,
+          caption: 'The old flow: a member’s detail page, edited one field at a time — not a dedicated registration page.'
+        }
       },
       {
         id: 'design', label: 'Design', title: '3. Same page, different component (Design trials)',
@@ -637,6 +645,10 @@ export const PROJECTS = [
         timeline: [
           {
             title: 'Isolate the identifier: the mail',
+            // Capture Figma (node 216:7373, "Ajouter un membre" - le champ
+            // Courriel isole en recherche), texte francais original traduit
+            // en anglais avant export, recadree en carre pour le placeholder.
+            image: 'licence-4-mail-search-en',
             body: [
               'I started by isolating the mail input as it is the main identifier (for confidentiality, licence numbers aren’t accessible information even though they are unique) for both planners and admins.'
             ]

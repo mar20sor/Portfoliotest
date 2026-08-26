@@ -882,10 +882,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cs-callout__icon { flex-shrink: 0; width: 20px; height: 20px; margin-top: 2px; color: #DA1E28; }
 
 /* Timeline de processus (voir s.timeline dans content.js, Licence
-   management/Design trials) : reprend le gabarit repere sur bevyip.com/about
+   management/Design trials) : inspiree du gabarit repere sur bevyip.com/about
    (grid grid-cols-1 md:grid-cols-[max-content_1px_1fr] md:gap-x-10), sans la
-   colonne de date (jamais remplie -> la piste max-content s'ecrase a 0) ni
-   le bouton/etat hover de la source. Le trait vertical tient sur la hauteur
+   colonne de date (jamais remplie dans notre cas -> retiree entierement, pas
+   gardee vide, pour que le trait reste au bord gauche de la section) ni le
+   bouton/etat hover de la source. Le trait vertical tient sur la hauteur
    de sa ligne de grille grace au stretch par defaut de `align-items`, et le
    padding-bottom partage entre la colonne trait et la colonne contenu fait
    que le trait couvre aussi l'espacement avant l'entree suivante. */
@@ -902,16 +903,25 @@ button { font: inherit; color: inherit; cursor: pointer; }
   padding-bottom: var(--s7);
 }
 .cs-timeline__thumb {
-  flex-shrink: 0; width: 100%; aspect-ratio: 1 / 1; border-radius: var(--radius-sm);
-  background: var(--veil); border: 1px solid var(--line);
+  display: block; flex-shrink: 0; width: 100%; aspect-ratio: 1 / 1;
+  border-radius: var(--radius-sm); background: var(--veil); border: 1px solid var(--line);
+  overflow: hidden;
 }
+/* Quand .cs-timeline__thumb est un <picture> (voir item.image dans
+   content.js) plutot que le div placeholder gris : l'image remplit le
+   meme cadre carre, recadree par le haut (le contenu utile — barre de
+   titre, champ — est toujours en haut de la capture). */
+.cs-timeline__thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
 .cs-timeline__title { font-weight: var(--w-semibold); color: var(--ink); margin-bottom: var(--s2); }
 .cs-timeline__text p { margin-bottom: var(--s3); }
 .cs-timeline__text p:last-child { margin-bottom: 0; }
 @media (min-width: 701px) {
-  .cs-timeline__row { grid-template-columns: max-content 1px 1fr; column-gap: var(--s7); row-gap: 0; }
-  .cs-timeline__line-col { display: grid; grid-column: 2; justify-items: center; padding-bottom: var(--s7); }
-  .cs-timeline__content { grid-column: 3; flex-direction: row; gap: var(--s6); padding-bottom: var(--s7); }
+  /* max-content colonne retiree (etait toujours vide -> ne servait qu'a
+     decaler le trait du bord gauche de la section via son column-gap) :
+     le trait est maintenant colle au bord, grille a 2 colonnes. */
+  .cs-timeline__row { grid-template-columns: 1px 1fr; column-gap: var(--s7); row-gap: 0; }
+  .cs-timeline__line-col { display: grid; grid-column: 1; justify-items: center; padding-bottom: var(--s7); }
+  .cs-timeline__content { grid-column: 2; flex-direction: row; gap: var(--s6); padding-bottom: var(--s7); }
   .cs-timeline__thumb { width: 160px; }
 }
 
