@@ -709,9 +709,10 @@ export const PROJECTS = [
           {
             title: 'A button-triggered search',
             // Meme regroupement que "Work on the component"/"Issues for the
-            // admin flow" plus haut : pas de placeholder, deux figures
-            // (imagesAfter, empilees) sous le 1er paragraphe, puis l'ancienne
-            // entree "Naming the button" en liste numerotee (1 seul item).
+            // admin flow" plus haut : pas de placeholder. Ordre demande par
+            // l'utilisateur : 1er paragraphe -> 1ere image (imageAfter) ->
+            // "Naming the button" en liste numerotee (constraints) -> 2e
+            // image (imagesAfter, rendue apres constraints — voir app.js).
             thumb: false,
             body: [
               'For these reasons, we chose to add a button to trigger the search, and then show what are the possible actions.'
@@ -722,7 +723,8 @@ export const PROJECTS = [
             // de compte, Specialite, Permis delivre par, Numero de permis,
             // case a cocher) traduit via overlay raster (meme pipeline que
             // les autres captures Petal de cette etude de cas).
-            imagesAfter: ['licence-7-button-search-en', 'licence-9-admin-form-en'],
+            imageAfter: 'licence-7-button-search-en',
+            imagesAfter: ['licence-9-admin-form-en'],
             constraints: [
               {
                 n: 1,
