@@ -489,6 +489,7 @@ export const PROJECTS = [
     tags: ['Wizard', 'User testing', 'Iteration'],
     gist: { role: 'UX / UI', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer',
       company: { label: 'Petal', href: 'https://www.petal-health.com/en/' } },
+    heroMedia: { type: 'image', src: 'assets/img/exclusion-hero.webp' },
     problem: 'In the HUB, some services are no longer used, or only temporarily (like a seasonal flu clinic). They skew a clinic’s statistics, but can only be deleted in the EMR, which is a heavy procedure for medical staff. So they needed to be excluded from synchronization setup without being deleted, inside a modal already carrying many steps.',
     outcome: 'A clearer four-step wizard that makes exclusion explicit. After release surfaced a usage error we hadn’t anticipated. So we inverted the selection logic and added a warning to make sure it was well used.',
     sections: [
@@ -592,25 +593,26 @@ export const PROJECTS = [
     poster: { label: 'Role → right', figure: 'steps' },
     title: 'Licence management',
     client: 'Petal',
-    tagline: 'Turning admin access from a fixed role into a **right** any member can hold.',
+    tagline: 'Refining access control to reflect the reality of clinicians.',
     tags: ['Access control', 'Component reuse', 'Healthcare SaaS'],
-    gist: { role: 'UX / UI', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer' },
-    problem: 'Clinics and hospitals lacked control over the registration process, as it happened outside the platform, and the permissions system required more clarity and granularity.',
+    gist: { company: true, role: 'Product Designer', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer' },
+    heroMedia: { type: 'image', src: 'assets/img/licence-hero.webp' },
+    problem: 'Clinics and hospitals lacked control over the registration process, as it was taking place outside the platform, and the permissions system required more clarity and granularity.',
+    processIntro: 'As a designer in this project, I translated the requirements into interfaces and assisted the PM in decision-making.',
     outcome: 'We redefined the permission system and implemented a new registration process so that managers, according to their authorization level, can add different types of member.',
     sections: [
       {
-        id: 'definitions', label: 'Definitions', title: '1. Definitions : how did it work before ? (from role to rule)',
+        id: 'context', label: 'Context', title: '1. Context',
         body: [
-          'In this project, as a designer, I translated the requirements into interfaces and assisted the PM in decision-making.',
           '**Different types of users and possibilities**',
           'Before, 3 roles existed, which identified permissions and the type of people they can invite:',
           '**The format wasn’t reflecting reality**',
           'Only the Administrator role had add-rights, when in reality, clinicians HR, cost-management staffer, whose job is provisioning access for clinicians, could also need it.',
           'The process wasn’t reflecting that reality, as the role managing interface was rigid, only allowing to select a role, not to set a right.',
-          '**In result:** Administrator as role → adding members as a right.'
+          '**Result:** Administrator as role → adding members as a right.'
         ],
         terms: {
-          after: 2,
+          after: 1,
           items: [
             { term: 'Administrators', body: 'had full licence managing rights: they can add any member (new or existing, in or outside the hospital), edit or delete members, grant licence managing rights to others, and set access permissions. They are typically managers responsible for onboarding staff and provisioning tool access.' },
             { term: 'Planners', body: 'had partial rights, as they are responsible for staff scheduling, sometimes at a service level, and could add already active members elsewhere in the hospital to their schedule.' },
@@ -621,11 +623,11 @@ export const PROJECTS = [
         caption: 'Reframing admin access: a fixed role becomes one addable right.'
       },
       {
-        id: 'before', label: 'Before', title: '2. Before: a modification page, not a registration flow',
+        id: 'before', label: 'Before', title: '2. A modification page, not a registration flow',
         body: [
           '**The screens before**',
           'Before this project, registration was operated through an external software with Petal deployment team.',
-          'Planners could only go to the detail page of an already-existing member to edit their access, in a multi-page flow containing an information and services/team page, as well as role select.',
+          'Planners could only go to the detail page of an already-existing member to edit their access, in a multi-page setup.',
           '**The problem was:** the page is not a registration page, but a modification page.'
         ],
         // Capture ecran de l'ancienne page (fournie par l'utilisateur,
@@ -633,12 +635,11 @@ export const PROJECTS = [
         // inseree apres le 3e paragraphe via s.figureAfter.
         figureAfter: {
           after: 2,
-          image: 'licence-3-member-edit-before-en', bare: true,
-          caption: 'The old flow: a member’s detail page, edited one field at a time — not a dedicated registration page.'
+          image: 'licence-3-member-edit-before-en', bare: true
         }
       },
       {
-        id: 'design', label: 'Design', title: '3. Same page, different component (Design trials)',
+        id: 'design', label: 'Design', title: '3. The registration flow',
         body: [
           'The registration flow needed one component that could serve both planners and admins with minimum differences to facilitate implementation, while the possible actions weren’t the same for both.'
         ],
@@ -652,11 +653,11 @@ export const PROJECTS = [
             // l'image (pas de recadrage carre) et passe au-dessus du texte.
             image: 'licence-4-mail-search-en',
             body: [
-              'I started by isolating the mail input as it is the main identifier (for confidentiality, licence numbers aren’t accessible information even though they are unique) for both planners and admins.'
+              'I started by isolating the mail input as it is the main identifier (for privacy purposes, licence numbers aren’t accessible information) for both planners and admins.'
             ]
           },
           {
-            title: 'Work on the component',
+            title: 'The planner flow',
             // thumb:false : pas de placeholder gris avant le texte (voir
             // item.thumb dans app.js) — l'unique visuel de cette entree est
             // imageAfter, place sous le texte plutot qu'a cote.
@@ -679,19 +680,19 @@ export const PROJECTS = [
             // (independants de la numerotation 1-4 du diagramme Figma).
             // Privacy retiree ensuite a la demande de l'utilisateur.
             constraints: [
-              { n: 1, text: '**Terminology**: should the component be approached as a search or a dropdown list? We opted for a searchbox (wiki).' },
-              { n: 2, text: '**Technical cost**: live background search on a big database on every keystroke is a technical challenge.' },
-              { n: 3, text: '**Unclear redirection** can be seen as a dead end: the "contact support" as a listbox result in case there is no match found was as unclear and easy to miss.' },
-              { n: 4, text: '**Legibility**: with no button, how do we know there’s an error or if the entry is incomplete, or that anything happened at all from a technical standpoint?' }
+              { n: 1, text: '**Terminology**: should the component be approached as a search or a dropdown list? We opted for a searchbox ([search suggest drop-down list](https://en.wikipedia.org/wiki/Search_suggest_drop-down_list)).' },
+              { n: 2, text: '**Technical cost**: live background search in a big database on every keystroke is a technical challenge.' },
+              { n: 3, text: '**Unclear redirection**: the "contact support" in a listbox, in case there is no match found, was as unclear and easy to miss.' },
+              { n: 4, text: '**Legibility**: with no button, how do we know there’s an error, if the entry is incomplete, or that anything happened at all from a technical standpoint?' }
             ]
           },
           {
-            title: 'Issues for the admin flow',
+            title: 'The admin flow',
             // thumb:false : meme logique que "Work on the component" plus
             // haut — pas de placeholder, l'unique visuel est imageAfter.
             thumb: false,
             body: [
-              'It also presented several issues for the admin flow (as we wanted as little differences in both cases as possible for implementation):'
+              'It also presented several issues for the admin flow:'
             ],
             // Capture Figma (node 230:571, "Admin - Member addition flow v1
             // (EN)") : deja en anglais dans la maquette source, export
@@ -703,11 +704,11 @@ export const PROJECTS = [
             // plus haut, et memes numeros 1/2 deja presents dans le diagramme).
             constraints: [
               { n: 1, text: '**Performance issue**: the search ran in two passes (service-scoped, then platform-wide).' },
-              { n: 2, text: '**Buried action**: adding a new member was buried behind a link displayed after the two passes searches rather than being a first-level action.' }
+              { n: 2, text: '**Hidden action**: adding a new member was hidden behind a link displayed after the two passes searches rather than being a first-level action.' }
             ]
           },
           {
-            title: 'A button-triggered search',
+            title: 'Adding a button for the search',
             // Meme regroupement que "Work on the component"/"Issues for the
             // admin flow" plus haut : pas de placeholder. Ordre demande par
             // l'utilisateur : 1er paragraphe -> 1ere image (imageAfter) ->
@@ -715,7 +716,7 @@ export const PROJECTS = [
             // image (imagesAfter, rendue apres constraints — voir app.js).
             thumb: false,
             body: [
-              'For these reasons, we chose to add a button to trigger the search, and then show what are the possible actions.'
+              'For these reasons, I chose to add a button to trigger the search, and then show which are the possible actions.'
             ],
             // Captures Figma (node 237:895 "Admin flow final (EN)" et node
             // 239:1068 "Admin final form (EN)") : la 1ere deja en anglais ;
@@ -737,7 +738,7 @@ export const PROJECTS = [
                 // francais dans la maquette d'origine) — equivalent UX
                 // writing le plus proche discute avec l'utilisateur.
                 list: [
-                  '"Submit" implied confirming a finished process.',
+                  '"Submit" implied confirming a finished process, while it was only the first part.',
                   '"Search" implied the field was purely about searching a member, not adding.'
                 ],
                 // Conclusion placee apres la liste (demande utilisateur).
@@ -761,12 +762,13 @@ export const PROJECTS = [
         // membres — reprise ici sur le paragraphe qui l'explique.
         timeline: [
           {
-            thumb: false,
+            thumb: false, tight: true,
             body: [],
             imageAfter: 'licence-10-manager-tag-en',
             constraints: [
               { n: 1, text: 'The licence management indicator is shown as a tag in the member list.' }
             ],
+            constraintsLoose: true,
             imagesAfter: ['licence-11-role-table-en']
           },
           {
@@ -780,8 +782,7 @@ export const PROJECTS = [
       {
         id: 'takeaways', label: 'Takeaways', title: '5. Takeaways',
         body: [
-          'The real design decision here wasn’t the shared component or the button copy — it was reframing admin from a role into a right. Once that was settled, the search flow, the labelling, and the table all followed from it.',
-          'If I did it again, I’d push to measure the live-database search cost before assuming it and designing the two-pass fallback around that assumption.'
+          'This project, which I thought would be simple at first, pushed me to pay attention to details I\'d usually overlook. It challenged me in a new way, and I ended up spending a surprising amount of time on a small part of the design which I didn\'t expect to have such an impact. It also highlighted, for me, just how important prototyping is to get a real feel for the solution, but also the influence of technical constraints.'
         ]
       }
     ]

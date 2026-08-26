@@ -405,7 +405,9 @@ function cardMedia(p) {
    L'echappement a lieu AVANT le remplacement : le texte est donc neutralise,
    et seules les balises <b> que nous fabriquons nous-memes subsistent. */
 function emphasize(str) {
-  return escapeAttr(str).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  return escapeAttr(str)
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
 }
 
 /* ---- 5c. La page d'accueil ----
@@ -494,7 +496,7 @@ function pageCase(project) {
     ${c.heroMedia ? `<div class="cs__hero-media">${mediaMarkup(c.heroMedia)}</div>` : ''}
 
     <dl class="gist">
-      ${c.gist.company ? `<div><dt>${escapeAttr(d.csCompany)}</dt><dd><a href="${escapeAttr(c.gist.company.href)}" target="_blank" rel="noopener">${escapeAttr(c.gist.company.label)}</a></dd></div>` : ''}
+      ${c.gist.company && c.gist.company.href ? `<div><dt>${escapeAttr(d.csCompany)}</dt><dd><a href="${escapeAttr(c.gist.company.href)}" target="_blank" rel="noopener">${escapeAttr(c.gist.company.label)}</a></dd></div>` : ''}
       <div><dt>${escapeAttr(d.csRole)}</dt><dd>${escapeAttr(c.gist.role)}</dd></div>
       <div><dt>${escapeAttr(d.csDuration)}</dt><dd>${escapeAttr(c.gist.duration)}</dd></div>
       <div><dt>${escapeAttr(d.csTeam)}</dt><dd>${escapeAttr(c.gist.team)}</dd></div>
@@ -581,6 +583,11 @@ function pageCase(project) {
     const content = el('div', { class: 'cs__content' });
     content.append(head);
 
+    // c.processIntro : phrase d'introduction au processus (ex. Licence
+    // management, le role du designer dans le projet), affichee juste avant
+    // la 1ere section numerotee plutot que dans son corps.
+    if (c.processIntro) content.append(el('p', { style: 'margin:0 0 var(--s6)' }, c.processIntro));
+
     // Les sections elles-memes.
     const secs = el('div');
     c.sections.forEach(s => {
@@ -660,7 +667,7 @@ function pageCase(project) {
       // liste numerotee, puis la 2e image).
       const timeline = s.timeline
         ? `<div class="cs-timeline">${s.timeline.map(item => `
-            <div class="cs-timeline__row${item.image ? ' cs-timeline__row--figure' : ''}">
+            <div class="cs-timeline__row${item.image ? ' cs-timeline__row--figure' : ''}${item.tight ? ' cs-timeline__row--tight' : ''}">
               <div class="cs-timeline__line-col"><div class="cs-timeline__line"></div></div>
               <div class="cs-timeline__content">
                 ${item.thumb === false ? '' : item.image
@@ -678,7 +685,7 @@ function pageCase(project) {
                          <img src="assets/img/${item.imageAfter}.png" alt="" loading="lazy" decoding="async">
                        </picture>` : ''}
                   ${item.constraints
-                    ? `<ul class="cs-timeline__constraints">${item.constraints.map(c => `
+                    ? `<ul class="cs-timeline__constraints${item.constraintsLoose ? ' cs-timeline__constraints--loose' : ''}">${item.constraints.map(c => `
                         <li class="cs-timeline__constraint${c.n ? '' : ' cs-timeline__constraint--unnumbered'}">
                           <span class="cs-timeline__constraint-num" aria-hidden="true">${c.n || ''}</span>
                           <div class="cs-timeline__constraint-body">

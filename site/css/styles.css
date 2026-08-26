@@ -991,12 +991,22 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .cs-timeline__content { grid-column: 2; flex-direction: row; gap: var(--s6); padding-bottom: var(--s7); }
   .cs-timeline__thumb { width: 160px; }
   .cs-timeline__row--figure .cs-timeline__content { flex-direction: column; }
-  .cs-timeline__row--figure .cs-timeline__thumb { width: 100%; max-width: 640px; }
+  .cs-timeline__row--figure .cs-timeline__thumb { width: 100%; max-width: 860px; }
   /* item.imageAfter vit dans .cs-timeline__text (jamais dans une row a 2
      colonnes thumb+texte) : toujours pleine largeur de la colonne de texte,
      pas la largeur fixe 160px des vignettes placeholder ci-dessus. */
   .cs-timeline__thumb--auto { width: 100%; }
 }
+/* item.tight (voir app.js/content.js) : resserre l'espace apres cette entree
+   — pour un paragraphe de l'entree suivante qui commente directement l'image
+   qui precede (ex. Licence management/Admin model, la legende du tableau de
+   roles), plutot que le padding-bottom standard entre deux entrees. */
+.cs-timeline__row--tight .cs-timeline__content,
+.cs-timeline__row--tight .cs-timeline__line-col { padding-bottom: var(--s3); }
+/* item.constraintsLoose (voir app.js/content.js) : agrandit l'espace apres le
+   dernier constraint d'un item, quand ce qui suit (ex. imagesAfter) merite
+   plus de respiration que le var(--s4) par defaut. */
+.cs-timeline__constraints--loose .cs-timeline__constraint:last-child .cs-timeline__constraint-body { margin-bottom: var(--s6); }
 
 /* Etiquettes couleur inline (voir moreDrawer.items[].body, "Mapping the 24
    constraints") : reprend le code couleur utilise dans la maquette Figma
