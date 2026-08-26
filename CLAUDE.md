@@ -30,6 +30,7 @@ SPA, single `site/index.html`, everything else injected into `<main>` by JS. No 
 - **Figma embed** (Constraints "See more" drawer): use `embed.figma.com/design/{key}/...?page-selector=true`, not the `www.figma.com/embed?...` share snippet (ignores page-selector). CSP `frame-src` needs both `www.figma.com` and `embed.figma.com`. `src` is deferred via `data-embed-src` → promoted on `<details>` toggle open (iframe in closed `<details>` never fires its request otherwise).
 - **`.cs-sec p` specificity trap**: generic `.cs-sec p { margin-bottom }` (0,1,1) beats bare single-class overrides — need `.cs-sec__card .cs-sec__card-title` (0,2,0) style compound selectors inside `.cs-sec`.
 - **`url()` inside a CSS custom property resolves against the stylesheet that reads it via `var()`, not the context that defines it.** Bit us in `constraintOptionRows()` (app.js): an inline `style="--opt-icon-src: url('assets/icons/...')"` (relative to the page) was consumed by `mask-image: var(--opt-icon-src)` in `styles.css` (in `css/`), so it 404'd against `css/assets/...` and the icon silently failed to render. Fix: prefix `../` to match every other `url()` already in `styles.css`.
+- **`heroMedia` (case hero + homepage card thumbnail, `pageCase()`/`cardMedia()` in app.js) renders a single plain `<img src>`** — unlike every other case figure, it has no `<picture>` webp+png pairing. Only commit the `.webp` for a `heroMedia` image; a matching `.png` is dead weight (bit us once as an orphaned file needing cleanup).
 
 ## Security
 
