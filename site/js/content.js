@@ -752,19 +752,30 @@ export const PROJECTS = [
       {
         id: 'admin', label: 'Admin model', title: '4. Admin as a rule, not a role.',
         body: [
-          'To reflect the decisions we had taken concerning admin being a right rather than a role, I modified the role management table as well as the member list:',
-          'The licence management indicator is shown as a tag in the member list.',
-          'For the table, the challenge was to give the ability to still keep a role, while being able to have the licence manager right (I didn’t want to go into a full setting table as there would be no benefits to have roles in this case). So I implemented it as a right, with the same tag.'
+          'To reflect the decisions we had taken concerning admin being a right rather than a role, I modified the role management table as well as the member list:'
         ],
-        // 2 captures Figma (node 250:11947 "Manager tag" et 250:11948 "Role
-        // table") : la 1ere porte deja une pastille "1" annotant le tag dans
-        // la liste des membres — reprise ici sur le paragraphe qui l'explique
-        // via s.numbered plutot que dupliquee dans le texte.
-        figureAfter: [
-          { after: 0, image: 'licence-10-manager-tag-en', bare: true },
-          { after: 1, image: 'licence-11-role-table-en', bare: true }
-        ],
-        numbered: { 1: 1 }
+        // Timeline separee de celle de la section 3 (Design trials) — sa
+        // propre ligne continue + pastilles, independante. 2 captures Figma
+        // (node 250:11947 "Manager tag" et 250:11948 "Role table") : la 1ere
+        // porte deja une pastille "1" annotant le tag dans la liste des
+        // membres — reprise ici sur le paragraphe qui l'explique.
+        timeline: [
+          {
+            thumb: false,
+            body: [],
+            imageAfter: 'licence-10-manager-tag-en',
+            constraints: [
+              { n: 1, text: 'The licence management indicator is shown as a tag in the member list.' }
+            ],
+            imagesAfter: ['licence-11-role-table-en']
+          },
+          {
+            thumb: false,
+            body: [
+              'For the table, the challenge was to give the ability to still keep a role, while being able to have the licence manager right (I didn’t want to go into a full setting table as there would be no benefits to have roles in this case). So I implemented it as a right, with the same tag.'
+            ]
+          }
+        ]
       },
       {
         id: 'takeaways', label: 'Takeaways', title: '5. Takeaways',

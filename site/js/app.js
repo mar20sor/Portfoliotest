@@ -670,7 +670,7 @@ function pageCase(project) {
                      </picture>`
                   : '<div class="cs-timeline__thumb" aria-hidden="true"></div>'}
                 <div class="cs-timeline__text">
-                  <p class="cs-timeline__title">${escapeAttr(item.title)}</p>
+                  ${item.title ? `<p class="cs-timeline__title">${escapeAttr(item.title)}</p>` : ''}
                   ${item.body.map(p => `<p>${emphasize(p)}</p>`).join('')}
                   ${item.imageAfter
                     ? `<picture class="cs-timeline__thumb cs-timeline__thumb--auto">
