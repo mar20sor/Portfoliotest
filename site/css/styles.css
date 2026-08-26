@@ -955,7 +955,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .cs-timeline__content { grid-column: 2; flex-direction: row; gap: var(--s6); padding-bottom: var(--s7); }
   .cs-timeline__thumb { width: 160px; }
   .cs-timeline__row--figure .cs-timeline__content { flex-direction: column; }
-  .cs-timeline__row--figure .cs-timeline__thumb { width: 100%; max-width: 440px; }
+  .cs-timeline__row--figure .cs-timeline__thumb { width: 100%; max-width: 640px; }
   /* item.imageAfter vit dans .cs-timeline__text (jamais dans une row a 2
      colonnes thumb+texte) : toujours pleine largeur de la colonne de texte,
      pas la largeur fixe 160px des vignettes placeholder ci-dessus. */
