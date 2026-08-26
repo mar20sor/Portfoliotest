@@ -729,10 +729,16 @@ export const PROJECTS = [
               {
                 n: 1,
                 body: [
-                  '**Naming the button**: the button’s label was also part of a small decision process:',
-                  '"Valider" implied confirming a finished process;',
-                  '"Search" implied the field was purely about searching a member, not adding.',
-                  'We landed on "Add a member" because the operation is fundamentally about adding a member; matching an existing one is just an edge case.'
+                  '**Naming the button**: the button’s label was also part of a small decision process. We landed on "Add a member" because the operation is fundamentally about adding a member; matching an existing one is just an edge case.'
+                ],
+                // Alternatives ecartees, sorties en liste a puces (voir
+                // c.list dans app.js, reutilise .cs-sec__list) plutot que
+                // meles au paragraphe. "Submit" remplace "Valider" (garde en
+                // francais dans la maquette d'origine) — equivalent UX
+                // writing le plus proche discute avec l'utilisateur.
+                list: [
+                  '"Submit" implied confirming a finished process.',
+                  '"Search" implied the field was purely about searching a member, not adding.'
                 ]
               }
             ]

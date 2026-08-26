@@ -944,6 +944,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
    (ex. "Naming the button") — meme espacement que .cs-timeline__text p. */
 .cs-timeline__constraint-body p { margin: 0 0 var(--s3); }
 .cs-timeline__constraint-body p:last-child { margin-bottom: 0; }
+/* c.list (voir app.js) : reprend .cs-sec__list telle quelle, mais sa marge
+   basse par defaut (var(--s4)) doit etre annulee en fin d'item — sinon elle
+   s'ajoute au `gap` deja pose par .cs-timeline__constraints entre chaque
+   <li>, doublant l'espacement sous ce dernier constraint. */
+.cs-timeline__constraint-body .cs-sec__list:last-child { margin-bottom: 0; }
 .cs-timeline__constraint-num {
   flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%;
   background: #7F5DDD; color: #fff; font-size: var(--fs-small); font-weight: var(--w-semibold);

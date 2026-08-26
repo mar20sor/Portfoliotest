@@ -639,7 +639,10 @@ function pageCase(project) {
       // the component"). `constraints: [{n, text}]` ou `[{n, body: [...]}]`
       // rend une liste numerotee (pastille violette, n:null = pas de
       // pastille) — `body` accepte plusieurs paragraphes par item quand
-      // `text` (un seul) ne suffit pas. `imagesAfter: ['name', ...]` insere
+      // `text` (un seul) ne suffit pas ; `list: [...]` ajoute une liste a
+      // puces (.cs-sec__list) apres les paragraphes de l'item, pour des
+      // alternatives/options enumerees sans meriter leur propre pastille.
+      // `imagesAfter: ['name', ...]` insere
       // enfin une ou plusieurs figures empilees APRES `constraints` (ex. "A
       // button-triggered search" : 1ere image, puis "Naming the button" en
       // liste numerotee, puis la 2e image).
@@ -666,7 +669,10 @@ function pageCase(project) {
                     ? `<ul class="cs-timeline__constraints">${item.constraints.map(c => `
                         <li class="cs-timeline__constraint${c.n ? '' : ' cs-timeline__constraint--unnumbered'}">
                           <span class="cs-timeline__constraint-num" aria-hidden="true">${c.n || ''}</span>
-                          <div class="cs-timeline__constraint-body">${(c.body || [c.text]).map(p => `<p>${emphasize(p)}</p>`).join('')}</div>
+                          <div class="cs-timeline__constraint-body">
+                            ${(c.body || [c.text]).map(p => `<p>${emphasize(p)}</p>`).join('')}
+                            ${c.list ? `<ul class="cs-sec__list">${c.list.map(li => `<li>${emphasize(li)}</li>`).join('')}</ul>` : ''}
+                          </div>
                         </li>`).join('')}</ul>` : ''}
                   ${item.imagesAfter
                     ? item.imagesAfter.map(img => `
