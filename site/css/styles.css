@@ -905,8 +905,17 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .cs-timeline__row:last-child .cs-timeline__line-col,
 .cs-timeline__row:last-child .cs-timeline__content { padding-bottom: 0; }
-.cs-timeline__line-col { display: none; }
+.cs-timeline__line-col { display: none; position: relative; }
 .cs-timeline__line { width: 1px; height: 100%; background: var(--line); }
+/* Point plein marquant le debut de chaque entree (voir reference utilisateur
+   : carte "stream of thought"), aligne sur la 1ere ligne du titre/paragraphe
+   grace au meme top que le haut de .cs-timeline__content (siblings de grille,
+   stretch par defaut). */
+.cs-timeline__line-col::before {
+  content: ''; position: absolute; top: 3px; left: 50%; transform: translateX(-50%);
+  width: 7px; height: 7px; border-radius: 50%; background: var(--ink-soft);
+  z-index: 1;
+}
 .cs-timeline__content {
   display: flex; flex-direction: column; gap: var(--s5); min-width: 0;
   padding-bottom: var(--s7);
