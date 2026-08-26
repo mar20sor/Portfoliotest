@@ -681,22 +681,30 @@ export const PROJECTS = [
             constraints: [
               { n: 1, text: '**Terminology**: should the component be approached as a search or a dropdown list? We opted for a searchbox (wiki).' },
               { n: 2, text: '**Technical cost**: live background search on a big database on every keystroke is a technical challenge.' },
-              { n: 3, text: '**No result** can be seen as a dead end: the "contact support" as a listbox result in case there is no match found was as unclear and easy to miss.' },
+              { n: 3, text: '**Unclear redirection** can be seen as a dead end: the "contact support" as a listbox result in case there is no match found was as unclear and easy to miss.' },
               { n: 4, text: '**Legibility**: with no button, how do we know there’s an error or if the entry is incomplete, or that anything happened at all from a technical standpoint?' },
               { n: null, text: '**Privacy**: should a planner be able to search any email within their group at all, as some doctors want to keep it private?' }
             ]
           },
           {
             title: 'Issues for the admin flow',
+            // thumb:false : meme logique que "Work on the component" plus
+            // haut — pas de placeholder, l'unique visuel est imageAfter.
+            thumb: false,
             body: [
-              'It also presented several issues for the admin flow (as we wanted as little differences in both cases as possible for implementation):',
-              'For performance issues, the search ran in two passes (service-scoped, then platform-wide),'
-            ]
-          },
-          {
-            title: 'A buried action',
-            body: [
-              'adding a new member was buried behind a link displayed after the two passes searches rather than being a first-level action.'
+              'It also presented several issues for the admin flow (as we wanted as little differences in both cases as possible for implementation):'
+            ],
+            // Capture Figma (node 230:571, "Admin - Member addition flow v1
+            // (EN)") : deja en anglais dans la maquette source, export
+            // flatten via download_assets (defaultScale 3).
+            imageAfter: 'licence-6-admin-issues-en',
+            // Regroupe l'ancienne entree "A buried action" ici : les 2
+            // paragraphes restants deviennent une liste numerotee sous
+            // l'image (memes pastilles violettes que .cs-timeline__constraints
+            // plus haut, et memes numeros 1/2 deja presents dans le diagramme).
+            constraints: [
+              { n: 1, text: '**Performance issue**: the search ran in two passes (service-scoped, then platform-wide).' },
+              { n: 2, text: '**Buried action**: adding a new member was buried behind a link displayed after the two passes searches rather than being a first-level action.' }
             ]
           },
           {
