@@ -597,11 +597,6 @@ export const PROJECTS = [
     gist: { role: 'UX / UI', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer', tools: 'Figma' },
     problem: 'Clinics and hospitals lacked control over the registration process, as it happened outside the platform, and the permissions system required more clarity and granularity.',
     outcome: 'We redefined the permission system and implemented a new registration process so that managers, according to their authorization level, can add different types of member.',
-    stats: [
-      { n: '3 roles → 1 right', l: 'admin access reframed as a right, not a role' },
-      { n: '2-pass search', l: 'service-scoped, then platform-wide' },
-      { n: '1 shared component', l: 'serving both planners and admins' }
-    ],
     sections: [
       {
         id: 'definitions', label: 'Definitions', title: '1. Definitions : how did it work before ? (from role to rule)',
@@ -615,13 +610,9 @@ export const PROJECTS = [
           '**The format wasn’t reflecting reality**',
           'Only the Administrator role had add-rights, when in reality, clinicians HR, cost-management staffer, whose job is provisioning access for clinicians, could also need it.',
           'The process wasn’t reflecting that reality, as the role managing interface was rigid, only allowing to select a role, not to set a right.',
-          '**In result:** Administrator as role → adding members as a right.',
-          '**Planners**: responsible for building the schedule. Can only add existing members in a group / hospital.',
-          '**Planners edit access** → Planners register existing members.',
-          '**Admin role → Admin rights (licence manager)**: can add anybody.',
-          '**Hospital/Institution/group**: can add anybody.'
+          '**In result:** Administrator as role → adding members as a right.'
         ],
-        image: 'licence-1-role-right', bare: true,
+        image: 'licence-1-role-right.svg', bare: true,
         caption: 'Reframing admin access: a fixed role becomes one addable right.'
       },
       {
@@ -634,7 +625,7 @@ export const PROJECTS = [
         ]
       },
       {
-        id: 'design', label: 'Design', title: '2. Same page, different component (Design trials)',
+        id: 'design', label: 'Design', title: '3. Same page, different component (Design trials)',
         body: [
           'The registration flow needed one component that could serve both planners and admins with minimum differences to facilitate implementation, while the possible actions weren’t the same for both.',
           '**Isolate the identifier: the mail**',
@@ -660,7 +651,7 @@ export const PROJECTS = [
         caption: 'The button-triggered, two-pass search: service-scoped first, then platform-wide.'
       },
       {
-        id: 'admin', label: 'Admin model', title: 'Admin as a rule, not a role.',
+        id: 'admin', label: 'Admin model', title: '4. Admin as a rule, not a role.',
         body: [
           'To reflect the decisions we had taken concerning admin being a right rather than a role, we modified the role management table as well as the member list:',
           'The licence management indicator is shown as a tag in the member list.',
