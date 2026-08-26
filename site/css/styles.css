@@ -939,7 +939,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
   display: flex; flex-direction: column; gap: var(--s4);
 }
 .cs-timeline__constraint { display: flex; align-items: flex-start; gap: var(--s3); }
-.cs-timeline__constraint p { margin: 0; }
+.cs-timeline__constraint-body { min-width: 0; }
+/* c.body (voir app.js) : plusieurs paragraphes dans un seul item numerote
+   (ex. "Naming the button") — meme espacement que .cs-timeline__text p. */
+.cs-timeline__constraint-body p { margin: 0 0 var(--s3); }
+.cs-timeline__constraint-body p:last-child { margin-bottom: 0; }
 .cs-timeline__constraint-num {
   flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%;
   background: #7F5DDD; color: #fff; font-size: var(--fs-small); font-weight: var(--w-semibold);

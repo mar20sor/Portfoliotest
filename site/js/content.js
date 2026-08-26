@@ -676,14 +676,13 @@ export const PROJECTS = [
             // aligner les paragraphes et reprendre le violet #7F5DDD des
             // pastilles numerotees deja presentes dans imageAfter ci-dessus.
             // Ordre et numeros demandes explicitement par l'utilisateur
-            // (independants de la numerotation 1-4 du diagramme Figma) ;
-            // Privacy n'a pas de numero.
+            // (independants de la numerotation 1-4 du diagramme Figma).
+            // Privacy retiree ensuite a la demande de l'utilisateur.
             constraints: [
               { n: 1, text: '**Terminology**: should the component be approached as a search or a dropdown list? We opted for a searchbox (wiki).' },
               { n: 2, text: '**Technical cost**: live background search on a big database on every keystroke is a technical challenge.' },
               { n: 3, text: '**Unclear redirection** can be seen as a dead end: the "contact support" as a listbox result in case there is no match found was as unclear and easy to miss.' },
-              { n: 4, text: '**Legibility**: with no button, how do we know there’s an error or if the entry is incomplete, or that anything happened at all from a technical standpoint?' },
-              { n: null, text: '**Privacy**: should a planner be able to search any email within their group at all, as some doctors want to keep it private?' }
+              { n: 4, text: '**Legibility**: with no button, how do we know there’s an error or if the entry is incomplete, or that anything happened at all from a technical standpoint?' }
             ]
           },
           {
@@ -709,17 +708,31 @@ export const PROJECTS = [
           },
           {
             title: 'A button-triggered search',
+            // Meme regroupement que "Work on the component"/"Issues for the
+            // admin flow" plus haut : pas de placeholder, deux figures
+            // (imagesAfter, empilees) sous le 1er paragraphe, puis l'ancienne
+            // entree "Naming the button" en liste numerotee (1 seul item).
+            thumb: false,
             body: [
               'For these reasons, we chose to add a button to trigger the search, and then show what are the possible actions.'
-            ]
-          },
-          {
-            title: 'Naming the button',
-            body: [
-              'The button’s label was also part of a small decision process:',
-              '"Valider" implied confirming a finished process;',
-              '"Search" implied the field was purely about searching a member, not adding.',
-              'We landed on "Add a member" because the operation is fundamentally about adding a member; matching an existing one is just an edge case.'
+            ],
+            // Captures Figma (node 237:895 "Admin flow final (EN)" et node
+            // 239:1068 "Admin final form (EN)") : la 1ere deja en anglais ;
+            // la 2e contenait un formulaire encore en francais (Prenom, Type
+            // de compte, Specialite, Permis delivre par, Numero de permis,
+            // case a cocher) traduit via overlay raster (meme pipeline que
+            // les autres captures Petal de cette etude de cas).
+            imagesAfter: ['licence-7-button-search-en', 'licence-9-admin-form-en'],
+            constraints: [
+              {
+                n: 1,
+                body: [
+                  '**Naming the button**: the button’s label was also part of a small decision process:',
+                  '"Valider" implied confirming a finished process;',
+                  '"Search" implied the field was purely about searching a member, not adding.',
+                  'We landed on "Add a member" because the operation is fundamentally about adding a member; matching an existing one is just an edge case.'
+                ]
+              }
             ]
           }
         ]
@@ -727,10 +740,9 @@ export const PROJECTS = [
       {
         id: 'admin', label: 'Admin model', title: '4. Admin as a rule, not a role.',
         body: [
-          'To reflect the decisions we had taken concerning admin being a right rather than a role, we modified the role management table as well as the member list:',
+          'To reflect the decisions we had taken concerning admin being a right rather than a role, I modified the role management table as well as the member list:',
           'The licence management indicator is shown as a tag in the member list.',
-          'For the table, the challenge was to give the ability to still keep a role, while being able to have the licence manager right (we didn’t want to go into a full setting table as there would be no benefits to have roles in this case). So we implemented it as a right, with the same tag.',
-          'We used the same iconography across different products.'
+          'For the table, the challenge was to give the ability to still keep a role, while being able to have the licence manager right (we didn’t want to go into a full setting table as there would be no benefits to have roles in this case). So we implemented it as a right, with the same tag.'
         ]
       },
       {

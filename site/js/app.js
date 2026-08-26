@@ -636,9 +636,12 @@ function pageCase(project) {
       // rectangle gris par la vraie capture, affichee avant le texte (ex.
       // la 1ere entree, "isolate the identifier"). `imageAfter: 'name'`
       // insere plutot une figure apres le texte (ex. "Work on the
-      // component"). `constraints: [{n, text}]` rend une liste numerotee
+      // component") ; `imagesAfter: ['name', ...]` fait pareil mais empile
+      // plusieurs figures (ex. "A button-triggered search"). `constraints:
+      // [{n, text}]` ou `[{n, body: [...]}]` rend une liste numerotee
       // (pastille violette, n:null = pas de pastille) a la place/en plus
-      // des paragraphes simples.
+      // des paragraphes simples — `body` accepte plusieurs paragraphes par
+      // item quand `text` (un seul) ne suffit pas.
       const timeline = s.timeline
         ? `<div class="cs-timeline">${s.timeline.map(item => `
             <div class="cs-timeline__row${item.image ? ' cs-timeline__row--figure' : ''}">
@@ -658,11 +661,17 @@ function pageCase(project) {
                          <source srcset="assets/img/${item.imageAfter}.webp" type="image/webp">
                          <img src="assets/img/${item.imageAfter}.png" alt="" loading="lazy" decoding="async">
                        </picture>` : ''}
+                  ${item.imagesAfter
+                    ? item.imagesAfter.map(img => `
+                        <picture class="cs-timeline__thumb cs-timeline__thumb--auto">
+                          <source srcset="assets/img/${img}.webp" type="image/webp">
+                          <img src="assets/img/${img}.png" alt="" loading="lazy" decoding="async">
+                        </picture>`).join('') : ''}
                   ${item.constraints
                     ? `<ul class="cs-timeline__constraints">${item.constraints.map(c => `
                         <li class="cs-timeline__constraint${c.n ? '' : ' cs-timeline__constraint--unnumbered'}">
                           <span class="cs-timeline__constraint-num" aria-hidden="true">${c.n || ''}</span>
-                          <p>${emphasize(c.text)}</p>
+                          <div class="cs-timeline__constraint-body">${(c.body || [c.text]).map(p => `<p>${emphasize(p)}</p>`).join('')}</div>
                         </li>`).join('')}</ul>` : ''}
                 </div>
               </div>
