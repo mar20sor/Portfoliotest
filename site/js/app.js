@@ -633,8 +633,12 @@ function pageCase(project) {
       // management/Design trials) — voir .cs-timeline dans styles.css.
       // `thumb: false` sur une entree permet d'omettre son placeholder
       // d'image ; `image: 'name'` (paire webp+png, assets/img/) remplace le
-      // rectangle gris par la vraie capture (ex. la 1ere entree, "isolate
-      // the identifier").
+      // rectangle gris par la vraie capture, affichee avant le texte (ex.
+      // la 1ere entree, "isolate the identifier"). `imageAfter: 'name'`
+      // insere plutot une figure apres le texte (ex. "Work on the
+      // component"). `constraints: [{n, text}]` rend une liste numerotee
+      // (pastille violette, n:null = pas de pastille) a la place/en plus
+      // des paragraphes simples.
       const timeline = s.timeline
         ? `<div class="cs-timeline">${s.timeline.map(item => `
             <div class="cs-timeline__row${item.image ? ' cs-timeline__row--figure' : ''}">
@@ -649,6 +653,17 @@ function pageCase(project) {
                 <div class="cs-timeline__text">
                   <p class="cs-timeline__title">${escapeAttr(item.title)}</p>
                   ${item.body.map(p => `<p>${emphasize(p)}</p>`).join('')}
+                  ${item.imageAfter
+                    ? `<picture class="cs-timeline__thumb cs-timeline__thumb--auto">
+                         <source srcset="assets/img/${item.imageAfter}.webp" type="image/webp">
+                         <img src="assets/img/${item.imageAfter}.png" alt="" loading="lazy" decoding="async">
+                       </picture>` : ''}
+                  ${item.constraints
+                    ? `<ul class="cs-timeline__constraints">${item.constraints.map(c => `
+                        <li class="cs-timeline__constraint${c.n ? '' : ' cs-timeline__constraint--unnumbered'}">
+                          <span class="cs-timeline__constraint-num" aria-hidden="true">${c.n || ''}</span>
+                          <p>${emphasize(c.text)}</p>
+                        </li>`).join('')}</ul>` : ''}
                 </div>
               </div>
             </div>`).join('')}</div>` : '';

@@ -657,24 +657,33 @@ export const PROJECTS = [
           },
           {
             title: 'Work on the component',
+            // thumb:false : pas de placeholder gris avant le texte (voir
+            // item.thumb dans app.js) — l'unique visuel de cette entree est
+            // imageAfter, place sous le texte plutot qu'a cote.
+            thumb: false,
             body: [
               'Then I worked on the planner flow first, as it carries more constraints (the planner can only add internal existing members).',
               'The first idea was a filtered autosuggest: no button, live background search, surfacing only members the planner has rights to add. It brought several problems:'
-            ]
-          },
-          {
-            title: 'Legibility & terminology',
-            body: [
-              '**Legibility**: with no button, how do we know there’s an error or if the entry is incomplete, or that anything happened at all from a technical standpoint?',
-              '**Terminology**: should the component be approached as a search or a dropdown list? We opted for a searchbox (wiki).'
-            ]
-          },
-          {
-            title: 'No result, privacy & technical cost',
-            body: [
-              '**No result** can be seen as a dead end: the "contact support" as a listbox result in case there is no match found was as unclear and easy to miss.',
-              '**Privacy**: should a planner be able to search any email within their group at all, as some doctors want to keep it private?',
-              '**Technical cost**: live background search on a big database on every keystroke is a technical challenge.'
+            ],
+            // Capture Figma (node 222:1486, "Planner search flow (EN)") :
+            // deja en anglais dans la maquette source (pas de traduction a
+            // faire), export flatten via download_assets (defaultScale 3)
+            // plutot que get_screenshot pour la resolution.
+            imageAfter: 'licence-5-search-issues-en',
+            // Regroupe les anciennes entrees "Legibility & terminology" et
+            // "No result, privacy & technical cost" en une liste numerotee
+            // (voir .cs-timeline__constraints dans app.js/styles.css), pour
+            // aligner les paragraphes et reprendre le violet #7F5DDD des
+            // pastilles numerotees deja presentes dans imageAfter ci-dessus.
+            // Ordre et numeros demandes explicitement par l'utilisateur
+            // (independants de la numerotation 1-4 du diagramme Figma) ;
+            // Privacy n'a pas de numero.
+            constraints: [
+              { n: 1, text: '**Terminology**: should the component be approached as a search or a dropdown list? We opted for a searchbox (wiki).' },
+              { n: 2, text: '**Technical cost**: live background search on a big database on every keystroke is a technical challenge.' },
+              { n: 3, text: '**No result** can be seen as a dead end: the "contact support" as a listbox result in case there is no match found was as unclear and easy to miss.' },
+              { n: 4, text: '**Legibility**: with no button, how do we know there’s an error or if the entry is incomplete, or that anything happened at all from a technical standpoint?' },
+              { n: null, text: '**Privacy**: should a planner be able to search any email within their group at all, as some doctors want to keep it private?' }
             ]
           },
           {

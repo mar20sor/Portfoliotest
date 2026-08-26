@@ -918,9 +918,34 @@ button { font: inherit; color: inherit; cursor: pointer; }
    cas), et passe au-dessus du texte plutot qu'a cote. */
 .cs-timeline__row--figure .cs-timeline__thumb { aspect-ratio: auto; }
 .cs-timeline__row--figure .cs-timeline__thumb img { height: auto; }
+/* item.imageAfter (voir app.js) : figure inseree apres les paragraphes d'une
+   entree plutot qu'a cote/au-dessus — meme traitement ratio-naturel que
+   .cs-timeline__row--figure, mais porte par la figure elle-meme (elle vit a
+   l'interieur de .cs-timeline__text, pas au niveau de la row). */
+.cs-timeline__thumb--auto { aspect-ratio: auto; margin-bottom: var(--s4); }
+.cs-timeline__thumb--auto img { height: auto; }
 .cs-timeline__title { font-weight: var(--w-semibold); color: var(--ink); margin-bottom: var(--s2); }
 .cs-timeline__text p { margin-bottom: var(--s3); }
 .cs-timeline__text p:last-child { margin-bottom: 0; }
+/* item.constraints (voir app.js) : liste de paragraphes alignes sur une
+   colonne commune, chacun precede d'une pastille numerotee violette — reprend
+   le violet #7F5DDD des pastilles 1-4 deja presentes dans le diagramme Figma
+   place juste au-dessus (imageAfter), pour une lecture continue diagramme ->
+   liste. `n:null` (ex. Privacy) : pastille gardee dans le flux mais rendue
+   invisible plutot que retiree, pour que tous les paragraphes s'alignent
+   verticalement sur la meme colonne malgre l'absence de numero. */
+.cs-timeline__constraints {
+  list-style: none; margin: var(--s2) 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: var(--s4);
+}
+.cs-timeline__constraint { display: flex; align-items: flex-start; gap: var(--s3); }
+.cs-timeline__constraint p { margin: 0; }
+.cs-timeline__constraint-num {
+  flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%;
+  background: #7F5DDD; color: #fff; font-size: var(--fs-small); font-weight: var(--w-semibold);
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+}
+.cs-timeline__constraint--unnumbered .cs-timeline__constraint-num { visibility: hidden; }
 @media (min-width: 701px) {
   /* max-content colonne retiree (etait toujours vide -> ne servait qu'a
      decaler le trait du bord gauche de la section via son column-gap) :
@@ -930,7 +955,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .cs-timeline__content { grid-column: 2; flex-direction: row; gap: var(--s6); padding-bottom: var(--s7); }
   .cs-timeline__thumb { width: 160px; }
   .cs-timeline__row--figure .cs-timeline__content { flex-direction: column; }
-  .cs-timeline__row--figure .cs-timeline__thumb { width: 100%; }
+  .cs-timeline__row--figure .cs-timeline__thumb { width: 100%; max-width: 440px; }
+  /* item.imageAfter vit dans .cs-timeline__text (jamais dans une row a 2
+     colonnes thumb+texte) : toujours pleine largeur de la colonne de texte,
+     pas la largeur fixe 160px des vignettes placeholder ci-dessus. */
+  .cs-timeline__thumb--auto { width: 100%; }
 }
 
 /* Etiquettes couleur inline (voir moreDrawer.items[].body, "Mapping the 24
