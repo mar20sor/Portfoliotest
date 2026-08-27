@@ -967,7 +967,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
    image sans autre regle de largeur ambiante (ex. .figure__frame, qui n'en
    impose aucune) se retrouve affichee a sa taille intrinseque une fois
    max-width:none applique, debordant de son cadre et de la page entiere si
-   elle est plus large que la colonne. */
+   elle est plus large que la colonne. Pas de display:block ici : la plupart
+   des contextes portant cette classe sont deja des blocs (div.figure__frame,
+   picture.cs-timeline__thumb qui le fixe elle-meme) — au ajouter dessus
+   changerait .cs-carousel__panel picture (inline par defaut, sans regle a
+   elle) d'element transparent au flux en nouveau bloc conteneur, cassant la
+   chaine height:100% img -> picture -> panneau (voir le correctif scope a
+   .cs-carousel__panel plus bas, applique seulement une fois zoomee). */
 .zoomable-media { cursor: zoom-in; overflow: auto; }
 .zoomable-media.is-zoomed { cursor: grab; }
 .zoomable-media.is-zoomed:active { cursor: grabbing; }
@@ -1000,6 +1006,25 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @media (max-width: 700px) {
   .cs-sec__media-pair .figure__frame.zoomable-media.is-zoomed img { width: var(--zoom-scale-mobile, 230%); }
 }
+/* .cs-sec__media-pair .cs-carousel__panel .zoomable-media (voir item.zoomable
+   dans content.js, carrousel Services exclusion/Concept) : meme collision,
+   cette fois avec .cs-sec__media-pair .cs-carousel__panel img (0,2,1) plus
+   bas dans ce fichier. Meme raison pour height:auto (cadre 997/936 fixe). */
+.cs-sec__media-pair .cs-carousel__panel .zoomable-media.is-zoomed img { width: 230%; height: auto; }
+@media (max-width: 700px) {
+  .cs-sec__media-pair .cs-carousel__panel .zoomable-media.is-zoomed img { width: var(--zoom-scale-mobile, 230%); }
+}
+/* .cs-carousel__panel picture (voir carouselMarkup() dans app.js) : sans
+   regle a elle, elle reste inline par defaut et .zoomable-media.overflow
+   (base rule) y est donc ignore (overflow ne s'applique pas a un inline non
+   remplace) — sans quoi le glisser-deplacer une fois zoomee n'aurait aucun
+   cadre scrollable. display:block seulement une fois zoomee (pas en
+   permanence) : au repos, .cs-carousel__panel img { height:100% } traverse
+   deja la picture inline pour se caler sur la hauteur du panneau (aspect-ratio
+   997/936) ; poser display:block dessus en permanence en ferait un nouveau
+   bloc conteneur SANS hauteur propre, cassant cette chaine (image ecrasee a
+   0px). height:100% ici la retablit explicitement pour l'etat zoome. */
+.cs-carousel__panel .zoomable-media.is-zoomed { display: block; height: 100%; }
 /* .cs-mockups .figure__frame.zoomable-media (voir s.mockups + s.zoomable
    dans content.js, ex. Constraints/constraints-solution-list) : meme
    collision que ci-dessus mais avec .cs-mockups .figure img (0,2,1 aussi,

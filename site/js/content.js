@@ -536,11 +536,15 @@ export const PROJECTS = [
         // Figma node 116:10862, exportees individuellement en PNG@2x/webp)
         // — un carrousel plutot que 4 figures empilees. Voir
         // carouselMarkup()/setupImageCarousel() dans app.js.
+        // zoomable: 'mobile' sur chaque panneau (voir carouselMarkup() dans
+        // app.js) : pas besoin sur desktop, deja assez large. Le glissement
+        // du carrousel se coupe automatiquement pendant qu'un panneau est
+        // zoome (voir stopPropagation dans setupZoomableMedia()).
         carousel: [
-          { image: 'exclusion-2-step1-en', caption: 'Step 1 — Excluded services' },
-          { image: 'exclusion-2-step2-en', caption: 'Step 2 — Deactivated services' },
-          { image: 'exclusion-2-step3-en', caption: 'Step 3 — Active services' },
-          { image: 'exclusion-2-step4-en', caption: 'Step 4 — Confirmation' }
+          { image: 'exclusion-2-step1-en', caption: 'Step 1 — Excluded services', zoomable: 'mobile' },
+          { image: 'exclusion-2-step2-en', caption: 'Step 2 — Deactivated services', zoomable: 'mobile' },
+          { image: 'exclusion-2-step3-en', caption: 'Step 3 — Active services', zoomable: 'mobile' },
+          { image: 'exclusion-2-step4-en', caption: 'Step 4 — Confirmation', zoomable: 'mobile' }
         ]
       },
       {

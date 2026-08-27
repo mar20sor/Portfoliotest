@@ -1321,10 +1321,15 @@ function setupLottieCarousel() {
    setupImageCarousel()). Fleches prev/next + puces incrustees en bas de la
    scene plutot que des onglets textuels. */
 function carouselMarkup(items) {
+  // item.zoomable (voir zoomableClass() plus haut) : posee sur le <picture>
+  // du panneau, pas sur .cs-carousel__panel lui-meme — c'est le panneau qui
+  // glisse via transform pour changer de slide, le zoom ne doit toucher que
+  // son contenu. Le glissement du carrousel se coupe tout seul pendant
+  // qu'un panneau est zoome (stopPropagation dans setupZoomableMedia()).
   const panels = items.map((item, i) => `
     <div class="cs-carousel__panel" data-role="carousel-panel"
          data-index="${i}" data-caption="${escapeAttr(item.caption || '')}">
-      <picture>
+      <picture class="${zoomableClass(item.zoomable).trim()}">
         <source srcset="assets/img/${item.image}.webp" type="image/webp">
         <img src="assets/img/${item.image}.png" alt="${escapeAttr(item.caption || '')}" loading="lazy" decoding="async">
       </picture>
@@ -3401,23 +3406,51 @@ function setupZoomableMedia() {
     let startX = 0, startScrollLeft = 0, dragging = false, dragged = false;
 
     const onPointerDown = e => {
-      if (!thumb.classList.contains('is-zoomed')) return;
+      // startX est toujours enregistre, meme hors zoom : sert a onClick plus
+      // bas a reperer un swipe de carrousel (voir stopPropagation ci-dessous
+      // sur pourquoi cet ecouteur ne peut pas juste suivre son propre
+      // pointermove dans ce cas).
+      startX = e.clientX;
       dragging = true;
       dragged = false;
-      startX = e.clientX;
+      if (!thumb.classList.contains('is-zoomed')) return;
+      // stopPropagation : une image zoomable peut vivre dans un carrousel au
+      // glissement propre (setupSwipe() sur .cs-carousel__track) — sans ca,
+      // le meme pointerdown ferait aussi demarrer le swipe de panneau au
+      // niveau du track, qui prend ensuite le pointer capture a sa place (le
+      // dernier appel gagne), cassant le glisser-deplacer du zoom. Une fois
+      // zoomee, le geste doit rester au zoom : le carrousel ne doit pas
+      // changer de panneau tant qu'on n'a pas dezoome.
+      e.stopPropagation();
       startScrollLeft = thumb.scrollLeft;
       thumb.setPointerCapture(e.pointerId);
     };
     const onPointerMove = e => {
-      if (!dragging) return;
+      if (!dragging || !thumb.classList.contains('is-zoomed')) return;
       const dx = e.clientX - startX;
       if (Math.abs(dx) > 4) dragged = true;
       thumb.scrollLeft = startScrollLeft - dx;
     };
     const onPointerUp = () => { dragging = false; };
-    const onClick = () => {
-      // Un vrai drag ne doit pas aussi fermer le zoom au relachement.
-      if (dragged) { dragged = false; return; }
+    const onClick = e => {
+      if (thumb.classList.contains('is-zoomed')) {
+        // Un vrai drag ne doit pas aussi fermer le zoom au relachement.
+        if (dragged) { dragged = false; return; }
+      } else if (Math.abs(e.clientX - startX) > 4) {
+        // Hors zoom, le pointerdown ci-dessus ne capture pas le pointeur (il
+        // laisse le carrousel s'en charger, voir stopPropagation plus haut) —
+        // notre propre pointermove ne voit donc plus rien une fois le
+        // carrousel demarre son swipe (setPointerCapture() reroute les
+        // evenements pointer, pas les evenements souris/click, vers son
+        // element). Comparer directement e.clientX (position au relachement,
+        // toujours correcte pour click) a startX reste le seul moyen fiable
+        // de savoir qu'un swipe vient d'avoir lieu : a la souris (pas au
+        // tactile, qui le supprime deja lui-meme), un click natif se
+        // declenche quand meme au relachement malgre le glissement — sans ce
+        // garde-fou, chaque swipe du carrousel zoomerait l'image au lieu de
+        // changer de panneau.
+        return;
+      }
       // Hors mobile : pas de zoom du tout, mais on laisse quand meme
       // dezoomer si jamais deja zoomee (ex. fenetre redimensionnee pendant
       // que l'image etait zoomee).
