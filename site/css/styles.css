@@ -1184,25 +1184,41 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border: 1px solid var(--frame-line);
   border-radius: var(--radius);
   overflow: hidden;
-  /* Glissable (setupSwipe() dans app.js) : pan-y laisse le defilement
-     vertical de la page passer, seul l'axe horizontal est intercepte par le
-     JS ; les deux regles suivantes empechent le navigateur de demarrer un
-     drag-image natif (fantome semi-transparent) ou une selection de texte
-     pendant le geste. */
+}
+/* Panneaux alignes cote a cote dans un track qui glisse via transform —
+   meme structure que .cs-carousel__track (voir plus bas), pour la meme
+   animation de glissement entre deux constraintes plutot qu'un cut net.
+   Le glissement (setupSwipe() dans app.js) est ecoute ICI, pas sur la scene :
+   les fleches/puces vivent en dehors du track (enfants de la scene), donc un
+   pointerdown dessus ne peut pas etre capture par le glissement — c'est ce
+   qui les rendait inertes a la souris quand l'ecoute portait sur la scene
+   entiere. pan-y laisse le defilement vertical de la page passer, seul l'axe
+   horizontal est intercepte par le JS ; les deux regles suivantes empechent
+   le navigateur de demarrer un drag-image natif (fantome semi-transparent)
+   ou une selection de texte pendant le geste. */
+.lottie-carousel__track {
+  display: flex; height: 100%;
+  transition: transform .45s cubic-bezier(.4, 0, .2, 1);
   touch-action: pan-y;
   -webkit-user-drag: none;
   user-select: none;
   cursor: grab;
 }
-.lottie-carousel__stage:active { cursor: grabbing; }
+.lottie-carousel__track:active { cursor: grabbing; }
 /* aspect-ratio deplace du <dotlottie-wc> vers .lottie-carousel__panel
    lui-meme (qui porte aussi position:relative) : c'est ce qui donne au
    panneau une boite de taille fixe et independante de son contenu, pour
    pouvoir agrandir le <dotlottie-wc> au-dela de 100% ci-dessous sans que le
    panneau (et donc .lottie-carousel__stage, qui prend sa hauteur du panneau
-   visible) ne s'effondre. */
-.lottie-carousel__panel { display: block; position: relative; aspect-ratio: 1185 / 993; }
-.lottie-carousel__panel[hidden] { display: none; }
+   visible) ne s'effondre. flex: 0 0 100% (pas de [hidden]/display:none comme
+   avant) : les 4 panneaux restent tous en flux, cote a cote, seul le
+   transform du track les deplace — necessaire pour l'animation de
+   glissement, et effet de bord utile : dotlottie-wc a toujours une taille
+   reelle des le depart, plus besoin du contournement data-src->src pour
+   eviter un <canvas> fige a 300x150 (voir le commentaire au-dessus de
+   lottieCarouselMarkup() dans app.js), meme si la promotion est conservee
+   pour ne pas lancer les 4 animations en boucle simultanement. */
+.lottie-carousel__panel { flex: 0 0 100%; min-width: 0; display: block; position: relative; aspect-ratio: 1185 / 993; }
 .lottie-carousel__panel dotlottie-wc { display: block; width: 100%; height: 100%; }
 /* Sur les 3 animations autres que "Blocking" (index 0), le sujet
    (losanges/etiquette) n'occupe que la portion centrale du canevas source
@@ -1273,7 +1289,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   display: flex; height: 100%;
   transition: transform .45s cubic-bezier(.4, 0, .2, 1);
   /* Glissable (setupSwipe() dans app.js) : voir le meme trio de regles sur
-     .lottie-carousel__stage plus haut pour le detail de chacune. */
+     .lottie-carousel__track plus haut pour le detail de chacune. */
   touch-action: pan-y;
   -webkit-user-drag: none;
   user-select: none;
@@ -1294,6 +1310,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cs-carousel__arrow--prev { left: var(--s4); }
 .cs-carousel__arrow--next { right: var(--s4); }
 .cs-carousel__arrow-icon { width: 18px; height: 18px; }
+/* Fleches masquees par defaut, revelees au survol de la scene — desktop
+   uniquement (hover:hover + pointer:fine exclut le tactile, qui n'a pas de
+   survol pour les decouvrir et se repose sur le glissement/les puces).
+   Partagees par .cs-carousel (Services exclusion) et .lottie-carousel
+   (Contraintes), d'ou les deux selecteurs de scene. :focus-visible garde les
+   fleches visibles au clavier meme sans survol. */
+@media (hover: hover) and (pointer: fine) {
+  .cs-carousel__arrow {
+    opacity: 0;
+    transition: opacity .18s var(--ease), background .18s var(--ease), transform .18s var(--ease);
+  }
+  .cs-carousel__stage:hover .cs-carousel__arrow,
+  .lottie-carousel__stage:hover .cs-carousel__arrow,
+  .cs-carousel__arrow:focus-visible {
+    opacity: 1;
+  }
+}
 .cs-carousel__arrow--prev .cs-carousel__arrow-icon { transform: rotate(90deg); }
 .cs-carousel__arrow--next .cs-carousel__arrow-icon { transform: rotate(-90deg); }
 .cs-carousel figcaption {
@@ -1315,10 +1348,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .cs-carousel__dot:hover { background: rgba(255, 255, 255, .8); }
 .cs-carousel__dot.is-active { background: #FFFFFF; transform: scale(1.3); }
+/* Mobile : fleches retirees, seules les puces restent (glissement au doigt
+   comme controle principal — voir setupSwipe() dans app.js) — partage par
+   .cs-carousel et .lottie-carousel, memes classes de fleche. */
 @media (max-width: 700px) {
-  .cs-carousel__arrow { width: 32px; height: 32px; }
-  .cs-carousel__arrow--prev { left: var(--s2); }
-  .cs-carousel__arrow--next { right: var(--s2); }
+  .cs-carousel__arrow { display: none; }
 }
 
 /* ---- Services exclusion, section "Fixes" : demo interactif "modal

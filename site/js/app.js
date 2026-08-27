@@ -1073,6 +1073,10 @@ function setupSwipe(el, { onDrag, onDragEnd } = {}) {
   let startX = null, dragging = false;
   const onPointerDown = e => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+    // Un bouton (fleche/puce) peut vivre dans `el` selon l'appelant — ne pas
+    // capturer le pointeur dessus : setPointerCapture() retargete aussi le
+    // clic vers `el`, ce qui rendrait le bouton inerte a la souris.
+    if (e.target.closest('button')) return;
     startX = e.clientX;
     dragging = true;
     el.setPointerCapture(e.pointerId);
@@ -1106,17 +1110,15 @@ function setupSwipe(el, { onDrag, onDragEnd } = {}) {
    <figure> empile. Le premier constraint (Blocking) est affiche par defaut. */
 function lottieCarouselMarkup(items) {
   const lottiePlay = prefersReducedMotion() ? 'controls' : 'autoplay loop';
-  // src en `data-src` (pas `src`) pour les panneaux i>0 : dotlottie-wc a un
-  // mode `freezeOnOffscreen` qui, s'il initialise son <canvas> pendant que
-  // l'element est encore `hidden` (donc hors-flux, taille nulle), le laisse
-  // bloque a la taille par defaut du <canvas> HTML (300x150) — meme apres
-  // avoir enleve `hidden` plus tard, il ne se redimensionne jamais, d'ou le
-  // flou/pixellise observe. En ne posant `src` qu'au premier clic sur son
-  // onglet (setupLottieCarousel), l'element ne s'initialise qu'une fois
-  // reellement visible et correctement dimensionne.
+  // src en `data-src` (pas `src`) pour les panneaux i>0, promu au fil du
+  // parcours (setupLottieCarousel) plutot que pose d'emblee sur les 4 : les
+  // panneaux ont maintenant tous une taille reelle des le depart (track en
+  // flex, voir CSS), donc plus de risque de <canvas> fige a 300x150 comme
+  // avant — mais lancer 4 animations en boucle simultanees des l'arrivee sur
+  // la page resterait un gachis (CPU/batterie) pour 3 qu'on ne voit pas
+  // encore.
   const panels = items.map((item, i) => `
-    <div class="lottie-carousel__panel${i === 0 ? ' is-active' : ''}" data-role="lottie-panel"
-         data-index="${i}"${i === 0 ? '' : ' hidden'}>
+    <div class="lottie-carousel__panel" data-role="lottie-panel" data-index="${i}">
       <dotlottie-wc ${i === 0 ? `src="${escapeAttr(mediaUrl(item))}"` : `data-src="${escapeAttr(mediaUrl(item))}"`} ${lottiePlay} aria-label="${escapeAttr(item.label)} constraint"></dotlottie-wc>
     </div>`).join('');
   const tabs = items.map((item, i) => `
@@ -1133,7 +1135,7 @@ function lottieCarouselMarkup(items) {
   return `
     <div class="lottie-carousel" data-role="lottie-carousel">
       <div class="lottie-carousel__stage" data-role="lottie-stage">
-        ${panels}
+        <div class="lottie-carousel__track" data-role="lottie-track">${panels}</div>
         <button type="button" class="cs-carousel__arrow cs-carousel__arrow--prev" data-role="lottie-prev"
                 aria-label="${escapeAttr(t().csCarouselPrev)}">${chevronIcon('cs-carousel__arrow-icon')}</button>
         <button type="button" class="cs-carousel__arrow cs-carousel__arrow--next" data-role="lottie-next"
@@ -1155,14 +1157,23 @@ function setupLottieCarousel() {
     const dots = $$('[data-role="lottie-dot"]', root);
     const prev = $('[data-role="lottie-prev"]', root);
     const next = $('[data-role="lottie-next"]', root);
-    const stage = $('[data-role="lottie-stage"]', root);
+    const track = $('[data-role="lottie-track"]', root);
     let current = 0;
 
     // Point d'entree unique pour les 4 facons de changer de panneau (onglet,
-    // puce, fleche, glissement) : evite de repeter la logique is-active/
-    // aria/promotion data-src->src a chaque gestionnaire.
-    const goTo = index => {
+    // puce, fleche, glissement) : evite de repeter la logique glissement/
+    // aria/promotion data-src->src a chaque gestionnaire. Boucle infinie
+    // (index+1/-1 deja passes en modulo par les appelants) : rejoindre le
+    // premier depuis le dernier (et vice versa) saute sans transition
+    // (`instant`) plutot que de glisser en arriere a travers tout le
+    // carrousel — seul un pas simple (prev/next/glissement d'un cran) anime.
+    const goTo = (index, { instant = false } = {}) => {
+      const wrap = Math.abs(index - current) === panels.length - 1 && panels.length > 2;
+      if (instant || wrap) track.style.transition = 'none';
       current = index;
+      track.style.transform = `translateX(-${current * 100}%)`;
+      if (instant || wrap) { void track.offsetWidth; track.style.transition = ''; }
+
       tabs.forEach(t => {
         const active = Number(t.dataset.index) === current;
         t.classList.toggle('is-active', active);
@@ -1175,8 +1186,7 @@ function setupLottieCarousel() {
       });
       panels.forEach(p => {
         const active = Number(p.dataset.index) === current;
-        p.classList.toggle('is-active', active);
-        p.hidden = !active;
+        p.setAttribute('aria-hidden', String(!active));
         if (active) {
           const wc = p.querySelector('dotlottie-wc');
           if (wc.hasAttribute('data-src')) {
@@ -1186,6 +1196,7 @@ function setupLottieCarousel() {
         }
       });
     };
+    goTo(0, { instant: true });
 
     tabs.forEach(tab => {
       const onClick = () => goTo(Number(tab.dataset.index));
@@ -1207,13 +1218,19 @@ function setupLottieCarousel() {
       next.addEventListener('click', onNext);
       addCleanup(() => next.removeEventListener('click', onNext));
     }
-    // Panneaux Lottie independants (pas un track qui glisse comme
-    // .cs-carousel, voir lottieCarouselMarkup()) : un glissement ne fait
-    // donc que decider next/prev au relachement, sans suivi visuel en direct.
-    if (stage) setupSwipe(stage, {
+    // Glissement : suivi visuel en direct (meme technique que
+    // setupImageCarousel() plus bas — track deja en %, calc() mixe % et px),
+    // transition coupee pendant le geste et restauree juste avant le snap.
+    setupSwipe(track, {
+      onDrag: dx => {
+        track.style.transition = 'none';
+        track.style.transform = `translateX(calc(-${current * 100}% + ${dx}px))`;
+      },
       onDragEnd: delta => {
+        track.style.transition = '';
         if (delta <= -SWIPE_THRESHOLD) goTo((current + 1) % panels.length);
         else if (delta >= SWIPE_THRESHOLD) goTo((current - 1 + panels.length) % panels.length);
+        else goTo(current);
       }
     });
   });
@@ -1266,9 +1283,16 @@ function setupImageCarousel() {
     const next = $('[data-role="carousel-next"]', root);
     let current = 0;
 
-    const goTo = index => {
+    // Boucle infinie (voir onPrev/onNext et setupSwipe plus bas, deja en
+    // modulo) : rejoindre le premier depuis le dernier (et vice versa) saute
+    // sans transition plutot que de glisser en arriere a travers tout le
+    // carrousel — seul un pas simple (prev/next/glissement d'un cran) anime.
+    const goTo = (index, { instant = false } = {}) => {
+      const wrap = Math.abs(index - current) === panels.length - 1 && panels.length > 2;
+      if (instant || wrap) track.style.transition = 'none';
       current = index;
       track.style.transform = `translateX(-${current * 100}%)`;
+      if (instant || wrap) { void track.offsetWidth; track.style.transition = ''; }
       panels.forEach((p, i) => p.setAttribute('aria-hidden', String(i !== current)));
       dots.forEach((d, i) => {
         const active = i === current;
@@ -1278,7 +1302,7 @@ function setupImageCarousel() {
       if (caption) caption.textContent = panels[current].dataset.caption || '';
     };
 
-    goTo(0);
+    goTo(0, { instant: true });
 
     const onPrev = () => goTo((current - 1 + panels.length) % panels.length);
     const onNext = () => goTo((current + 1) % panels.length);
