@@ -1422,11 +1422,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
   position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
   display: flex; align-items: center; justify-content: center;
   width: 40px; height: 40px; border-radius: 50%;
-  background: rgba(255, 255, 255, .85); border: 1px solid var(--frame-line);
-  color: var(--ink); cursor: pointer; box-shadow: var(--shadow);
+  background: rgba(16, 35, 63, .45); border: none;
+  color: #FFFFFF; cursor: pointer; box-shadow: var(--shadow);
   transition: background .18s var(--ease), transform .18s var(--ease);
 }
-.cs-carousel__arrow:hover { background: #FFFFFF; }
+.cs-carousel__arrow:hover { background: rgba(16, 35, 63, .65); }
 .cs-carousel__arrow--prev { left: var(--s4); }
 .cs-carousel__arrow--next { right: var(--s4); }
 .cs-carousel__arrow-icon { width: 18px; height: 18px; }
