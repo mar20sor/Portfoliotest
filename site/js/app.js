@@ -3454,8 +3454,16 @@ function setupZoomableMedia() {
       // dezoomer si jamais deja zoomee (ex. fenetre redimensionnee pendant
       // que l'image etait zoomee).
       if (mobileOnly && !thumb.classList.contains('is-zoomed') && !window.matchMedia('(max-width: 700px)').matches) return;
+      // Pas de reset de scrollLeft ici : au dezoom apres un glisser-deplacer,
+      // ca forcerait un saut instantane vers le bord gauche juste avant/pendant
+      // la transition de largeur, donnant l'impression d'un zoom-IN (nouveau
+      // cadrage soudain) plutot que le retrecissement attendu. Le navigateur
+      // reclampe deja scrollLeft en continu pendant la transition width a
+      // mesure que scrollWidth retrecit vers clientWidth — l'image revient
+      // donc naturellement a 0 en fin d'anim, sans a-coup. Au zoom-IN,
+      // scrollLeft est deja a 0 (rien a faire defiler avant que la largeur ne
+      // depasse 100%), donc rien a reinitialiser de ce cote non plus.
       thumb.classList.toggle('is-zoomed');
-      thumb.scrollLeft = 0;
     };
 
     thumb.addEventListener('pointerdown', onPointerDown);
