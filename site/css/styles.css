@@ -988,6 +988,27 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @media (max-width: 700px) {
   .zoomable-media.is-zoomed img { width: var(--zoom-scale-mobile, 230%); }
 }
+/* .cs-sec__media-pair .figure__frame.zoomable-media (voir s.zoomable dans
+   content.js, ex. Services exclusion/exclusion-2-before-en) : compound
+   selector necessaire — .cs-sec__media-pair .figure__frame img plus bas
+   dans ce fichier a la meme specificite (0,2,1) que .zoomable-media.
+   is-zoomed img ci-dessus et l'ecraserait sinon a l'ordre du fichier,
+   figeant width/height a 100%. height:auto (pas 100%) laisse l'image
+   grandir uniformement plutot que de l'etirer dans la hauteur fixe du
+   cadre 997/936. */
+.cs-sec__media-pair .figure__frame.zoomable-media.is-zoomed img { width: 230%; height: auto; }
+@media (max-width: 700px) {
+  .cs-sec__media-pair .figure__frame.zoomable-media.is-zoomed img { width: var(--zoom-scale-mobile, 230%); }
+}
+/* .cs-mockups .figure__frame.zoomable-media (voir s.mockups + s.zoomable
+   dans content.js, ex. Constraints/constraints-solution-list) : meme
+   collision que ci-dessus mais avec .cs-mockups .figure img (0,2,1 aussi,
+   plus bas dans ce fichier). Pas de height a corriger ici : contrairement
+   a .cs-sec__media-pair, .cs-mockups n'impose pas de hauteur fixe. */
+.cs-mockups .figure__frame.zoomable-media.is-zoomed img { width: 230%; }
+@media (max-width: 700px) {
+  .cs-mockups .figure__frame.zoomable-media.is-zoomed img { width: var(--zoom-scale-mobile, 230%); }
+}
 /* .zoomable-media--ripple : modificateur optionnel, a poser en plus de
    .zoomable-media — ondulation lente et permanente autour du cadre, invite
    discrete a cliquer avant toute interaction. box-shadow deborde du cadre

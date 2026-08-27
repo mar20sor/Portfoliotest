@@ -299,7 +299,10 @@ export const PROJECTS = [
                 'With the rules simplified, the remaining question was which interface model to use. I looked at how other products let non-experts configure complex sets of rules.',
                 'A rule-builder interface emerged as the optimal solution for configuring constraints, balancing flexibility and simplicity.'
               ],
-              image: 'constraints-3-benchmark', frOnly: true,
+              // zoomable: 'mobile' (voir figureFor() dans app.js) : capture
+              // dense a la largeur d'une colonne mobile — clic pour zoomer/
+              // parcourir. Pas besoin sur desktop, deja assez large.
+              image: 'constraints-3-benchmark', frOnly: true, zoomable: 'mobile',
               caption: 'Notion automation, Gmail’s advanced search, but also Mesh AI and Equina Scheduling which are constraint configuring softwares for hospitals.'
             }
           ]
@@ -336,9 +339,11 @@ export const PROJECTS = [
            dependance externe. Rendues apres tous les paragraphes (voir
            pageCase() dans app.js) via figureFor(), regroupees dans une
            .media-grid — puis le widget interactif juste en dessous. */
+        // zoomable: 'mobile' sur les 2 (voir figureFor() dans app.js) : pas
+        // besoin sur desktop, deja assez large.
         mockups: [
-          { image: 'constraints-solution-list', caption: 'Constraints list' },
-          { image: 'constraints-solution-configure', caption: 'Configure a constraint' }
+          { image: 'constraints-solution-list', caption: 'Constraints list', zoomable: 'mobile' },
+          { image: 'constraints-solution-configure', caption: 'Configure a constraint', zoomable: 'mobile' }
         ],
         /* Carrousel des 4 illustrations animees : un seul JSON Lottie visible
            a la fois, choisi en cliquant son libelle (figma node 34:817).
@@ -500,7 +505,10 @@ export const PROJECTS = [
         ],
         // Export SVG direct de Figma (node 114:10812, meme fichier que la
         // maquette) : le schema du flux de synchronisation.
-        image: 'exclusion-1-context-en.svg', bare: true,
+        // zoomable: 'mobile' (voir figureFor() dans app.js) : le schema est
+        // dense a la largeur d'une colonne mobile — clic pour zoomer/
+        // parcourir. Pas besoin sur desktop, deja assez large.
+        image: 'exclusion-1-context-en.svg', bare: true, zoomable: 'mobile',
         caption: 'HUB synchronisation : exclusion and deactivation are added to the service configuration step.',
         afterFigure: [
           'During that process, managers were only configuring the services that would be active, the others were deactivated.'
@@ -520,7 +528,9 @@ export const PROJECTS = [
         // export PNG@2x -> webp, comme le reste des figures locales : les
         // exports SVG directs de ces captures denses pesaient 500-870Ko
         // chacun et ralentissaient le rendu).
-        image: 'exclusion-2-before-en', bare: true,
+        // zoomable: 'mobile' (voir figureFor() dans app.js) : meme besoin
+        // que exclusion-1-context-en ci-dessus.
+        image: 'exclusion-2-before-en', bare: true, zoomable: 'mobile',
         caption: 'Before: only one step configuration',
         // Apres : les 4 etapes du nouveau wizard (section "Caroussel",
         // Figma node 116:10862, exportees individuellement en PNG@2x/webp)
