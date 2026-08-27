@@ -1097,7 +1097,15 @@ const WRAP_SNAP_DELAY = 470;
    garantit que les evenements suivants arrivent bien sur `el` meme si le
    doigt en sort pendant le geste. */
 function setupSwipe(el, { onDrag, onDragEnd } = {}) {
-  let startX = null, dragging = false;
+  let startX = null, startY = null, dragging = false, axis = null;
+  // Distance (px) avant de trancher si le geste est plutot horizontal
+  // (swipe de carrousel) ou vertical (scroll de page, doit rester natif) —
+  // sans ce verrou d'axe, le moindre `dx` fortuit pendant un scroll vertical
+  // (le doigt ne descend jamais parfaitement droit) pouvait faire changer de
+  // panneau. Tranche une fois pour tout le geste (`axis`), pas a chaque
+  // pointermove, pour eviter un flip-flop si dx/dy repassent l'un sous
+  // l'autre en cours de route.
+  const AXIS_LOCK_THRESHOLD = 10;
   const onPointerDown = e => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     // Un bouton (fleche/puce) peut vivre dans `el` selon l'appelant — ne pas
@@ -1105,17 +1113,28 @@ function setupSwipe(el, { onDrag, onDragEnd } = {}) {
     // clic vers `el`, ce qui rendrait le bouton inerte a la souris.
     if (e.target.closest('button')) return;
     startX = e.clientX;
+    startY = e.clientY;
     dragging = true;
+    axis = null;
     el.setPointerCapture(e.pointerId);
   };
   const onPointerMove = e => {
     if (!dragging) return;
-    onDrag?.(e.clientX - startX);
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if (!axis) {
+      if (Math.abs(dx) < AXIS_LOCK_THRESHOLD && Math.abs(dy) < AXIS_LOCK_THRESHOLD) return;
+      axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    }
+    if (axis !== 'x') return;
+    onDrag?.(dx);
   };
   const onPointerUp = e => {
     if (!dragging) return;
     dragging = false;
-    onDragEnd?.(e.clientX - startX);
+    // Geste vertical (ou jamais tranche, relachement trop rapide) : ne
+    // compte pas comme un swipe, le panneau doit juste se recaler.
+    onDragEnd?.(axis === 'x' ? e.clientX - startX : 0);
+    axis = null;
   };
   el.addEventListener('pointerdown', onPointerDown);
   el.addEventListener('pointermove', onPointerMove);
