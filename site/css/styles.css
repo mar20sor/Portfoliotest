@@ -980,6 +980,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
   width: 230%;
   -webkit-user-drag: none; user-select: none;
 }
+/* --zoom-scale-mobile (inline style posee par item.imageAfterZoomScaleMobile
+   dans content.js, voir app.js) : une image precise a besoin d'un zoom plus
+   fort que le 230% par defaut une fois sur mobile (colonne trop etroite pour
+   lire son contenu meme zoomee normalement) — desktop garde 230% en
+   ignorant la variable en dehors de ce media query. */
+@media (max-width: 700px) {
+  .zoomable-media.is-zoomed img { width: var(--zoom-scale-mobile, 230%); }
+}
 /* .zoomable-media--ripple : modificateur optionnel, a poser en plus de
    .zoomable-media — ondulation lente et permanente autour du cadre, invite
    discrete a cliquer avant toute interaction. box-shadow deborde du cadre

@@ -705,6 +705,12 @@ export const PROJECTS = [
             // flatten via download_assets (defaultScale 3).
             imageAfter: 'licence-6-admin-issues-en',
             imageAfterZoomable: true,
+            // Sur mobile, la colonne etroite rend le texte des 2 lignes
+            // d'actions illisible meme zoome a 230% (defaut) — pousse a 350%
+            // a la demande de l'utilisateur. Desktop garde 230% (voir
+            // --zoom-scale-mobile dans styles.css, applique uniquement
+            // sous 700px).
+            imageAfterZoomScaleMobile: 350,
             // Regroupe l'ancienne entree "A buried action" ici : les 2
             // paragraphes restants deviennent une liste numerotee sous
             // l'image (memes pastilles violettes que .cs-timeline__constraints
@@ -744,6 +750,8 @@ export const PROJECTS = [
             imageAfter: 'licence-7-button-search-en',
             imageAfterZoomable: true,
             imageAfterZoomableRipple: true,
+            // Meme besoin que licence-6 ci-dessus, a 300% sur mobile.
+            imageAfterZoomScaleMobile: 300,
             imagesAfter: [{ image: 'licence-9-admin-form-en', zoomable: 'mobile' }],
             constraints: [
               {

@@ -683,7 +683,7 @@ function pageCase(project) {
                   ${item.title ? `<p class="cs-timeline__title">${escapeAttr(item.title)}</p>` : ''}
                   ${item.body.map(p => `<p>${emphasize(p)}</p>`).join('')}
                   ${item.imageAfter
-                    ? `<picture class="cs-timeline__thumb cs-timeline__thumb--auto${zoomableClass(item.imageAfterZoomable, item.imageAfterZoomableRipple)}">
+                    ? `<picture class="cs-timeline__thumb cs-timeline__thumb--auto${zoomableClass(item.imageAfterZoomable, item.imageAfterZoomableRipple)}"${item.imageAfterZoomScaleMobile ? ` style="--zoom-scale-mobile: ${item.imageAfterZoomScaleMobile}%"` : ''}>
                          <source srcset="assets/img/${item.imageAfter}.webp" type="image/webp">
                          <img src="assets/img/${item.imageAfter}.png" alt="" loading="lazy" decoding="async">
                        </picture>` : ''}
