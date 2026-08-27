@@ -1055,6 +1055,49 @@ function checkIcon(cls) {
       aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`;
 }
 
+/* Distance (px) a franchir pour qu'un glissement compte comme un swipe
+   plutot qu'un simple tapotement/leger tremblement du doigt. Partagee par
+   les deux carrousels (setupImageCarousel()/setupLottieCarousel()). */
+const SWIPE_THRESHOLD = 40;
+
+/* Rend un carrousel "glissable" au doigt (mobile) ou a la souris : ecoute
+   `el` (la scene ou le track, selon l'appelant) et rapporte le deplacement
+   horizontal via deux callbacks optionnels — onDrag(deltaX), appele en
+   continu pendant le geste (pour un suivi visuel en direct), et
+   onDragEnd(deltaX), appele une fois au relachement (pour decider si le
+   geste compte comme un swipe). Pointer Events plutot que Touch Events :
+   une seule API pour souris/tactile/stylet, et setPointerCapture()
+   garantit que les evenements suivants arrivent bien sur `el` meme si le
+   doigt en sort pendant le geste. */
+function setupSwipe(el, { onDrag, onDragEnd } = {}) {
+  let startX = null, dragging = false;
+  const onPointerDown = e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    startX = e.clientX;
+    dragging = true;
+    el.setPointerCapture(e.pointerId);
+  };
+  const onPointerMove = e => {
+    if (!dragging) return;
+    onDrag?.(e.clientX - startX);
+  };
+  const onPointerUp = e => {
+    if (!dragging) return;
+    dragging = false;
+    onDragEnd?.(e.clientX - startX);
+  };
+  el.addEventListener('pointerdown', onPointerDown);
+  el.addEventListener('pointermove', onPointerMove);
+  el.addEventListener('pointerup', onPointerUp);
+  el.addEventListener('pointercancel', onPointerUp);
+  addCleanup(() => {
+    el.removeEventListener('pointerdown', onPointerDown);
+    el.removeEventListener('pointermove', onPointerMove);
+    el.removeEventListener('pointerup', onPointerUp);
+    el.removeEventListener('pointercancel', onPointerUp);
+  });
+}
+
 /* Carrousel des 4 illustrations Lottie (section "design", meme place que
    l'ancien media[0] — voir content.js). N'entre pas dans mediaMarkup()/
    mediaGroup() : contrairement a une grille statique, un seul panneau est
@@ -1079,9 +1122,24 @@ function lottieCarouselMarkup(items) {
   const tabs = items.map((item, i) => `
     <button type="button" class="lottie-carousel__tab${i === 0 ? ' is-active' : ''}"
             data-role="lottie-tab" data-index="${i}" aria-pressed="${i === 0 ? 'true' : 'false'}">${escapeAttr(item.label)}</button>`).join('');
+  // Fleches + puces reprises telles quelles de carouselMarkup() (memes
+  // classes cs-carousel__*, voir CSS) : meme controles que le carrousel
+  // d'images de Services exclusion, sur la scene Lottie plutot que sous les
+  // libelles textuels (conserves a droite, toujours l'acces principal).
+  const dots = items.map((item, i) => `
+    <button type="button" class="cs-carousel__dot${i === 0 ? ' is-active' : ''}" data-role="lottie-dot"
+            data-index="${i}" aria-label="${escapeAttr(t().csCarouselGoTo)} ${i + 1}"
+            aria-current="${i === 0 ? 'true' : 'false'}"></button>`).join('');
   return `
     <div class="lottie-carousel" data-role="lottie-carousel">
-      <div class="lottie-carousel__stage">${panels}</div>
+      <div class="lottie-carousel__stage" data-role="lottie-stage">
+        ${panels}
+        <button type="button" class="cs-carousel__arrow cs-carousel__arrow--prev" data-role="lottie-prev"
+                aria-label="${escapeAttr(t().csCarouselPrev)}">${chevronIcon('cs-carousel__arrow-icon')}</button>
+        <button type="button" class="cs-carousel__arrow cs-carousel__arrow--next" data-role="lottie-next"
+                aria-label="${escapeAttr(t().csCarouselNext)}">${chevronIcon('cs-carousel__arrow-icon')}</button>
+        <div class="cs-carousel__dots" role="tablist" aria-label="${escapeAttr(t().csCarouselDots)}">${dots}</div>
+      </div>
       <div class="lottie-carousel__tabs" role="tablist" aria-label="Constraint animations">${tabs}</div>
     </div>`;
 }
@@ -1094,29 +1152,69 @@ function setupLottieCarousel() {
   $$('[data-role="lottie-carousel"]').forEach(root => {
     const tabs = $$('[data-role="lottie-tab"]', root);
     const panels = $$('[data-role="lottie-panel"]', root);
-    tabs.forEach(tab => {
-      const onClick = () => {
-        const index = tab.dataset.index;
-        tabs.forEach(t => {
-          const active = t === tab;
-          t.classList.toggle('is-active', active);
-          t.setAttribute('aria-pressed', String(active));
-        });
-        panels.forEach(p => {
-          const active = p.dataset.index === index;
-          p.classList.toggle('is-active', active);
-          p.hidden = !active;
-          if (active) {
-            const wc = p.querySelector('dotlottie-wc');
-            if (wc.hasAttribute('data-src')) {
-              wc.setAttribute('src', wc.getAttribute('data-src'));
-              wc.removeAttribute('data-src');
-            }
+    const dots = $$('[data-role="lottie-dot"]', root);
+    const prev = $('[data-role="lottie-prev"]', root);
+    const next = $('[data-role="lottie-next"]', root);
+    const stage = $('[data-role="lottie-stage"]', root);
+    let current = 0;
+
+    // Point d'entree unique pour les 4 facons de changer de panneau (onglet,
+    // puce, fleche, glissement) : evite de repeter la logique is-active/
+    // aria/promotion data-src->src a chaque gestionnaire.
+    const goTo = index => {
+      current = index;
+      tabs.forEach(t => {
+        const active = Number(t.dataset.index) === current;
+        t.classList.toggle('is-active', active);
+        t.setAttribute('aria-pressed', String(active));
+      });
+      dots.forEach(d => {
+        const active = Number(d.dataset.index) === current;
+        d.classList.toggle('is-active', active);
+        d.setAttribute('aria-current', String(active));
+      });
+      panels.forEach(p => {
+        const active = Number(p.dataset.index) === current;
+        p.classList.toggle('is-active', active);
+        p.hidden = !active;
+        if (active) {
+          const wc = p.querySelector('dotlottie-wc');
+          if (wc.hasAttribute('data-src')) {
+            wc.setAttribute('src', wc.getAttribute('data-src'));
+            wc.removeAttribute('data-src');
           }
-        });
-      };
+        }
+      });
+    };
+
+    tabs.forEach(tab => {
+      const onClick = () => goTo(Number(tab.dataset.index));
       tab.addEventListener('click', onClick);
       addCleanup(() => tab.removeEventListener('click', onClick));
+    });
+    dots.forEach(dot => {
+      const onClick = () => goTo(Number(dot.dataset.index));
+      dot.addEventListener('click', onClick);
+      addCleanup(() => dot.removeEventListener('click', onClick));
+    });
+    if (prev) {
+      const onPrev = () => goTo((current - 1 + panels.length) % panels.length);
+      prev.addEventListener('click', onPrev);
+      addCleanup(() => prev.removeEventListener('click', onPrev));
+    }
+    if (next) {
+      const onNext = () => goTo((current + 1) % panels.length);
+      next.addEventListener('click', onNext);
+      addCleanup(() => next.removeEventListener('click', onNext));
+    }
+    // Panneaux Lottie independants (pas un track qui glisse comme
+    // .cs-carousel, voir lottieCarouselMarkup()) : un glissement ne fait
+    // donc que decider next/prev au relachement, sans suivi visuel en direct.
+    if (stage) setupSwipe(stage, {
+      onDragEnd: delta => {
+        if (delta <= -SWIPE_THRESHOLD) goTo((current + 1) % panels.length);
+        else if (delta >= SWIPE_THRESHOLD) goTo((current - 1 + panels.length) % panels.length);
+      }
     });
   });
 }
@@ -1193,6 +1291,24 @@ function setupImageCarousel() {
       const onClick = () => goTo(i);
       dot.addEventListener('click', onClick);
       addCleanup(() => dot.removeEventListener('click', onClick));
+    });
+
+    // Glissement : suivi visuel en direct (le track a deja un transform en
+    // %, voir goTo() plus haut — calc() mixe % et px sans a-coup), puis
+    // decision next/prev/retour au relachement. transition coupee pendant le
+    // glissement (sinon le suivi du doigt accuse un retard de .45s a chaque
+    // pointermove) et restauree juste avant le snap final.
+    setupSwipe(track, {
+      onDrag: dx => {
+        track.style.transition = 'none';
+        track.style.transform = `translateX(calc(-${current * 100}% + ${dx}px))`;
+      },
+      onDragEnd: delta => {
+        track.style.transition = '';
+        if (delta <= -SWIPE_THRESHOLD) goTo((current + 1) % panels.length);
+        else if (delta >= SWIPE_THRESHOLD) goTo((current - 1 + panels.length) % panels.length);
+        else goTo(current);
+      }
     });
   });
 }

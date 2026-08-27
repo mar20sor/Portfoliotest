@@ -1184,7 +1184,17 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border: 1px solid var(--frame-line);
   border-radius: var(--radius);
   overflow: hidden;
+  /* Glissable (setupSwipe() dans app.js) : pan-y laisse le defilement
+     vertical de la page passer, seul l'axe horizontal est intercepte par le
+     JS ; les deux regles suivantes empechent le navigateur de demarrer un
+     drag-image natif (fantome semi-transparent) ou une selection de texte
+     pendant le geste. */
+  touch-action: pan-y;
+  -webkit-user-drag: none;
+  user-select: none;
+  cursor: grab;
 }
+.lottie-carousel__stage:active { cursor: grabbing; }
 /* aspect-ratio deplace du <dotlottie-wc> vers .lottie-carousel__panel
    lui-meme (qui porte aussi position:relative) : c'est ce qui donne au
    panneau une boite de taille fixe et independante de son contenu, pour
@@ -1262,9 +1272,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cs-carousel__track {
   display: flex; height: 100%;
   transition: transform .45s cubic-bezier(.4, 0, .2, 1);
+  /* Glissable (setupSwipe() dans app.js) : voir le meme trio de regles sur
+     .lottie-carousel__stage plus haut pour le detail de chacune. */
+  touch-action: pan-y;
+  -webkit-user-drag: none;
+  user-select: none;
+  cursor: grab;
 }
+.cs-carousel__track:active { cursor: grabbing; }
 .cs-carousel__panel { flex: 0 0 100%; min-width: 0; }
-.cs-carousel__panel img { display: block; width: 100%; height: 100%; }
+.cs-carousel__panel img { display: block; width: 100%; height: 100%; -webkit-user-drag: none; }
 .cs-carousel__arrow {
   position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
   display: flex; align-items: center; justify-content: center;
