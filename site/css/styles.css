@@ -947,6 +947,68 @@ button { font: inherit; color: inherit; cursor: pointer; }
    l'interieur de .cs-timeline__text, pas au niveau de la row). */
 .cs-timeline__thumb--auto { aspect-ratio: auto; margin-bottom: var(--s4); }
 .cs-timeline__thumb--auto img { height: auto; }
+/* .zoomable-media (voir setupZoomableMedia() dans app.js) : clic pour
+   zoomer n'importe quelle image (item.imageAfterZoomable dans content.js
+   pose la classe sur la figure imageAfter du moment, mais le bloc ci-dessous
+   ne depend d'aucune structure cs-timeline — reutilisable sur n'importe
+   quelle image du site en posant juste la classe sur son conteneur direct)
+   — inspire de l'ancien portfolio (marvinsrd.com, .img-container.old) :
+   l'image passe de 100% a 230% de la largeur de son cadre, qui devient
+   alors scrollable (overflow:auto) pour la parcourir, plutot qu'un vrai
+   lightbox plein ecran. max-width:none pose en permanence (pas seulement
+   sur .is-zoomed) : le reset generique `img { max-width: 100% }` (section 1)
+   n'est pas transitionnable, donc le laisser revenir a 100% au dezoom
+   plafonnerait la largeur animee des la premiere frame et coupait net
+   l'animation retour au lieu de la laisser rejouer en sens inverse. Une fois
+   zoomee, glissable a la souris (setupZoomableMedia() pilote scrollLeft au
+   pointermove) — le tactile garde le scroll natif d'overflow:auto ci-dessus,
+   qui suffit deja au doigt. width:100% pose ici (pas seulement dans des
+   contextes comme .cs-timeline__thumb qui le fixent deja) : sans lui, une
+   image sans autre regle de largeur ambiante (ex. .figure__frame, qui n'en
+   impose aucune) se retrouve affichee a sa taille intrinseque une fois
+   max-width:none applique, debordant de son cadre et de la page entiere si
+   elle est plus large que la colonne. */
+.zoomable-media { cursor: zoom-in; overflow: auto; }
+.zoomable-media.is-zoomed { cursor: grab; }
+.zoomable-media.is-zoomed:active { cursor: grabbing; }
+.zoomable-media img {
+  max-width: none;
+  width: 100%;
+  transition: width .3s var(--ease);
+}
+.zoomable-media.is-zoomed img {
+  width: 230%;
+  -webkit-user-drag: none; user-select: none;
+}
+/* .zoomable-media--ripple : modificateur optionnel, a poser en plus de
+   .zoomable-media — ondulation lente et permanente autour du cadre, invite
+   discrete a cliquer avant toute interaction. box-shadow deborde du cadre
+   sans etre rogne par le overflow:auto ci-dessus (l'overflow d'un element ne
+   s'applique qu'a son contenu/ses descendants, jamais a son propre
+   box-shadow) : pas besoin d'un wrapper supplementaire. Coupee (pas juste
+   ralentie) une fois zoomee — deja compris que c'est cliquable, la garder
+   aurait juste distrait pendant le glisser-deplacer. prefers-reduced-motion
+   la neutralise deja via la regle generique en fin de fichier
+   (animation-duration a .01ms). */
+@keyframes zoomable-media-ripple {
+  0%   { box-shadow: 0 0 0 0 rgba(127, 93, 221, .35); }
+  100% { box-shadow: 0 0 0 14px rgba(127, 93, 221, 0); }
+}
+.zoomable-media--ripple { animation: zoomable-media-ripple 2.6s ease-out infinite; }
+.zoomable-media--ripple.is-zoomed { animation: none; }
+/* .figure__frame.zoomable-media (zoomableClass() dans app.js pose les deux
+   classes sur le meme div pour une figure) : compound selector necessaire
+   car .figure__frame { overflow: hidden } (plus bas dans ce fichier) a la
+   meme specificite (0,1,0) que .zoomable-media { overflow: auto } ci-dessus
+   et le battrait a l'ordre du fichier sinon. */
+.figure__frame.zoomable-media { overflow: auto; }
+/* .zoomable-media--mobile-only (voir zoomableClass() dans app.js, flag
+   'mobile') : juste un curseur "pas cliquable" hors mobile — le gel du clic
+   lui-meme vit cote JS, dans setupZoomableMedia(). Meme seuil que
+   .cs-carousel__arrow (mobile <=700px) ailleurs dans ce fichier. */
+@media (min-width: 701px) {
+  .zoomable-media--mobile-only { cursor: auto; }
+}
 .cs-timeline__title { font-weight: var(--w-semibold); color: var(--ink); margin-bottom: var(--s2); }
 .cs-timeline__text p { margin-bottom: var(--s3); }
 .cs-timeline__text p:last-child { margin-bottom: 0; }

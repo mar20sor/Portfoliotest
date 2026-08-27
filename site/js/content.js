@@ -619,7 +619,11 @@ export const PROJECTS = [
             { term: 'Regular staff', body: '(clinicians, and non-admin operational staff) had no licence-management rights at all.' }
           ]
         },
-        image: 'licence-1-role-right.svg', bare: true,
+        // zoomable: 'mobile' (voir figureFor() dans app.js) : sur mobile la
+        // largeur de colonne rend les 3 lignes du schema difficiles a lire —
+        // clic pour zoomer/parcourir. Pas besoin sur desktop, deja assez
+        // large. Voir .zoomable-media dans styles.css.
+        image: 'licence-1-role-right.svg', bare: true, zoomable: 'mobile',
         caption: 'Reframing admin access: a fixed role becomes one addable right.'
       },
       {
@@ -635,7 +639,7 @@ export const PROJECTS = [
         // inseree apres le 3e paragraphe via s.figureAfter.
         figureAfter: {
           after: 2,
-          image: 'licence-3-member-edit-before-en', bare: true
+          image: 'licence-3-member-edit-before-en', bare: true, zoomable: 'mobile'
         }
       },
       {
@@ -652,6 +656,7 @@ export const PROJECTS = [
             // app.js/styles.css : cette entree garde le ratio natif de
             // l'image (pas de recadrage carre) et passe au-dessus du texte.
             image: 'licence-4-mail-search-en',
+            imageZoomable: 'mobile',
             body: [
               'I started by isolating the mail input as it is the main identifier (for privacy purposes, licence numbers aren’t accessible information) for both planners and admins.'
             ]
@@ -671,6 +676,7 @@ export const PROJECTS = [
             // faire), export flatten via download_assets (defaultScale 3)
             // plutot que get_screenshot pour la resolution.
             imageAfter: 'licence-5-search-issues-en',
+            imageAfterZoomable: true,
             // Regroupe les anciennes entrees "Legibility & terminology" et
             // "No result, privacy & technical cost" en une liste numerotee
             // (voir .cs-timeline__constraints dans app.js/styles.css), pour
@@ -698,6 +704,7 @@ export const PROJECTS = [
             // (EN)") : deja en anglais dans la maquette source, export
             // flatten via download_assets (defaultScale 3).
             imageAfter: 'licence-6-admin-issues-en',
+            imageAfterZoomable: true,
             // Regroupe l'ancienne entree "A buried action" ici : les 2
             // paragraphes restants deviennent une liste numerotee sous
             // l'image (memes pastilles violettes que .cs-timeline__constraints
@@ -724,8 +731,20 @@ export const PROJECTS = [
             // de compte, Specialite, Permis delivre par, Numero de permis,
             // case a cocher) traduit via overlay raster (meme pipeline que
             // les autres captures Petal de cette etude de cas).
+            // imageAfterZoomable : cette capture liste plusieurs actions
+            // empilees (menu du bouton), trop denses pour tenir lisibles a la
+            // largeur de la colonne de texte — clic pour zoomer/parcourir
+            // plutot que de forcer une largeur pleine page. Voir
+            // .zoomable-media dans styles.css (effet reutilisable — voir
+            // aussi les autres images qui le portent dans ce fichier).
+            // imageAfterZoomableRipple : ondulation d'invite au clic, gardee
+            // sur cette image precise plutot que sur toutes les zoomable-media
+            // (pas besoin de repeter l'invite une fois le geste decouvert
+            // ailleurs sur la page).
             imageAfter: 'licence-7-button-search-en',
-            imagesAfter: ['licence-9-admin-form-en'],
+            imageAfterZoomable: true,
+            imageAfterZoomableRipple: true,
+            imagesAfter: [{ image: 'licence-9-admin-form-en', zoomable: 'mobile' }],
             constraints: [
               {
                 n: 1,
@@ -765,11 +784,12 @@ export const PROJECTS = [
             thumb: false, tight: true,
             body: [],
             imageAfter: 'licence-10-manager-tag-en',
+            imageAfterZoomable: 'mobile',
             constraints: [
               { n: 1, text: 'The licence management indicator is shown as a tag in the member list.' }
             ],
             constraintsLoose: true,
-            imagesAfter: ['licence-11-role-table-en']
+            imagesAfter: [{ image: 'licence-11-role-table-en', zoomable: 'mobile' }]
           },
           {
             thumb: false,

@@ -664,14 +664,17 @@ function pageCase(project) {
       // `imagesAfter: ['name', ...]` insere
       // enfin une ou plusieurs figures empilees APRES `constraints` (ex. "A
       // button-triggered search" : 1ere image, puis "Naming the button" en
-      // liste numerotee, puis la 2e image).
+      // liste numerotee, puis la 2e image). Chaque entree accepte aussi la
+      // forme objet `{ image, zoomable }` quand elle a besoin de la classe
+      // .zoomable-media (voir zoomableClass() plus bas) — une chaine simple
+      // reste rendue telle quelle, sans zoom.
       const timeline = s.timeline
         ? `<div class="cs-timeline">${s.timeline.map(item => `
             <div class="cs-timeline__row${item.image ? ' cs-timeline__row--figure' : ''}${item.tight ? ' cs-timeline__row--tight' : ''}">
               <div class="cs-timeline__line-col"><div class="cs-timeline__line"></div></div>
               <div class="cs-timeline__content">
                 ${item.thumb === false ? '' : item.image
-                  ? `<picture class="cs-timeline__thumb">
+                  ? `<picture class="cs-timeline__thumb${zoomableClass(item.imageZoomable)}">
                        <source srcset="assets/img/${item.image}.webp" type="image/webp">
                        <img src="assets/img/${item.image}.png" alt="" loading="lazy" decoding="async">
                      </picture>`
@@ -680,7 +683,7 @@ function pageCase(project) {
                   ${item.title ? `<p class="cs-timeline__title">${escapeAttr(item.title)}</p>` : ''}
                   ${item.body.map(p => `<p>${emphasize(p)}</p>`).join('')}
                   ${item.imageAfter
-                    ? `<picture class="cs-timeline__thumb cs-timeline__thumb--auto">
+                    ? `<picture class="cs-timeline__thumb cs-timeline__thumb--auto${zoomableClass(item.imageAfterZoomable, item.imageAfterZoomableRipple)}">
                          <source srcset="assets/img/${item.imageAfter}.webp" type="image/webp">
                          <img src="assets/img/${item.imageAfter}.png" alt="" loading="lazy" decoding="async">
                        </picture>` : ''}
@@ -695,11 +698,15 @@ function pageCase(project) {
                           </div>
                         </li>`).join('')}</ul>` : ''}
                   ${item.imagesAfter
-                    ? item.imagesAfter.map(img => `
-                        <picture class="cs-timeline__thumb cs-timeline__thumb--auto">
-                          <source srcset="assets/img/${img}.webp" type="image/webp">
-                          <img src="assets/img/${img}.png" alt="" loading="lazy" decoding="async">
-                        </picture>`).join('') : ''}
+                    ? item.imagesAfter.map(img => {
+                        const name = typeof img === 'string' ? img : img.image;
+                        const cls = typeof img === 'string' ? '' : zoomableClass(img.zoomable);
+                        return `
+                        <picture class="cs-timeline__thumb cs-timeline__thumb--auto${cls}">
+                          <source srcset="assets/img/${name}.webp" type="image/webp">
+                          <img src="assets/img/${name}.png" alt="" loading="lazy" decoding="async">
+                        </picture>`;
+                      }).join('') : ''}
                 </div>
               </div>
             </div>`).join('')}</div>` : '';
@@ -874,6 +881,16 @@ function mediaGroup(list) {
   return `<div class="${cls}">${list.map(mediaMarkup).join('')}</div>`;
 }
 
+/* Classe(s) a poser sur le conteneur direct d'une image pour la rendre
+   zoomable (voir .zoomable-media dans styles.css / setupZoomableMedia() plus
+   bas). `flag` : true = zoomable partout, 'mobile' = seulement sous 700px
+   (cursor normal et clic sans effet au-dessus, voir setupZoomableMedia()).
+   `ripple` : ondulation d'invite en plus (voir .zoomable-media--ripple). */
+function zoomableClass(flag, ripple) {
+  if (!flag) return '';
+  return ' zoomable-media' + (flag === 'mobile' ? ' zoomable-media--mobile-only' : '') + (ripple ? ' zoomable-media--ripple' : '');
+}
+
 /* Construit le balisage d'une figure.
    <picture> permet d'offrir le WebP (leger) avec un repli PNG : le
    navigateur prend le premier format qu'il sait lire. loading="lazy" evite
@@ -908,7 +925,7 @@ function figureFor(s) {
   // passer par le regroupement .cs-mockups (qui l'applique par defaut).
   const figure = `
     <figure class="figure${s.bare ? ' figure--bare' : ''}">
-      <div class="figure__frame">${media}</div>
+      <div class="figure__frame${zoomableClass(s.zoomable)}">${media}</div>
       ${captionHTML || note ? `<figcaption>${captionHTML}${note}</figcaption>` : ''}
     </figure>`;
   return s.figureDrawer
@@ -3196,6 +3213,7 @@ function render() {
     if (route.name === 'case' && route.project.slug === 'services-exclusion') setupExclModal();
     setupScrollProgress();
     setupVideos();
+    setupZoomableMedia();
   };
 
   // Transition de page. startViewTransition est l'API moderne : le navigateur
@@ -3357,6 +3375,70 @@ function setupVideos() {
 
   videos.forEach(v => io.observe(v));
   addCleanup(() => io.disconnect());   // sinon l'observateur survit au changement de page
+}
+
+/* .zoomable-media (posee par item.imageAfterZoomable dans content.js pour
+   l'instant, mais reutilisable sur n'importe quelle image du site — voir le
+   commentaire dans styles.css) : clic pour zoomer, cadre qui devient
+   scrollable, inspire du meme effet sur l'ancien portfolio (marvinsrd.com,
+   .img-container.old — clic sur l'image passe sa largeur de 100% a 230%, et
+   le cadre en overflow:auto devient scrollable pour la parcourir). Toggle
+   simple plutot qu'un vrai lightbox plein ecran. */
+function setupZoomableMedia() {
+  const thumbs = $$('.zoomable-media');
+  if (!thumbs.length) return;
+
+  thumbs.forEach(thumb => {
+    // .zoomable-media--mobile-only (voir zoomableClass() dans app.js) : cette
+    // image ne doit zoomer que sous 700px. Verifie a chaque clic (pas une
+    // fois au chargement) via matchMedia plutot que cote CSS — s'adapte tout
+    // seul si la fenetre est redimensionnee.
+    const mobileOnly = thumb.classList.contains('zoomable-media--mobile-only');
+    // Glisser-deplacer horizontal une fois zoomee (souris desktop — le
+    // tactile a deja le scroll natif d'overflow:auto). `dragged` distingue
+    // un vrai drag d'un simple clic : sans lui, le moindre glissement
+    // rebasculerait aussi le zoom via onClick ci-dessous.
+    let startX = 0, startScrollLeft = 0, dragging = false, dragged = false;
+
+    const onPointerDown = e => {
+      if (!thumb.classList.contains('is-zoomed')) return;
+      dragging = true;
+      dragged = false;
+      startX = e.clientX;
+      startScrollLeft = thumb.scrollLeft;
+      thumb.setPointerCapture(e.pointerId);
+    };
+    const onPointerMove = e => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > 4) dragged = true;
+      thumb.scrollLeft = startScrollLeft - dx;
+    };
+    const onPointerUp = () => { dragging = false; };
+    const onClick = () => {
+      // Un vrai drag ne doit pas aussi fermer le zoom au relachement.
+      if (dragged) { dragged = false; return; }
+      // Hors mobile : pas de zoom du tout, mais on laisse quand meme
+      // dezoomer si jamais deja zoomee (ex. fenetre redimensionnee pendant
+      // que l'image etait zoomee).
+      if (mobileOnly && !thumb.classList.contains('is-zoomed') && !window.matchMedia('(max-width: 700px)').matches) return;
+      thumb.classList.toggle('is-zoomed');
+      thumb.scrollLeft = 0;
+    };
+
+    thumb.addEventListener('pointerdown', onPointerDown);
+    thumb.addEventListener('pointermove', onPointerMove);
+    thumb.addEventListener('pointerup', onPointerUp);
+    thumb.addEventListener('pointercancel', onPointerUp);
+    thumb.addEventListener('click', onClick);
+    addCleanup(() => {
+      thumb.removeEventListener('pointerdown', onPointerDown);
+      thumb.removeEventListener('pointermove', onPointerMove);
+      thumb.removeEventListener('pointerup', onPointerUp);
+      thumb.removeEventListener('pointercancel', onPointerUp);
+      thumb.removeEventListener('click', onClick);
+    });
+  });
 }
 
 /* ---- 8b. Nav laterale d'etude de cas : scroll-spy + progression ----
