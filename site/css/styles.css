@@ -1218,14 +1218,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
    eviter un <canvas> fige a 300x150 (voir le commentaire au-dessus de
    lottieCarouselMarkup() dans app.js), meme si la promotion est conservee
    pour ne pas lancer les 4 animations en boucle simultanement. */
-.lottie-carousel__panel { flex: 0 0 100%; min-width: 0; display: block; position: relative; aspect-ratio: 1185 / 993; }
+.lottie-carousel__panel { flex: 0 0 100%; min-width: 0; display: block; position: relative; overflow: hidden; aspect-ratio: 1185 / 993; }
 .lottie-carousel__panel dotlottie-wc { display: block; width: 100%; height: 100%; }
 /* Sur les 3 animations autres que "Blocking" (index 0), le sujet
    (losanges/etiquette) n'occupe que la portion centrale du canevas source
    (1185x993) — Blocking est la seule a etendre son propre decor (le plan
    quadrille) jusqu'aux bords. Resserrer le cadrage sur leur sujet en
    agrandissant le <dotlottie-wc> LUI-MEME (position absolute, 140%,
-   recadre par l'overflow:hidden de .lottie-carousel__stage) plutot que via
+   recadre par l'overflow:hidden du panneau lui-meme — necessaire en plus de
+   celui de .lottie-carousel__stage, sans quoi le debordement de 20% bavait
+   sur le panneau voisin deja charge dans le track cote a cote) plutot que via
    un CSS transform:scale : dotlottie-wc dimensionne son <canvas> interne a
    sa propre boite reelle (ResizeObserver), donc l'agrandir "en vrai" fait
    redessiner l'animation a une resolution plus grande, nette — alors qu'un

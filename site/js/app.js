@@ -1060,6 +1060,16 @@ function checkIcon(cls) {
    les deux carrousels (setupImageCarousel()/setupLottieCarousel()). */
 const SWIPE_THRESHOLD = 40;
 
+/* Duree (ms) au-dela de laquelle le recalage invisible sur le vrai panneau
+   (apres un bouclage sur un clone, voir setupImageCarousel()/
+   setupLottieCarousel()) est certain d'avoir fini d'animer. Un setTimeout
+   plutot qu'un ecouteur `transitionend` : ce dernier s'est revele peu fiable
+   ici (jamais declenche dans certains enchainements de glissements rapides),
+   laissant le track fige sur le clone. Doit rester superieur a la duree de
+   la transition CSS (.45s, voir --track transition dans styles.css) — 470ms
+   laisse une petite marge pour la dispatch/le rendu. */
+const WRAP_SNAP_DELAY = 470;
+
 /* Rend un carrousel "glissable" au doigt (mobile) ou a la souris : ecoute
    `el` (la scene ou le track, selon l'appelant) et rapporte le deplacement
    horizontal via deux callbacks optionnels — onDrag(deltaX), appele en
@@ -1158,34 +1168,58 @@ function setupLottieCarousel() {
     const prev = $('[data-role="lottie-prev"]', root);
     const next = $('[data-role="lottie-next"]', root);
     const track = $('[data-role="lottie-track"]', root);
+    const n = panels.length;
+
+    // Boucle infinie "en vrai" (meme principe que setupImageCarousel() plus
+    // bas) : un clone du dernier panneau avant le premier, un clone du
+    // premier apres le dernier — DOM = [clone(last), reel 0..n-1,
+    // clone(first)], une position logique i vit donc au slot DOM i+1.
+    // Glisser au-dela d'une extremite revele ainsi un clone visuellement
+    // identique plutot qu'un aplat de fond (le trait noir constate avant
+    // cette version), et rejoindre l'autre bout n'est plus qu'un pas simple
+    // anime, suivi d'un recalage invisible sur le vrai panneau une fois la
+    // transition finie (WRAP_SNAP_DELAY). data-index conserve sur les clones
+    // (le recadrage 140% ci-dessus en depend, via data-index="0"), data-role
+    // retire pour qu'ils n'apparaissent jamais dans tabs/dots/panels si
+    // requetes a nouveau. Le clone peut venir d'un panneau pas encore
+    // promu (data-src) : force ici, sinon il resterait vide au premier
+    // apercu pendant un glissement.
+    const headClone = panels[n - 1].cloneNode(true);
+    const tailClone = panels[0].cloneNode(true);
+    [headClone, tailClone].forEach(c => {
+      c.removeAttribute('data-role');
+      c.setAttribute('aria-hidden', 'true');
+      const wc = c.querySelector('dotlottie-wc');
+      if (wc && wc.hasAttribute('data-src')) {
+        wc.setAttribute('src', wc.getAttribute('data-src'));
+        wc.removeAttribute('data-src');
+      }
+    });
+    track.prepend(headClone);
+    track.append(tailClone);
+
     let current = 0;
+    let wrapping = false;
 
-    // Point d'entree unique pour les 4 facons de changer de panneau (onglet,
-    // puce, fleche, glissement) : evite de repeter la logique glissement/
-    // aria/promotion data-src->src a chaque gestionnaire. Boucle infinie
-    // (index+1/-1 deja passes en modulo par les appelants) : rejoindre le
-    // premier depuis le dernier (et vice versa) saute sans transition
-    // (`instant`) plutot que de glisser en arriere a travers tout le
-    // carrousel — seul un pas simple (prev/next/glissement d'un cran) anime.
-    const goTo = (index, { instant = false } = {}) => {
-      const wrap = Math.abs(index - current) === panels.length - 1 && panels.length > 2;
-      if (instant || wrap) track.style.transition = 'none';
-      current = index;
-      track.style.transform = `translateX(-${current * 100}%)`;
-      if (instant || wrap) { void track.offsetWidth; track.style.transition = ''; }
+    const setTransform = (domSlot, instant) => {
+      if (instant) track.style.transition = 'none';
+      track.style.transform = `translateX(-${domSlot * 100}%)`;
+      if (instant) { void track.offsetWidth; track.style.transition = ''; }
+    };
 
-      tabs.forEach(t => {
-        const active = Number(t.dataset.index) === current;
+    const render = () => {
+      tabs.forEach((t, i) => {
+        const active = i === current;
         t.classList.toggle('is-active', active);
         t.setAttribute('aria-pressed', String(active));
       });
-      dots.forEach(d => {
-        const active = Number(d.dataset.index) === current;
+      dots.forEach((d, i) => {
+        const active = i === current;
         d.classList.toggle('is-active', active);
         d.setAttribute('aria-current', String(active));
       });
-      panels.forEach(p => {
-        const active = Number(p.dataset.index) === current;
+      panels.forEach((p, i) => {
+        const active = i === current;
         p.setAttribute('aria-hidden', String(!active));
         if (active) {
           const wc = p.querySelector('dotlottie-wc');
@@ -1196,41 +1230,67 @@ function setupLottieCarousel() {
         }
       });
     };
-    goTo(0, { instant: true });
+    setTransform(1, true);
+    render();
 
-    tabs.forEach(tab => {
-      const onClick = () => goTo(Number(tab.dataset.index));
+    // Pas simple (+1/-1) : anime normalement, sauf a une extremite ou il
+    // glisse vers le clone voisin (visuellement identique au vrai panneau
+    // de l'autre bout) puis se recale dessus sans transition une fois
+    // arrive — c'est ce recalage, invisible, qui donne l'illusion d'une
+    // boucle infinie plutot qu'un cut ou qu'un aller-retour a travers tout
+    // le carrousel. `wrapping` ignore les nouveaux pas tant que le recalage
+    // n'est pas fait (evite une course si on re-clique pendant l'anim).
+    const step = direction => {
+      if (wrapping) return;
+      const atEnd = direction === 1 ? current === n - 1 : current === 0;
+      current = (current + direction + n) % n;
+      if (atEnd) {
+        wrapping = true;
+        setTransform(direction === 1 ? n + 1 : 0, false);
+        setTimeout(() => {
+          setTransform(current + 1, true);
+          wrapping = false;
+        }, WRAP_SNAP_DELAY);
+      } else {
+        setTransform(current + 1, false);
+      }
+      render();
+    };
+
+    tabs.forEach((tab, i) => {
+      const onClick = () => { current = i; setTransform(current + 1, false); render(); };
       tab.addEventListener('click', onClick);
       addCleanup(() => tab.removeEventListener('click', onClick));
     });
-    dots.forEach(dot => {
-      const onClick = () => goTo(Number(dot.dataset.index));
+    dots.forEach((dot, i) => {
+      const onClick = () => { current = i; setTransform(current + 1, false); render(); };
       dot.addEventListener('click', onClick);
       addCleanup(() => dot.removeEventListener('click', onClick));
     });
     if (prev) {
-      const onPrev = () => goTo((current - 1 + panels.length) % panels.length);
+      const onPrev = () => step(-1);
       prev.addEventListener('click', onPrev);
       addCleanup(() => prev.removeEventListener('click', onPrev));
     }
     if (next) {
-      const onNext = () => goTo((current + 1) % panels.length);
+      const onNext = () => step(1);
       next.addEventListener('click', onNext);
       addCleanup(() => next.removeEventListener('click', onNext));
     }
     // Glissement : suivi visuel en direct (meme technique que
     // setupImageCarousel() plus bas — track deja en %, calc() mixe % et px),
-    // transition coupee pendant le geste et restauree juste avant le snap.
+    // transition coupee pendant le geste et restauree juste avant le pas
+    // (anime, y compris pour un bouclage : step() gere alors le clone).
     setupSwipe(track, {
       onDrag: dx => {
         track.style.transition = 'none';
-        track.style.transform = `translateX(calc(-${current * 100}% + ${dx}px))`;
+        track.style.transform = `translateX(calc(-${(current + 1) * 100}% + ${dx}px))`;
       },
       onDragEnd: delta => {
         track.style.transition = '';
-        if (delta <= -SWIPE_THRESHOLD) goTo((current + 1) % panels.length);
-        else if (delta >= SWIPE_THRESHOLD) goTo((current - 1 + panels.length) % panels.length);
-        else goTo(current);
+        if (delta <= -SWIPE_THRESHOLD) step(1);
+        else if (delta >= SWIPE_THRESHOLD) step(-1);
+        else setTransform(current + 1, false);
       }
     });
   });
@@ -1270,9 +1330,11 @@ function carouselMarkup(items) {
     </figure>`;
 }
 
-/* Cablage : fleches et puces font toutes deux avancer le meme etat
-   (goTo), les fleches bouclant aux deux bouts. Meme scoping par racine et
-   meme addCleanup() que setupLottieCarousel(). */
+/* Cablage : fleches et puces font toutes deux avancer le meme etat, les
+   fleches/le glissement bouclant aux deux bouts via des clones (voir plus
+   bas). Meme scoping par racine et meme addCleanup() que
+   setupLottieCarousel(), dont ce carrousel partage le principe de boucle
+   infinie a l'identique (voir son commentaire pour le detail). */
 function setupImageCarousel() {
   $$('[data-role="carousel"]').forEach(root => {
     const track = $('[data-role="carousel-track"]', root);
@@ -1281,18 +1343,27 @@ function setupImageCarousel() {
     const caption = $('[data-role="carousel-caption"]', root);
     const prev = $('[data-role="carousel-prev"]', root);
     const next = $('[data-role="carousel-next"]', root);
-    let current = 0;
+    const n = panels.length;
 
-    // Boucle infinie (voir onPrev/onNext et setupSwipe plus bas, deja en
-    // modulo) : rejoindre le premier depuis le dernier (et vice versa) saute
-    // sans transition plutot que de glisser en arriere a travers tout le
-    // carrousel — seul un pas simple (prev/next/glissement d'un cran) anime.
-    const goTo = (index, { instant = false } = {}) => {
-      const wrap = Math.abs(index - current) === panels.length - 1 && panels.length > 2;
-      if (instant || wrap) track.style.transition = 'none';
-      current = index;
-      track.style.transform = `translateX(-${current * 100}%)`;
-      if (instant || wrap) { void track.offsetWidth; track.style.transition = ''; }
+    const headClone = panels[n - 1].cloneNode(true);
+    const tailClone = panels[0].cloneNode(true);
+    [headClone, tailClone].forEach(c => {
+      c.removeAttribute('data-role');
+      c.setAttribute('aria-hidden', 'true');
+    });
+    track.prepend(headClone);
+    track.append(tailClone);
+
+    let current = 0;
+    let wrapping = false;
+
+    const setTransform = (domSlot, instant) => {
+      if (instant) track.style.transition = 'none';
+      track.style.transform = `translateX(-${domSlot * 100}%)`;
+      if (instant) { void track.offsetWidth; track.style.transition = ''; }
+    };
+
+    const render = () => {
       panels.forEach((p, i) => p.setAttribute('aria-hidden', String(i !== current)));
       dots.forEach((d, i) => {
         const active = i === current;
@@ -1301,37 +1372,52 @@ function setupImageCarousel() {
       });
       if (caption) caption.textContent = panels[current].dataset.caption || '';
     };
+    setTransform(1, true);
+    render();
 
-    goTo(0, { instant: true });
+    const step = direction => {
+      if (wrapping) return;
+      const atEnd = direction === 1 ? current === n - 1 : current === 0;
+      current = (current + direction + n) % n;
+      if (atEnd) {
+        wrapping = true;
+        setTransform(direction === 1 ? n + 1 : 0, false);
+        setTimeout(() => {
+          setTransform(current + 1, true);
+          wrapping = false;
+        }, WRAP_SNAP_DELAY);
+      } else {
+        setTransform(current + 1, false);
+      }
+      render();
+    };
 
-    const onPrev = () => goTo((current - 1 + panels.length) % panels.length);
-    const onNext = () => goTo((current + 1) % panels.length);
+    const onPrev = () => step(-1);
+    const onNext = () => step(1);
     prev.addEventListener('click', onPrev);
     next.addEventListener('click', onNext);
     addCleanup(() => prev.removeEventListener('click', onPrev));
     addCleanup(() => next.removeEventListener('click', onNext));
 
     dots.forEach((dot, i) => {
-      const onClick = () => goTo(i);
+      const onClick = () => { current = i; setTransform(current + 1, false); render(); };
       dot.addEventListener('click', onClick);
       addCleanup(() => dot.removeEventListener('click', onClick));
     });
 
-    // Glissement : suivi visuel en direct (le track a deja un transform en
-    // %, voir goTo() plus haut — calc() mixe % et px sans a-coup), puis
-    // decision next/prev/retour au relachement. transition coupee pendant le
-    // glissement (sinon le suivi du doigt accuse un retard de .45s a chaque
-    // pointermove) et restauree juste avant le snap final.
+    // Glissement : suivi visuel en direct (calc() mixe % et px sans a-coup),
+    // transition coupee pendant le geste et restauree juste avant le pas
+    // (anime, y compris pour un bouclage : step() gere alors le clone).
     setupSwipe(track, {
       onDrag: dx => {
         track.style.transition = 'none';
-        track.style.transform = `translateX(calc(-${current * 100}% + ${dx}px))`;
+        track.style.transform = `translateX(calc(-${(current + 1) * 100}% + ${dx}px))`;
       },
       onDragEnd: delta => {
         track.style.transition = '';
-        if (delta <= -SWIPE_THRESHOLD) goTo((current + 1) % panels.length);
-        else if (delta >= SWIPE_THRESHOLD) goTo((current - 1 + panels.length) % panels.length);
-        else goTo(current);
+        if (delta <= -SWIPE_THRESHOLD) step(1);
+        else if (delta >= SWIPE_THRESHOLD) step(-1);
+        else setTransform(current + 1, false);
       }
     });
   });
