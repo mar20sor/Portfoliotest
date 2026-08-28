@@ -3906,8 +3906,58 @@ function setupCaseBehaviours() {
      La regle ci-dessous n'a pas ce defaut : on prend la derniere section dont
      le haut est deja passe sous l'en-tete. Il y a donc toujours exactement une
      section active, et la derniere s'allume forcement en fin de page. */
-  const setActive = (id) => links.forEach(a =>
-    a.classList.toggle('is-active', a.dataset.spy === id));
+  /* --- la nav suit la lecture, meme quand elle deborde ---
+     Sous 1000px, .cs-nav n'est plus une colonne mais une barre horizontale
+     defilante (voir styles.css, section 12) : sur un telephone, seules deux
+     ou trois etapes tiennent a l'ecran. Surligner "Takeaways" ne sert alors
+     a rien si l'etiquette est hors champ, a 200px sur la droite — la barre
+     semble bloquee sur "Overview" pendant toute la lecture.
+
+     On la fait donc glisser d'elle-meme jusqu'a l'etape en cours, dans les
+     deux sens : vers la droite en descendant, vers la gauche en remontant.
+
+     Trois precautions :
+       - on ne fait defiler QUE la liste, jamais la page. scrollIntoView()
+         ferait les deux : il remonterait le document pour amener l'element
+         a l'ecran, et le lecteur perdrait sa place au milieu d'un texte.
+       - on mesure avec getBoundingClientRect et on defile en RELATIF
+         (scrollBy). Les coordonnees absolues supposeraient que <li> se cale
+         sur <ol> ; il se cale en fait sur .cs-nav, qui est positionnee et
+         porte un padding. Un ecart relatif ne se trompe pas.
+       - rien ne bouge tant que l'etiquette est deja lisible, sinon la barre
+         tremblerait a chaque pixel de defilement. */
+  const list = $('.cs-nav ol');
+
+  const revealInStrip = (link) => {
+    // En colonne (bureau), la liste ne deborde pas : rien a faire.
+    if (!list || list.scrollWidth <= list.clientWidth) return;
+
+    const item = link.parentElement;            // le <li>
+    const itemRect = item.getBoundingClientRect();
+    const listRect = list.getBoundingClientRect();
+    const pad = 20;                             // un peu d'air, pour montrer qu'il y a une suite
+
+    let delta = 0;
+    if (itemRect.left - listRect.left < pad)   delta = (itemRect.left - listRect.left) - pad;
+    else if (listRect.right - itemRect.right < pad) delta = pad - (listRect.right - itemRect.right);
+    if (!delta) return;
+
+    // scrollBy borne tout seul aux extremites ; inutile de le faire ici.
+    list.scrollBy({ left: delta, behavior: prefersReducedMotion() ? 'instant' : 'smooth' });
+  };
+
+  /* On ne reagit qu'au CHANGEMENT d'etape. updateActive() tourne a chaque
+     evenement de defilement — replacer la barre a chaque fois se battrait
+     avec le doigt de quelqu'un en train de la faire glisser lui-meme. */
+  let shown = null;
+
+  const setActive = (id) => {
+    links.forEach(a => a.classList.toggle('is-active', a.dataset.spy === id));
+    if (id === shown) return;
+    shown = id;
+    const active = links.find(a => a.dataset.spy === id);
+    if (active) revealInStrip(active);
+  };
 
   const updateActive = () => {
     // La ligne de declenchement : juste sous l'en-tete collant, plus une

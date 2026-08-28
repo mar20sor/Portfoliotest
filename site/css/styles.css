@@ -2755,6 +2755,14 @@ body.is-overlay .overlay-close {
 }
 body.is-overlay .overlay-close[hidden] { display: none; }
 
+/* Le portail du prenom est un vrai dialogue modal (aria-modal="true"), et il
+   s'ouvre par-dessus la fiche quand on arrive directement sur l'URL d'une
+   etude de cas. Rien ne doit flotter au-dessus de lui : la croix, a
+   z-index 150 contre 140 pour le portail, y passait — un bouton de sortie
+   par-dessus une question a laquelle on n'a pas encore repondu.
+   is-locked est posee sur <body> pendant toute la duree du portail. */
+body.is-locked .overlay-close { display: none; }
+
 /* La croix ne participe pas au mouvement : elle apparait une fois la fiche
    posee, et s'efface des que la fermeture commence. Elle est fixee a la
    fenetre, pas a la fiche — la laisser visible pendant la montee la ferait
