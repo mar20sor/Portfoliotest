@@ -300,7 +300,10 @@ function escapeAttr(s) {
    comme du texte brut. */
 function renderHello() {
   const d = t();
-  const wrap = el('p', { class: 'hero__hello' });
+  /* sec-hello : la cible du nom dans l'en-tete (href="#/#hello"). Le prefixe
+     "sec-" est la convention de scrollToSection, qui cherche toujours
+     `sec-${id}` — meme mecanisme que #work et #side. */
+  const wrap = el('p', { class: 'hero__hello', id: 'sec-hello' });
   if (state.visitor) {
     wrap.append(document.createTextNode(d.helloBefore + ' '));
     const strong = el('b');
