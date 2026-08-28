@@ -157,6 +157,15 @@
    — c'est ce bleu qu'on apercoit sur les bords et sous la fiche — tandis que
    la fiche elle-meme, et elle seule, passe en clair. Poser le theme sur
    <html> comme avant repeindrait aussi le calque du dessous. */
+/* INDISPENSABLE quand .theme-light est portee par un element et non par
+   <html>. Redefinir --ink ne suffit pas : `color` s'HERITE, et <body> a
+   deja calcule la sienne avec les jetons de marque (blanc). Tout ce qui ne
+   redeclare pas sa couleur — le titre d'une etude de cas, les titres de la
+   section "projet suivant" — heriterait donc du blanc de <body> et
+   deviendrait invisible sur le fond blanc de la fiche. Cette ligne fait
+   repartir tout le sous-arbre de la bonne encre. */
+.theme-light { color: var(--ink); }
+
 html[data-theme="light"],
 .theme-light {
   --bg:          #FFFFFF;
@@ -2649,7 +2658,14 @@ body.is-overlay .underlay {
   overflow: hidden;
   border-radius: 22px;
   background: var(--bg);
-  transform: scale(.93);
+  /* L'origine est en HAUT, pas au centre. Avec une reduction centree, la
+     photo se retracte aussi par le haut : la bande visible au-dessus de la
+     fiche ne montrait alors que le fond sombre, jamais la page floutee —
+     tout l'effet passait a la trappe. Ancree en haut, cette bande est
+     toujours de la page floutee, et le recul se lit quand meme sur les
+     cotes et par le bas. */
+  transform-origin: 50% 0;
+  transform: scale(.955);
   opacity: .85;
 }
 
@@ -2672,7 +2688,15 @@ body.is-overlay .underlay {
    leur derniere frame (un <canvas>) ou, a defaut, par un aplat neutre.
    Les deux reprennent la taille exacte mesuree sur l'original. */
 .underlay__frame { display: block; }
-.underlay__blank { display: block; background: rgba(255,255,255,.10); border-radius: var(--radius-sm); }
+/* 100% par defaut : c'est ce qu'il faut a la page d'accueil RECONSTRUITE
+   (seedUnderlay, quand on arrive directement sur l'URL d'une etude de cas),
+   ou rien n'a encore ete mis en page et ou il n'y a donc aucune taille a
+   mesurer. Quand on photographie une vraie page, freezeSnapMedia ecrase ces
+   deux valeurs par les dimensions relevees sur l'element d'origine. */
+.underlay__blank {
+  display: block; width: 100%; height: 100%;
+  background: rgba(255,255,255,.10); border-radius: var(--radius-sm);
+}
 
 /* ---- La fiche ---- */
 body.is-overlay #page {
@@ -2743,12 +2767,12 @@ body.is-overlay .cs:has(.cs-nav) .cs__head { padding-top: var(--s7); }
 @keyframes sheetOut { from { transform: translateY(0); } to { transform: translateY(100vh); } }
 
 @keyframes underLayerIn  {
-  from { transform: scale(1);   opacity: 1; }
-  to   { transform: scale(.93); opacity: .85; }
+  from { transform: scale(1);    opacity: 1; }
+  to   { transform: scale(.955); opacity: .85; }
 }
 @keyframes underLayerOut {
-  from { transform: scale(.93); opacity: .85; }
-  to   { transform: scale(1);   opacity: 1; }
+  from { transform: scale(.955); opacity: .85; }
+  to   { transform: scale(1);    opacity: 1; }
 }
 @keyframes underBlurIn  { from { filter: blur(0px);  } to { filter: blur(16px); } }
 @keyframes underBlurOut { from { filter: blur(16px); } to { filter: blur(0px);  } }
@@ -2822,11 +2846,17 @@ body.is-overlay.is-opening main.is-entering { animation: none; }
   .cs-nav a.is-active { border-left: 0; border-bottom-color: var(--accent); }
   .cs-nav__pct { display: none; }
 
-  /* Sous 1000px la nav de section devient une barre pleine largeur collee en
-     haut, juste sous la croix de fermeture (fixe, en haut a droite). On lui
-     reserve la place du bouton, sinon la derniere etape de la liste passe
-     dessous et devient incliquable. */
-  body.is-overlay .cs-nav { padding-right: calc(var(--gutter) + 56px); }
+  /* Sous 1000px, .cs-nav devient une barre pleine largeur qui vient se
+     coller en haut. En mode fiche elle se collait a --head-h (14px, le
+     retrait de la fiche) : une fois defilee, il restait une bande vide de
+     14px au-dessus d'elle — la fiche etait deja passee, la barre pas encore
+     arrivee. Elle se colle donc a 0 sur petit ecran. Le retrait de 14px de
+     la fiche reste visible en haut de page, la ou il a un sens.
+
+     Aucune reserve a droite pour la croix : la barre va jusqu'au bord, et
+     la croix passe PAR-DESSUS (z-index 140 contre 100, fond translucide et
+     flou). La liste defile horizontalement, donc rien n'est inatteignable. */
+  body.is-overlay { --head-h: 0px; }
 }
 
 /* --- Sous 860px : la pilule ne tient plus, on replie la navigation ----- */

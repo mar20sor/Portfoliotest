@@ -3217,11 +3217,19 @@ function render() {
   }
 
   // --- OUVERTURE ---
-  // `first` exclut le tout premier rendu : arriver directement sur une URL
-  // d'etude de cas (lien partage, rechargement) ne doit pas faire monter une
-  // fiche depuis un ecran vide — il n'y a aucune page a photographier.
-  const opening = isCase && !opened && !first && motion;
-  if (opening) captureUnderlay();
+  // On garnit le calque du dessous des qu'on entre en mode fiche, animation
+  // ou pas : c'est lui qu'on apercoit en permanence au-dessus de la fiche et
+  // sur ses cotes. Deux facons de le garnir selon ce qu'on a sous la main :
+  //   - une page affichee : on la photographie telle quelle ;
+  //   - rien (arrivee directe sur l'URL d'une etude de cas, rechargement,
+  //     lien partage) : on FABRIQUE la page d'accueil. Sans ca, on ne verrait
+  //     qu'un aplat noir derriere la fiche, ce qui ne ressemble a rien.
+  const entering = isCase && !opened;
+  if (entering) first ? seedUnderlay() : captureUnderlay();
+
+  // On n'anime pas le tout premier rendu : il n'y a rien eu avant, et une
+  // fiche qui monte au chargement ferait attendre la lecture pour rien.
+  const opening = entering && !first && motion;
 
   paint(hash, route, opening ? 'open' : 'normal');
 }
@@ -3342,14 +3350,23 @@ function paint(hash, route, mode) {
           ca, revenir de la 3e etude de cas renvoie tout en haut a chaque
           fois, et il faut re-defiler pour cliquer la suivante.
        2. L'URL vise une ancre : on descend jusqu'a elle.
-       3. Sinon : en haut. */
+       3. Sinon : en haut.
+
+       'instant' et non 'auto'. Le piege : 'auto' ne veut PAS dire
+       "immediat", il veut dire "suis la propriete CSS scroll-behavior" — et
+       elle vaut smooth sur <html> (voir le reset, section 2). Ces trois
+       appels lançaient donc un defilement ANIME que le rendu de page en
+       cours annulait aussitot : on n'arrivait jamais a destination. C'est ce
+       qui faisait atterrir le retour d'une etude de cas en haut de
+       l'accueil au lieu de la section Work. Ici on ne fait pas defiler, on
+       POSITIONNE : ça doit etre instantane. */
     const anchor = hash.split('#')[2];
     if (mode === 'close' && state.snapKey === routeKey(hash)) {
-      window.scrollTo({ top: state.snapY, behavior: 'auto' });
+      window.scrollTo({ top: state.snapY, behavior: 'instant' });
     } else if (anchor) {
-      scrollToSection(anchor, 'auto');
+      scrollToSection(anchor, 'instant');
     } else {
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }
 
     // On deplace le focus sur <main> : sans ca, un lecteur d'ecran continue
@@ -3524,6 +3541,63 @@ function captureUnderlay() {
   state.snap    = true;
   state.snapKey = routeKey(state.route);   // state.route est encore l'ancienne route
   state.snapY   = window.scrollY;
+}
+
+/* LE CAS SANS PHOTO : on arrive directement sur l'URL d'une etude de cas
+   (lien partage, rechargement, favori). Il n'y a rien a photographier — la
+   page precedente n'a jamais existe dans cet onglet.
+
+   Plutot que de laisser un aplat sombre derriere la fiche, on FABRIQUE la
+   page d'accueil et on la floute. C'est exactement celle qu'on aurait eue en
+   naviguant normalement, et c'est celle vers laquelle la croix ramene : la
+   fermeture retombe donc sur une image qu'on avait deja sous les yeux.
+
+   pageHome() ne pose aucun ecouteur, ne demarre rien : c'est une fabrique de
+   DOM pur. Rien a nettoyer derriere elle. */
+function seedUnderlay() {
+  const under = $('#underlay');
+  const head  = $('#site-head');
+  if (!under) return;
+
+  const inner = el('div', { class: 'underlay__inner' });
+  const shot  = el('div', { class: 'underlay__shot' });
+  // clientWidth et non innerWidth : la barre de defilement ne fait pas
+  // partie de la largeur de mise en page.
+  shot.style.width = `${document.documentElement.clientWidth}px`;
+
+  // Meme structure que la vraie page (#page > main), pour que les selecteurs
+  // de mise en page du CSS s'appliquent a l'identique.
+  const fake = el('div', { class: 'page' });
+  const body = el('main');
+  body.append(pageHome());
+  fake.append(body);
+
+  /* Les videos et les Lottie doivent disparaitre AVANT insertion. Une video
+     clonee resterait noire (personne ne la lancera), et un <dotlottie-wc>
+     se reveillerait des son entree dans le document : il telechargerait son
+     animation et la jouerait, invisible sous 16px de flou, pour rien. */
+  $$('video, dotlottie-wc', fake).forEach(n => n.replaceWith(el('div', { class: 'underlay__blank' })));
+  $$('[id]', fake).forEach(n => n.removeAttribute('id'));
+
+  shot.append(fake);
+  inner.append(shot);
+
+  if (head) {
+    const headCopy = snapClone(head);
+    headCopy.classList.add('underlay__head');
+    headCopy.classList.remove('is-scrolled');
+    inner.append(headCopy);
+  }
+
+  under.replaceChildren(inner);
+
+  /* snapKey reste null : cette page reconstruite ne correspond a aucune
+     position de defilement reelle. La fermeture jouera donc son animation
+     (le calque est credible) mais retombera en haut de l'accueil plutot que
+     de restituer un defilement qui n'a jamais eu lieu. */
+  state.snap    = true;
+  state.snapKey = null;
+  state.snapY   = 0;
 }
 
 /* Jette la photo. On garde snapKey / snapY : afterSwap s'en sert juste apres
