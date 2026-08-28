@@ -149,7 +149,16 @@
    respiration et la meme voix que le reste du site, seulement sur un autre
    fond. Redeclarer ici les tailles serait le meilleur moyen de les voir
    diverger a la premiere modification.                                    */
-html[data-theme="light"] {
+/* Deux selecteurs pour le meme jeu de couleurs :
+     html[data-theme="light"]  — l'ancien fonctionnement, page entiere ;
+     .theme-light              — le meme theme applique a UN SEUL element.
+   Le second sert aux etudes de cas : depuis qu'elles s'ouvrent en fiche
+   par-dessus la page (voir section 11), <html> doit rester en bleu de marque
+   — c'est ce bleu qu'on apercoit sur les bords et sous la fiche — tandis que
+   la fiche elle-meme, et elle seule, passe en clair. Poser le theme sur
+   <html> comme avant repeindrait aussi le calque du dessous. */
+html[data-theme="light"],
+.theme-light {
   --bg:          #FFFFFF;
   --ink:         #10233F;
   /* Ces deux gris sont mes valeurs, pas celles de la maquette : ils sont donc
@@ -2559,6 +2568,214 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
 
 
 /* ==========================================================================
+   11 bis. L'OUVERTURE EN FICHE DES ETUDES DE CAS
+   --------------------------------------------------------------------------
+   COMMENT CA MARCHE, EN UNE PHRASE : le site reste une SPA a une seule page,
+   mais quand on ouvre une etude de cas, on garde une PHOTO de la page qu'on
+   quitte, on la floute derriere, et on fait monter le nouveau contenu
+   par-dessus. Rien n'est reellement "ouvert au-dessus" de quoi que ce soit.
+
+   LES TROIS PIECES
+     .underlay   calque fixe, plein ecran, DERRIERE tout (z-index 0). Il
+                 contient le clone fige de la page precedente. Vide et
+                 display:none le reste du temps.
+     #page       le contenu vivant (main + pied de page). En mode fiche il
+                 prend un fond blanc, des coins arrondis en haut et une
+                 ombre : c'est lui, la "fiche".
+     .overlay-close  la croix, en haut a droite, a l'interieur de la fiche.
+
+   POURQUOI LE DEFILEMENT RESTE CELUI DU DOCUMENT
+   Il aurait ete tentant de faire de la fiche un conteneur scrollable a part
+   (position:fixed + overflow:auto). Ca casse tout le reste du site : la
+   barre de progression, le scroll-spy de la nav laterale et son pourcentage
+   lisent window.scrollY. La fiche reste donc un bloc normal dans le flux ;
+   seule son APPARENCE change. Le calque du dessous, lui, est fixe : il ne
+   bouge pas pendant qu'on lit, exactement comme une vraie fenetre modale.
+   ========================================================================== */
+
+/* --head-h vaut 82px sur <html> (voir syncHeadHeight dans app.js). En mode
+   fiche l'en-tete du site est masque : on redefinit la variable ICI, sur
+   <body>, ou elle l'emporte pour tout ce qui est en dessous. La nav laterale
+   d'etude de cas vient donc se coller a 14px du haut — la meme valeur que le
+   retrait de la fiche, pour que le bord blanc arrondi reste visible. */
+body.is-overlay {
+  --head-h: 14px;
+
+  /* Deux elements fixes vivent HORS de la fiche et ne peuvent donc pas
+     heriter de son theme clair : la barre de progression en haut de l'ecran
+     et le lien d'evitement. Sur le bleu du site ils sont lime ; poses sur le
+     blanc de la fiche, ce meme lime tombe a 1,34:1 — illisible (voir le
+     commentaire de --accent tout en haut du fichier). On leur redonne ici
+     l'accent du theme clair, la meme valeur que celle du bloc .theme-light. */
+  --accent:     #2078F0;
+  --accent-ink: #FFFFFF;
+}
+
+/* L'en-tete du site disparait : la fiche occupe l'ecran, et la croix
+   remplace la navigation. position:fixed plutot que display:none — c'est
+   volontaire : display:none mettrait sa hauteur mesuree a 0, le
+   ResizeObserver de syncHeadHeight ecrirait --head-h:0px sur <html>, et au
+   retour a l'accueil toutes les ancres viseraient 82px trop haut pendant une
+   image. Fixe et invisible, l'en-tete sort du flux (aucune place reservee en
+   haut de la fiche) tout en gardant sa hauteur mesurable. */
+body.is-overlay .site-head {
+  position: fixed; top: 0; left: 0; right: 0;
+  visibility: hidden; pointer-events: none;
+}
+
+/* Le lien retour flottant fait doublon avec la croix : on le masque partout
+   en mode fiche (app.js le neutralise aussi, ceinture et bretelles). */
+body.is-overlay .back-link { display: none; }
+
+/* ---- Le calque du dessous ---- */
+.underlay { display: none; }
+
+body.is-overlay .underlay {
+  display: block;
+  position: fixed; inset: 0; z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* Le fond sombre qu'on apercoit autour de la photo une fois celle-ci
+     reduite. Sans lui, la reduction laisserait voir le bleu du site et
+     l'effet "page posee en arriere" disparaitrait. */
+  background: #06162B;
+}
+
+/* La photo elle-meme : reduite, arrondie, legerement assombrie. C'est l'etat
+   AU REPOS (fiche ouverte) ; les animations plus bas ne font que partir de
+   l'etat "page normale" pour arriver ici, et l'inverse a la fermeture. */
+.underlay__inner {
+  position: absolute; inset: 0;
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--bg);
+  transform: scale(.93);
+  opacity: .85;
+}
+
+/* Le flou est porte par le contenu, pas par le cadre : floutter le cadre
+   arrondi rendrait ses bords cotonneux. .underlay__shot est decale vers le
+   haut de la position de defilement qu'avait la page au moment de la photo,
+   pour montrer exactement ce que la personne regardait. */
+.underlay__shot {
+  position: absolute; top: 0; left: 0;
+  filter: blur(16px);
+}
+
+/* L'en-tete clone est sorti du .underlay__shot et recolle en haut : dans le
+   clone, position:sticky n'a plus de conteneur de defilement et retomberait
+   au milieu de la photo. */
+.underlay__head { position: absolute; top: 0; left: 0; right: 0; }
+
+/* Les videos et les Lottie du clone ne rejouent pas (ni autoplay, ni JS) :
+   elles s'afficheraient noires. app.js les remplace par une image figee de
+   leur derniere frame (un <canvas>) ou, a defaut, par un aplat neutre.
+   Les deux reprennent la taille exacte mesuree sur l'original. */
+.underlay__frame { display: block; }
+.underlay__blank { display: block; background: rgba(255,255,255,.10); border-radius: var(--radius-sm); }
+
+/* ---- La fiche ---- */
+body.is-overlay #page {
+  position: relative; z-index: 1;
+  margin-top: 14px;                       /* le liser de photo floutee visible en haut */
+  background: var(--bg);                  /* blanc : #page porte .theme-light */
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -2px 60px -12px rgba(0,0,0,.55);
+  /* Une etude de cas est toujours plus longue qu'un ecran, mais on garantit
+     que la fiche remplit au moins la fenetre : sinon le fond sombre du
+     calque apparaitrait sous le pied de page. */
+  min-height: calc(100vh - 14px);
+}
+
+/* ---- La croix ----
+   position:fixed : elle reste accessible apres 4000px de defilement. Elle est
+   dans #page, donc pendant l'animation d'ouverture (qui applique un transform
+   a #page) elle monte AVEC la fiche au lieu de l'attendre en haut de l'ecran. */
+.overlay-close { display: none; }
+
+body.is-overlay .overlay-close {
+  display: flex; align-items: center; justify-content: center;
+  /* z-index 140 : au-dessus de .cs-nav, qui monte a 100 quand elle devient
+     une barre horizontale collee en haut sous 1000px. Les deux vivent dans
+     #page, donc dans le meme contexte d'empilement — sans ca, la croix
+     passerait derriere la barre sur mobile. */
+  position: fixed; z-index: 140;
+  top: 26px; right: clamp(16px, 2.4vw, 30px);
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  color: var(--ink);
+  background: rgba(255,255,255,.72);
+  border: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: 0 2px 12px -4px rgba(16,35,63,.28);
+  transition: opacity .28s var(--ease), background .2s var(--ease), transform .2s var(--ease);
+}
+body.is-overlay .overlay-close[hidden] { display: none; }
+
+/* La croix ne participe pas au mouvement : elle apparait une fois la fiche
+   posee, et s'efface des que la fermeture commence.
+   Ce n'est pas qu'une question de gout. Elle est en position:fixed a
+   l'interieur de #page ; or un element transforme (l'animation de la fiche)
+   devient le referentiel de ses descendants fixes. Pendant la montee, la
+   croix se cale donc sur le haut de la FICHE, et retrouve le haut de la
+   FENETRE a la seconde ou le transform disparait — un saut de 14px, juste
+   assez visible pour faire tache. Invisible pendant le mouvement, le
+   probleme n'existe plus. */
+body.is-overlay.is-opening .overlay-close,
+body.is-overlay.is-closing .overlay-close { opacity: 0; }
+body.is-overlay .overlay-close svg { width: 20px; height: 20px; }
+body.is-overlay .overlay-close:hover { background: #FFFFFF; transform: scale(1.06); }
+
+/* Un peu d'air sous la croix : le titre de l'etude de cas commence plus bas
+   pour ne pas passer dessous sur les ecrans etroits. */
+body.is-overlay .cs__head { padding-top: var(--s7); }
+body.is-overlay .cs:has(.cs-nav) .cs__head { padding-top: var(--s7); }
+
+/* ---- Les animations ----
+   Deux mouvements simultanes, c'est tout l'effet : la fiche monte depuis le
+   bas de l'ecran, la photo recule et se floute. translateY(100vh) et non
+   100% : #page mesure plusieurs milliers de pixels, un pourcentage le
+   projetterait tres loin hors de l'ecran et l'arrivee paraitrait instantanee.
+
+   La courbe (.16, 1, .3, 1) demarre franchement et se pose tres doucement.
+   C'est ce freinage long qui donne la sensation de poids. */
+@keyframes sheetIn  { from { transform: translateY(100vh); } to { transform: translateY(0); } }
+@keyframes sheetOut { from { transform: translateY(0); } to { transform: translateY(100vh); } }
+
+@keyframes underLayerIn  {
+  from { transform: scale(1);   opacity: 1; }
+  to   { transform: scale(.93); opacity: .85; }
+}
+@keyframes underLayerOut {
+  from { transform: scale(.93); opacity: .85; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+@keyframes underBlurIn  { from { filter: blur(0px);  } to { filter: blur(16px); } }
+@keyframes underBlurOut { from { filter: blur(16px); } to { filter: blur(0px);  } }
+
+/* .is-opening (ouverture) et .is-closing (fermeture) sont posees puis
+   retirees par app.js.
+
+   PAS de will-change ici, contrairement au reflexe habituel. Une etude de
+   cas mesure plus de 6000px de haut : demander au navigateur de promouvoir
+   #page sur sa propre couche graphique revient a lui faire allouer une
+   texture de cette taille, pour 600ms d'animation. Un transform anime
+   declenche deja la promotion, et le navigateur, lui, sait la limiter a ce
+   qui est visible. */
+body.is-overlay.is-opening #page { animation: sheetIn .62s cubic-bezier(.16, 1, .3, 1) both; }
+body.is-overlay.is-closing #page { animation: sheetOut .44s cubic-bezier(.55, 0, .8, .25) both; }
+
+body.is-overlay.is-opening .underlay__inner { animation: underLayerIn .62s cubic-bezier(.16, 1, .3, 1) both; }
+body.is-overlay.is-opening .underlay__shot  { animation: underBlurIn  .62s cubic-bezier(.16, 1, .3, 1) both; }
+body.is-overlay.is-closing .underlay__inner { animation: underLayerOut .44s cubic-bezier(.55, 0, .8, .25) both; }
+body.is-overlay.is-closing .underlay__shot  { animation: underBlurOut  .44s cubic-bezier(.55, 0, .8, .25) both; }
+
+/* Pendant l'ouverture, la fiche monte deja : y superposer le fondu de page
+   habituel (pageIn) ferait deux mouvements pour un seul evenement. */
+body.is-overlay.is-opening main.is-entering { animation: none; }
+
+
+/* ==========================================================================
    12. RESPONSIVE
    --------------------------------------------------------------------------
    La plupart des reglages s'adaptent seuls grace a clamp() et auto-fit. Il ne
@@ -2604,6 +2821,12 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
   }
   .cs-nav a.is-active { border-left: 0; border-bottom-color: var(--accent); }
   .cs-nav__pct { display: none; }
+
+  /* Sous 1000px la nav de section devient une barre pleine largeur collee en
+     haut, juste sous la croix de fermeture (fixe, en haut a droite). On lui
+     reserve la place du bouton, sinon la derniere etape de la liste passe
+     dessous et devient incliquable. */
+  body.is-overlay .cs-nav { padding-right: calc(var(--gutter) + 56px); }
 }
 
 /* --- Sous 860px : la pilule ne tient plus, on replie la navigation ----- */
@@ -2692,8 +2915,11 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
    sur blanc, sans quoi la page consommerait une cartouche entiere. */
 @media print {
   .site-head, .site-nav, .back-link, .progress, .cs-nav,
-  .loader, .gate, .cs__cta, .cs-next, .skip-link { display: none !important; }
+  .loader, .gate, .cs__cta, .cs-next, .skip-link,
+  .underlay, .overlay-close { display: none !important; }
   html, body { background: #fff !important; color: #000 !important; font-size: 11pt; }
+  /* La fiche redevient une page ordinaire sur le papier. */
+  #page { margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
   .cs-sec p, .editorial__block p, .stat__l, .cs__tagline { color: #000 !important; }
   .stat__n { color: #000 !important; }
   .tag { border: 1px solid #000; color: #000 !important; background: none !important; }

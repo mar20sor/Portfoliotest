@@ -66,7 +66,14 @@ function el(tag, attrs = {}, children = []) {
 const state = {
   visitor: '',       // le prenom saisi. VIT EN MEMOIRE UNIQUEMENT (cf. section 2)
   route: '',         // le hash courant
-  cleanup: []        // fonctions a rappeler quand on quitte une page (voir addCleanup)
+  cleanup: [],       // fonctions a rappeler quand on quitte une page (voir addCleanup)
+
+  /* --- Ouverture des etudes de cas "en fiche" (voir section 7 bis) --- */
+  snap: false,       // une photo de la page precedente attend-elle dans #underlay ?
+  snapKey: null,     // la route d'ou vient cette photo (pour savoir ou revenir)
+  snapY: 0,          // la position de defilement qu'avait cette page
+  sheetTimer: null,  // le minuteur de l'animation en cours
+  pending: null      // la page a dessiner une fois l'animation de fermeture finie
 };
 
 /* Chaque page peut installer des ecouteurs d'evenements ou des observateurs.
@@ -3155,11 +3162,87 @@ function parseRoute(hash) {
   return { name: '404' };
 }
 
+/* Durees des deux animations de fiche. Elles DOIVENT correspondre a celles
+   ecrites dans styles.css (section 11 bis) : le CSS anime, le JS compte. Si
+   vous changez l'une, changez l'autre — sinon le contenu est remplace avant
+   la fin du mouvement (ou l'ecran reste fige apres). */
+const SHEET_IN_MS  = 620;
+const SHEET_OUT_MS = 440;   /* la sortie est plus rapide que l'entree : on
+                               regarde arriver une page, on ne regarde pas
+                               partir celle qu'on vient de quitter. */
+
+/* Le chef d'orchestre. Il ne dessine rien lui-meme : il decide seulement
+   SI l'on ouvre une fiche, SI l'on en ferme une, ou si c'est une navigation
+   ordinaire — puis il passe la main a paint().
+
+   Les trois cas :
+     'open'    accueil -> etude de cas. On photographie la page actuelle,
+               puis paint() dessine la fiche qui monte par-dessus.
+     'close'   etude de cas -> autre chose. Ici l'ordre s'inverse : on joue
+               l'animation D'ABORD, sur la page encore affichee, et on ne
+               dessine la suivante qu'une fois la fiche sortie de l'ecran.
+               C'est la seule raison d'etre du minuteur ci-dessous.
+     'normal'  tout le reste, y compris etude de cas -> etude de cas (le lien
+               "projet suivant") : la fiche est deja ouverte, elle le reste,
+               on se contente d'echanger son contenu. */
 function render() {
+  const hash   = location.hash || '#/';
+  const route  = parseRoute(hash);
+  const body   = document.body;
+  const isCase = route.name === 'case';
+
+  const first   = state.route === '';                  // tout premier rendu du site
+  const opened  = body.classList.contains('is-overlay');
+  const motion  = !prefersReducedMotion();
+
+  // --- FERMETURE ---
+  // On memorise la destination et on laisse le minuteur la dessiner. Si un
+  // second changement de hash arrive pendant l'animation (double clic,
+  // bouton Precedent impatient), on ne relance rien : on met simplement a
+  // jour la destination, et l'animation deja lancee va jusqu'au bout.
+  if (!isCase && opened && state.snap && motion) {
+    state.pending = { hash, route };
+    if (!body.classList.contains('is-closing')) {
+      body.classList.remove('is-opening');
+      body.classList.add('is-closing');
+      clearTimeout(state.sheetTimer);
+      state.sheetTimer = setTimeout(() => {
+        state.sheetTimer = null;
+        const next = state.pending;
+        state.pending = null;
+        paint(next.hash, next.route, 'close');
+      }, SHEET_OUT_MS);
+    }
+    return;
+  }
+
+  // --- OUVERTURE ---
+  // `first` exclut le tout premier rendu : arriver directement sur une URL
+  // d'etude de cas (lien partage, rechargement) ne doit pas faire monter une
+  // fiche depuis un ecran vide — il n'y a aucune page a photographier.
+  const opening = isCase && !opened && !first && motion;
+  if (opening) captureUnderlay();
+
+  paint(hash, route, opening ? 'open' : 'normal');
+}
+
+/* Dessine reellement la page. `mode` vaut 'open', 'close' ou 'normal'
+   (voir render() juste au-dessus). */
+function paint(hash, route, mode) {
   runCleanup();                       // on demonte proprement la page precedente
 
-  const hash  = location.hash || '#/';
-  const route = parseRoute(hash);
+  /* Toute animation de fiche encore en attente devient caduque : c'est cette
+     page-ci qui s'affiche, pas celle que le minuteur visait. Le cas concret :
+     on ferme une etude de cas, et pendant les 440ms de sortie on clique
+     "projet suivant" — sans cette ligne, le minuteur finirait par dessiner
+     l'accueil par-dessus l'etude de cas qu'on vient de demander. */
+  clearTimeout(state.sheetTimer);
+  state.sheetTimer = null;
+  state.pending = null;
+
+  const body   = document.body;
+  const pageEl = $('#page');
+  const isCase = route.name === 'case';
   state.route = hash;
 
   // Choix de la page a construire.
@@ -3181,10 +3264,23 @@ function render() {
      Les etudes de cas passent sur fond blanc : ce sont des pages longues,
      faites pour etre lues, et le bleu sature fatigue sur cette duree. Le
      reste du site garde le bleu de la maquette.
-     L'attribut est pose sur <html> et non sur <body> : ainsi la couleur de
-     fond du document lui-meme suit, ce qui evite un liser bleu au rebond de
-     defilement sur mobile. */
-  document.documentElement.dataset.theme = route.name === 'case' ? 'light' : 'brand';
+
+     Le theme clair est pose sur #page (la fiche) et non sur <html> comme
+     avant : depuis que les etudes de cas s'ouvrent par-dessus la page
+     precedente, le document doit rester bleu — c'est ce bleu qu'on voit sous
+     la fiche et au rebond de defilement — pendant que la fiche seule passe
+     au blanc. Repeindre <html> repeindrait aussi le calque du dessous, qui
+     est cense montrer la page d'accueil telle qu'elle etait. */
+  document.documentElement.dataset.theme = 'brand';
+  pageEl.classList.toggle('theme-light', isCase);
+
+  /* MODE FICHE. is-overlay commande tout l'habillage (fond blanc, coins
+     arrondis, en-tete masque, croix visible, calque du dessous affiche).
+     Une fois la nouvelle page dessinee, l'animation de fermeture n'a plus
+     lieu d'etre : on retire is-closing dans tous les cas. */
+  body.classList.toggle('is-overlay', isCase);
+  body.classList.remove('is-closing');
+  if (!isCase) clearUnderlay();       // on jette la photo : elle a servi
 
   // La fonction qui remplace reellement le contenu.
   const swap = () => {
@@ -3195,6 +3291,23 @@ function render() {
     // meme instruction ne relancerait pas l'animation.
     void main.offsetWidth;
     main.classList.add('is-entering');
+
+    // OUVERTURE : la fiche monte depuis le bas, le calque du dessous recule
+    // et se floute. Meme technique que ci-dessus pour relancer l'animation,
+    // et un minuteur pour retirer la classe une fois le mouvement fini —
+    // laisser un transform actif sur #page ferait de lui le referentiel des
+    // elements position:fixed qu'il contient (la croix cesserait de coller
+    // a la fenetre). Voir styles.css, section 11 bis.
+    if (mode === 'open') {
+      body.classList.remove('is-opening');
+      void body.offsetWidth;
+      body.classList.add('is-opening');
+      clearTimeout(state.sheetTimer);
+      state.sheetTimer = setTimeout(() => {
+        body.classList.remove('is-opening');
+        state.sheetTimer = null;
+      }, SHEET_IN_MS + 40);
+    }
   };
 
   /* Tout ce qui doit se produire UNE FOIS LE DOM EN PLACE.
@@ -3216,13 +3329,28 @@ function render() {
     document.title = title;
     markActiveNav(route);
     setupBackLink(route);
+    setupOverlayClose(route);
     closeMobileNav();
 
-    // Remonter en haut a chaque changement de page — sauf si l'URL vise une
-    // ancre precise, cas ou l'on doit au contraire descendre jusqu'a elle.
+    /* OU SE POSE-T-ON DANS LA PAGE ?
+       Trois cas, du plus specifique au plus general :
+
+       1. On REFERME une fiche et l'on retombe sur la page d'ou l'on venait :
+          on restitue la position de defilement exacte qu'elle avait. C'est
+          la promesse d'un calque — on repose le couvercle, on retrouve la
+          grille de projets a l'endroit precis ou on l'avait laissee. Sans
+          ca, revenir de la 3e etude de cas renvoie tout en haut a chaque
+          fois, et il faut re-defiler pour cliquer la suivante.
+       2. L'URL vise une ancre : on descend jusqu'a elle.
+       3. Sinon : en haut. */
     const anchor = hash.split('#')[2];
-    if (anchor) scrollToSection(anchor, 'auto');
-    else window.scrollTo({ top: 0, behavior: 'auto' });
+    if (mode === 'close' && state.snapKey === routeKey(hash)) {
+      window.scrollTo({ top: state.snapY, behavior: 'auto' });
+    } else if (anchor) {
+      scrollToSection(anchor, 'auto');
+    } else {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
 
     // On deplace le focus sur <main> : sans ca, un lecteur d'ecran continue
     // d'annoncer l'ancienne page et l'utilisateur clavier repart du debut.
@@ -3251,12 +3379,171 @@ function render() {
   // ne tourne alors jamais : plus aucun ecouteur ne se rattache sur la page
   // (widget, clic exterieur, etc.) jusqu'a la prochaine navigation reussie —
   // c'etait la cause d'interactions qui semblaient marcher "par intermittence".
-  if (document.startViewTransition && !prefersReducedMotion()) {
+  //
+  // EXCEPTION 'open' / 'close' : on ne cumule pas les deux mecanismes. En
+  // ouverture, la fiche a deja sa propre montee. En fermeture, tout vient de
+  // se jouer a l'ecran — la fiche est sortie par le bas et le calque du
+  // dessous, deja denoue, montre exactement la page qu'on s'apprete a
+  // redessiner. Un fondu supplementaire ferait clignoter une image qui n'a
+  // pas bouge. L'echange doit etre instantane pour rester invisible.
+  const plain = mode === 'open' || mode === 'close';
+
+  if (!plain && document.startViewTransition && !prefersReducedMotion()) {
     document.startViewTransition(swap).updateCallbackDone.then(afterSwap, afterSwap);
   } else {
     swap();
     afterSwap();
   }
+}
+
+
+/* ==========================================================================
+   7 bis. LE CALQUE DU DESSOUS
+   --------------------------------------------------------------------------
+   Une etude de cas s'ouvre "en fiche" : elle monte depuis le bas de l'ecran
+   par-dessus la page precedente, floutee et reculee. Mais le site est une
+   SPA a un seul <main> — la page precedente n'existe plus des l'echange.
+
+   D'ou le principe, assume : ce n'est pas un vrai calque, c'est une PHOTO.
+   Juste avant de remplacer le contenu, on clone le DOM de la page courante
+   dans #underlay et on la fige au defilement qu'elle avait. C'est cette
+   copie inerte qu'on floute. Elle ne reagit a rien, ne joue aucune video, ne
+   coute aucun rendu supplementaire pendant la lecture — et personne ne peut
+   faire la difference, parce qu'elle est floutee a 16px.
+
+   L'illusion tient a une condition : que la photo montre EXACTEMENT ce que
+   la personne regardait au moment du clic. D'ou le decalage vertical
+   applique plus bas, et le remplacement des videos par leur derniere image.
+   ========================================================================== */
+
+/* Clone un element pour la photo, en retirant les identifiants.
+   Deux elements portant le meme id dans la page, c'est du HTML invalide :
+   $('#site-nav') pourrait alors renvoyer la copie inerte au lieu de la vraie
+   navigation, et le menu mobile cesserait de s'ouvrir. */
+function snapClone(node) {
+  const copy = node.cloneNode(true);
+  copy.removeAttribute('id');
+  $$('[id]', copy).forEach(n => n.removeAttribute('id'));
+  return copy;
+}
+
+/* Les videos et les animations Lottie du clone ne rejouent pas : elles n'ont
+   ni attribut autoplay (c'est setupVideos qui les lance, et il ne tourne pas
+   sur la copie) ni le JS de dotlottie-wc. Elles s'afficheraient en noir au
+   milieu de la photo.
+
+   On dessine donc leur image ACTUELLE dans un <canvas> de meme taille. Le
+   dessin depuis une video d'une autre origine (media.contra.com) "souille"
+   le canvas : cela interdit d'en RELIRE les pixels (toDataURL), pas de
+   l'afficher — et nous n'avons besoin que de l'afficher.
+
+   Les tailles sont reprises au pixel pres sur les elements d'origine :
+   .card__media video fait 92% de son cadre, un Lottie a son propre ratio...
+   plutot que de dupliquer ces regles CSS, on mesure. */
+function freezeSnapMedia(live, copy) {
+  const swapIn = (target, replacement, box) => {
+    replacement.style.width  = `${box.width}px`;
+    replacement.style.height = `${box.height}px`;
+    target.replaceWith(replacement);
+  };
+
+  const paintFrom = (source, sw, sh) => {
+    if (!sw || !sh) return null;
+    try {
+      const canvas = el('canvas', { class: 'underlay__frame' });
+      canvas.width = sw; canvas.height = sh;
+      canvas.getContext('2d').drawImage(source, 0, 0, sw, sh);
+      return canvas;
+    } catch { return null; }        // navigateur recalcitrant : on retombe sur l'aplat
+  };
+
+  const videos = $$('video', copy);
+  $$('video', live).forEach((src, i) => {
+    const target = videos[i];
+    if (!target) return;
+    const box = src.getBoundingClientRect();
+    // readyState >= 2 (HAVE_CURRENT_DATA) : il y a une image a copier.
+    const frame = src.readyState >= 2 ? paintFrom(src, src.videoWidth, src.videoHeight) : null;
+    swapIn(target, frame || el('div', { class: 'underlay__blank' }), box);
+  });
+
+  const lotties = $$('dotlottie-wc', copy);
+  $$('dotlottie-wc', live).forEach((src, i) => {
+    const target = lotties[i];
+    if (!target) return;
+    const box = src.getBoundingClientRect();
+    // dotlottie-wc dessine dans un <canvas> a l'interieur de son shadow DOM.
+    // Il est "open", donc lisible — mais si la librairie externe n'a pas
+    // charge (CDN injoignable), il n'y a rien : d'ou le repli sur l'aplat.
+    const inner = src.shadowRoot && src.shadowRoot.querySelector('canvas');
+    const frame = inner ? paintFrom(inner, inner.width, inner.height) : null;
+    swapIn(target, frame || el('div', { class: 'underlay__blank' }), box);
+  });
+}
+
+/* Prend la photo. Appelee juste AVANT que paint() ne remplace le contenu —
+   a ce moment, #page montre encore la page qu'on quitte et window.scrollY
+   vaut encore sa position de defilement. */
+function captureUnderlay() {
+  const under = $('#underlay');
+  const live  = $('#page');
+  const head  = $('#site-head');
+  if (!under || !live) return;
+
+  const inner = el('div', { class: 'underlay__inner' });
+  const shot  = el('div', { class: 'underlay__shot' });
+
+  /* Le clone est un bloc a part, hors du flux de la page : il n'herite ni de
+     sa largeur ni de sa position de defilement. On lui rend les deux a la
+     main — la largeur mesuree sur l'original (sinon le texte se recompose et
+     la photo ne correspond plus a ce qu'on voyait), et un decalage vers le
+     haut egal au defilement (sinon la photo montre le haut du site alors
+     qu'on avait clique sur une carte tout en bas). */
+  shot.style.width = `${live.offsetWidth}px`;
+  shot.style.transform = `translateY(${-Math.round(window.scrollY)}px)`;
+
+  const copy = snapClone(live);
+  freezeSnapMedia(live, copy);
+  shot.append(copy);
+  inner.append(shot);
+
+  /* L'en-tete du site est colle en haut (position:sticky). Dans le clone il
+     n'a plus de conteneur de defilement de reference : il retomberait a sa
+     place "naturelle", tout en haut du document — donc hors ecran des qu'on
+     a defile. On le sort du bloc decale et on le recolle en absolu, ce qui
+     reproduit exactement ce que l'oeil voyait. */
+  if (head) {
+    const headCopy = snapClone(head);
+    headCopy.classList.add('underlay__head');
+    headCopy.classList.remove('is-scrolled');
+    inner.append(headCopy);
+  }
+
+  under.replaceChildren(inner);
+
+  state.snap    = true;
+  state.snapKey = routeKey(state.route);   // state.route est encore l'ancienne route
+  state.snapY   = window.scrollY;
+}
+
+/* Jette la photo. On garde snapKey / snapY : afterSwap s'en sert juste apres
+   pour reposer la page a la hauteur exacte ou on l'avait laissee. */
+function clearUnderlay() {
+  const under = $('#underlay');
+  if (under) under.replaceChildren();
+  state.snap = false;
+}
+
+/* La croix de fermeture. Sa destination suit le projet ouvert : une etude de
+   cas "side quest" ramene a la section des side quests, pas au sommet de la
+   page d'accueil. C'est un vrai lien : le changement de hash passe par
+   render(), qui reconnait une fermeture et joue l'animation de sortie. */
+function setupOverlayClose(route) {
+  const close = $('#overlay-close');
+  if (!close) return;
+  const isCase = route.name === 'case';
+  close.hidden = !isCase;
+  if (isCase) close.href = `#/#${route.project.kind}`;
 }
 
 /* Fait defiler jusqu'a une section, en tenant compte de l'en-tete collant.
@@ -3298,7 +3585,10 @@ function readHeadHeight() {
 function markActiveNav(route) {
   const map = { home: 'home', case: route.project?.kind, about: 'about', gap: null };
   const current = map[route.name] ?? null;
-  $$('.site-nav a[data-nav]').forEach(a => {
+  // Scope au vrai en-tete : #underlay peut contenir un clone de la barre de
+  // navigation (voir captureUnderlay), et une recherche a l'echelle du
+  // document repeindrait aussi la copie figee.
+  $$('#site-head .site-nav a[data-nav]').forEach(a => {
     if (a.dataset.nav === current) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   });
@@ -3312,7 +3602,11 @@ function markActiveNav(route) {
    ferait doublon. */
 function setupBackLink(route) {
   const link = $('#back-link');
-  const hasOwnBackLink = route.name === 'case' && (route.project.sections || []).length > 0;
+  /* Depuis que les etudes de cas s'ouvrent en fiche, la croix en haut a
+     droite est la sortie de TOUTE etude de cas — y compris celles sans nav
+     laterale, qui affichaient jusqu'ici le bouton flottant. Deux sorties
+     pour une meme page, ce serait une de trop. */
+  const hasOwnBackLink = route.name === 'case';
   const deep = ['case', 'about', 'gap'].includes(route.name) && !hasOwnBackLink;
   link.hidden = !deep;
   if (!deep) return;
@@ -3767,9 +4061,25 @@ function start() {
   // Un clic sur un lien de navigation referme le menu mobile.
   $$('.site-nav a').forEach(a => a.addEventListener('click', closeMobileNav));
 
-  // Echap referme le menu mobile ouvert.
+  /* Echap referme le menu mobile ouvert — et, a defaut, la fiche d'etude de
+     cas. Dans cet ordre : quand les deux sont ouverts, la premiere pression
+     ferme le menu, la seconde la fiche. Un element qui se pose par-dessus le
+     reste doit toujours se refermer a la touche Echap ; c'est la sortie que
+     tout le monde essaie en premier. On ignore la frappe si elle vient d'un
+     champ de saisie (le portail du prenom a sa propre gestion). */
   document.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Escape') closeMobileNav();
+    if (ev.key !== 'Escape') return;
+
+    const nav = $('#site-nav');
+    if (nav.classList.contains('is-open')) { closeMobileNav(); return; }
+
+    const tag = (ev.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+
+    const close = $('#overlay-close');
+    if (document.body.classList.contains('is-overlay') && close && !close.hidden) {
+      location.hash = close.getAttribute('href');
+    }
   });
 
   /* --- Sequence d'ouverture --- */

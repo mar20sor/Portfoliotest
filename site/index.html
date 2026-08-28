@@ -121,6 +121,23 @@
   <a class="skip-link" href="#main" data-i18n="skipToContent">Skip to main content</a>
 
   <!--
+    ================ 0. LE CALQUE DU DESSOUS (etudes de cas) ================
+    Vide 99 % du temps. Quand on ouvre une etude de cas, app.js y depose une
+    PHOTO de la page qu'on vient de quitter (un simple clone du DOM, fige au
+    scroll ou il etait) : c'est elle qu'on voit floutee et reduite derriere
+    la fiche qui monte. Rien n'est vraiment "ouvert par-dessus" — la page
+    d'accueil n'existe plus a ce moment-la, seule sa photo reste. C'est ce
+    que veut dire "faux calque" : l'illusion coute un clone et un flou, pas
+    une seconde application vivante en arriere-plan.
+    aria-hidden + inert : purement decoratif. aria-hidden le retire des
+    lecteurs d'ecran, mais aria-hidden SEUL laisserait ses liens clones
+    atteignables a la touche Tab — le pire des deux mondes : un focus
+    invisible, sur une copie morte. inert coupe le clic, le focus et la
+    selection d'un seul attribut.
+  -->
+  <div id="underlay" class="underlay" aria-hidden="true" inert></div>
+
+  <!--
     ===================== 1. LE LOADER =====================
     Affiche pendant que les images se preparent. Il est dans le HTML (et non
     cree en JS) pour etre visible immediatement, avant meme que JavaScript
@@ -226,13 +243,40 @@
     page, pour que les lecteurs d'ecran annoncent la nouvelle page.
     aria-live="polite" : les changements sont annonces sans interrompre.
   -->
-  <main id="main" tabindex="-1"></main>
-
   <!--
-    ===================== 7. PIED DE PAGE =====================
-    Rempli par app.js pour rester traduisible sans dupliquer le balisage.
+    #page enveloppe le contenu ET le pied de page. C'est LA FICHE : le bloc
+    qui monte, prend un fond blanc et des coins arrondis quand une etude de
+    cas s'ouvre (voir body.is-overlay dans styles.css). Envelopper les deux
+    est indispensable — sans ca, le pied de page resterait en dehors du
+    panneau, sur le bleu du site, et la fiche s'arreterait au milieu de rien.
   -->
-  <footer class="site-foot" id="site-foot"></footer>
+  <div id="page" class="page">
+
+    <!--
+      La croix de fermeture. Elle vit DANS #page pour deux raisons :
+      elle monte avec la fiche pendant l'animation d'ouverture, et elle se
+      retrouve au-dessus du contenu de la fiche sans bagarre de z-index.
+      C'est un <a> et non un <button> : fermer, ici, c'est simplement
+      naviguer vers la liste des projets. Le lien fonctionne donc au clic
+      du milieu, au copier-lien, et l'historique du navigateur reste juste.
+      app.js ajuste sa destination selon le projet ouvert (work / side).
+    -->
+    <a class="overlay-close" id="overlay-close" href="#/#work" hidden aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor"
+              stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+    </a>
+
+    <main id="main" tabindex="-1"></main>
+
+    <!--
+      ===================== 7. PIED DE PAGE =====================
+      Rempli par app.js pour rester traduisible sans dupliquer le balisage.
+    -->
+    <footer class="site-foot" id="site-foot"></footer>
+
+  </div>
 
   <!--
     type="module" fait trois choses utiles :
