@@ -2835,9 +2835,11 @@ body.is-overlay.is-opening .underlay__shot  { animation: underBlurIn  .62s cubic
 body.is-overlay.is-closing .underlay__inner { animation: underLayerOut .38s cubic-bezier(.3, 0, .3, 1) both; }
 body.is-overlay.is-closing .underlay__shot  { animation: underBlurOut  .38s cubic-bezier(.3, 0, .3, 1) both; }
 
-/* Pendant l'ouverture, la fiche monte deja : y superposer le fondu de page
-   habituel (pageIn) ferait deux mouvements pour un seul evenement. */
-body.is-overlay.is-opening main.is-entering { animation: none; }
+/* Le fondu de page habituel (pageIn) est neutralise pour l'ouverture et la
+   fermeture — mais cote JS, en ne posant pas la classe .is-entering (voir
+   swap() dans app.js). L'eteindre ici avec `animation: none` paraissait plus
+   simple et etait un piege : la regle cesse de s'appliquer avec la classe
+   .is-opening, et l'animation repart alors de son premier keyframe. */
 
 
 /* ==========================================================================

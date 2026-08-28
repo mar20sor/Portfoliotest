@@ -3294,11 +3294,26 @@ function paint(hash, route, mode) {
   const swap = () => {
     main.replaceChildren(node);       // vide puis remplit, en une operation
     main.classList.remove('is-entering');
-    // void main.offsetWidth force le navigateur a recalculer la mise en page
-    // MAINTENANT. Sans cette ligne, retirer puis remettre la classe dans la
-    // meme instruction ne relancerait pas l'animation.
-    void main.offsetWidth;
-    main.classList.add('is-entering');
+
+    /* LE FONDU DE PAGE (pageIn) NE JOUE QUE POUR UNE NAVIGATION ORDINAIRE.
+       En ouverture comme en fermeture, il y a deja un mouvement a l'ecran —
+       la fiche qui monte, la fiche qui s'efface sur la page floutee — et le
+       contenu doit y etre solidaire, pas fondre pour son propre compte.
+
+       Une premiere version le neutralisait en CSS pendant l'animation. Piege
+       classique : une animation qu'on eteint par `animation: none` puis
+       qu'on laisse revenir REDEMARRE de zero. La classe .is-opening retiree,
+       pageIn repartait donc de opacity 0 — l'etude de cas s'effaçait juste
+       apres s'etre posee. En fermeture, pire : le fondu s'appliquait a la
+       page d'accueil une fois la photo du dessous jetee, donc sur le bleu
+       nu. C'etaient les deux sauts. On ne pose plus la classe du tout. */
+    if (mode === 'normal') {
+      // void main.offsetWidth force le navigateur a recalculer la mise en page
+      // MAINTENANT. Sans cette ligne, retirer puis remettre la classe dans la
+      // meme instruction ne relancerait pas l'animation.
+      void main.offsetWidth;
+      main.classList.add('is-entering');
+    }
 
     // OUVERTURE : la fiche monte depuis le bas, le calque du dessous recule
     // et se floute. Meme technique que ci-dessus pour relancer l'animation,
