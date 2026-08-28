@@ -66,7 +66,21 @@ function el(tag, attrs = {}, children = []) {
 const state = {
   visitor: '',       // le prenom saisi. VIT EN MEMOIRE UNIQUEMENT (cf. section 2)
   route: '',         // le hash courant
-  cleanup: []        // fonctions a rappeler quand on quitte une page (voir addCleanup)
+  cleanup: [],       // fonctions a rappeler quand on quitte une page (voir addCleanup)
+
+  /* --- Ouverture des etudes de cas "en fiche" (voir section 7 bis) --- */
+  snap: false,       // une photo de la page precedente attend-elle dans #underlay ?
+  snapKey: null,     // la route d'ou vient cette photo (pour savoir ou revenir)
+  snapY: 0,          // la position de defilement qu'avait cette page
+  sheetTimer: null,  // le minuteur de l'animation en cours
+  pending: null,     // la page a dessiner une fois l'animation de fermeture finie
+
+  /* --- Scroll-spy de l'en-tete (voir setupHomeNavSpy, section 8 bis) ---
+     La section d'accueil surlignee dans la pilule. Il vit ICI et non dans la
+     fonction parce qu'il doit SURVIVRE au demontage de la page : on ouvre une
+     etude de cas, l'accueil est detruit, et au retour on doit pouvoir rallumer
+     la bonne entree avant meme d'avoir mesure quoi que ce soit. */
+  navSpy: null
 };
 
 /* Chaque page peut installer des ecouteurs d'evenements ou des observateurs.
@@ -293,7 +307,10 @@ function escapeAttr(s) {
    comme du texte brut. */
 function renderHello() {
   const d = t();
-  const wrap = el('p', { class: 'hero__hello' });
+  /* sec-hello : la cible du nom dans l'en-tete (href="#/#hello"). Le prefixe
+     "sec-" est la convention de scrollToSection, qui cherche toujours
+     `sec-${id}` — meme mecanisme que #work et #side. */
+  const wrap = el('p', { class: 'hero__hello', id: 'sec-hello' });
   if (state.visitor) {
     wrap.append(document.createTextNode(d.helloBefore + ' '));
     const strong = el('b');
@@ -3155,11 +3172,95 @@ function parseRoute(hash) {
   return { name: '404' };
 }
 
+/* Durees des deux animations de fiche. Elles DOIVENT correspondre a celles
+   ecrites dans styles.css (section 11 bis) : le CSS anime, le JS compte. Si
+   vous changez l'une, changez l'autre — sinon le contenu est remplace avant
+   la fin du mouvement (ou l'ecran reste fige apres). */
+const SHEET_IN_MS  = 620;
+const SHEET_OUT_MS = 380;   /* la sortie est plus rapide que l'entree : on
+                               regarde arriver une page, on ne regarde pas
+                               partir celle qu'on vient de quitter. */
+
+/* Le chef d'orchestre. Il ne dessine rien lui-meme : il decide seulement
+   SI l'on ouvre une fiche, SI l'on en ferme une, ou si c'est une navigation
+   ordinaire — puis il passe la main a paint().
+
+   Les trois cas :
+     'open'    accueil -> etude de cas. On photographie la page actuelle,
+               puis paint() dessine la fiche qui monte par-dessus.
+     'close'   etude de cas -> autre chose. Ici l'ordre s'inverse : on joue
+               l'animation D'ABORD, sur la page encore affichee, et on ne
+               dessine la suivante qu'une fois la fiche sortie de l'ecran.
+               C'est la seule raison d'etre du minuteur ci-dessous.
+     'normal'  tout le reste, y compris etude de cas -> etude de cas (le lien
+               "projet suivant") : la fiche est deja ouverte, elle le reste,
+               on se contente d'echanger son contenu. */
 function render() {
+  const hash   = location.hash || '#/';
+  const route  = parseRoute(hash);
+  const body   = document.body;
+  const isCase = route.name === 'case';
+
+  const first   = state.route === '';                  // tout premier rendu du site
+  const opened  = body.classList.contains('is-overlay');
+  const motion  = !prefersReducedMotion();
+
+  // --- FERMETURE ---
+  // On memorise la destination et on laisse le minuteur la dessiner. Si un
+  // second changement de hash arrive pendant l'animation (double clic,
+  // bouton Precedent impatient), on ne relance rien : on met simplement a
+  // jour la destination, et l'animation deja lancee va jusqu'au bout.
+  if (!isCase && opened && state.snap && motion) {
+    state.pending = { hash, route };
+    if (!body.classList.contains('is-closing')) {
+      body.classList.remove('is-opening');
+      body.classList.add('is-closing');
+      clearTimeout(state.sheetTimer);
+      state.sheetTimer = setTimeout(() => {
+        state.sheetTimer = null;
+        const next = state.pending;
+        state.pending = null;
+        paint(next.hash, next.route, 'close');
+      }, SHEET_OUT_MS);
+    }
+    return;
+  }
+
+  // --- OUVERTURE ---
+  // On garnit le calque du dessous des qu'on entre en mode fiche, animation
+  // ou pas : c'est lui qu'on apercoit en permanence au-dessus de la fiche et
+  // sur ses cotes. Deux facons de le garnir selon ce qu'on a sous la main :
+  //   - une page affichee : on la photographie telle quelle ;
+  //   - rien (arrivee directe sur l'URL d'une etude de cas, rechargement,
+  //     lien partage) : on FABRIQUE la page d'accueil. Sans ca, on ne verrait
+  //     qu'un aplat noir derriere la fiche, ce qui ne ressemble a rien.
+  const entering = isCase && !opened;
+  if (entering) first ? seedUnderlay() : captureUnderlay();
+
+  // On n'anime pas le tout premier rendu : il n'y a rien eu avant, et une
+  // fiche qui monte au chargement ferait attendre la lecture pour rien.
+  const opening = entering && !first && motion;
+
+  paint(hash, route, opening ? 'open' : 'normal');
+}
+
+/* Dessine reellement la page. `mode` vaut 'open', 'close' ou 'normal'
+   (voir render() juste au-dessus). */
+function paint(hash, route, mode) {
   runCleanup();                       // on demonte proprement la page precedente
 
-  const hash  = location.hash || '#/';
-  const route = parseRoute(hash);
+  /* Toute animation de fiche encore en attente devient caduque : c'est cette
+     page-ci qui s'affiche, pas celle que le minuteur visait. Le cas concret :
+     on ferme une etude de cas, et pendant les 440ms de sortie on clique
+     "projet suivant" — sans cette ligne, le minuteur finirait par dessiner
+     l'accueil par-dessus l'etude de cas qu'on vient de demander. */
+  clearTimeout(state.sheetTimer);
+  state.sheetTimer = null;
+  state.pending = null;
+
+  const body   = document.body;
+  const pageEl = $('#page');
+  const isCase = route.name === 'case';
   state.route = hash;
 
   // Choix de la page a construire.
@@ -3181,20 +3282,75 @@ function render() {
      Les etudes de cas passent sur fond blanc : ce sont des pages longues,
      faites pour etre lues, et le bleu sature fatigue sur cette duree. Le
      reste du site garde le bleu de la maquette.
-     L'attribut est pose sur <html> et non sur <body> : ainsi la couleur de
-     fond du document lui-meme suit, ce qui evite un liser bleu au rebond de
-     defilement sur mobile. */
-  document.documentElement.dataset.theme = route.name === 'case' ? 'light' : 'brand';
+
+     Le theme clair est pose sur #page (la fiche) et non sur <html> comme
+     avant : depuis que les etudes de cas s'ouvrent par-dessus la page
+     precedente, le document doit rester bleu — c'est ce bleu qu'on voit sous
+     la fiche et au rebond de defilement — pendant que la fiche seule passe
+     au blanc. Repeindre <html> repeindrait aussi le calque du dessous, qui
+     est cense montrer la page d'accueil telle qu'elle etait. */
+  document.documentElement.dataset.theme = 'brand';
+  pageEl.classList.toggle('theme-light', isCase);
+
+  /* MODE FICHE. is-overlay commande tout l'habillage (fond blanc, coins
+     arrondis, en-tete recouvert, croix visible, calque du dessous affiche).
+     Une fois la nouvelle page dessinee, l'animation de fermeture n'a plus
+     lieu d'etre : on retire is-closing dans tous les cas. */
+  body.classList.toggle('is-overlay', isCase);
+  body.classList.remove('is-closing');
+  if (!isCase) clearUnderlay();       // on jette la photo : elle a servi
+
+  /* L'en-tete du site reste VISIBLE sous la fiche (voir styles.css), mais il
+     n'est plus atteignable : ce qui est derriere un calque ne se clique pas.
+     inert coupe d'un coup le clic, le focus clavier et l'annonce vocale —
+     trois choses qu'il faudrait sinon neutraliser separement, et qui se
+     desynchronisent toujours. Concretement, ça evite qu'on ouvre la
+     navigation mobile SOUS la fiche, ou qu'une tabulation aille se perdre
+     sur un lien qu'on ne voit pas. */
+  const siteHead = $('#site-head');
+  if (siteHead) siteHead.toggleAttribute('inert', isCase);
 
   // La fonction qui remplace reellement le contenu.
   const swap = () => {
     main.replaceChildren(node);       // vide puis remplit, en une operation
     main.classList.remove('is-entering');
-    // void main.offsetWidth force le navigateur a recalculer la mise en page
-    // MAINTENANT. Sans cette ligne, retirer puis remettre la classe dans la
-    // meme instruction ne relancerait pas l'animation.
-    void main.offsetWidth;
-    main.classList.add('is-entering');
+
+    /* LE FONDU DE PAGE (pageIn) NE JOUE QUE POUR UNE NAVIGATION ORDINAIRE.
+       En ouverture comme en fermeture, il y a deja un mouvement a l'ecran —
+       la fiche qui monte, la fiche qui s'efface sur la page floutee — et le
+       contenu doit y etre solidaire, pas fondre pour son propre compte.
+
+       Une premiere version le neutralisait en CSS pendant l'animation. Piege
+       classique : une animation qu'on eteint par `animation: none` puis
+       qu'on laisse revenir REDEMARRE de zero. La classe .is-opening retiree,
+       pageIn repartait donc de opacity 0 — l'etude de cas s'effaçait juste
+       apres s'etre posee. En fermeture, pire : le fondu s'appliquait a la
+       page d'accueil une fois la photo du dessous jetee, donc sur le bleu
+       nu. C'etaient les deux sauts. On ne pose plus la classe du tout. */
+    if (mode === 'normal') {
+      // void main.offsetWidth force le navigateur a recalculer la mise en page
+      // MAINTENANT. Sans cette ligne, retirer puis remettre la classe dans la
+      // meme instruction ne relancerait pas l'animation.
+      void main.offsetWidth;
+      main.classList.add('is-entering');
+    }
+
+    // OUVERTURE : la fiche monte depuis le bas, le calque du dessous recule
+    // et se floute. Meme technique que ci-dessus pour relancer l'animation,
+    // et un minuteur pour retirer la classe une fois le mouvement fini —
+    // laisser un transform actif sur #page ferait de lui le referentiel des
+    // elements position:fixed qu'il contient (la croix cesserait de coller
+    // a la fenetre). Voir styles.css, section 11 bis.
+    if (mode === 'open') {
+      body.classList.remove('is-opening');
+      void body.offsetWidth;
+      body.classList.add('is-opening');
+      clearTimeout(state.sheetTimer);
+      state.sheetTimer = setTimeout(() => {
+        body.classList.remove('is-opening');
+        state.sheetTimer = null;
+      }, SHEET_IN_MS + 40);
+    }
   };
 
   /* Tout ce qui doit se produire UNE FOIS LE DOM EN PLACE.
@@ -3216,18 +3372,43 @@ function render() {
     document.title = title;
     markActiveNav(route);
     setupBackLink(route);
+    setupOverlayClose(route);
     closeMobileNav();
 
-    // Remonter en haut a chaque changement de page — sauf si l'URL vise une
-    // ancre precise, cas ou l'on doit au contraire descendre jusqu'a elle.
+    /* OU SE POSE-T-ON DANS LA PAGE ?
+       Trois cas, du plus specifique au plus general :
+
+       1. On REFERME une fiche et l'on retombe sur la page d'ou l'on venait :
+          on restitue la position de defilement exacte qu'elle avait. C'est
+          la promesse d'un calque — on repose le couvercle, on retrouve la
+          grille de projets a l'endroit precis ou on l'avait laissee. Sans
+          ca, revenir de la 3e etude de cas renvoie tout en haut a chaque
+          fois, et il faut re-defiler pour cliquer la suivante.
+       2. L'URL vise une ancre : on descend jusqu'a elle.
+       3. Sinon : en haut.
+
+       'instant' et non 'auto'. Le piege : 'auto' ne veut PAS dire
+       "immediat", il veut dire "suis la propriete CSS scroll-behavior" — et
+       elle vaut smooth sur <html> (voir le reset, section 2). Ces trois
+       appels lançaient donc un defilement ANIME que le rendu de page en
+       cours annulait aussitot : on n'arrivait jamais a destination. C'est ce
+       qui faisait atterrir le retour d'une etude de cas en haut de
+       l'accueil au lieu de la section Work. Ici on ne fait pas defiler, on
+       POSITIONNE : ça doit etre instantane. */
     const anchor = hash.split('#')[2];
-    if (anchor) scrollToSection(anchor, 'auto');
-    else window.scrollTo({ top: 0, behavior: 'auto' });
+    if (mode === 'close' && state.snapKey === routeKey(hash)) {
+      window.scrollTo({ top: state.snapY, behavior: 'instant' });
+    } else if (anchor) {
+      scrollToSection(anchor, 'instant');
+    } else {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
 
     // On deplace le focus sur <main> : sans ca, un lecteur d'ecran continue
     // d'annoncer l'ancienne page et l'utilisateur clavier repart du debut.
     main.focus({ preventScroll: true });
 
+    if (route.name === 'home') setupHomeNavSpy();
     if (route.name === 'case') setupCaseBehaviours();
     if (route.name === 'case') setupMoreDrawerEmbeds();
     if (route.name === 'case' && route.project.slug === 'constraints') setupConstraintBuilder();
@@ -3251,12 +3432,221 @@ function render() {
   // ne tourne alors jamais : plus aucun ecouteur ne se rattache sur la page
   // (widget, clic exterieur, etc.) jusqu'a la prochaine navigation reussie —
   // c'etait la cause d'interactions qui semblaient marcher "par intermittence".
-  if (document.startViewTransition && !prefersReducedMotion()) {
+  //
+  // EXCEPTION 'open' / 'close' : on ne cumule pas les deux mecanismes. En
+  // ouverture, la fiche a deja sa propre montee. En fermeture, tout vient de
+  // se jouer a l'ecran — la fiche est sortie par le bas et le calque du
+  // dessous, deja denoue, montre exactement la page qu'on s'apprete a
+  // redessiner. Un fondu supplementaire ferait clignoter une image qui n'a
+  // pas bouge. L'echange doit etre instantane pour rester invisible.
+  const plain = mode === 'open' || mode === 'close';
+
+  if (!plain && document.startViewTransition && !prefersReducedMotion()) {
     document.startViewTransition(swap).updateCallbackDone.then(afterSwap, afterSwap);
   } else {
     swap();
     afterSwap();
   }
+}
+
+
+/* ==========================================================================
+   7 bis. LE CALQUE DU DESSOUS
+   --------------------------------------------------------------------------
+   Une etude de cas s'ouvre "en fiche" : elle monte depuis le bas de l'ecran
+   par-dessus la page precedente, floutee et reculee. Mais le site est une
+   SPA a un seul <main> — la page precedente n'existe plus des l'echange.
+
+   D'ou le principe, assume : ce n'est pas un vrai calque, c'est une PHOTO.
+   Juste avant de remplacer le contenu, on clone le DOM de la page courante
+   dans #underlay et on la fige au defilement qu'elle avait. C'est cette
+   copie inerte qu'on floute. Elle ne reagit a rien, ne joue aucune video, ne
+   coute aucun rendu supplementaire pendant la lecture — et personne ne peut
+   faire la difference, parce qu'elle est floutee a 16px.
+
+   L'illusion tient a une condition : que la photo montre EXACTEMENT ce que
+   la personne regardait au moment du clic. D'ou le decalage vertical
+   applique plus bas, et le remplacement des videos par leur derniere image.
+   ========================================================================== */
+
+/* Clone un element pour la photo, en retirant les identifiants.
+   Deux elements portant le meme id dans la page, c'est du HTML invalide :
+   $('#site-nav') pourrait alors renvoyer la copie inerte au lieu de la vraie
+   navigation, et le menu mobile cesserait de s'ouvrir. */
+function snapClone(node) {
+  const copy = node.cloneNode(true);
+  copy.removeAttribute('id');
+  $$('[id]', copy).forEach(n => n.removeAttribute('id'));
+  return copy;
+}
+
+/* Les videos et les animations Lottie du clone ne rejouent pas : elles n'ont
+   ni attribut autoplay (c'est setupVideos qui les lance, et il ne tourne pas
+   sur la copie) ni le JS de dotlottie-wc. Elles s'afficheraient en noir au
+   milieu de la photo.
+
+   On dessine donc leur image ACTUELLE dans un <canvas> de meme taille. Le
+   dessin depuis une video d'une autre origine (media.contra.com) "souille"
+   le canvas : cela interdit d'en RELIRE les pixels (toDataURL), pas de
+   l'afficher — et nous n'avons besoin que de l'afficher.
+
+   Les tailles sont reprises au pixel pres sur les elements d'origine :
+   .card__media video fait 92% de son cadre, un Lottie a son propre ratio...
+   plutot que de dupliquer ces regles CSS, on mesure. */
+function freezeSnapMedia(live, copy) {
+  const swapIn = (target, replacement, box) => {
+    replacement.style.width  = `${box.width}px`;
+    replacement.style.height = `${box.height}px`;
+    target.replaceWith(replacement);
+  };
+
+  const paintFrom = (source, sw, sh) => {
+    if (!sw || !sh) return null;
+    try {
+      const canvas = el('canvas', { class: 'underlay__frame' });
+      canvas.width = sw; canvas.height = sh;
+      canvas.getContext('2d').drawImage(source, 0, 0, sw, sh);
+      return canvas;
+    } catch { return null; }        // navigateur recalcitrant : on retombe sur l'aplat
+  };
+
+  const videos = $$('video', copy);
+  $$('video', live).forEach((src, i) => {
+    const target = videos[i];
+    if (!target) return;
+    const box = src.getBoundingClientRect();
+    // readyState >= 2 (HAVE_CURRENT_DATA) : il y a une image a copier.
+    const frame = src.readyState >= 2 ? paintFrom(src, src.videoWidth, src.videoHeight) : null;
+    swapIn(target, frame || el('div', { class: 'underlay__blank' }), box);
+  });
+
+  const lotties = $$('dotlottie-wc', copy);
+  $$('dotlottie-wc', live).forEach((src, i) => {
+    const target = lotties[i];
+    if (!target) return;
+    const box = src.getBoundingClientRect();
+    // dotlottie-wc dessine dans un <canvas> a l'interieur de son shadow DOM.
+    // Il est "open", donc lisible — mais si la librairie externe n'a pas
+    // charge (CDN injoignable), il n'y a rien : d'ou le repli sur l'aplat.
+    const inner = src.shadowRoot && src.shadowRoot.querySelector('canvas');
+    const frame = inner ? paintFrom(inner, inner.width, inner.height) : null;
+    swapIn(target, frame || el('div', { class: 'underlay__blank' }), box);
+  });
+}
+
+/* Prend la photo. Appelee juste AVANT que paint() ne remplace le contenu —
+   a ce moment, #page montre encore la page qu'on quitte et window.scrollY
+   vaut encore sa position de defilement. */
+function captureUnderlay() {
+  const under = $('#underlay');
+  const live  = $('#page');
+  if (!under || !live) return;
+
+  const inner = el('div', { class: 'underlay__inner' });
+  const shot  = el('div', { class: 'underlay__shot' });
+
+  /* Le clone est un bloc a part, hors du flux de la page : il n'herite ni de
+     sa largeur ni de sa position. On lui rend les deux a la main.
+
+     La largeur est mesuree sur l'original — sinon le texte se recompose et la
+     photo ne correspond plus a ce qu'on voyait.
+
+     La position, elle, se lit directement sur l'original : ou #page est a
+     l'ecran en cet instant, c'est la que sa copie doit apparaitre. Une
+     version anterieure decalait de -scrollY, en supposant que #page commence
+     au sommet du document. Il n'y commence pas : l'en-tete du site est
+     sticky, donc il occupe bien une place dans le flux, et #page demarre
+     103px plus bas. La photo etait donc systematiquement 103px trop haute et
+     tout glissait a l'ouverture. Mesurer plutot que supposer. */
+  shot.style.width = `${live.offsetWidth}px`;
+  shot.style.transform = `translateY(${Math.round(live.getBoundingClientRect().top)}px)`;
+
+  const copy = snapClone(live);
+  freezeSnapMedia(live, copy);
+  shot.append(copy);
+  inner.append(shot);
+
+  /* Pas de copie de l'en-tete dans la photo : le vrai reste affiche, opaque
+     et exactement au meme endroit, pendant toute la duree de la fiche (voir
+     styles.css, section 11 bis). Une copie serait invisible sous lui. */
+
+  under.replaceChildren(inner);
+
+  state.snap    = true;
+  state.snapKey = routeKey(state.route);   // state.route est encore l'ancienne route
+  state.snapY   = window.scrollY;
+}
+
+/* LE CAS SANS PHOTO : on arrive directement sur l'URL d'une etude de cas
+   (lien partage, rechargement, favori). Il n'y a rien a photographier — la
+   page precedente n'a jamais existe dans cet onglet.
+
+   Plutot que de laisser un aplat sombre derriere la fiche, on FABRIQUE la
+   page d'accueil et on la floute. C'est exactement celle qu'on aurait eue en
+   naviguant normalement, et c'est celle vers laquelle la croix ramene : la
+   fermeture retombe donc sur une image qu'on avait deja sous les yeux.
+
+   pageHome() ne pose aucun ecouteur, ne demarre rien : c'est une fabrique de
+   DOM pur. Rien a nettoyer derriere elle. */
+function seedUnderlay() {
+  const under = $('#underlay');
+  const head  = $('#site-head');
+  if (!under) return;
+
+  const inner = el('div', { class: 'underlay__inner' });
+  const shot  = el('div', { class: 'underlay__shot' });
+  // clientWidth et non innerWidth : la barre de defilement ne fait pas
+  // partie de la largeur de mise en page.
+  shot.style.width = `${document.documentElement.clientWidth}px`;
+  // Cette page-la n'a jamais ete affichee : on la place ou elle SERAIT, en
+  // haut du site, c'est-a-dire sous l'en-tete (qui occupe le flux).
+  shot.style.transform = `translateY(${head ? head.offsetHeight : 0}px)`;
+
+  // Meme structure que la vraie page (#page > main), pour que les selecteurs
+  // de mise en page du CSS s'appliquent a l'identique.
+  const fake = el('div', { class: 'page' });
+  const body = el('main');
+  body.append(pageHome());
+  fake.append(body);
+
+  /* Les videos et les Lottie doivent disparaitre AVANT insertion. Une video
+     clonee resterait noire (personne ne la lancera), et un <dotlottie-wc>
+     se reveillerait des son entree dans le document : il telechargerait son
+     animation et la jouerait, invisible sous 16px de flou, pour rien. */
+  $$('video, dotlottie-wc', fake).forEach(n => n.replaceWith(el('div', { class: 'underlay__blank' })));
+  $$('[id]', fake).forEach(n => n.removeAttribute('id'));
+
+  shot.append(fake);
+  inner.append(shot);
+  under.replaceChildren(inner);
+
+  /* snapKey reste null : cette page reconstruite ne correspond a aucune
+     position de defilement reelle. La fermeture jouera donc son animation
+     (le calque est credible) mais retombera en haut de l'accueil plutot que
+     de restituer un defilement qui n'a jamais eu lieu. */
+  state.snap    = true;
+  state.snapKey = null;
+  state.snapY   = 0;
+}
+
+/* Jette la photo. On garde snapKey / snapY : afterSwap s'en sert juste apres
+   pour reposer la page a la hauteur exacte ou on l'avait laissee. */
+function clearUnderlay() {
+  const under = $('#underlay');
+  if (under) under.replaceChildren();
+  state.snap = false;
+}
+
+/* La croix de fermeture. Sa destination suit le projet ouvert : une etude de
+   cas "side quest" ramene a la section des side quests, pas au sommet de la
+   page d'accueil. C'est un vrai lien : le changement de hash passe par
+   render(), qui reconnait une fermeture et joue l'animation de sortie. */
+function setupOverlayClose(route) {
+  const close = $('#overlay-close');
+  if (!close) return;
+  const isCase = route.name === 'case';
+  close.hidden = !isCase;
+  if (isCase) close.href = `#/#${route.project.kind}`;
 }
 
 /* Fait defiler jusqu'a une section, en tenant compte de l'en-tete collant.
@@ -3296,9 +3686,28 @@ function readHeadHeight() {
 
 /* Souligne l'entree de menu correspondant a la page affichee. */
 function markActiveNav(route) {
+  /* FICHE OUVERTE : ON NE TOUCHE A RIEN.
+     L'en-tete reste affiche sous la fiche, a sa place, et il appartient a la
+     page laissee derriere — pas a l'etude de cas posee par-dessus. Ce qu'il
+     montrait au moment du clic doit donc rester tel quel : la section d'ou
+     l'on vient si c'etait l'accueil, "About" si c'etait la page About.
+
+     Sans ce retour anticipe, l'ouverture repeignait l'en-tete au type du
+     projet (work / side) : on quittait la section Work pour une side quest et
+     le surlignage sautait de l'une a l'autre, sur une barre censee etre
+     l'image figee de ce qu'on venait de quitter. Et a la fermeture il fallait
+     tout recalculer, ce qui se voyait.
+
+     A la fermeture, la fiche redescend, is-overlay tombe, et cette fonction
+     reprend la main normalement. */
+  if (route.name === 'case' && document.body.classList.contains('is-overlay')) return;
+
   const map = { home: 'home', case: route.project?.kind, about: 'about', gap: null };
   const current = map[route.name] ?? null;
-  $$('.site-nav a[data-nav]').forEach(a => {
+  // Scope au vrai en-tete : #underlay peut contenir un clone de la barre de
+  // navigation (voir captureUnderlay), et une recherche a l'echelle du
+  // document repeindrait aussi la copie figee.
+  $$('#site-head .site-nav a[data-nav]').forEach(a => {
     if (a.dataset.nav === current) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   });
@@ -3312,7 +3721,11 @@ function markActiveNav(route) {
    ferait doublon. */
 function setupBackLink(route) {
   const link = $('#back-link');
-  const hasOwnBackLink = route.name === 'case' && (route.project.sections || []).length > 0;
+  /* Depuis que les etudes de cas s'ouvrent en fiche, la croix en haut a
+     droite est la sortie de TOUTE etude de cas — y compris celles sans nav
+     laterale, qui affichaient jusqu'ici le bouton flottant. Deux sorties
+     pour une meme page, ce serait une de trop. */
+  const hasOwnBackLink = route.name === 'case';
   const deep = ['case', 'about', 'gap'].includes(route.name) && !hasOwnBackLink;
   link.hidden = !deep;
   if (!deep) return;
@@ -3513,8 +3926,58 @@ function setupCaseBehaviours() {
      La regle ci-dessous n'a pas ce defaut : on prend la derniere section dont
      le haut est deja passe sous l'en-tete. Il y a donc toujours exactement une
      section active, et la derniere s'allume forcement en fin de page. */
-  const setActive = (id) => links.forEach(a =>
-    a.classList.toggle('is-active', a.dataset.spy === id));
+  /* --- la nav suit la lecture, meme quand elle deborde ---
+     Sous 1000px, .cs-nav n'est plus une colonne mais une barre horizontale
+     defilante (voir styles.css, section 12) : sur un telephone, seules deux
+     ou trois etapes tiennent a l'ecran. Surligner "Takeaways" ne sert alors
+     a rien si l'etiquette est hors champ, a 200px sur la droite — la barre
+     semble bloquee sur "Overview" pendant toute la lecture.
+
+     On la fait donc glisser d'elle-meme jusqu'a l'etape en cours, dans les
+     deux sens : vers la droite en descendant, vers la gauche en remontant.
+
+     Trois precautions :
+       - on ne fait defiler QUE la liste, jamais la page. scrollIntoView()
+         ferait les deux : il remonterait le document pour amener l'element
+         a l'ecran, et le lecteur perdrait sa place au milieu d'un texte.
+       - on mesure avec getBoundingClientRect et on defile en RELATIF
+         (scrollBy). Les coordonnees absolues supposeraient que <li> se cale
+         sur <ol> ; il se cale en fait sur .cs-nav, qui est positionnee et
+         porte un padding. Un ecart relatif ne se trompe pas.
+       - rien ne bouge tant que l'etiquette est deja lisible, sinon la barre
+         tremblerait a chaque pixel de defilement. */
+  const list = $('.cs-nav ol');
+
+  const revealInStrip = (link) => {
+    // En colonne (bureau), la liste ne deborde pas : rien a faire.
+    if (!list || list.scrollWidth <= list.clientWidth) return;
+
+    const item = link.parentElement;            // le <li>
+    const itemRect = item.getBoundingClientRect();
+    const listRect = list.getBoundingClientRect();
+    const pad = 20;                             // un peu d'air, pour montrer qu'il y a une suite
+
+    let delta = 0;
+    if (itemRect.left - listRect.left < pad)   delta = (itemRect.left - listRect.left) - pad;
+    else if (listRect.right - itemRect.right < pad) delta = pad - (listRect.right - itemRect.right);
+    if (!delta) return;
+
+    // scrollBy borne tout seul aux extremites ; inutile de le faire ici.
+    list.scrollBy({ left: delta, behavior: prefersReducedMotion() ? 'instant' : 'smooth' });
+  };
+
+  /* On ne reagit qu'au CHANGEMENT d'etape. updateActive() tourne a chaque
+     evenement de defilement — replacer la barre a chaque fois se battrait
+     avec le doigt de quelqu'un en train de la faire glisser lui-meme. */
+  let shown = null;
+
+  const setActive = (id) => {
+    links.forEach(a => a.classList.toggle('is-active', a.dataset.spy === id));
+    if (id === shown) return;
+    shown = id;
+    const active = links.find(a => a.dataset.spy === id);
+    if (active) revealInStrip(active);
+  };
 
   const updateActive = () => {
     // La ligne de declenchement : juste sous l'en-tete collant, plus une
@@ -3591,6 +4054,121 @@ function setupCaseBehaviours() {
     a.addEventListener('click', onClick);
     addCleanup(() => a.removeEventListener('click', onClick));
   });
+}
+
+
+/* ---- 8 bis. Le scroll-spy de l'en-tete ---------------------------------
+   Le meme principe que la nav laterale d'une etude de cas, applique a la
+   pilule du haut : en descendant l'accueil, l'entree de la section qu'on
+   traverse s'allume — Work dans les projets, Side quests dans les side
+   quests.
+
+   MEME REGLE DE DECLENCHEMENT que .cs-nav, et pour la meme raison : on
+   retient la derniere section dont le haut est deja passe sous l'en-tete,
+   plutot que celle qui occupe le milieu de l'ecran. Une section qui
+   n'atteint jamais le milieu — la derniere d'une page, quand le document
+   cesse de defiler avant — ne s'allumerait sinon jamais.
+
+   UNE DIFFERENCE, VOULUE : ici il peut n'y avoir AUCUNE entree allumee.
+   Dans une etude de cas, chaque pixel de la page appartient a une etape du
+   sommaire, donc il y en a toujours exactement une d'active. L'accueil, lui,
+   commence par le heros, qui n'est represente dans la pilule par rien du
+   tout. Reprendre la regle "a defaut, la premiere" y allumerait Work pendant
+   qu'on lit encore la salutation. Au-dessus de la premiere section, personne
+   n'est allume — c'est la reponse juste.
+
+   aria-current="location" et non "page" : ce lien ne designe pas la page
+   affichee (on y est deja), mais un endroit A L'INTERIEUR d'elle. C'est
+   exactement la distinction que fait la specification, et les deux valeurs
+   allument le meme soulignement en CSS. La distinction compte aussi au
+   demontage : on ne retire QUE les "location", donc ce spy ne peut jamais
+   effacer par megarde le "page" pose par markActiveNav. */
+function setupHomeNavSpy() {
+  const links = $$('#site-head .site-nav a[data-spy]');
+  if (!links.length) return;
+
+  /* On ne garde que les liens dont la section existe reellement, et on les
+     range dans l'ordre du DOM des sections — c'est cet ordre-la que la
+     boucle plus bas suppose, et rien ne garantit qu'il soit celui du menu. */
+  const pairs = links
+    .map(link => ({ link, sec: document.getElementById(link.dataset.spy) }))
+    .filter(p => p.sec)
+    .sort((a, b) =>
+      (a.sec.compareDocumentPosition(b.sec) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
+  if (!pairs.length) return;
+
+  const clear = () => links.forEach(a => {
+    if (a.getAttribute('aria-current') === 'location') a.removeAttribute('aria-current');
+  });
+
+  // On ne touche au DOM que lorsque la section change, pas a chaque pixel.
+  let shown;
+  const setActive = (link) => {
+    if (link === shown) return;
+    shown = link;
+    clear();
+    if (link) link.setAttribute('aria-current', 'location');
+    state.navSpy = link ? link.dataset.spy : null;
+  };
+
+  /* On rallume d'abord ce qui etait allume la derniere fois qu'on a quitte
+     l'accueil, AVANT toute mesure. Au retour d'une etude de cas, l'en-tete
+     doit deja etre juste : c'est la meme page, a la meme hauteur, et rien ne
+     justifie qu'elle clignote. La mesure qui suit ne fera que confirmer. */
+  if (state.navSpy) {
+    const known = links.find(a => a.dataset.spy === state.navSpy);
+    if (known) { known.setAttribute('aria-current', 'location'); shown = known; }
+  }
+
+  const update = () => {
+    // La meme ligne de declenchement que .cs-nav : sous l'en-tete collant,
+    // plus une marge pour que la section s'allume quand son titre devient
+    // lisible. Elle est plus basse que le point d'arrivee des ancres
+    // (en-tete + 24px), donc cliquer "Work" allume bien Work.
+    const lineY = readHeadHeight() + 80;
+    let current = null;
+    for (const p of pairs) {
+      if (p.sec.getBoundingClientRect().top <= lineY) current = p.link;
+      else break;                        // les sections sont dans l'ordre du DOM
+    }
+    setActive(current);
+  };
+
+  /* PAS DE REGLE "EN BAS DE PAGE, C'EST LA DERNIERE SECTION", contrairement a
+     .cs-nav. Elle y sert a une derniere etape trop courte pour jamais franchir
+     la ligne — le document s'arrete de defiler avant. L'accueil n'a pas ce
+     probleme : Side quests commence a plus d'un ecran du bas, et passe donc la
+     ligne bien avant qu'on y arrive.
+
+     Gardee ici, elle causait un vrai bug. Elle se lit "hauteur de fenetre +
+     defilement >= hauteur du document", et cette egalite est vraie de tout
+     document plus court que sa taille definitive — ce qu'est l'accueil pendant
+     les quelques instants ou ses images n'ont pas encore de hauteur. On
+     revenait d'une etude de cas au milieu de Work, la page valait brievement
+     un ecran et demi, la regle concluait "on est en bas" et allumait Side
+     quests. L'erreur restait affichee jusqu'au defilement suivant.
+
+     L'observateur ci-dessous traite la meme cause a l'endroit ou elle est :
+     quand la hauteur du document change (une image arrive, une police se
+     substitue, on tourne le telephone), les sections ne sont plus la ou on les
+     avait mesurees. On remesure. */
+  const ro = new ResizeObserver(update);
+  ro.observe(document.body);
+
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  addCleanup(() => {
+    window.removeEventListener('scroll', update);
+    window.removeEventListener('resize', update);
+    ro.disconnect();
+    /* On ne nettoie PAS le surlignage ici. En quittant vers une page
+       ordinaire, markActiveNav s'en charge une milliseconde plus tard (il
+       retire aria-current de tous les liens qui ne correspondent pas). En
+       ouvrant une etude de cas, au contraire, il faut qu'il RESTE : l'en-tete
+       demeure visible sous la fiche, il appartient a la page qu'on a laissee
+       derriere, et cette page-la etait bien sur cette section. */
+  });
+  update();
 }
 
 
@@ -3767,9 +4345,25 @@ function start() {
   // Un clic sur un lien de navigation referme le menu mobile.
   $$('.site-nav a').forEach(a => a.addEventListener('click', closeMobileNav));
 
-  // Echap referme le menu mobile ouvert.
+  /* Echap referme le menu mobile ouvert — et, a defaut, la fiche d'etude de
+     cas. Dans cet ordre : quand les deux sont ouverts, la premiere pression
+     ferme le menu, la seconde la fiche. Un element qui se pose par-dessus le
+     reste doit toujours se refermer a la touche Echap ; c'est la sortie que
+     tout le monde essaie en premier. On ignore la frappe si elle vient d'un
+     champ de saisie (le portail du prenom a sa propre gestion). */
   document.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Escape') closeMobileNav();
+    if (ev.key !== 'Escape') return;
+
+    const nav = $('#site-nav');
+    if (nav.classList.contains('is-open')) { closeMobileNav(); return; }
+
+    const tag = (ev.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+
+    const close = $('#overlay-close');
+    if (document.body.classList.contains('is-overlay') && close && !close.hidden) {
+      location.hash = close.getAttribute('href');
+    }
   });
 
   /* --- Sequence d'ouverture --- */

@@ -149,7 +149,25 @@
    respiration et la meme voix que le reste du site, seulement sur un autre
    fond. Redeclarer ici les tailles serait le meilleur moyen de les voir
    diverger a la premiere modification.                                    */
-html[data-theme="light"] {
+/* Deux selecteurs pour le meme jeu de couleurs :
+     html[data-theme="light"]  — l'ancien fonctionnement, page entiere ;
+     .theme-light              — le meme theme applique a UN SEUL element.
+   Le second sert aux etudes de cas : depuis qu'elles s'ouvrent en fiche
+   par-dessus la page (voir section 11), <html> doit rester en bleu de marque
+   — c'est ce bleu qu'on apercoit sur les bords et sous la fiche — tandis que
+   la fiche elle-meme, et elle seule, passe en clair. Poser le theme sur
+   <html> comme avant repeindrait aussi le calque du dessous. */
+/* INDISPENSABLE quand .theme-light est portee par un element et non par
+   <html>. Redefinir --ink ne suffit pas : `color` s'HERITE, et <body> a
+   deja calcule la sienne avec les jetons de marque (blanc). Tout ce qui ne
+   redeclare pas sa couleur — le titre d'une etude de cas, les titres de la
+   section "projet suivant" — heriterait donc du blanc de <body> et
+   deviendrait invisible sur le fond blanc de la fiche. Cette ligne fait
+   repartir tout le sous-arbre de la bonne encre. */
+.theme-light { color: var(--ink); }
+
+html[data-theme="light"],
+.theme-light {
   --bg:          #FFFFFF;
   --ink:         #10233F;
   /* Ces deux gris sont mes valeurs, pas celles de la maquette : ils sont donc
@@ -417,10 +435,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
   gap: var(--s4);
   padding: var(--s5) var(--gutter);
   background: var(--bg);
-  transition: box-shadow .3s var(--ease);
+  /* Le filet est permanent : il marque la limite de l'en-tete des le premier
+     regard, avant tout defilement. Il etait auparavant porte par
+     .is-scrolled, donc absent en haut de page — la barre flottait alors sans
+     bord, et le trait apparaissait au premier pixel parcouru.
+     app.js continue de poser .is-scrolled (voir setupScrollProgress) : la classe
+     ne commande plus rien ici, mais elle reste l'etat "on a quitte le haut",
+     lisible depuis le CSS si besoin. */
+  box-shadow: 0 1px 0 var(--line-soft);
 }
-/* .is-scrolled est ajoutee par app.js des qu'on quitte le haut de page. */
-.site-head.is-scrolled { box-shadow: 0 1px 0 var(--line-soft); }
 
 .brand {
   justify-self: start;
@@ -461,8 +484,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
   transform: scaleX(0); transform-origin: left;
   transition: transform .25s var(--ease);
 }
-.site-nav a[aria-current="page"] { opacity: 1; }
-.site-nav a[aria-current="page"]::after { transform: scaleX(1); }
+/* [aria-current] sans valeur : le soulignement marque aussi bien la page
+   affichee ("page", pose par markActiveNav) que la section traversee sur
+   l'accueil ("location", pose par setupHomeNavSpy). Deux etats differents
+   pour un lecteur d'ecran, la meme marque a l'oeil. */
+.site-nav a[aria-current] { opacity: 1; }
+.site-nav a[aria-current]::after { transform: scaleX(1); }
 
 /* Bouton hamburger : masque par defaut, affiche en media query mobile. */
 .nav-toggle {
@@ -2559,6 +2586,343 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
 
 
 /* ==========================================================================
+   11 bis. L'OUVERTURE EN FICHE DES ETUDES DE CAS
+   --------------------------------------------------------------------------
+   COMMENT CA MARCHE, EN UNE PHRASE : le site reste une SPA a une seule page,
+   mais quand on ouvre une etude de cas, on garde une PHOTO de la page qu'on
+   quitte, on la floute derriere, et on fait monter le nouveau contenu
+   par-dessus. Rien n'est reellement "ouvert au-dessus" de quoi que ce soit.
+
+   LES TROIS PIECES
+     .underlay   calque fixe, plein ecran, DERRIERE tout (z-index 0). Il
+                 contient le clone fige de la page precedente. Vide et
+                 display:none le reste du temps.
+     #page       le contenu vivant (main + pied de page). En mode fiche il
+                 prend un fond blanc, des coins arrondis en haut et une
+                 ombre : c'est lui, la "fiche".
+     .overlay-close  la croix, en haut a droite, a l'interieur de la fiche.
+
+   POURQUOI LE DEFILEMENT RESTE CELUI DU DOCUMENT
+   Il aurait ete tentant de faire de la fiche un conteneur scrollable a part
+   (position:fixed + overflow:auto). Ca casse tout le reste du site : la
+   barre de progression, le scroll-spy de la nav laterale et son pourcentage
+   lisent window.scrollY. La fiche reste donc un bloc normal dans le flux ;
+   seule son APPARENCE change. Le calque du dessous, lui, est fixe : il ne
+   bouge pas pendant qu'on lit, exactement comme une vraie fenetre modale.
+   ========================================================================== */
+
+/* --head-h vaut 82px sur <html> (voir syncHeadHeight dans app.js). En mode
+   fiche l'en-tete du site est masque : on redefinit la variable ICI, sur
+   <body>, ou elle l'emporte pour tout ce qui est en dessous. La nav laterale
+   d'etude de cas vient donc se coller a 14px du haut — la meme valeur que le
+   retrait de la fiche, pour que le bord blanc arrondi reste visible. */
+body.is-overlay {
+  --head-h: 14px;
+
+  /* Deux elements fixes vivent HORS de la fiche et ne peuvent donc pas
+     heriter de son theme clair : la barre de progression en haut de l'ecran
+     et le lien d'evitement. Sur le bleu du site ils sont lime ; poses sur le
+     blanc de la fiche, ce meme lime tombe a 1,34:1 — illisible (voir le
+     commentaire de --accent tout en haut du fichier). On leur redonne ici
+     l'accent du theme clair, la meme valeur que celle du bloc .theme-light. */
+  --accent:     #2078F0;
+  --accent-ink: #FFFFFF;
+}
+
+/* L'EN-TETE NE DISPARAIT PAS : IL EST RECOUVERT.
+   Il appartient a la page qu'on laisse derriere ; la fiche passe par-dessus
+   lui comme par-dessus le reste (#page monte a z-index 125 contre ses 120).
+
+   Une version anterieure le masquait carrement (visibility:hidden) et en
+   glissait une copie dans le calque photographie. Ca se voyait : il
+   s'effaçait net a l'ouverture et revenait net a la fermeture — deux ruptures
+   au milieu d'un mouvement cense etre continu. Il reste donc EN PLACE, au
+   meme endroit, simplement cache derriere la fiche.
+
+   position:fixed, et c'est le seul deplacement qu'on lui impose. Il est
+   sticky et colle en haut de la fenetre des qu'on a defile : le fixer a
+   top:0 ne change donc rien a ce qu'on voit, mais le sort du flux. Sans ça
+   il reserverait sa hauteur au-dessus de la fiche, qui ne demarrerait plus a
+   14px du bord mais 100px plus bas — la fiche ne couvrirait plus l'ecran.
+
+   Il n'est ni assombri ni floute par lui-meme : le voile (.veil) passe
+   devant lui et s'en charge, comme il le fait pour la photo. C'est tout
+   l'interet de mettre le flou dans une couche a part — l'en-tete n'a rien de
+   particulier a faire pour en faire partie, il lui suffit d'etre dessous.
+
+   app.js le rend inerte pendant ce temps (attribut inert) : ce qui est
+   DERRIERE un calque ne se clique pas, ne prend pas le focus et n'est pas
+   annonce. Sans ça, la navigation mobile s'ouvrirait sous la fiche —
+   .site-head porte un z-index qui l'y enferme. pointer-events:none double la
+   mise pour les navigateurs sans inert. */
+body.is-overlay .site-head {
+  position: fixed; top: 0; left: 0; right: 0;
+  pointer-events: none;
+}
+
+/* Le lien retour flottant fait doublon avec la croix : on le masque partout
+   en mode fiche (app.js le neutralise aussi, ceinture et bretelles). */
+body.is-overlay .back-link { display: none; }
+
+/* ---- Le calque du dessous ---- */
+.underlay { display: none; }
+
+body.is-overlay .underlay {
+  display: block;
+  position: fixed; inset: 0; z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* Filet de securite : la photo remplit la fenetre, mais si elle manquait
+     (calque vide une fraction d'image), c'est ce bleu nuit qu'on verrait, et
+     non le bleu de marque du site — un fond de scene, pas une page. */
+  background: #06162B;
+}
+
+/* La photo elle-meme : plein cadre, NETTE et non assombrie. Ni le flou ni
+   l'assombrissement ne sont poses ici — ils appartiennent au voile, qui
+   passe devant elle ET devant l'en-tete du site (voir .veil plus bas).
+
+   Elle occupe TOUTE la fenetre, sans reduction ni coins arrondis. Une
+   version anterieure la reduisait facon "carte posee en arriere" : ça
+   decouvrait le fond sombre en bandes sur les cotes, ce qui ressemblait a
+   un bug plutot qu'a de la profondeur.
+
+   PAS DE MISE A L'ECHELLE NON PLUS, meme un leger agrandissement. Un scale
+   se fait depuis le centre : tout ce qui n'y est pas glisse, vers le haut
+   au-dessus, vers le bas en dessous. Quelques pixels seulement, mais la
+   page derriere est censee etre RESTEE OU ELLE ETAIT — c'est ce qui vend
+   l'idee qu'on pose quelque chose par-dessus elle. Le moindre glissement se
+   voit et trahit le truc. Il ne reste donc que le flou et l'assombrissement,
+   qui eux ne deplacent rien.
+
+   REVENIR EN ARRIERE : remettre `transform: scale(1.03)` ici et une ligne
+   transform dans veilIn / veilOut plus bas. */
+.underlay__inner {
+  position: absolute; inset: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* .underlay__shot est decale vers le haut de la position de defilement
+   qu'avait la page au moment de la photo, pour montrer exactement ce que la
+   personne regardait. */
+.underlay__shot {
+  position: absolute; top: 0; left: 0;
+}
+
+/* Les videos et les Lottie du clone ne rejouent pas (ni autoplay, ni JS) :
+   elles s'afficheraient noires. app.js les remplace par une image figee de
+   leur derniere frame (un <canvas>) ou, a defaut, par un aplat neutre.
+   Les deux reprennent la taille exacte mesuree sur l'original. */
+.underlay__frame { display: block; }
+/* 100% par defaut : c'est ce qu'il faut a la page d'accueil RECONSTRUITE
+   (seedUnderlay, quand on arrive directement sur l'URL d'une etude de cas),
+   ou rien n'a encore ete mis en page et ou il n'y a donc aucune taille a
+   mesurer. Quand on photographie une vraie page, freezeSnapMedia ecrase ces
+   deux valeurs par les dimensions relevees sur l'element d'origine. */
+.underlay__blank {
+  display: block; width: 100%; height: 100%;
+  background: rgba(255,255,255,.10); border-radius: var(--radius-sm);
+}
+
+/* ---- Le voile ----
+   La vitre depolie. Elle ne contient rien : elle floute et assombrit tout ce
+   qui est peint SOUS elle, c'est-a-dire la photo de l'accueil (z-index 0) et
+   l'en-tete du site (120), qui se retrouvent traites ensemble, comme la
+   seule et meme page qu'ils formaient avant l'ouverture.
+
+   z-index 124, soit juste sous la fiche (125). Tout ce qui monte plus haut
+   lui echappe et reste net, ce qui est voulu dans les trois cas : la barre
+   de progression (130), le portail du prenom (140) et la croix (150).
+
+   backdrop-filter et non filter. filter aurait floute le voile lui-meme —
+   qui est vide, donc rien. backdrop-filter agit sur l'ARRIERE-PLAN, et c'est
+   la seule facon d'atteindre d'un coup deux elements qui ne se touchent pas
+   dans le DOM. Autrement il faudrait flouter chacun de son cote, avec deux
+   animations a garder synchronisees et un raccord visible entre les deux.
+
+   rgba(6,22,43,.18) reproduit exactement l'assombrissement precedent, quand
+   la photo etait posee a 82 % d'opacite sur un fond #06162B : 18 % de ce
+   meme bleu nuit par-dessus, c'est le meme calcul, en une couche au lieu de
+   deux. */
+.veil { display: none; }
+
+body.is-overlay .veil {
+  display: block;
+  position: fixed; inset: 0; z-index: 124;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  background: rgba(6, 22, 43, .18);
+}
+
+/* ---- La fiche ---- */
+body.is-overlay #page {
+  /* z-index 125 : au-dessus de .site-head (120), qui reste affiche EN
+     DESSOUS, a sa place. La fiche le recouvre au lieu de le remplacer. La
+     croix (150), le portail du prenom (140) et la barre de progression (130)
+     restent eux au-dessus de la fiche. */
+  position: relative; z-index: 125;
+  margin-top: 14px;                       /* le liser de photo floutee visible en haut */
+  background: var(--bg);                  /* blanc : #page porte .theme-light */
+  border-radius: 22px 22px 0 0;
+  /* clip et NON hidden. Sans decoupage, un enfant qui va d'un bord a l'autre
+     et porte un fond peint par-dessus les coins arrondis et les efface : sous
+     1000px, .cs-nav devient exactement ça — une barre blanche pleine largeur
+     posee au sommet de la fiche. C'etait la raison pour laquelle l'arrondi
+     disparaissait sur tablette et mobile.
+     hidden ferait de la fiche un conteneur de defilement : .cs-nav, qui est
+     en position:sticky, se collerait alors a ELLE (qui ne defile pas) et ne
+     suivrait plus la fenetre. clip decoupe sans creer ce conteneur. */
+  overflow: clip;
+  box-shadow: 0 -2px 60px -12px rgba(0,0,0,.55);
+  /* Une etude de cas est toujours plus longue qu'un ecran, mais on garantit
+     que la fiche remplit au moins la fenetre : sinon le fond sombre du
+     calque apparaitrait sous le pied de page. */
+  min-height: calc(100vh - 14px);
+}
+
+/* ---- La croix ----
+   position:fixed : elle reste accessible apres 4000px de defilement. */
+.overlay-close { display: none; }
+
+body.is-overlay .overlay-close {
+  display: flex; align-items: center; justify-content: center;
+  /* z-index 150 contre 125 pour #page : la croix est soeur de la fiche, donc
+     elle passe au-dessus de TOUT son contenu d'un coup, .cs-nav comprise
+     (qui monte a 100 quand elle devient une barre collee en haut sous
+     1000px, mais reste enfermee dans le contexte d'empilement de #page). */
+  position: fixed; z-index: 150;
+  top: 26px; right: clamp(16px, 2.4vw, 30px);
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  color: var(--ink);
+  background: rgba(255,255,255,.72);
+  border: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: 0 2px 12px -4px rgba(16,35,63,.28);
+  /* Le fondu d'apparition est une ANIMATION, pas une transition — voir le
+     bloc .is-opening / .is-closing plus bas, qui explique pourquoi.
+     La transition ne garde que le survol, qui ne joue que sur un element
+     deja visible et stable. */
+  animation: crossIn .3s var(--ease) both;
+  transition: background .2s var(--ease), transform .2s var(--ease);
+}
+body.is-overlay .overlay-close[hidden] { display: none; }
+
+/* Le portail du prenom est un vrai dialogue modal (aria-modal="true"), et il
+   s'ouvre par-dessus la fiche quand on arrive directement sur l'URL d'une
+   etude de cas. Rien ne doit flotter au-dessus de lui : la croix, a
+   z-index 150 contre 140 pour le portail, y passait — un bouton de sortie
+   par-dessus une question a laquelle on n'a pas encore repondu.
+   is-locked est posee sur <body> pendant toute la duree du portail. */
+body.is-locked .overlay-close { display: none; }
+
+/* La croix ne participe pas au mouvement : elle apparait une fois la fiche
+   posee, et s'efface des que la fermeture commence. Elle est fixee a la
+   fenetre, pas a la fiche — la laisser visible pendant la montee la ferait
+   flotter, immobile, au-dessus d'un ecran encore vide.
+
+   POURQUOI UNE ANIMATION ET NON UNE TRANSITION.
+   Entre deux etudes de cas, la croix repasse par display:none (attribut
+   hidden, pose par setupOverlayClose). Or une transition n'a rien a
+   interpoler quand un element sort de display:none : il n'existe pas d'etat
+   "avant" a partir duquel partir, donc rien ne s'anime et la croix
+   apparaitrait d'un coup. Une animation nommee, elle, demarre normalement
+   des qu'un element est rendu ; et passer de `animation: none` (etat masque)
+   a `animation: crossIn` en relance une neuve a chaque ouverture. */
+@keyframes crossIn { from { opacity: 0; } to { opacity: 1; } }
+
+body.is-overlay.is-opening .overlay-close,
+body.is-overlay.is-closing .overlay-close { animation: none; opacity: 0; }
+body.is-overlay .overlay-close svg { width: 20px; height: 20px; }
+body.is-overlay .overlay-close:hover { background: #FFFFFF; transform: scale(1.06); }
+
+/* Un peu d'air sous la croix : le titre de l'etude de cas commence plus bas
+   pour ne pas passer dessous sur les ecrans etroits. */
+body.is-overlay .cs__head { padding-top: var(--s7); }
+body.is-overlay .cs:has(.cs-nav) .cs__head { padding-top: var(--s7); }
+
+/* ---- Les animations ----
+   Deux mouvements simultanes, c'est tout l'effet : la fiche monte depuis le
+   bas de l'ecran, la photo recule et se floute. translateY(100vh) et non
+   100% : #page mesure plusieurs milliers de pixels, un pourcentage le
+   projetterait tres loin hors de l'ecran et l'arrivee paraitrait instantanee.
+
+   La courbe (.16, 1, .3, 1) demarre franchement et se pose tres doucement.
+   C'est ce freinage long qui donne la sensation de poids. */
+@keyframes sheetIn  { from { transform: translateY(100vh); } to { transform: translateY(0); } }
+
+/* LA SORTIE N'EST PAS LA MONTEE A L'ENVERS, et ce n'est pas un choix de
+   style — c'est une contrainte de geometrie.
+
+   A l'ouverture, on part toujours du haut de la fiche : la descendre d'une
+   hauteur d'ecran suffit a la sortir du champ. A la fermeture, non : on peut
+   etre a 2000px dans une etude de cas. Le haut de la fiche est alors bien
+   au-dessus de la fenetre, et il faudrait la faire descendre de 2700px pour
+   liberer l'ecran. translateY(100vh) n'en deplaçait que 695 : l'animation se
+   terminait avec l'etude de cas encore en place, puis le contenu etait
+   remplace d'un coup. C'etait ça, le saut.
+
+   Une distance calculee en JS reglerait le probleme mais ferait filer la
+   fiche a plusieurs milliers de pixels par seconde. On combine donc un
+   glissement court — assez pour lire "la fiche s'en va" — et un fondu qui,
+   lui, aboutit quel que soit le defilement. La page floutee en dessous se
+   denoue en meme temps : c'est elle qui reste. */
+@keyframes sheetOut {
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(22vh); opacity: 0; }
+}
+
+/* Le voile se depolit. Une seule animation la ou il y en avait deux (le flou
+   sur la photo, l'assombrissement sur le cadre, plus une troisieme sur
+   l'en-tete) : elles portaient sur des elements differents et devaient etre
+   tenues ensemble a la main.
+
+   Le rayon est anime, pas l'opacite du voile. Un voile qu'on fait apparaitre
+   en fondu montre un flou deja complet a travers un calque translucide : le
+   decor est net puis brouille, avec un fondu enchaine entre les deux. En
+   animant le rayon, il se brouille VRAIMENT, progressivement. C'est le
+   mouvement d'une mise au point qu'on perd, et c'est ce qu'on veut ici.
+
+   Les deux ecritures de backdrop-filter sont reprises dans les keyframes :
+   sans la prefixee, Safari lit bien la valeur au repos mais n'a rien a
+   interpoler pendant l'animation. */
+@keyframes veilIn {
+  from { -webkit-backdrop-filter: blur(0px);  backdrop-filter: blur(0px);
+         background-color: rgba(6, 22, 43, 0); }
+  to   { -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+         background-color: rgba(6, 22, 43, .18); }
+}
+@keyframes veilOut {
+  from { -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+         background-color: rgba(6, 22, 43, .18); }
+  to   { -webkit-backdrop-filter: blur(0px);  backdrop-filter: blur(0px);
+         background-color: rgba(6, 22, 43, 0); }
+}
+
+/* .is-opening (ouverture) et .is-closing (fermeture) sont posees puis
+   retirees par app.js.
+
+   PAS de will-change ici, contrairement au reflexe habituel. Une etude de
+   cas mesure plus de 6000px de haut : demander au navigateur de promouvoir
+   #page sur sa propre couche graphique revient a lui faire allouer une
+   texture de cette taille, pour 600ms d'animation. Un transform anime
+   declenche deja la promotion, et le navigateur, lui, sait la limiter a ce
+   qui est visible. */
+body.is-overlay.is-opening #page { animation: sheetIn .62s cubic-bezier(.16, 1, .3, 1) both; }
+body.is-overlay.is-closing #page { animation: sheetOut .38s cubic-bezier(.3, 0, .3, 1) both; }
+
+body.is-overlay.is-opening .veil { animation: veilIn  .62s cubic-bezier(.16, 1, .3, 1) both; }
+body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .3, 1) both; }
+
+/* Le fondu de page habituel (pageIn) est neutralise pour l'ouverture et la
+   fermeture — mais cote JS, en ne posant pas la classe .is-entering (voir
+   swap() dans app.js). L'eteindre ici avec `animation: none` paraissait plus
+   simple et etait un piege : la regle cesse de s'appliquer avec la classe
+   .is-opening, et l'animation repart alors de son premier keyframe. */
+
+
+/* ==========================================================================
    12. RESPONSIVE
    --------------------------------------------------------------------------
    La plupart des reglages s'adaptent seuls grace a clamp() et auto-fit. Il ne
@@ -2604,6 +2968,18 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
   }
   .cs-nav a.is-active { border-left: 0; border-bottom-color: var(--accent); }
   .cs-nav__pct { display: none; }
+
+  /* Sous 1000px, .cs-nav devient une barre pleine largeur qui vient se
+     coller en haut. En mode fiche elle se collait a --head-h (14px, le
+     retrait de la fiche) : une fois defilee, il restait une bande vide de
+     14px au-dessus d'elle — la fiche etait deja passee, la barre pas encore
+     arrivee. Elle se colle donc a 0 sur petit ecran. Le retrait de 14px de
+     la fiche reste visible en haut de page, la ou il a un sens.
+
+     Aucune reserve a droite pour la croix : la barre va jusqu'au bord, et
+     la croix passe PAR-DESSUS (z-index 140 contre 100, fond translucide et
+     flou). La liste defile horizontalement, donc rien n'est inatteignable. */
+  body.is-overlay { --head-h: 0px; }
 }
 
 /* --- Sous 860px : la pilule ne tient plus, on replie la navigation ----- */
@@ -2635,7 +3011,7 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
   .site-nav.is-open { transform: translateY(0); visibility: visible; }
   .site-nav a { padding-block: var(--s4); border-bottom: 1px solid var(--line-soft); font-size: 1.05rem; opacity: 1; }
   .site-nav a::after { display: none; }
-  .site-nav a[aria-current="page"] { color: var(--accent); }
+  .site-nav a[aria-current] { color: var(--accent); }
 
   .pair { grid-template-columns: 1fr; }
   .foot__grid { grid-template-columns: 1fr 1fr; }
@@ -2692,8 +3068,11 @@ main.is-entering { animation: pageIn .38s var(--ease) both; }
    sur blanc, sans quoi la page consommerait une cartouche entiere. */
 @media print {
   .site-head, .site-nav, .back-link, .progress, .cs-nav,
-  .loader, .gate, .cs__cta, .cs-next, .skip-link { display: none !important; }
+  .loader, .gate, .cs__cta, .cs-next, .skip-link,
+  .underlay, .veil, .overlay-close { display: none !important; }
   html, body { background: #fff !important; color: #000 !important; font-size: 11pt; }
+  /* La fiche redevient une page ordinaire sur le papier. */
+  #page { margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
   .cs-sec p, .editorial__block p, .stat__l, .cs__tagline { color: #000 !important; }
   .stat__n { color: #000 !important; }
   .tag { border: 1px solid #000; color: #000 !important; background: none !important; }

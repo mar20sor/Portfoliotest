@@ -121,6 +121,23 @@
   <a class="skip-link" href="#main" data-i18n="skipToContent">Skip to main content</a>
 
   <!--
+    ================ 0. LE CALQUE DU DESSOUS (etudes de cas) ================
+    Vide 99 % du temps. Quand on ouvre une etude de cas, app.js y depose une
+    PHOTO de la page qu'on vient de quitter (un simple clone du DOM, fige au
+    scroll ou il etait) : c'est elle qu'on voit floutee et reduite derriere
+    la fiche qui monte. Rien n'est vraiment "ouvert par-dessus" — la page
+    d'accueil n'existe plus a ce moment-la, seule sa photo reste. C'est ce
+    que veut dire "faux calque" : l'illusion coute un clone et un flou, pas
+    une seconde application vivante en arriere-plan.
+    aria-hidden + inert : purement decoratif. aria-hidden le retire des
+    lecteurs d'ecran, mais aria-hidden SEUL laisserait ses liens clones
+    atteignables a la touche Tab — le pire des deux mondes : un focus
+    invisible, sur une copie morte. inert coupe le clic, le focus et la
+    selection d'un seul attribut.
+  -->
+  <div id="underlay" class="underlay" aria-hidden="true" inert></div>
+
+  <!--
     ===================== 1. LE LOADER =====================
     Affiche pendant que les images se preparent. Il est dans le HTML (et non
     cree en JS) pour etre visible immediatement, avant meme que JavaScript
@@ -192,7 +209,13 @@
     grille d'origine sont retombees a deux, le nom et la nav.
   -->
   <header class="site-head" id="site-head">
-    <a class="brand" href="#/" aria-label="Marvin Sorhaindo, home">Marvin S.</a>
+    <!-- Le nom est le lien d'accueil depuis que "Home" a quitte la pilule.
+         Il vise l'ancre #hello (le "Hey ..." en haut de la page d'accueil,
+         id sec-hello, pose par renderHello) et non "#/" tout court : depuis
+         l'accueil, "#/" ne changerait rien a l'URL et le clic serait sans
+         effet visible. Avec l'ancre, il ramene toujours a la salutation,
+         qu'on vienne d'une autre page ou du bas de celle-ci. -->
+    <a class="brand" href="#/#hello" aria-label="Marvin Sorhaindo, home">Marvin S.</a>
 
     <!-- Bouton hamburger, visible seulement sous 860px (voir media query CSS) -->
     <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="site-nav">
@@ -200,10 +223,23 @@
       <span class="sr-only" data-i18n="navMenu">Menu</span>
     </button>
 
+    <!--
+      "Home" ne figure plus ici : c'est le nom, a gauche, qui ramene a
+      l'accueil — un lien vers soi-meme dans un menu de cinq entrees etait
+      une place prise pour rien. Il vise desormais #hello, le "Hey ..." du
+      haut de page, plutot que le simple haut du document.
+      Consequence assumee : sur l'accueil, plus aucune entree du menu ne
+      porte aria-current (markActiveNav cherche un lien data-nav="home", qui
+      n'existe plus). Les autres pages gardent la leur.
+    -->
     <nav class="site-nav" id="site-nav" aria-label="Main navigation">
-      <a href="#/"      data-nav="home" data-i18n="navHome">Home</a>
-      <a href="#/#work" data-nav="work"  data-i18n="navWork">Work</a>
-      <a href="#/#side" data-nav="side"  data-i18n="navSide">Side quests</a>
+      <!-- data-spy : la section d'accueil que ce lien surveille. C'est la
+           meme convention que la nav laterale d'une etude de cas, et c'est
+           setupHomeNavSpy (app.js) qui s'en sert pour allumer le lien quand
+           on entre dans la section. Les deux autres entrees n'en ont pas :
+           About est une page, Contact un mailto. -->
+      <a href="#/#work" data-nav="work" data-spy="sec-work" data-i18n="navWork">Work</a>
+      <a href="#/#side" data-nav="side" data-spy="sec-side" data-i18n="navSide">Side quests</a>
       <a href="#/about" data-nav="about" data-i18n="navAbout">About</a>
       <a id="nav-contact" href="mailto:" data-i18n="navContact">Contact</a>
     </nav>
@@ -226,13 +262,70 @@
     page, pour que les lecteurs d'ecran annoncent la nouvelle page.
     aria-live="polite" : les changements sont annonces sans interrompre.
   -->
-  <main id="main" tabindex="-1"></main>
-
   <!--
-    ===================== 7. PIED DE PAGE =====================
-    Rempli par app.js pour rester traduisible sans dupliquer le balisage.
+    #page enveloppe le contenu ET le pied de page. C'est LA FICHE : le bloc
+    qui monte, prend un fond blanc et des coins arrondis quand une etude de
+    cas s'ouvre (voir body.is-overlay dans styles.css). Envelopper les deux
+    est indispensable — sans ca, le pied de page resterait en dehors du
+    panneau, sur le bleu du site, et la fiche s'arreterait au milieu de rien.
   -->
-  <footer class="site-foot" id="site-foot"></footer>
+  <!--
+    La croix de fermeture. Elle est SOEUR de #page, pas son enfant : la fiche
+    se decoupe a ses coins arrondis (overflow: clip, voir styles.css), et une
+    croix a l'interieur risquerait d'etre rognee avec le reste. Dehors, elle
+    flotte au-dessus de tout sans dependre du decoupage ni du contexte
+    d'empilement de la fiche.
+    theme-light est indispensable justement PARCE QU'elle est dehors : les
+    couleurs s'heritent, et hors de la fiche cette croix reprenait les
+    jetons de marque — soit une croix blanche et un liser blanc sur le
+    disque blanc translucide. Invisible. La classe lui redonne l'encre
+    foncee du theme clair, le seul fond sur lequel elle apparaisse jamais.
+    C'est un <a> et non un <button> : fermer, ici, c'est simplement naviguer
+    vers la liste des projets. Le lien fonctionne donc au clic du milieu, au
+    copier-lien, et l'historique du navigateur reste juste. app.js ajuste sa
+    destination selon le projet ouvert (work / side).
+  -->
+  <!--
+    ===================== LE VOILE =====================
+    Le flou n'appartient a rien : c'est une vitre depolie posee EN TRAVERS de
+    l'ecran, et tout ce qui se trouve derriere elle est floute — la photo de
+    la page d'accueil comme l'en-tete du site, qui est un element bien reel
+    et reste a sa place pendant toute la duree de la fiche.
+
+    D'ou l'empilement, de bas en haut : accueil et navigation, puis ce voile
+    qui les brouille ensemble, puis la fiche par-dessus. Il est donc place
+    ICI, apres l'en-tete et avant la fiche — l'ordre du document suit
+    l'ordre des couches (z-index 124, entre les 120 de .site-head et les 125
+    de #page).
+
+    Une version anterieure floutait la photo elle-meme (filter sur le clone)
+    et laissait la navigation nette par-dessus : il fallait alors
+    l'assombrir a part pour qu'elle ne tranche pas, et elle restait lisible
+    quand tout le reste ne l'etait plus.
+
+    Vide et aria-hidden : c'est un effet, il n'y a rien a lire ni a
+    atteindre dedans. pointer-events:none en CSS pour le reste.
+  -->
+  <div id="veil" class="veil" aria-hidden="true"></div>
+
+  <a class="overlay-close theme-light" id="overlay-close" href="#/#work" hidden aria-label="Close">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor"
+            stroke-width="1.7" stroke-linecap="round"/>
+    </svg>
+  </a>
+
+  <div id="page" class="page">
+
+    <main id="main" tabindex="-1"></main>
+
+    <!--
+      ===================== 7. PIED DE PAGE =====================
+      Rempli par app.js pour rester traduisible sans dupliquer le balisage.
+    -->
+    <footer class="site-foot" id="site-foot"></footer>
+
+  </div>
 
   <!--
     type="module" fait trois choses utiles :
