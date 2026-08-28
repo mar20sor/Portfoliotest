@@ -307,10 +307,7 @@ function escapeAttr(s) {
    comme du texte brut. */
 function renderHello() {
   const d = t();
-  /* sec-hello : la cible du nom dans l'en-tete (href="#/#hello"). Le prefixe
-     "sec-" est la convention de scrollToSection, qui cherche toujours
-     `sec-${id}` — meme mecanisme que #work et #side. */
-  const wrap = el('p', { class: 'hero__hello', id: 'sec-hello' });
+  const wrap = el('p', { class: 'hero__hello' });
   if (state.visitor) {
     wrap.append(document.createTextNode(d.helloBefore + ' '));
     const strong = el('b');
@@ -436,8 +433,19 @@ function pageHome() {
   const d = t(), h = HERO;
   const page = el('div');
 
-  /* --- Le heros --- */
-  const hero = el('section', { class: 'hero' });
+  /* --- Le heros ---
+     sec-hello est pose ICI, sur la section, et non sur le paragraphe "Hey ..."
+     qu'il designait d'abord. C'est la cible du nom dans l'en-tete, et le nom
+     doit ramener TOUT EN HAUT de l'accueil.
+
+     scrollToSection vise "le haut de l'element moins l'en-tete moins 24px",
+     ce qui est juste pour une section au milieu d'une page et faux pour la
+     premiere : le paragraphe commence 70px sous le heros, on atterrissait
+     donc a 46px du sommet, assez pour qu'on voie que quelque chose manque en
+     haut. Le heros, lui, commence exactement sous l'en-tete : le meme calcul
+     donne -24, que le Math.max(0, ...) de scrollToSection ramene a 0. Le
+     sommet, sans cas particulier a ecrire. */
+  const hero = el('section', { class: 'hero', id: 'sec-hello' });
   const wrap = el('div', { class: 'wrap' });
   const text = el('div', { class: 'hero__text' });
 
@@ -4333,6 +4341,46 @@ function start() {
     }
     lastRoute = key;
     render();
+  });
+
+  /* UN LIEN QUI POINTE LA OU L'ON EST DEJA NE FAIT RIEN, et c'est le
+     navigateur qui en decide : hashchange ne se declenche que si le hash
+     CHANGE. Or toute la navigation du site passe par cet evenement.
+
+     Concretement : on est sur #/#hello, on descend l'accueil, on clique
+     "Marvin S." — dont le href est justement #/#hello. Le hash est deja
+     celui-la, aucun evenement, rien ne bouge. Le lien parait casse, et il
+     l'est. Meme chose pour "Work" quand on vient de la section Work, ou
+     "Side quests" depuis les side quests.
+
+     On intercepte donc le seul cas que le navigateur laisse tomber : le href
+     est EXACTEMENT le hash courant. On refait alors le defilement nous-memes.
+     Tous les autres liens gardent leur comportement normal — le hash change,
+     hashchange se declenche, la logique habituelle s'applique.
+
+     Delegue sur l'en-tete plutot que pose lien par lien : #site-head n'est
+     jamais remplace par le routeur, l'ecouteur survit donc a toutes les
+     navigations et n'a pas besoin d'etre nettoye. */
+  $('#site-head').addEventListener('click', (ev) => {
+    /* On laisse passer tout clic qui n'est pas un simple clic gauche.
+       Ctrl/Cmd + clic ouvre un onglet, Maj + clic une fenetre : ces clics
+       emettent le meme evenement 'click', et un preventDefault les tuerait
+       tous les trois. Un lien doit rester un lien. (Le clic du milieu, lui,
+       emet 'auxclick' et ne passe deja pas par ici.) */
+    if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+
+    const link = ev.target.closest('a[href]');
+    if (!link || link.getAttribute('href') !== location.hash) return;
+
+    ev.preventDefault();
+    /* 'instant' et non 'auto' pour le mouvement reduit : 'auto' veut dire
+       "suis scroll-behavior", qui vaut smooth sur <html> — donc exactement
+       l'animation qu'on cherchait a eviter. (Les deux autres appels de ce
+       fichier ecrivent encore 'auto' ; ils ont le meme defaut.) */
+    const behavior = prefersReducedMotion() ? 'instant' : 'smooth';
+    const anchor = location.hash.split('#')[2];
+    if (anchor) scrollToSection(anchor, behavior);
+    else window.scrollTo({ top: 0, behavior });
   });
 
   // Menu mobile.
