@@ -9,6 +9,17 @@ desktop.ini
 *.swp
 *~
 
+# Documentation de travail, locale et jamais poussee. Elle a disparu du
+# disque une fois : elle etait suivie sur main, un commit l'a "detrackee"
+# (7d3b257), et git supprime un fichier suivi dans la branche qu'on quitte
+# et absent de celle ou l'on va. Ignoree, elle ne peut plus etre suivie
+# nulle part, donc plus rien ne peut l'effacer — et la manoeuvre push-temp
+# decrite dans CLAUDE.md n'a plus lieu d'etre pour ces deux fichiers.
+# Contrepartie : ils ne sont plus versionnes. Leur derniere version suivie
+# reste lisible avec `git show 7d3b257^:CLAUDE.md`.
+CLAUDE.md
+CONVERSATION.md
+
 # Rien d'autre a ignorer : le site n'a ni dependances, ni etape de build,
 # ni dossier genere. Les PDF sources et les images sont volontairement
 # versionnes — ce sont les originaux des etudes de cas.
