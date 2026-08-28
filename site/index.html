@@ -250,23 +250,25 @@
     est indispensable — sans ca, le pied de page resterait en dehors du
     panneau, sur le bleu du site, et la fiche s'arreterait au milieu de rien.
   -->
-  <div id="page" class="page">
+  <!--
+    La croix de fermeture. Elle est SOEUR de #page, pas son enfant : la fiche
+    se decoupe a ses coins arrondis (overflow: clip, voir styles.css), et une
+    croix a l'interieur risquerait d'etre rognee avec le reste. Dehors, elle
+    flotte au-dessus de tout sans dependre du decoupage ni du contexte
+    d'empilement de la fiche.
+    C'est un <a> et non un <button> : fermer, ici, c'est simplement naviguer
+    vers la liste des projets. Le lien fonctionne donc au clic du milieu, au
+    copier-lien, et l'historique du navigateur reste juste. app.js ajuste sa
+    destination selon le projet ouvert (work / side).
+  -->
+  <a class="overlay-close" id="overlay-close" href="#/#work" hidden aria-label="Close">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor"
+            stroke-width="1.7" stroke-linecap="round"/>
+    </svg>
+  </a>
 
-    <!--
-      La croix de fermeture. Elle vit DANS #page pour deux raisons :
-      elle monte avec la fiche pendant l'animation d'ouverture, et elle se
-      retrouve au-dessus du contenu de la fiche sans bagarre de z-index.
-      C'est un <a> et non un <button> : fermer, ici, c'est simplement
-      naviguer vers la liste des projets. Le lien fonctionne donc au clic
-      du milieu, au copier-lien, et l'historique du navigateur reste juste.
-      app.js ajuste sa destination selon le projet ouvert (work / side).
-    -->
-    <a class="overlay-close" id="overlay-close" href="#/#work" hidden aria-label="Close">
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor"
-              stroke-width="1.7" stroke-linecap="round"/>
-      </svg>
-    </a>
+  <div id="page" class="page">
 
     <main id="main" tabindex="-1"></main>
 

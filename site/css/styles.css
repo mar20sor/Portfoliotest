@@ -2650,23 +2650,26 @@ body.is-overlay .underlay {
   background: #06162B;
 }
 
-/* La photo elle-meme : reduite, arrondie, legerement assombrie. C'est l'etat
-   AU REPOS (fiche ouverte) ; les animations plus bas ne font que partir de
-   l'etat "page normale" pour arriver ici, et l'inverse a la fermeture. */
+/* La photo elle-meme : plein cadre, legerement assombrie. C'est l'etat AU
+   REPOS (fiche ouverte) ; les animations plus bas ne font que partir de
+   l'etat "page normale" pour arriver ici, et l'inverse a la fermeture.
+
+   Elle occupe TOUTE la fenetre, sans reduction ni coins arrondis. Une
+   version anterieure la reduisait facon "carte posee en arriere" : ça
+   decouvrait le fond sombre en bandes sur les cotes, ce qui ressemblait a
+   un bug plutot qu'a de la profondeur.
+
+   Le leger agrandissement (1.03) remplace cette reduction. Il donne le meme
+   mouvement, dans l'autre sens, et il a un second role : le flou est
+   applique au contenu, et un flou s'estompe en transparence sur les bords
+   de son propre element. En agrandissant le cadre, cette frange floue sort
+   du champ visible au lieu de laisser un liser delave. */
 .underlay__inner {
   position: absolute; inset: 0;
   overflow: hidden;
-  border-radius: 22px;
   background: var(--bg);
-  /* L'origine est en HAUT, pas au centre. Avec une reduction centree, la
-     photo se retracte aussi par le haut : la bande visible au-dessus de la
-     fiche ne montrait alors que le fond sombre, jamais la page floutee —
-     tout l'effet passait a la trappe. Ancree en haut, cette bande est
-     toujours de la page floutee, et le recul se lit quand meme sur les
-     cotes et par le bas. */
-  transform-origin: 50% 0;
-  transform: scale(.955);
-  opacity: .85;
+  transform: scale(1.03);
+  opacity: .82;
 }
 
 /* Le flou est porte par le contenu, pas par le cadre : floutter le cadre
@@ -2704,6 +2707,15 @@ body.is-overlay #page {
   margin-top: 14px;                       /* le liser de photo floutee visible en haut */
   background: var(--bg);                  /* blanc : #page porte .theme-light */
   border-radius: 22px 22px 0 0;
+  /* clip et NON hidden. Sans decoupage, un enfant qui va d'un bord a l'autre
+     et porte un fond peint par-dessus les coins arrondis et les efface : sous
+     1000px, .cs-nav devient exactement ça — une barre blanche pleine largeur
+     posee au sommet de la fiche. C'etait la raison pour laquelle l'arrondi
+     disparaissait sur tablette et mobile.
+     hidden ferait de la fiche un conteneur de defilement : .cs-nav, qui est
+     en position:sticky, se collerait alors a ELLE (qui ne defile pas) et ne
+     suivrait plus la fenetre. clip decoupe sans creer ce conteneur. */
+  overflow: clip;
   box-shadow: 0 -2px 60px -12px rgba(0,0,0,.55);
   /* Une etude de cas est toujours plus longue qu'un ecran, mais on garantit
      que la fiche remplit au moins la fenetre : sinon le fond sombre du
@@ -2712,18 +2724,16 @@ body.is-overlay #page {
 }
 
 /* ---- La croix ----
-   position:fixed : elle reste accessible apres 4000px de defilement. Elle est
-   dans #page, donc pendant l'animation d'ouverture (qui applique un transform
-   a #page) elle monte AVEC la fiche au lieu de l'attendre en haut de l'ecran. */
+   position:fixed : elle reste accessible apres 4000px de defilement. */
 .overlay-close { display: none; }
 
 body.is-overlay .overlay-close {
   display: flex; align-items: center; justify-content: center;
-  /* z-index 140 : au-dessus de .cs-nav, qui monte a 100 quand elle devient
-     une barre horizontale collee en haut sous 1000px. Les deux vivent dans
-     #page, donc dans le meme contexte d'empilement — sans ca, la croix
-     passerait derriere la barre sur mobile. */
-  position: fixed; z-index: 140;
+  /* z-index 150 contre 1 pour #page : la croix est soeur de la fiche, donc
+     elle passe au-dessus de TOUT son contenu d'un coup, .cs-nav comprise
+     (qui monte a 100 quand elle devient une barre collee en haut sous
+     1000px, mais reste enfermee dans le contexte d'empilement de #page). */
+  position: fixed; z-index: 150;
   top: 26px; right: clamp(16px, 2.4vw, 30px);
   width: 42px; height: 42px;
   border-radius: 50%;
@@ -2737,14 +2747,9 @@ body.is-overlay .overlay-close {
 body.is-overlay .overlay-close[hidden] { display: none; }
 
 /* La croix ne participe pas au mouvement : elle apparait une fois la fiche
-   posee, et s'efface des que la fermeture commence.
-   Ce n'est pas qu'une question de gout. Elle est en position:fixed a
-   l'interieur de #page ; or un element transforme (l'animation de la fiche)
-   devient le referentiel de ses descendants fixes. Pendant la montee, la
-   croix se cale donc sur le haut de la FICHE, et retrouve le haut de la
-   FENETRE a la seconde ou le transform disparait — un saut de 14px, juste
-   assez visible pour faire tache. Invisible pendant le mouvement, le
-   probleme n'existe plus. */
+   posee, et s'efface des que la fermeture commence. Elle est fixee a la
+   fenetre, pas a la fiche — la laisser visible pendant la montee la ferait
+   flotter, immobile, au-dessus d'un ecran encore vide. */
 body.is-overlay.is-opening .overlay-close,
 body.is-overlay.is-closing .overlay-close { opacity: 0; }
 body.is-overlay .overlay-close svg { width: 20px; height: 20px; }
@@ -2768,10 +2773,10 @@ body.is-overlay .cs:has(.cs-nav) .cs__head { padding-top: var(--s7); }
 
 @keyframes underLayerIn  {
   from { transform: scale(1);    opacity: 1; }
-  to   { transform: scale(.955); opacity: .85; }
+  to   { transform: scale(1.03); opacity: .82; }
 }
 @keyframes underLayerOut {
-  from { transform: scale(.955); opacity: .85; }
+  from { transform: scale(1.03); opacity: .82; }
   to   { transform: scale(1);    opacity: 1; }
 }
 @keyframes underBlurIn  { from { filter: blur(0px);  } to { filter: blur(16px); } }
