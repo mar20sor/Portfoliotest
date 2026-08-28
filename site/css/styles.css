@@ -435,10 +435,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
   gap: var(--s4);
   padding: var(--s5) var(--gutter);
   background: var(--bg);
-  transition: box-shadow .3s var(--ease);
+  /* Le filet est permanent : il marque la limite de l'en-tete des le premier
+     regard, avant tout defilement. Il etait auparavant porte par
+     .is-scrolled, donc absent en haut de page — la barre flottait alors sans
+     bord, et le trait apparaissait au premier pixel parcouru.
+     app.js continue de poser .is-scrolled (voir setupScrollProgress) : la classe
+     ne commande plus rien ici, mais elle reste l'etat "on a quitte le haut",
+     lisible depuis le CSS si besoin. */
+  box-shadow: 0 1px 0 var(--line-soft);
 }
-/* .is-scrolled est ajoutee par app.js des qu'on quitte le haut de page. */
-.site-head.is-scrolled { box-shadow: 0 1px 0 var(--line-soft); }
 
 .brand {
   justify-self: start;

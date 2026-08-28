@@ -217,9 +217,17 @@
       <span class="sr-only" data-i18n="navMenu">Menu</span>
     </button>
 
+    <!--
+      "Work" ne figure plus ici. La section, elle, n'a pas bouge : elle garde
+      son ancre #work, et tout ce qui y menait continue d'y mener — le pied
+      de page, la croix de fermeture d'une etude de cas (#/#work), et les
+      liens partages.
+      Consequence assumee : sur une etude de cas de type "work", plus aucune
+      entree de menu ne porte aria-current (markActiveNav ne trouve plus de
+      lien data-nav="work"). Les etudes "side" gardent la leur.
+    -->
     <nav class="site-nav" id="site-nav" aria-label="Main navigation">
       <a href="#/"      data-nav="home" data-i18n="navHome">Home</a>
-      <a href="#/#work" data-nav="work"  data-i18n="navWork">Work</a>
       <a href="#/#side" data-nav="side"  data-i18n="navSide">Side quests</a>
       <a href="#/about" data-nav="about" data-i18n="navAbout">About</a>
       <a id="nav-contact" href="mailto:" data-i18n="navContact">Contact</a>
