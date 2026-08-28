@@ -73,7 +73,14 @@ const state = {
   snapKey: null,     // la route d'ou vient cette photo (pour savoir ou revenir)
   snapY: 0,          // la position de defilement qu'avait cette page
   sheetTimer: null,  // le minuteur de l'animation en cours
-  pending: null      // la page a dessiner une fois l'animation de fermeture finie
+  pending: null,     // la page a dessiner une fois l'animation de fermeture finie
+
+  /* --- Scroll-spy de l'en-tete (voir setupHomeNavSpy, section 8 bis) ---
+     La section d'accueil surlignee dans la pilule. Il vit ICI et non dans la
+     fonction parce qu'il doit SURVIVRE au demontage de la page : on ouvre une
+     etude de cas, l'accueil est detruit, et au retour on doit pouvoir rallumer
+     la bonne entree avant meme d'avoir mesure quoi que ce soit. */
+  navSpy: null
 };
 
 /* Chaque page peut installer des ecouteurs d'evenements ou des observateurs.
@@ -300,7 +307,10 @@ function escapeAttr(s) {
    comme du texte brut. */
 function renderHello() {
   const d = t();
-  const wrap = el('p', { class: 'hero__hello' });
+  /* sec-hello : la cible du nom dans l'en-tete (href="#/#hello"). Le prefixe
+     "sec-" est la convention de scrollToSection, qui cherche toujours
+     `sec-${id}` — meme mecanisme que #work et #side. */
+  const wrap = el('p', { class: 'hero__hello', id: 'sec-hello' });
   if (state.visitor) {
     wrap.append(document.createTextNode(d.helloBefore + ' '));
     const strong = el('b');
@@ -3398,6 +3408,7 @@ function paint(hash, route, mode) {
     // d'annoncer l'ancienne page et l'utilisateur clavier repart du debut.
     main.focus({ preventScroll: true });
 
+    if (route.name === 'home') setupHomeNavSpy();
     if (route.name === 'case') setupCaseBehaviours();
     if (route.name === 'case') setupMoreDrawerEmbeds();
     if (route.name === 'case' && route.project.slug === 'constraints') setupConstraintBuilder();
@@ -3675,6 +3686,22 @@ function readHeadHeight() {
 
 /* Souligne l'entree de menu correspondant a la page affichee. */
 function markActiveNav(route) {
+  /* FICHE OUVERTE : ON NE TOUCHE A RIEN.
+     L'en-tete reste affiche sous la fiche, a sa place, et il appartient a la
+     page laissee derriere — pas a l'etude de cas posee par-dessus. Ce qu'il
+     montrait au moment du clic doit donc rester tel quel : la section d'ou
+     l'on vient si c'etait l'accueil, "About" si c'etait la page About.
+
+     Sans ce retour anticipe, l'ouverture repeignait l'en-tete au type du
+     projet (work / side) : on quittait la section Work pour une side quest et
+     le surlignage sautait de l'une a l'autre, sur une barre censee etre
+     l'image figee de ce qu'on venait de quitter. Et a la fermeture il fallait
+     tout recalculer, ce qui se voyait.
+
+     A la fermeture, la fiche redescend, is-overlay tombe, et cette fonction
+     reprend la main normalement. */
+  if (route.name === 'case' && document.body.classList.contains('is-overlay')) return;
+
   const map = { home: 'home', case: route.project?.kind, about: 'about', gap: null };
   const current = map[route.name] ?? null;
   // Scope au vrai en-tete : #underlay peut contenir un clone de la barre de
@@ -4027,6 +4054,121 @@ function setupCaseBehaviours() {
     a.addEventListener('click', onClick);
     addCleanup(() => a.removeEventListener('click', onClick));
   });
+}
+
+
+/* ---- 8 bis. Le scroll-spy de l'en-tete ---------------------------------
+   Le meme principe que la nav laterale d'une etude de cas, applique a la
+   pilule du haut : en descendant l'accueil, l'entree de la section qu'on
+   traverse s'allume — Work dans les projets, Side quests dans les side
+   quests.
+
+   MEME REGLE DE DECLENCHEMENT que .cs-nav, et pour la meme raison : on
+   retient la derniere section dont le haut est deja passe sous l'en-tete,
+   plutot que celle qui occupe le milieu de l'ecran. Une section qui
+   n'atteint jamais le milieu — la derniere d'une page, quand le document
+   cesse de defiler avant — ne s'allumerait sinon jamais.
+
+   UNE DIFFERENCE, VOULUE : ici il peut n'y avoir AUCUNE entree allumee.
+   Dans une etude de cas, chaque pixel de la page appartient a une etape du
+   sommaire, donc il y en a toujours exactement une d'active. L'accueil, lui,
+   commence par le heros, qui n'est represente dans la pilule par rien du
+   tout. Reprendre la regle "a defaut, la premiere" y allumerait Work pendant
+   qu'on lit encore la salutation. Au-dessus de la premiere section, personne
+   n'est allume — c'est la reponse juste.
+
+   aria-current="location" et non "page" : ce lien ne designe pas la page
+   affichee (on y est deja), mais un endroit A L'INTERIEUR d'elle. C'est
+   exactement la distinction que fait la specification, et les deux valeurs
+   allument le meme soulignement en CSS. La distinction compte aussi au
+   demontage : on ne retire QUE les "location", donc ce spy ne peut jamais
+   effacer par megarde le "page" pose par markActiveNav. */
+function setupHomeNavSpy() {
+  const links = $$('#site-head .site-nav a[data-spy]');
+  if (!links.length) return;
+
+  /* On ne garde que les liens dont la section existe reellement, et on les
+     range dans l'ordre du DOM des sections — c'est cet ordre-la que la
+     boucle plus bas suppose, et rien ne garantit qu'il soit celui du menu. */
+  const pairs = links
+    .map(link => ({ link, sec: document.getElementById(link.dataset.spy) }))
+    .filter(p => p.sec)
+    .sort((a, b) =>
+      (a.sec.compareDocumentPosition(b.sec) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
+  if (!pairs.length) return;
+
+  const clear = () => links.forEach(a => {
+    if (a.getAttribute('aria-current') === 'location') a.removeAttribute('aria-current');
+  });
+
+  // On ne touche au DOM que lorsque la section change, pas a chaque pixel.
+  let shown;
+  const setActive = (link) => {
+    if (link === shown) return;
+    shown = link;
+    clear();
+    if (link) link.setAttribute('aria-current', 'location');
+    state.navSpy = link ? link.dataset.spy : null;
+  };
+
+  /* On rallume d'abord ce qui etait allume la derniere fois qu'on a quitte
+     l'accueil, AVANT toute mesure. Au retour d'une etude de cas, l'en-tete
+     doit deja etre juste : c'est la meme page, a la meme hauteur, et rien ne
+     justifie qu'elle clignote. La mesure qui suit ne fera que confirmer. */
+  if (state.navSpy) {
+    const known = links.find(a => a.dataset.spy === state.navSpy);
+    if (known) { known.setAttribute('aria-current', 'location'); shown = known; }
+  }
+
+  const update = () => {
+    // La meme ligne de declenchement que .cs-nav : sous l'en-tete collant,
+    // plus une marge pour que la section s'allume quand son titre devient
+    // lisible. Elle est plus basse que le point d'arrivee des ancres
+    // (en-tete + 24px), donc cliquer "Work" allume bien Work.
+    const lineY = readHeadHeight() + 80;
+    let current = null;
+    for (const p of pairs) {
+      if (p.sec.getBoundingClientRect().top <= lineY) current = p.link;
+      else break;                        // les sections sont dans l'ordre du DOM
+    }
+    setActive(current);
+  };
+
+  /* PAS DE REGLE "EN BAS DE PAGE, C'EST LA DERNIERE SECTION", contrairement a
+     .cs-nav. Elle y sert a une derniere etape trop courte pour jamais franchir
+     la ligne — le document s'arrete de defiler avant. L'accueil n'a pas ce
+     probleme : Side quests commence a plus d'un ecran du bas, et passe donc la
+     ligne bien avant qu'on y arrive.
+
+     Gardee ici, elle causait un vrai bug. Elle se lit "hauteur de fenetre +
+     defilement >= hauteur du document", et cette egalite est vraie de tout
+     document plus court que sa taille definitive — ce qu'est l'accueil pendant
+     les quelques instants ou ses images n'ont pas encore de hauteur. On
+     revenait d'une etude de cas au milieu de Work, la page valait brievement
+     un ecran et demi, la regle concluait "on est en bas" et allumait Side
+     quests. L'erreur restait affichee jusqu'au defilement suivant.
+
+     L'observateur ci-dessous traite la meme cause a l'endroit ou elle est :
+     quand la hauteur du document change (une image arrive, une police se
+     substitue, on tourne le telephone), les sections ne sont plus la ou on les
+     avait mesurees. On remesure. */
+  const ro = new ResizeObserver(update);
+  ro.observe(document.body);
+
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  addCleanup(() => {
+    window.removeEventListener('scroll', update);
+    window.removeEventListener('resize', update);
+    ro.disconnect();
+    /* On ne nettoie PAS le surlignage ici. En quittant vers une page
+       ordinaire, markActiveNav s'en charge une milliseconde plus tard (il
+       retire aria-current de tous les liens qui ne correspondent pas). En
+       ouvrant une etude de cas, au contraire, il faut qu'il RESTE : l'en-tete
+       demeure visible sous la fiche, il appartient a la page qu'on a laissee
+       derriere, et cette page-la etait bien sur cette section. */
+  });
+  update();
 }
 
 

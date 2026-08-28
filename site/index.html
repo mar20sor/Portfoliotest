@@ -209,7 +209,13 @@
     grille d'origine sont retombees a deux, le nom et la nav.
   -->
   <header class="site-head" id="site-head">
-    <a class="brand" href="#/" aria-label="Marvin Sorhaindo, home">Marvin S.</a>
+    <!-- Le nom est le lien d'accueil depuis que "Home" a quitte la pilule.
+         Il vise l'ancre #hello (le "Hey ..." en haut de la page d'accueil,
+         id sec-hello, pose par renderHello) et non "#/" tout court : depuis
+         l'accueil, "#/" ne changerait rien a l'URL et le clic serait sans
+         effet visible. Avec l'ancre, il ramene toujours a la salutation,
+         qu'on vienne d'une autre page ou du bas de celle-ci. -->
+    <a class="brand" href="#/#hello" aria-label="Marvin Sorhaindo, home">Marvin S.</a>
 
     <!-- Bouton hamburger, visible seulement sous 860px (voir media query CSS) -->
     <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="site-nav">
@@ -217,10 +223,23 @@
       <span class="sr-only" data-i18n="navMenu">Menu</span>
     </button>
 
+    <!--
+      "Home" ne figure plus ici : c'est le nom, a gauche, qui ramene a
+      l'accueil — un lien vers soi-meme dans un menu de cinq entrees etait
+      une place prise pour rien. Il vise desormais #hello, le "Hey ..." du
+      haut de page, plutot que le simple haut du document.
+      Consequence assumee : sur l'accueil, plus aucune entree du menu ne
+      porte aria-current (markActiveNav cherche un lien data-nav="home", qui
+      n'existe plus). Les autres pages gardent la leur.
+    -->
     <nav class="site-nav" id="site-nav" aria-label="Main navigation">
-      <a href="#/"      data-nav="home" data-i18n="navHome">Home</a>
-      <a href="#/#work" data-nav="work"  data-i18n="navWork">Work</a>
-      <a href="#/#side" data-nav="side"  data-i18n="navSide">Side quests</a>
+      <!-- data-spy : la section d'accueil que ce lien surveille. C'est la
+           meme convention que la nav laterale d'une etude de cas, et c'est
+           setupHomeNavSpy (app.js) qui s'en sert pour allumer le lien quand
+           on entre dans la section. Les deux autres entrees n'en ont pas :
+           About est une page, Contact un mailto. -->
+      <a href="#/#work" data-nav="work" data-spy="sec-work" data-i18n="navWork">Work</a>
+      <a href="#/#side" data-nav="side" data-spy="sec-side" data-i18n="navSide">Side quests</a>
       <a href="#/about" data-nav="about" data-i18n="navAbout">About</a>
       <a id="nav-contact" href="mailto:" data-i18n="navContact">Contact</a>
     </nav>

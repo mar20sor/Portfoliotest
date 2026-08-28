@@ -435,10 +435,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
   gap: var(--s4);
   padding: var(--s5) var(--gutter);
   background: var(--bg);
-  transition: box-shadow .3s var(--ease);
+  /* Le filet est permanent : il marque la limite de l'en-tete des le premier
+     regard, avant tout defilement. Il etait auparavant porte par
+     .is-scrolled, donc absent en haut de page — la barre flottait alors sans
+     bord, et le trait apparaissait au premier pixel parcouru.
+     app.js continue de poser .is-scrolled (voir setupScrollProgress) : la classe
+     ne commande plus rien ici, mais elle reste l'etat "on a quitte le haut",
+     lisible depuis le CSS si besoin. */
+  box-shadow: 0 1px 0 var(--line-soft);
 }
-/* .is-scrolled est ajoutee par app.js des qu'on quitte le haut de page. */
-.site-head.is-scrolled { box-shadow: 0 1px 0 var(--line-soft); }
 
 .brand {
   justify-self: start;
@@ -479,8 +484,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
   transform: scaleX(0); transform-origin: left;
   transition: transform .25s var(--ease);
 }
-.site-nav a[aria-current="page"] { opacity: 1; }
-.site-nav a[aria-current="page"]::after { transform: scaleX(1); }
+/* [aria-current] sans valeur : le soulignement marque aussi bien la page
+   affichee ("page", pose par markActiveNav) que la section traversee sur
+   l'accueil ("location", pose par setupHomeNavSpy). Deux etats differents
+   pour un lecteur d'ecran, la meme marque a l'oeil. */
+.site-nav a[aria-current] { opacity: 1; }
+.site-nav a[aria-current]::after { transform: scaleX(1); }
 
 /* Bouton hamburger : masque par defaut, affiche en media query mobile. */
 .nav-toggle {
@@ -3002,7 +3011,7 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
   .site-nav.is-open { transform: translateY(0); visibility: visible; }
   .site-nav a { padding-block: var(--s4); border-bottom: 1px solid var(--line-soft); font-size: 1.05rem; opacity: 1; }
   .site-nav a::after { display: none; }
-  .site-nav a[aria-current="page"] { color: var(--accent); }
+  .site-nav a[aria-current] { color: var(--accent); }
 
   .pair { grid-template-columns: 1fr; }
   .foot__grid { grid-template-columns: 1fr 1fr; }
