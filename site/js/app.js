@@ -3401,6 +3401,7 @@ function paint(hash, route, mode) {
     // d'annoncer l'ancienne page et l'utilisateur clavier repart du debut.
     main.focus({ preventScroll: true });
 
+    if (route.name === 'home') setupHomeNavSpy();
     if (route.name === 'case') setupCaseBehaviours();
     if (route.name === 'case') setupMoreDrawerEmbeds();
     if (route.name === 'case' && route.project.slug === 'constraints') setupConstraintBuilder();
@@ -4030,6 +4031,90 @@ function setupCaseBehaviours() {
     a.addEventListener('click', onClick);
     addCleanup(() => a.removeEventListener('click', onClick));
   });
+}
+
+
+/* ---- 8 bis. Le scroll-spy de l'en-tete ---------------------------------
+   Le meme principe que la nav laterale d'une etude de cas, applique a la
+   pilule du haut : en descendant l'accueil, l'entree de la section qu'on
+   traverse s'allume — Work dans les projets, Side quests dans les side
+   quests.
+
+   MEME REGLE DE DECLENCHEMENT que .cs-nav, et pour la meme raison : on
+   retient la derniere section dont le haut est deja passe sous l'en-tete,
+   plutot que celle qui occupe le milieu de l'ecran. Une section qui
+   n'atteint jamais le milieu — la derniere d'une page, quand le document
+   cesse de defiler avant — ne s'allumerait sinon jamais.
+
+   UNE DIFFERENCE, VOULUE : ici il peut n'y avoir AUCUNE entree allumee.
+   Dans une etude de cas, chaque pixel de la page appartient a une etape du
+   sommaire, donc il y en a toujours exactement une d'active. L'accueil, lui,
+   commence par le heros, qui n'est represente dans la pilule par rien du
+   tout. Reprendre la regle "a defaut, la premiere" y allumerait Work pendant
+   qu'on lit encore la salutation. Au-dessus de la premiere section, personne
+   n'est allume — c'est la reponse juste.
+
+   aria-current="location" et non "page" : ce lien ne designe pas la page
+   affichee (on y est deja), mais un endroit A L'INTERIEUR d'elle. C'est
+   exactement la distinction que fait la specification, et les deux valeurs
+   allument le meme soulignement en CSS. La distinction compte aussi au
+   demontage : on ne retire QUE les "location", donc ce spy ne peut jamais
+   effacer par megarde le "page" pose par markActiveNav. */
+function setupHomeNavSpy() {
+  const links = $$('#site-head .site-nav a[data-spy]');
+  if (!links.length) return;
+
+  /* On ne garde que les liens dont la section existe reellement, et on les
+     range dans l'ordre du DOM des sections — c'est cet ordre-la que la
+     boucle plus bas suppose, et rien ne garantit qu'il soit celui du menu. */
+  const pairs = links
+    .map(link => ({ link, sec: document.getElementById(link.dataset.spy) }))
+    .filter(p => p.sec)
+    .sort((a, b) =>
+      (a.sec.compareDocumentPosition(b.sec) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
+  if (!pairs.length) return;
+
+  const clear = () => links.forEach(a => {
+    if (a.getAttribute('aria-current') === 'location') a.removeAttribute('aria-current');
+  });
+
+  // On ne touche au DOM que lorsque la section change, pas a chaque pixel.
+  let shown;
+  const setActive = (link) => {
+    if (link === shown) return;
+    shown = link;
+    clear();
+    if (link) link.setAttribute('aria-current', 'location');
+  };
+
+  const update = () => {
+    // La meme ligne de declenchement que .cs-nav : sous l'en-tete collant,
+    // plus une marge pour que la section s'allume quand son titre devient
+    // lisible. Elle est plus basse que le point d'arrivee des ancres
+    // (en-tete + 24px), donc cliquer "Work" allume bien Work.
+    const lineY = readHeadHeight() + 80;
+    let current = null;
+    for (const p of pairs) {
+      if (p.sec.getBoundingClientRect().top <= lineY) current = p.link;
+      else break;                        // les sections sont dans l'ordre du DOM
+    }
+    // En bas de page, c'est la derniere section qu'on regarde, quoi qu'en
+    // dise le calcul : le document a cesse de defiler avant qu'elle n'ait pu
+    // passer la ligne.
+    const atBottom = window.innerHeight + window.scrollY
+                     >= document.documentElement.scrollHeight - 2;
+    if (atBottom) current = pairs[pairs.length - 1].link;
+    setActive(current);
+  };
+
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  addCleanup(() => {
+    window.removeEventListener('scroll', update);
+    window.removeEventListener('resize', update);
+    clear();                             // en quittant l'accueil, plus de section courante
+  });
+  update();
 }
 
 
