@@ -266,6 +266,29 @@
     copier-lien, et l'historique du navigateur reste juste. app.js ajuste sa
     destination selon le projet ouvert (work / side).
   -->
+  <!--
+    ===================== LE VOILE =====================
+    Le flou n'appartient a rien : c'est une vitre depolie posee EN TRAVERS de
+    l'ecran, et tout ce qui se trouve derriere elle est floute — la photo de
+    la page d'accueil comme l'en-tete du site, qui est un element bien reel
+    et reste a sa place pendant toute la duree de la fiche.
+
+    D'ou l'empilement, de bas en haut : accueil et navigation, puis ce voile
+    qui les brouille ensemble, puis la fiche par-dessus. Il est donc place
+    ICI, apres l'en-tete et avant la fiche — l'ordre du document suit
+    l'ordre des couches (z-index 124, entre les 120 de .site-head et les 125
+    de #page).
+
+    Une version anterieure floutait la photo elle-meme (filter sur le clone)
+    et laissait la navigation nette par-dessus : il fallait alors
+    l'assombrir a part pour qu'elle ne tranche pas, et elle restait lisible
+    quand tout le reste ne l'etait plus.
+
+    Vide et aria-hidden : c'est un effet, il n'y a rien a lire ni a
+    atteindre dedans. pointer-events:none en CSS pour le reste.
+  -->
+  <div id="veil" class="veil" aria-hidden="true"></div>
+
   <a class="overlay-close theme-light" id="overlay-close" href="#/#work" hidden aria-label="Close">
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor"

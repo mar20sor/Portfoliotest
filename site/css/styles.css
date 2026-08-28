@@ -2636,11 +2636,10 @@ body.is-overlay {
    il reserverait sa hauteur au-dessus de la fiche, qui ne demarrerait plus a
    14px du bord mais 100px plus bas — la fiche ne couvrirait plus l'ecran.
 
-   opacity .82 : la meme valeur que .underlay__inner. Ce qui reste visible de
-   lui, c'est le liser de 14px au-dessus de la fiche ; il doit s'assombrir
-   avec le reste de l'arriere-plan, sinon cette bande resterait plus claire
-   que la page floutee qui la prolonge. Le fondu est anime en meme temps que
-   celui du calque, plus bas.
+   Il n'est ni assombri ni floute par lui-meme : le voile (.veil) passe
+   devant lui et s'en charge, comme il le fait pour la photo. C'est tout
+   l'interet de mettre le flou dans une couche a part — l'en-tete n'a rien de
+   particulier a faire pour en faire partie, il lui suffit d'etre dessous.
 
    app.js le rend inerte pendant ce temps (attribut inert) : ce qui est
    DERRIERE un calque ne se clique pas, ne prend pas le focus et n'est pas
@@ -2649,7 +2648,6 @@ body.is-overlay {
    mise pour les navigateurs sans inert. */
 body.is-overlay .site-head {
   position: fixed; top: 0; left: 0; right: 0;
-  opacity: .82;
   pointer-events: none;
 }
 
@@ -2665,15 +2663,15 @@ body.is-overlay .underlay {
   position: fixed; inset: 0; z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  /* Le fond sombre qu'on apercoit autour de la photo une fois celle-ci
-     reduite. Sans lui, la reduction laisserait voir le bleu du site et
-     l'effet "page posee en arriere" disparaitrait. */
+  /* Filet de securite : la photo remplit la fenetre, mais si elle manquait
+     (calque vide une fraction d'image), c'est ce bleu nuit qu'on verrait, et
+     non le bleu de marque du site — un fond de scene, pas une page. */
   background: #06162B;
 }
 
-/* La photo elle-meme : plein cadre, legerement assombrie. C'est l'etat AU
-   REPOS (fiche ouverte) ; les animations plus bas ne font que partir de
-   l'etat "page normale" pour arriver ici, et l'inverse a la fermeture.
+/* La photo elle-meme : plein cadre, NETTE et non assombrie. Ni le flou ni
+   l'assombrissement ne sont poses ici — ils appartiennent au voile, qui
+   passe devant elle ET devant l'en-tete du site (voir .veil plus bas).
 
    Elle occupe TOUTE la fenetre, sans reduction ni coins arrondis. Une
    version anterieure la reduisait facon "carte posee en arriere" : ça
@@ -2688,22 +2686,19 @@ body.is-overlay .underlay {
    voit et trahit le truc. Il ne reste donc que le flou et l'assombrissement,
    qui eux ne deplacent rien.
 
-   REVENIR EN ARRIERE : remettre `transform: scale(1.03)` ici et les deux
-   lignes transform dans underLayerIn / underLayerOut plus bas. */
+   REVENIR EN ARRIERE : remettre `transform: scale(1.03)` ici et une ligne
+   transform dans veilIn / veilOut plus bas. */
 .underlay__inner {
   position: absolute; inset: 0;
   overflow: hidden;
   background: var(--bg);
-  opacity: .82;
 }
 
-/* Le flou est porte par le contenu, pas par le cadre : floutter le cadre
-   arrondi rendrait ses bords cotonneux. .underlay__shot est decale vers le
-   haut de la position de defilement qu'avait la page au moment de la photo,
-   pour montrer exactement ce que la personne regardait. */
+/* .underlay__shot est decale vers le haut de la position de defilement
+   qu'avait la page au moment de la photo, pour montrer exactement ce que la
+   personne regardait. */
 .underlay__shot {
   position: absolute; top: 0; left: 0;
-  filter: blur(16px);
 }
 
 /* Les videos et les Lottie du clone ne rejouent pas (ni autoplay, ni JS) :
@@ -2719,6 +2714,36 @@ body.is-overlay .underlay {
 .underlay__blank {
   display: block; width: 100%; height: 100%;
   background: rgba(255,255,255,.10); border-radius: var(--radius-sm);
+}
+
+/* ---- Le voile ----
+   La vitre depolie. Elle ne contient rien : elle floute et assombrit tout ce
+   qui est peint SOUS elle, c'est-a-dire la photo de l'accueil (z-index 0) et
+   l'en-tete du site (120), qui se retrouvent traites ensemble, comme la
+   seule et meme page qu'ils formaient avant l'ouverture.
+
+   z-index 124, soit juste sous la fiche (125). Tout ce qui monte plus haut
+   lui echappe et reste net, ce qui est voulu dans les trois cas : la barre
+   de progression (130), le portail du prenom (140) et la croix (150).
+
+   backdrop-filter et non filter. filter aurait floute le voile lui-meme —
+   qui est vide, donc rien. backdrop-filter agit sur l'ARRIERE-PLAN, et c'est
+   la seule facon d'atteindre d'un coup deux elements qui ne se touchent pas
+   dans le DOM. Autrement il faudrait flouter chacun de son cote, avec deux
+   animations a garder synchronisees et un raccord visible entre les deux.
+
+   rgba(6,22,43,.18) reproduit exactement l'assombrissement precedent, quand
+   la photo etait posee a 82 % d'opacite sur un fond #06162B : 18 % de ce
+   meme bleu nuit par-dessus, c'est le meme calcul, en une couche au lieu de
+   deux. */
+.veil { display: none; }
+
+body.is-overlay .veil {
+  display: block;
+  position: fixed; inset: 0; z-index: 124;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  background: rgba(6, 22, 43, .18);
 }
 
 /* ---- La fiche ---- */
@@ -2839,10 +2864,32 @@ body.is-overlay .cs:has(.cs-nav) .cs__head { padding-top: var(--s7); }
   to   { transform: translateY(22vh); opacity: 0; }
 }
 
-@keyframes underLayerIn  { from { opacity: 1; }   to { opacity: .82; } }
-@keyframes underLayerOut { from { opacity: .82; } to { opacity: 1; } }
-@keyframes underBlurIn  { from { filter: blur(0px);  } to { filter: blur(16px); } }
-@keyframes underBlurOut { from { filter: blur(16px); } to { filter: blur(0px);  } }
+/* Le voile se depolit. Une seule animation la ou il y en avait deux (le flou
+   sur la photo, l'assombrissement sur le cadre, plus une troisieme sur
+   l'en-tete) : elles portaient sur des elements differents et devaient etre
+   tenues ensemble a la main.
+
+   Le rayon est anime, pas l'opacite du voile. Un voile qu'on fait apparaitre
+   en fondu montre un flou deja complet a travers un calque translucide : le
+   decor est net puis brouille, avec un fondu enchaine entre les deux. En
+   animant le rayon, il se brouille VRAIMENT, progressivement. C'est le
+   mouvement d'une mise au point qu'on perd, et c'est ce qu'on veut ici.
+
+   Les deux ecritures de backdrop-filter sont reprises dans les keyframes :
+   sans la prefixee, Safari lit bien la valeur au repos mais n'a rien a
+   interpoler pendant l'animation. */
+@keyframes veilIn {
+  from { -webkit-backdrop-filter: blur(0px);  backdrop-filter: blur(0px);
+         background-color: rgba(6, 22, 43, 0); }
+  to   { -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+         background-color: rgba(6, 22, 43, .18); }
+}
+@keyframes veilOut {
+  from { -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+         background-color: rgba(6, 22, 43, .18); }
+  to   { -webkit-backdrop-filter: blur(0px);  backdrop-filter: blur(0px);
+         background-color: rgba(6, 22, 43, 0); }
+}
 
 /* .is-opening (ouverture) et .is-closing (fermeture) sont posees puis
    retirees par app.js.
@@ -2856,17 +2903,8 @@ body.is-overlay .cs:has(.cs-nav) .cs__head { padding-top: var(--s7); }
 body.is-overlay.is-opening #page { animation: sheetIn .62s cubic-bezier(.16, 1, .3, 1) both; }
 body.is-overlay.is-closing #page { animation: sheetOut .38s cubic-bezier(.3, 0, .3, 1) both; }
 
-/* L'en-tete du site suit le meme assombrissement que le calque, a la meme
-   duree et sur la meme courbe : il fait partie de l'arriere-plan, il doit
-   reculer avec lui. A la fermeture, underLayerOut le ramene a 1 juste avant
-   que .is-overlay ne tombe — la valeur d'arrivee de l'animation et l'etat de
-   repos sont la meme, donc rien ne saute au raccord. */
-body.is-overlay.is-opening .underlay__inner,
-body.is-overlay.is-opening .site-head { animation: underLayerIn .62s cubic-bezier(.16, 1, .3, 1) both; }
-body.is-overlay.is-opening .underlay__shot  { animation: underBlurIn  .62s cubic-bezier(.16, 1, .3, 1) both; }
-body.is-overlay.is-closing .underlay__inner,
-body.is-overlay.is-closing .site-head { animation: underLayerOut .38s cubic-bezier(.3, 0, .3, 1) both; }
-body.is-overlay.is-closing .underlay__shot  { animation: underBlurOut  .38s cubic-bezier(.3, 0, .3, 1) both; }
+body.is-overlay.is-opening .veil { animation: veilIn  .62s cubic-bezier(.16, 1, .3, 1) both; }
+body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .3, 1) both; }
 
 /* Le fondu de page habituel (pageIn) est neutralise pour l'ouverture et la
    fermeture — mais cote JS, en ne posant pas la classe .is-entering (voir
@@ -3022,7 +3060,7 @@ body.is-overlay.is-closing .underlay__shot  { animation: underBlurOut  .38s cubi
 @media print {
   .site-head, .site-nav, .back-link, .progress, .cs-nav,
   .loader, .gate, .cs__cta, .cs-next, .skip-link,
-  .underlay, .overlay-close { display: none !important; }
+  .underlay, .veil, .overlay-close { display: none !important; }
   html, body { background: #fff !important; color: #000 !important; font-size: 11pt; }
   /* La fiche redevient une page ordinaire sur le papier. */
   #page { margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
