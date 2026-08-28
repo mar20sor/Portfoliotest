@@ -73,7 +73,14 @@ const state = {
   snapKey: null,     // la route d'ou vient cette photo (pour savoir ou revenir)
   snapY: 0,          // la position de defilement qu'avait cette page
   sheetTimer: null,  // le minuteur de l'animation en cours
-  pending: null      // la page a dessiner une fois l'animation de fermeture finie
+  pending: null,     // la page a dessiner une fois l'animation de fermeture finie
+
+  /* --- Scroll-spy de l'en-tete (voir setupHomeNavSpy, section 8 bis) ---
+     La section d'accueil surlignee dans la pilule. Il vit ICI et non dans la
+     fonction parce qu'il doit SURVIVRE au demontage de la page : on ouvre une
+     etude de cas, l'accueil est detruit, et au retour on doit pouvoir rallumer
+     la bonne entree avant meme d'avoir mesure quoi que ce soit. */
+  navSpy: null
 };
 
 /* Chaque page peut installer des ecouteurs d'evenements ou des observateurs.
@@ -3679,6 +3686,22 @@ function readHeadHeight() {
 
 /* Souligne l'entree de menu correspondant a la page affichee. */
 function markActiveNav(route) {
+  /* FICHE OUVERTE : ON NE TOUCHE A RIEN.
+     L'en-tete reste affiche sous la fiche, a sa place, et il appartient a la
+     page laissee derriere — pas a l'etude de cas posee par-dessus. Ce qu'il
+     montrait au moment du clic doit donc rester tel quel : la section d'ou
+     l'on vient si c'etait l'accueil, "About" si c'etait la page About.
+
+     Sans ce retour anticipe, l'ouverture repeignait l'en-tete au type du
+     projet (work / side) : on quittait la section Work pour une side quest et
+     le surlignage sautait de l'une a l'autre, sur une barre censee etre
+     l'image figee de ce qu'on venait de quitter. Et a la fermeture il fallait
+     tout recalculer, ce qui se voyait.
+
+     A la fermeture, la fiche redescend, is-overlay tombe, et cette fonction
+     reprend la main normalement. */
+  if (route.name === 'case' && document.body.classList.contains('is-overlay')) return;
+
   const map = { home: 'home', case: route.project?.kind, about: 'about', gap: null };
   const current = map[route.name] ?? null;
   // Scope au vrai en-tete : #underlay peut contenir un clone de la barre de
@@ -4085,7 +4108,17 @@ function setupHomeNavSpy() {
     shown = link;
     clear();
     if (link) link.setAttribute('aria-current', 'location');
+    state.navSpy = link ? link.dataset.spy : null;
   };
+
+  /* On rallume d'abord ce qui etait allume la derniere fois qu'on a quitte
+     l'accueil, AVANT toute mesure. Au retour d'une etude de cas, l'en-tete
+     doit deja etre juste : c'est la meme page, a la meme hauteur, et rien ne
+     justifie qu'elle clignote. La mesure qui suit ne fera que confirmer. */
+  if (state.navSpy) {
+    const known = links.find(a => a.dataset.spy === state.navSpy);
+    if (known) { known.setAttribute('aria-current', 'location'); shown = known; }
+  }
 
   const update = () => {
     // La meme ligne de declenchement que .cs-nav : sous l'en-tete collant,
@@ -4098,21 +4131,42 @@ function setupHomeNavSpy() {
       if (p.sec.getBoundingClientRect().top <= lineY) current = p.link;
       else break;                        // les sections sont dans l'ordre du DOM
     }
-    // En bas de page, c'est la derniere section qu'on regarde, quoi qu'en
-    // dise le calcul : le document a cesse de defiler avant qu'elle n'ait pu
-    // passer la ligne.
-    const atBottom = window.innerHeight + window.scrollY
-                     >= document.documentElement.scrollHeight - 2;
-    if (atBottom) current = pairs[pairs.length - 1].link;
     setActive(current);
   };
+
+  /* PAS DE REGLE "EN BAS DE PAGE, C'EST LA DERNIERE SECTION", contrairement a
+     .cs-nav. Elle y sert a une derniere etape trop courte pour jamais franchir
+     la ligne — le document s'arrete de defiler avant. L'accueil n'a pas ce
+     probleme : Side quests commence a plus d'un ecran du bas, et passe donc la
+     ligne bien avant qu'on y arrive.
+
+     Gardee ici, elle causait un vrai bug. Elle se lit "hauteur de fenetre +
+     defilement >= hauteur du document", et cette egalite est vraie de tout
+     document plus court que sa taille definitive — ce qu'est l'accueil pendant
+     les quelques instants ou ses images n'ont pas encore de hauteur. On
+     revenait d'une etude de cas au milieu de Work, la page valait brievement
+     un ecran et demi, la regle concluait "on est en bas" et allumait Side
+     quests. L'erreur restait affichee jusqu'au defilement suivant.
+
+     L'observateur ci-dessous traite la meme cause a l'endroit ou elle est :
+     quand la hauteur du document change (une image arrive, une police se
+     substitue, on tourne le telephone), les sections ne sont plus la ou on les
+     avait mesurees. On remesure. */
+  const ro = new ResizeObserver(update);
+  ro.observe(document.body);
 
   window.addEventListener('scroll', update, { passive: true });
   window.addEventListener('resize', update);
   addCleanup(() => {
     window.removeEventListener('scroll', update);
     window.removeEventListener('resize', update);
-    clear();                             // en quittant l'accueil, plus de section courante
+    ro.disconnect();
+    /* On ne nettoie PAS le surlignage ici. En quittant vers une page
+       ordinaire, markActiveNav s'en charge une milliseconde plus tard (il
+       retire aria-current de tous les liens qui ne correspondent pas). En
+       ouvrant une etude de cas, au contraire, il faut qu'il RESTE : l'en-tete
+       demeure visible sous la fiche, il appartient a la page qu'on a laissee
+       derriere, et cette page-la etait bien sur cette section. */
   });
   update();
 }
