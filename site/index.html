@@ -256,12 +256,17 @@
     croix a l'interieur risquerait d'etre rognee avec le reste. Dehors, elle
     flotte au-dessus de tout sans dependre du decoupage ni du contexte
     d'empilement de la fiche.
+    theme-light est indispensable justement PARCE QU'elle est dehors : les
+    couleurs s'heritent, et hors de la fiche cette croix reprenait les
+    jetons de marque — soit une croix blanche et un liser blanc sur le
+    disque blanc translucide. Invisible. La classe lui redonne l'encre
+    foncee du theme clair, le seul fond sur lequel elle apparaisse jamais.
     C'est un <a> et non un <button> : fermer, ici, c'est simplement naviguer
     vers la liste des projets. Le lien fonctionne donc au clic du milieu, au
     copier-lien, et l'historique du navigateur reste juste. app.js ajuste sa
     destination selon le projet ouvert (work / side).
   -->
-  <a class="overlay-close" id="overlay-close" href="#/#work" hidden aria-label="Close">
+  <a class="overlay-close theme-light" id="overlay-close" href="#/#work" hidden aria-label="Close">
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor"
             stroke-width="1.7" stroke-linecap="round"/>

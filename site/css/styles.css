@@ -2742,16 +2742,32 @@ body.is-overlay .overlay-close {
   border: 1px solid var(--line);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
   box-shadow: 0 2px 12px -4px rgba(16,35,63,.28);
-  transition: opacity .28s var(--ease), background .2s var(--ease), transform .2s var(--ease);
+  /* Le fondu d'apparition est une ANIMATION, pas une transition — voir le
+     bloc .is-opening / .is-closing plus bas, qui explique pourquoi.
+     La transition ne garde que le survol, qui ne joue que sur un element
+     deja visible et stable. */
+  animation: crossIn .3s var(--ease) both;
+  transition: background .2s var(--ease), transform .2s var(--ease);
 }
 body.is-overlay .overlay-close[hidden] { display: none; }
 
 /* La croix ne participe pas au mouvement : elle apparait une fois la fiche
    posee, et s'efface des que la fermeture commence. Elle est fixee a la
    fenetre, pas a la fiche — la laisser visible pendant la montee la ferait
-   flotter, immobile, au-dessus d'un ecran encore vide. */
+   flotter, immobile, au-dessus d'un ecran encore vide.
+
+   POURQUOI UNE ANIMATION ET NON UNE TRANSITION.
+   Entre deux etudes de cas, la croix repasse par display:none (attribut
+   hidden, pose par setupOverlayClose). Or une transition n'a rien a
+   interpoler quand un element sort de display:none : il n'existe pas d'etat
+   "avant" a partir duquel partir, donc rien ne s'anime et la croix
+   apparaitrait d'un coup. Une animation nommee, elle, demarre normalement
+   des qu'un element est rendu ; et passer de `animation: none` (etat masque)
+   a `animation: crossIn` en relance une neuve a chaque ouverture. */
+@keyframes crossIn { from { opacity: 0; } to { opacity: 1; } }
+
 body.is-overlay.is-opening .overlay-close,
-body.is-overlay.is-closing .overlay-close { opacity: 0; }
+body.is-overlay.is-closing .overlay-close { animation: none; opacity: 0; }
 body.is-overlay .overlay-close svg { width: 20px; height: 20px; }
 body.is-overlay .overlay-close:hover { background: #FFFFFF; transform: scale(1.06); }
 
@@ -2769,7 +2785,27 @@ body.is-overlay .cs:has(.cs-nav) .cs__head { padding-top: var(--s7); }
    La courbe (.16, 1, .3, 1) demarre franchement et se pose tres doucement.
    C'est ce freinage long qui donne la sensation de poids. */
 @keyframes sheetIn  { from { transform: translateY(100vh); } to { transform: translateY(0); } }
-@keyframes sheetOut { from { transform: translateY(0); } to { transform: translateY(100vh); } }
+
+/* LA SORTIE N'EST PAS LA MONTEE A L'ENVERS, et ce n'est pas un choix de
+   style — c'est une contrainte de geometrie.
+
+   A l'ouverture, on part toujours du haut de la fiche : la descendre d'une
+   hauteur d'ecran suffit a la sortir du champ. A la fermeture, non : on peut
+   etre a 2000px dans une etude de cas. Le haut de la fiche est alors bien
+   au-dessus de la fenetre, et il faudrait la faire descendre de 2700px pour
+   liberer l'ecran. translateY(100vh) n'en deplaçait que 695 : l'animation se
+   terminait avec l'etude de cas encore en place, puis le contenu etait
+   remplace d'un coup. C'etait ça, le saut.
+
+   Une distance calculee en JS reglerait le probleme mais ferait filer la
+   fiche a plusieurs milliers de pixels par seconde. On combine donc un
+   glissement court — assez pour lire "la fiche s'en va" — et un fondu qui,
+   lui, aboutit quel que soit le defilement. La page floutee en dessous se
+   denoue en meme temps : c'est elle qui reste. */
+@keyframes sheetOut {
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(22vh); opacity: 0; }
+}
 
 @keyframes underLayerIn  {
   from { transform: scale(1);    opacity: 1; }
@@ -2792,12 +2828,12 @@ body.is-overlay .cs:has(.cs-nav) .cs__head { padding-top: var(--s7); }
    declenche deja la promotion, et le navigateur, lui, sait la limiter a ce
    qui est visible. */
 body.is-overlay.is-opening #page { animation: sheetIn .62s cubic-bezier(.16, 1, .3, 1) both; }
-body.is-overlay.is-closing #page { animation: sheetOut .44s cubic-bezier(.55, 0, .8, .25) both; }
+body.is-overlay.is-closing #page { animation: sheetOut .38s cubic-bezier(.3, 0, .3, 1) both; }
 
 body.is-overlay.is-opening .underlay__inner { animation: underLayerIn .62s cubic-bezier(.16, 1, .3, 1) both; }
 body.is-overlay.is-opening .underlay__shot  { animation: underBlurIn  .62s cubic-bezier(.16, 1, .3, 1) both; }
-body.is-overlay.is-closing .underlay__inner { animation: underLayerOut .44s cubic-bezier(.55, 0, .8, .25) both; }
-body.is-overlay.is-closing .underlay__shot  { animation: underBlurOut  .44s cubic-bezier(.55, 0, .8, .25) both; }
+body.is-overlay.is-closing .underlay__inner { animation: underLayerOut .38s cubic-bezier(.3, 0, .3, 1) both; }
+body.is-overlay.is-closing .underlay__shot  { animation: underBlurOut  .38s cubic-bezier(.3, 0, .3, 1) both; }
 
 /* Pendant l'ouverture, la fiche monte deja : y superposer le fondu de page
    habituel (pageIn) ferait deux mouvements pour un seul evenement. */

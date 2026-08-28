@@ -3167,7 +3167,7 @@ function parseRoute(hash) {
    vous changez l'une, changez l'autre — sinon le contenu est remplace avant
    la fin du mouvement (ou l'ecran reste fige apres). */
 const SHEET_IN_MS  = 620;
-const SHEET_OUT_MS = 440;   /* la sortie est plus rapide que l'entree : on
+const SHEET_OUT_MS = 380;   /* la sortie est plus rapide que l'entree : on
                                regarde arriver une page, on ne regarde pas
                                partir celle qu'on vient de quitter. */
 
