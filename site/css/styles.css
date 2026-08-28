@@ -2659,16 +2659,20 @@ body.is-overlay .underlay {
    decouvrait le fond sombre en bandes sur les cotes, ce qui ressemblait a
    un bug plutot qu'a de la profondeur.
 
-   Le leger agrandissement (1.03) remplace cette reduction. Il donne le meme
-   mouvement, dans l'autre sens, et il a un second role : le flou est
-   applique au contenu, et un flou s'estompe en transparence sur les bords
-   de son propre element. En agrandissant le cadre, cette frange floue sort
-   du champ visible au lieu de laisser un liser delave. */
+   PAS DE MISE A L'ECHELLE NON PLUS, meme un leger agrandissement. Un scale
+   se fait depuis le centre : tout ce qui n'y est pas glisse, vers le haut
+   au-dessus, vers le bas en dessous. Quelques pixels seulement, mais la
+   page derriere est censee etre RESTEE OU ELLE ETAIT — c'est ce qui vend
+   l'idee qu'on pose quelque chose par-dessus elle. Le moindre glissement se
+   voit et trahit le truc. Il ne reste donc que le flou et l'assombrissement,
+   qui eux ne deplacent rien.
+
+   REVENIR EN ARRIERE : remettre `transform: scale(1.03)` ici et les deux
+   lignes transform dans underLayerIn / underLayerOut plus bas. */
 .underlay__inner {
   position: absolute; inset: 0;
   overflow: hidden;
   background: var(--bg);
-  transform: scale(1.03);
   opacity: .82;
 }
 
@@ -2807,14 +2811,8 @@ body.is-overlay .cs:has(.cs-nav) .cs__head { padding-top: var(--s7); }
   to   { transform: translateY(22vh); opacity: 0; }
 }
 
-@keyframes underLayerIn  {
-  from { transform: scale(1);    opacity: 1; }
-  to   { transform: scale(1.03); opacity: .82; }
-}
-@keyframes underLayerOut {
-  from { transform: scale(1.03); opacity: .82; }
-  to   { transform: scale(1);    opacity: 1; }
-}
+@keyframes underLayerIn  { from { opacity: 1; }   to { opacity: .82; } }
+@keyframes underLayerOut { from { opacity: .82; } to { opacity: 1; } }
 @keyframes underBlurIn  { from { filter: blur(0px);  } to { filter: blur(16px); } }
 @keyframes underBlurOut { from { filter: blur(16px); } to { filter: blur(0px);  } }
 

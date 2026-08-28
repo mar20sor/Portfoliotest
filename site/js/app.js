@@ -3526,13 +3526,20 @@ function captureUnderlay() {
   const shot  = el('div', { class: 'underlay__shot' });
 
   /* Le clone est un bloc a part, hors du flux de la page : il n'herite ni de
-     sa largeur ni de sa position de defilement. On lui rend les deux a la
-     main — la largeur mesuree sur l'original (sinon le texte se recompose et
-     la photo ne correspond plus a ce qu'on voyait), et un decalage vers le
-     haut egal au defilement (sinon la photo montre le haut du site alors
-     qu'on avait clique sur une carte tout en bas). */
+     sa largeur ni de sa position. On lui rend les deux a la main.
+
+     La largeur est mesuree sur l'original — sinon le texte se recompose et la
+     photo ne correspond plus a ce qu'on voyait.
+
+     La position, elle, se lit directement sur l'original : ou #page est a
+     l'ecran en cet instant, c'est la que sa copie doit apparaitre. Une
+     version anterieure decalait de -scrollY, en supposant que #page commence
+     au sommet du document. Il n'y commence pas : l'en-tete du site est
+     sticky, donc il occupe bien une place dans le flux, et #page demarre
+     103px plus bas. La photo etait donc systematiquement 103px trop haute et
+     tout glissait a l'ouverture. Mesurer plutot que supposer. */
   shot.style.width = `${live.offsetWidth}px`;
-  shot.style.transform = `translateY(${-Math.round(window.scrollY)}px)`;
+  shot.style.transform = `translateY(${Math.round(live.getBoundingClientRect().top)}px)`;
 
   const copy = snapClone(live);
   freezeSnapMedia(live, copy);
@@ -3579,6 +3586,9 @@ function seedUnderlay() {
   // clientWidth et non innerWidth : la barre de defilement ne fait pas
   // partie de la largeur de mise en page.
   shot.style.width = `${document.documentElement.clientWidth}px`;
+  // Cette page-la n'a jamais ete affichee : on la place ou elle SERAIT, en
+  // haut du site, c'est-a-dire sous l'en-tete (qui occupe le flux).
+  shot.style.transform = `translateY(${head ? head.offsetHeight : 0}px)`;
 
   // Meme structure que la vraie page (#page > main), pour que les selecteurs
   // de mise en page du CSS s'appliquent a l'identique.
