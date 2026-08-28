@@ -4362,6 +4362,13 @@ function start() {
      jamais remplace par le routeur, l'ecouteur survit donc a toutes les
      navigations et n'a pas besoin d'etre nettoye. */
   $('#site-head').addEventListener('click', (ev) => {
+    /* On laisse passer tout clic qui n'est pas un simple clic gauche.
+       Ctrl/Cmd + clic ouvre un onglet, Maj + clic une fenetre : ces clics
+       emettent le meme evenement 'click', et un preventDefault les tuerait
+       tous les trois. Un lien doit rester un lien. (Le clic du milieu, lui,
+       emet 'auxclick' et ne passe deja pas par ici.) */
+    if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+
     const link = ev.target.closest('a[href]');
     if (!link || link.getAttribute('href') !== location.hash) return;
 
