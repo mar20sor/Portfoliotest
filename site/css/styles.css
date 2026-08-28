@@ -2620,16 +2620,37 @@ body.is-overlay {
   --accent-ink: #FFFFFF;
 }
 
-/* L'en-tete du site disparait : la fiche occupe l'ecran, et la croix
-   remplace la navigation. position:fixed plutot que display:none — c'est
-   volontaire : display:none mettrait sa hauteur mesuree a 0, le
-   ResizeObserver de syncHeadHeight ecrirait --head-h:0px sur <html>, et au
-   retour a l'accueil toutes les ancres viseraient 82px trop haut pendant une
-   image. Fixe et invisible, l'en-tete sort du flux (aucune place reservee en
-   haut de la fiche) tout en gardant sa hauteur mesurable. */
+/* L'EN-TETE NE DISPARAIT PAS : IL EST RECOUVERT.
+   Il appartient a la page qu'on laisse derriere ; la fiche passe par-dessus
+   lui comme par-dessus le reste (#page monte a z-index 125 contre ses 120).
+
+   Une version anterieure le masquait carrement (visibility:hidden) et en
+   glissait une copie dans le calque photographie. Ca se voyait : il
+   s'effaçait net a l'ouverture et revenait net a la fermeture — deux ruptures
+   au milieu d'un mouvement cense etre continu. Il reste donc EN PLACE, au
+   meme endroit, simplement cache derriere la fiche.
+
+   position:fixed, et c'est le seul deplacement qu'on lui impose. Il est
+   sticky et colle en haut de la fenetre des qu'on a defile : le fixer a
+   top:0 ne change donc rien a ce qu'on voit, mais le sort du flux. Sans ça
+   il reserverait sa hauteur au-dessus de la fiche, qui ne demarrerait plus a
+   14px du bord mais 100px plus bas — la fiche ne couvrirait plus l'ecran.
+
+   opacity .82 : la meme valeur que .underlay__inner. Ce qui reste visible de
+   lui, c'est le liser de 14px au-dessus de la fiche ; il doit s'assombrir
+   avec le reste de l'arriere-plan, sinon cette bande resterait plus claire
+   que la page floutee qui la prolonge. Le fondu est anime en meme temps que
+   celui du calque, plus bas.
+
+   app.js le rend inerte pendant ce temps (attribut inert) : ce qui est
+   DERRIERE un calque ne se clique pas, ne prend pas le focus et n'est pas
+   annonce. Sans ça, la navigation mobile s'ouvrirait sous la fiche —
+   .site-head porte un z-index qui l'y enferme. pointer-events:none double la
+   mise pour les navigateurs sans inert. */
 body.is-overlay .site-head {
   position: fixed; top: 0; left: 0; right: 0;
-  visibility: hidden; pointer-events: none;
+  opacity: .82;
+  pointer-events: none;
 }
 
 /* Le lien retour flottant fait doublon avec la croix : on le masque partout
@@ -2685,11 +2706,6 @@ body.is-overlay .underlay {
   filter: blur(16px);
 }
 
-/* L'en-tete clone est sorti du .underlay__shot et recolle en haut : dans le
-   clone, position:sticky n'a plus de conteneur de defilement et retomberait
-   au milieu de la photo. */
-.underlay__head { position: absolute; top: 0; left: 0; right: 0; }
-
 /* Les videos et les Lottie du clone ne rejouent pas (ni autoplay, ni JS) :
    elles s'afficheraient noires. app.js les remplace par une image figee de
    leur derniere frame (un <canvas>) ou, a defaut, par un aplat neutre.
@@ -2707,7 +2723,11 @@ body.is-overlay .underlay {
 
 /* ---- La fiche ---- */
 body.is-overlay #page {
-  position: relative; z-index: 1;
+  /* z-index 125 : au-dessus de .site-head (120), qui reste affiche EN
+     DESSOUS, a sa place. La fiche le recouvre au lieu de le remplacer. La
+     croix (150), le portail du prenom (140) et la barre de progression (130)
+     restent eux au-dessus de la fiche. */
+  position: relative; z-index: 125;
   margin-top: 14px;                       /* le liser de photo floutee visible en haut */
   background: var(--bg);                  /* blanc : #page porte .theme-light */
   border-radius: 22px 22px 0 0;
@@ -2733,7 +2753,7 @@ body.is-overlay #page {
 
 body.is-overlay .overlay-close {
   display: flex; align-items: center; justify-content: center;
-  /* z-index 150 contre 1 pour #page : la croix est soeur de la fiche, donc
+  /* z-index 150 contre 125 pour #page : la croix est soeur de la fiche, donc
      elle passe au-dessus de TOUT son contenu d'un coup, .cs-nav comprise
      (qui monte a 100 quand elle devient une barre collee en haut sous
      1000px, mais reste enfermee dans le contexte d'empilement de #page). */
@@ -2836,9 +2856,16 @@ body.is-overlay .cs:has(.cs-nav) .cs__head { padding-top: var(--s7); }
 body.is-overlay.is-opening #page { animation: sheetIn .62s cubic-bezier(.16, 1, .3, 1) both; }
 body.is-overlay.is-closing #page { animation: sheetOut .38s cubic-bezier(.3, 0, .3, 1) both; }
 
-body.is-overlay.is-opening .underlay__inner { animation: underLayerIn .62s cubic-bezier(.16, 1, .3, 1) both; }
+/* L'en-tete du site suit le meme assombrissement que le calque, a la meme
+   duree et sur la meme courbe : il fait partie de l'arriere-plan, il doit
+   reculer avec lui. A la fermeture, underLayerOut le ramene a 1 juste avant
+   que .is-overlay ne tombe — la valeur d'arrivee de l'animation et l'etat de
+   repos sont la meme, donc rien ne saute au raccord. */
+body.is-overlay.is-opening .underlay__inner,
+body.is-overlay.is-opening .site-head { animation: underLayerIn .62s cubic-bezier(.16, 1, .3, 1) both; }
 body.is-overlay.is-opening .underlay__shot  { animation: underBlurIn  .62s cubic-bezier(.16, 1, .3, 1) both; }
-body.is-overlay.is-closing .underlay__inner { animation: underLayerOut .38s cubic-bezier(.3, 0, .3, 1) both; }
+body.is-overlay.is-closing .underlay__inner,
+body.is-overlay.is-closing .site-head { animation: underLayerOut .38s cubic-bezier(.3, 0, .3, 1) both; }
 body.is-overlay.is-closing .underlay__shot  { animation: underBlurOut  .38s cubic-bezier(.3, 0, .3, 1) both; }
 
 /* Le fondu de page habituel (pageIn) est neutralise pour l'ouverture et la
