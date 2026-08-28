@@ -2620,22 +2620,17 @@ body.is-overlay {
   --accent-ink: #FFFFFF;
 }
 
-/* L'EN-TETE NE BOUGE PAS. Il appartient a la page qu'on laisse derriere, et
-   c'est tout : la fiche passe par-dessus lui comme par-dessus le reste.
-   Aucune regle n'est necessaire ici — il garde son position:sticky et sa
-   place dans le flux. Il suffit que la fiche passe devant, d'ou le z-index
-   plus haut qu'elle plus bas.
-
-   Une version anterieure le masquait (visibility:hidden) pour degager
-   l'ecran. Le resultat se voyait : l'en-tete s'effaçait net a l'ouverture et
-   revenait net a la fermeture, deux ruptures pour un mouvement cense etre
-   continu. Il reste donc affiche, et la fiche vient le recouvrir a mesure
-   qu'on defile — ce qui est exactement ce qu'un calque est cense faire.
-
-   app.js le rend inerte pendant ce temps (attribut inert) : ce qui est
-   DERRIERE un calque ne se clique pas, ne prend pas le focus et n'est pas
-   annonce. Sans ça, la navigation mobile s'ouvrirait sous la fiche —
-   .site-head porte un z-index qui l'enferme sous elle. */
+/* L'en-tete du site disparait : la fiche occupe l'ecran, et la croix
+   remplace la navigation. position:fixed plutot que display:none — c'est
+   volontaire : display:none mettrait sa hauteur mesuree a 0, le
+   ResizeObserver de syncHeadHeight ecrirait --head-h:0px sur <html>, et au
+   retour a l'accueil toutes les ancres viseraient 82px trop haut pendant une
+   image. Fixe et invisible, l'en-tete sort du flux (aucune place reservee en
+   haut de la fiche) tout en gardant sa hauteur mesurable. */
+body.is-overlay .site-head {
+  position: fixed; top: 0; left: 0; right: 0;
+  visibility: hidden; pointer-events: none;
+}
 
 /* Le lien retour flottant fait doublon avec la croix : on le masque partout
    en mode fiche (app.js le neutralise aussi, ceinture et bretelles). */
@@ -2690,6 +2685,11 @@ body.is-overlay .underlay {
   filter: blur(16px);
 }
 
+/* L'en-tete clone est sorti du .underlay__shot et recolle en haut : dans le
+   clone, position:sticky n'a plus de conteneur de defilement et retomberait
+   au milieu de la photo. */
+.underlay__head { position: absolute; top: 0; left: 0; right: 0; }
+
 /* Les videos et les Lottie du clone ne rejouent pas (ni autoplay, ni JS) :
    elles s'afficheraient noires. app.js les remplace par une image figee de
    leur derniere frame (un <canvas>) ou, a defaut, par un aplat neutre.
@@ -2707,11 +2707,7 @@ body.is-overlay .underlay {
 
 /* ---- La fiche ---- */
 body.is-overlay #page {
-  /* z-index 125 : au-dessus de .site-head (120), qui reste affiche en
-     dessous. La fiche le recouvre donc a mesure qu'on defile, au lieu de
-     glisser dessous. La croix (150) et la barre de progression (130) restent
-     au-dessus de la fiche. */
-  position: relative; z-index: 125;
+  position: relative; z-index: 1;
   margin-top: 14px;                       /* le liser de photo floutee visible en haut */
   background: var(--bg);                  /* blanc : #page porte .theme-light */
   border-radius: 22px 22px 0 0;

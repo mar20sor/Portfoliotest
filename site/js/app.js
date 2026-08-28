@@ -3290,16 +3290,6 @@ function paint(hash, route, mode) {
   body.classList.remove('is-closing');
   if (!isCase) clearUnderlay();       // on jette la photo : elle a servi
 
-  /* L'en-tete du site reste VISIBLE sous la fiche (voir styles.css), mais il
-     n'est plus atteignable : ce qui est derriere un calque ne se clique pas.
-     inert coupe d'un coup le clic, le focus clavier et l'annonce vocale —
-     trois choses qu'il faudrait sinon neutraliser separement, et qui se
-     desynchronisent toujours. Concretement, ça evite qu'on ouvre la
-     navigation mobile SOUS la fiche, ou qu'une tabulation aille se perdre
-     sur un lien invisible. */
-  const siteHead = $('#site-head');
-  if (siteHead) siteHead.toggleAttribute('inert', isCase);
-
   // La fonction qui remplace reellement le contenu.
   const swap = () => {
     main.replaceChildren(node);       // vide puis remplit, en une operation
@@ -3529,6 +3519,7 @@ function freezeSnapMedia(live, copy) {
 function captureUnderlay() {
   const under = $('#underlay');
   const live  = $('#page');
+  const head  = $('#site-head');
   if (!under || !live) return;
 
   const inner = el('div', { class: 'underlay__inner' });
@@ -3555,9 +3546,17 @@ function captureUnderlay() {
   shot.append(copy);
   inner.append(shot);
 
-  /* Pas de copie de l'en-tete : le vrai reste affiche a sa place pendant
-     toute la duree de la fiche (voir styles.css, section 11 bis), opaque et
-     exactement au meme endroit. Une copie serait invisible sous lui. */
+  /* L'en-tete du site est colle en haut (position:sticky). Dans le clone il
+     n'a plus de conteneur de defilement de reference : il retomberait a sa
+     place "naturelle", tout en haut du document — donc hors ecran des qu'on
+     a defile. On le sort du bloc decale et on le recolle en absolu, ce qui
+     reproduit exactement ce que l'oeil voyait. */
+  if (head) {
+    const headCopy = snapClone(head);
+    headCopy.classList.add('underlay__head');
+    headCopy.classList.remove('is-scrolled');
+    inner.append(headCopy);
+  }
 
   under.replaceChildren(inner);
 
@@ -3607,6 +3606,14 @@ function seedUnderlay() {
 
   shot.append(fake);
   inner.append(shot);
+
+  if (head) {
+    const headCopy = snapClone(head);
+    headCopy.classList.add('underlay__head');
+    headCopy.classList.remove('is-scrolled');
+    inner.append(headCopy);
+  }
+
   under.replaceChildren(inner);
 
   /* snapKey reste null : cette page reconstruite ne correspond a aucune
