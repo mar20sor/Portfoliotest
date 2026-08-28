@@ -224,7 +224,7 @@ export const PROJECTS = [
     poster: { label: '24 → 9', figure: 'rules' },
     title: 'Scheduling constraints',
     client: 'Petal',
-    tagline: 'Redesigning a rule-making engine, reducing rules from **24 to 9**.',
+    tagline: 'Redesigning a rule engine: from 24 rules to 9',
     tags: ['Systems design', 'Research', 'Healthcare SaaS'],
     gist: { role: 'UX / UI, research', duration: '4 months', team: '1 designer, 1 PM',
       company: { label: 'Petal', href: 'https://www.petal-health.com/en/' } },
