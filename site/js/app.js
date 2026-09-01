@@ -578,6 +578,21 @@ function pageCase(project) {
     // setupBackLink() (plus bas) le garde donc masque sur ces pages
     // precises et ne l'utilise que sur les pages sans processus (about,
     // gap, projets sans sections).
+    // TROIS DETAILS DU BALISAGE CI-DESSOUS N'EXISTENT QUE POUR LE MOBILE
+    // (sous 1000px la nav devient la barre flottante du bas — styles.css §12) :
+    //
+    //   data-n       le meme numero, sans son zero de tete. La maquette met un
+    //                simple "1" dans la pastille du mobile, la colonne du
+    //                bureau garde "01" (aligne, tabular-nums). Un attribut
+    //                plutot qu'un second <span> : le CSS du mobile le lit avec
+    //                content: attr(data-n), donc rien n'est duplique dans le DOM.
+    //   aria-hidden  le numero est decoratif dans les deux mises en page — la
+    //                liste est deja un <ol>, qui porte l'ordre. Sans ca, le
+    //                mobile ferait annoncer "01, 1, Overview".
+    //   .cs-nav__sprog  la progression PROPRE A LA SECTION en cours, soulignant
+    //                l'entree active (demande de la maquette : "each active
+    //                section its own progressbar"). Masquee sur le bureau, qui
+    //                garde .cs-nav__prog, la progression d'ensemble.
     const nav = el('nav', { class: 'cs-nav', 'aria-label': d.csSections });
     nav.innerHTML = `
       <a class="cs-nav__back" href="#/#${escapeAttr(c.kind)}">
@@ -585,13 +600,15 @@ function pageCase(project) {
       </a>
       <ol>
         <li><a href="${base}#overview" data-spy="sec-overview">
-          <span class="cs-nav__num">01</span>
+          <span class="cs-nav__num" data-n="1" aria-hidden="true">01</span>
           <span>${escapeAttr(d.csOverview)}</span>
+          <span class="cs-nav__sprog" aria-hidden="true"><span class="cs-nav__sbar"></span></span>
         </a></li>
         ${c.sections.map((s, i) => `
           <li><a href="${base}#${escapeAttr(s.id)}" data-spy="sec-${escapeAttr(s.id)}">
-            <span class="cs-nav__num">${String(i + 2).padStart(2, '0')}</span>
+            <span class="cs-nav__num" data-n="${i + 2}" aria-hidden="true">${String(i + 2).padStart(2, '0')}</span>
             <span>${escapeAttr(s.label)}</span>
+            <span class="cs-nav__sprog" aria-hidden="true"><span class="cs-nav__sbar"></span></span>
           </a></li>`).join('')}
       </ol>
       <div class="cs-nav__prog">
@@ -3334,8 +3351,21 @@ function paint(hash, route, mode) {
        pageIn repartait donc de opacity 0 — l'etude de cas s'effaçait juste
        apres s'etre posee. En fermeture, pire : le fondu s'appliquait a la
        page d'accueil une fois la photo du dessous jetee, donc sur le bleu
-       nu. C'etaient les deux sauts. On ne pose plus la classe du tout. */
-    if (mode === 'normal') {
+       nu. C'etaient les deux sauts. On ne pose plus la classe du tout.
+
+       ET JAMAIS SUR UNE ETUDE DE CAS, meme en mode 'normal'. Deux cas y
+       tombent : l'arrivee directe sur l'URL d'une fiche, et le mouvement
+       reduit. pageIn pose un translateY sur #main, or un ancetre transforme
+       devient le REFERENTIEL de ses descendants en position:fixed — le meme
+       piege que la note plus bas sur #page, a ceci pres que la barre de
+       navigation du mobile (.cs-nav sous 1000px, styles.css §12) vit, elle,
+       DANS #main. Le temps du fondu, "en bas de la fenetre" devenait donc
+       "en bas de l'article", soit plusieurs milliers de pixels hors champ :
+       la barre manquait a l'ouverture, puis apparaissait d'un coup.
+       Rien n'est perdu au passage — le commentaire de render() dit deja
+       qu'on n'anime pas le premier rendu, et sous mouvement reduit le fondu
+       etait de toute facon ramene a .01ms. */
+    if (mode === 'normal' && !isCase) {
       // void main.offsetWidth force le navigateur a recalculer la mise en page
       // MAINTENANT. Sans cette ligne, retirer puis remettre la classe dans la
       // meme instruction ne relancerait pas l'animation.
@@ -3761,12 +3791,35 @@ function setupScrollProgress() {
   const fill = $('#progress-fill');
   const head = $('#site-head');
 
+  /* LA FIN DE LA BARRE EST LA FIN DE LA LECTURE, PAS LA FIN DU DOCUMENT.
+     Une etude de cas se termine par "projet suivant" puis le pied de page :
+     deux blocs qu'on ne lit plus, et qui pesaient pourtant dans le calcul.
+     Les dernieres lignes de l'etude tombaient donc vers 75 %, et la barre
+     n'atteignait 100 % qu'une fois les cartes du projet suivant depassees —
+     elle promettait du texte qui n'existait pas.
+
+     On s'arrete au haut de .cs-next quand il y en a un ; sinon, faute de
+     sortie identifiable, le bas du document comme avant. C'est le meme point
+     de rupture que le retrait de la barre flottante du mobile
+     (updateNavRetreat) : les deux disent "l'etude est finie" au meme moment.
+
+     Releve ici et non a chaque evenement : setupScrollProgress est rappelee a
+     chaque rendu (voir render), donc le noeud ne peut pas changer entre-temps.
+     Sa POSITION, elle, est remesuree a chaque fois — les images qui arrivent
+     rallongent la page sous nos pieds. */
+  const outro = $('.cs-next');
+
   const update = () => {
     // scrollHeight = hauteur totale du document.
     // innerHeight  = hauteur de la fenetre.
-    // La difference est la distance maximale que l'on peut parcourir.
-    const max = document.documentElement.scrollHeight - window.innerHeight;
-    const pct = max > 0 ? Math.min(100, (window.scrollY / max) * 100) : 0;
+    // La difference est la distance maximale que l'on peut parcourir ; avec
+    // une sortie, on s'arrete a l'instant ou son haut arrive en bas de la
+    // fenetre, c'est-a-dire ou la derniere ligne lisible a fini de defiler.
+    const end = outro
+      ? outro.getBoundingClientRect().top + window.scrollY
+      : document.documentElement.scrollHeight;
+    const max = end - window.innerHeight;
+    const pct = max > 0 ? Math.min(100, Math.max(0, (window.scrollY / max) * 100)) : 0;
     fill.style.width = pct + '%';
     head.classList.toggle('is-scrolled', window.scrollY > 8);
   };
@@ -3963,7 +4016,12 @@ function setupCaseBehaviours() {
     const item = link.parentElement;            // le <li>
     const itemRect = item.getBoundingClientRect();
     const listRect = list.getBoundingClientRect();
-    const pad = 20;                             // un peu d'air, pour montrer qu'il y a une suite
+    /* De l'air entre l'etape et le bord, pour montrer qu'il y a une suite.
+       Sur la barre flottante du mobile, cette marge doit DEPASSER le retrait
+       interne de la pilule (24px, styles.css §12) : en dessous, une etape
+       posee pile sur ce retrait serait jugee deja visible, et s'arreterait
+       donc systematiquement au ras du fondu de bord. */
+    const pad = 36;
 
     let delta = 0;
     if (itemRect.left - listRect.left < pad)   delta = (itemRect.left - listRect.left) - pad;
@@ -4002,6 +4060,42 @@ function setupCaseBehaviours() {
                      >= document.documentElement.scrollHeight - 2;
     if (atBottom) current = secs[secs.length - 1];
     setActive(current.id);
+    // Rendue a l'appelant : la progression par section ci-dessous a besoin de
+    // savoir laquelle est active, et la recalculer serait refaire cette boucle.
+    return current;
+  };
+
+  /* --- progression DANS la section en cours (barre du mobile) ---
+     La maquette souligne l'entree active d'une barre qui lui est propre :
+     elle se remplit pendant qu'on lit cette etape-la, puis repart de zero sous
+     la suivante. C'est une lecture differente de .cs-nav__prog juste en
+     dessous, qui mesure l'avancement dans TOUT le processus — le bureau garde
+     celle-la, le mobile n'affiche que celle-ci (styles.css §12).
+
+     LE MEME REPERE QUE LE SCROLL-SPY, ET C'EST TOUT L'INTERET : une section
+     s'allume quand son haut passe la ligne de declenchement, et s'eteint quand
+     le haut de la suivante la passe a son tour. En mesurant le trajet entre
+     ces deux memes instants, la barre atteint exactement 100 % au moment ou
+     l'entree suivante s'allume. Prendre le haut de la fenetre comme repere,
+     par exemple, laisserait toujours un reste visible au moment du relais.
+
+     Derniere section : il n'y a pas de "suivante" dont attendre le haut. On
+     vise alors son bas moins une hauteur d'ecran, comme le fait updateProgress
+     — c'est-a-dire l'instant ou elle finit de defiler. */
+  const sbars = new Map(links.map(a => [a.dataset.spy, $('.cs-nav__sbar', a)]));
+
+  const updateSectionProgress = (sec) => {
+    const lineY = readHeadHeight() + 80;
+    const top   = window.scrollY;
+    const start = sec.getBoundingClientRect().top + top;
+    const next  = secs[secs.indexOf(sec) + 1];
+    const end   = next ? next.getBoundingClientRect().top + top
+                       : sec.getBoundingClientRect().bottom + top - window.innerHeight;
+    const span  = Math.max(1, end - start);
+    const p = Math.round(Math.min(100, Math.max(0, ((top + lineY - start) / span) * 100)));
+    // Les inactives sont remises a zero : leur barre est masquee en CSS, mais
+    // si on ne la rembobinait pas, revenir en arriere la montrerait pleine.
+    sbars.forEach((bar, id) => { if (bar) bar.style.width = (id === sec.id ? p : 0) + '%'; });
   };
 
   /* --- progression dans le processus ---
@@ -4028,13 +4122,38 @@ function setupCaseBehaviours() {
     track.setAttribute('aria-valuenow', String(p));
   };
 
-  /* Un seul ecouteur pour les deux calculs. Le defilement se declenche des
-     dizaines de fois par seconde : mieux vaut une fonction qui fait deux
-     choses que deux fonctions qui font la queue.
+  /* --- la barre flottante du mobile se range sur "projet suivant" ---
+     .cs-next est hors de la nav et hors des sections : c'est la sortie de
+     l'etude de cas. Tant qu'elle n'a pas atteint la barre, celle-ci sert
+     encore ; une fois dessous, elle ne ferait que recouvrir les cartes.
+
+     On compare au HAUT de la barre plutot qu'au bas de la fenetre, pour que
+     le retrait coincide avec le moment ou les deux se touchent vraiment.
+     offsetHeight et non getBoundingClientRect : une fois rangee, la barre est
+     translatee, et son rectangle mesure ne dirait plus ou elle revient.
+
+     Sur le bureau la classe est posee de la meme facon mais ne fait rien —
+     .is-gone n'existe que sous 1000px (styles.css §12), la ou la nav flotte.
+     Un test de largeur ici ferait deux sources de verite pour un seuil. */
+  const nav = $('.cs-nav');
+  const csNext = $('.cs-next');
+  const updateNavRetreat = () => {
+    if (!nav || !csNext) return;
+    const barTop = window.innerHeight - nav.offsetHeight - 40;
+    nav.classList.toggle('is-gone', csNext.getBoundingClientRect().top <= barTop);
+  };
+
+  /* Un seul ecouteur pour les trois calculs. Le defilement se declenche des
+     dizaines de fois par seconde : mieux vaut une fonction qui en fait trois
+     que trois fonctions qui font la queue.
      { passive: true } promet au navigateur qu'on n'appellera pas
      preventDefault() ; il peut alors continuer a defiler sans nous attendre,
      ce qui garde le scroll fluide sur telephone. */
-  const onScroll = () => { updateActive(); updateProgress(); };
+  const onScroll = () => {
+    updateSectionProgress(updateActive());
+    updateProgress();
+    updateNavRetreat();
+  };
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll);
   addCleanup(() => {
