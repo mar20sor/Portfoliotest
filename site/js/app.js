@@ -4068,9 +4068,9 @@ function setupCaseBehaviours() {
   /* --- progression DANS la section en cours (barre du mobile) ---
      La maquette souligne l'entree active d'une barre qui lui est propre :
      elle se remplit pendant qu'on lit cette etape-la, puis repart de zero sous
-     la suivante. C'est une lecture differente de .cs-nav__prog juste en
-     dessous, qui mesure l'avancement dans TOUT le processus — le bureau garde
-     celle-la, le mobile n'affiche que celle-ci (styles.css §12).
+     la suivante. C'est une lecture differente du rail vertical du bureau
+     (.cs-nav__prog), qui mesure l'avancement dans TOUT le processus — le
+     bureau garde celui-la, le mobile n'affiche que celle-ci (styles.css §12).
 
      LE MEME REPERE QUE LE SCROLL-SPY, ET C'EST TOUT L'INTERET : une section
      s'allume quand son haut passe la ligne de declenchement, et s'eteint quand
@@ -4115,7 +4115,10 @@ function setupCaseBehaviours() {
     const end    = last.getBoundingClientRect().bottom + top - window.innerHeight;
     const span   = Math.max(1, end - start);
     const p = Math.round(Math.min(100, Math.max(0, ((top - start) / span) * 100)));
-    bar.style.width = p + '%';
+    // height et non width : le rail est vertical, le long de la liste
+    // (.cs-nav__prog, styles.css §8b). Il n'existe que sur le bureau — le
+    // mobile masque tout le bloc et affiche la ligne du haut de la fenetre.
+    bar.style.height = p + '%';
     pct.textContent = p + '%';
     // aria-valuenow permet a un lecteur d'ecran d'annoncer la progression,
     // exactement comme la barre la montre a l'oeil.
