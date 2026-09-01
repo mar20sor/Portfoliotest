@@ -801,6 +801,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
      deborder de l'ecran. */
   max-height: calc(100vh - var(--head-h) - var(--s8));
   overflow-y: auto;
+
+  /* Deux colonnes : le rail de progression, puis la liste. Une grille plutot
+     qu'un flex parce que le rail est le DERNIER enfant dans le DOM (.cs-nav__prog,
+     voir pageCase) et doit s'afficher en PREMIER : grid-column/grid-row le
+     placent sans toucher au balisage, et sans wrapper supplementaire.
+     Le rail s'etire sur toute la hauteur de la liste tout seul — les deux
+     partagent la rangee 2, et align-items vaut stretch par defaut. */
+  display: grid;
+  grid-template-columns: 2px minmax(0, 1fr);
+  column-gap: var(--s3);
 }
 /* Le lien retour, en premiere position dans la nav laterale — meme famille
    visuelle que .back-link (le bouton flottant utilise ailleurs sur le site)
@@ -808,8 +818,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
    .cs-nav plutot que de rester plaque en haut de l'ecran. */
 /* Lien discret, pas un bouton/pilule : une nette separation avec la liste
    qui suit (marge genereuse) suffit a le distinguer, sans chrome propre —
-   cf. https://www.rachelchen.tech/projects/openai (demande explicite). */
+   cf. https://www.rachelchen.tech/projects/openai (demande explicite).
+   Il occupe la rangee du haut, a cheval sur les deux colonnes : le rail ne
+   commence qu'avec la liste. justify-self l'empeche d'etre etire sur toute la
+   largeur de la grille — il doit rester de la largeur de son texte, sinon sa
+   zone cliquable deborde tres au-dela du libelle. C'est aussi sa marge basse
+   qui espace les deux rangees, la grille n'ayant pas de row-gap. */
 .cs-nav__back {
+  grid-column: 1 / -1; justify-self: start;
   display: inline-flex; align-items: center; gap: var(--s2);
   margin-bottom: var(--s6);
   text-decoration: none; color: var(--ink-soft);
@@ -817,37 +833,63 @@ button { font: inherit; color: inherit; cursor: pointer; }
   transition: transform .2s var(--ease), color .2s var(--ease);
 }
 .cs-nav__back:hover { transform: translateX(-3px); color: var(--ink); }
-.cs-nav ol { display: grid; gap: 2px; }
+.cs-nav ol { grid-column: 2; grid-row: 2; display: grid; gap: 2px; }
 .cs-nav a {
   display: flex; align-items: baseline; gap: var(--s3);
   padding: var(--s2) var(--s3);
   border-radius: var(--radius-sm);
   text-decoration: none; color: var(--ink-faint);
   font-size: var(--fs-small);
-  border-left: 2px solid transparent;
-  transition: color .2s var(--ease), background .2s var(--ease), border-color .2s var(--ease);
+  transition: color .2s var(--ease), background .2s var(--ease);
 }
 .cs-nav a:hover { color: var(--ink); background: var(--veil); }
-/* .is-active est posee par app.js via IntersectionObserver : c'est le
-   "scroll-spy" qui suit la section actuellement visible. */
+/* .is-active est posee par app.js via le scroll-spy : c'est elle qui suit la
+   section actuellement lue.
+   L'entree active ne porte QUE de la couleur et de la graisse : ni pilule de
+   fond, ni filet a sa gauche. Le fond gris est reserve au survol — quand
+   l'entree active en portait un aussi, survoler une autre entree donnait deux
+   pilules a l'ecran et on ne savait plus laquelle disait "vous etes ici".
+   C'est le rail continu a gauche de la liste qui porte maintenant le reperage
+   (.cs-nav__prog plus bas) : il ne se contente pas de designer l'entree en
+   cours, il montre le chemin parcouru dans toute l'etude de cas. */
 .cs-nav a.is-active {
-  color: var(--accent); background: var(--veil-strong);
-  border-left-color: var(--accent); font-weight: var(--w-semibold);
+  color: var(--accent); font-weight: var(--w-semibold);
 }
+
+/* En colonne, le numero reste du texte nu : "01", "02", alignes sur une meme
+   largeur. La pastille ronde de la maquette n'existe que sur la barre du
+   mobile (section 12), ou elle sert a distinguer le numero du libelle dans une
+   rangee horizontale serree — ici, la colonne les separe deja. */
 .cs-nav__num { font-size: var(--fs-tiny); font-variant-numeric: tabular-nums; opacity: .7; }
 
 /* La progression propre a chaque section n'existe QUE sur la barre flottante
    du mobile (section 12). En colonne, le sommaire tient tout entier a l'ecran
-   et .cs-nav__prog juste dessous dit deja ou l'on en est dans le processus :
-   une seconde barre par entree n'ajouterait qu'un bruit visuel. Le balisage
-   est pose dans tous les cas (pageCase) et masque ici — c'est le mobile qui le
-   revele, plutot que le JS qui construirait deux nav differentes. */
+   et le rail juste a cote (.cs-nav__prog) dit deja ou l'on en est dans le
+   processus : une seconde barre par entree n'ajouterait qu'un bruit visuel. Le
+   balisage est pose dans tous les cas (pageCase) et masque ici — c'est le
+   mobile qui le revele, plutot que le JS qui construirait deux nav
+   differentes. */
 .cs-nav__sprog { display: none; }
 
-.cs-nav__prog { margin-top: var(--s5); }
-.cs-nav__track { height: 3px; background: var(--line-soft); border-radius: 3px; overflow: hidden; }
-.cs-nav__bar { height: 100%; width: 0%; background: var(--accent); border-radius: 3px; }
-.cs-nav__pct { margin-top: var(--s2); font-size: var(--fs-tiny); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+/* La progression d'ensemble : un rail vertical le long de la liste, et non
+   plus une barre horizontale posee dessous. Meme balisage, meme calcul
+   (updateProgress) — seule l'orientation change, d'ou height et non width sur
+   .cs-nav__bar, cote JS comme ici.
+   Le rail est retreci de la hauteur du padding vertical d'une entree, de sorte
+   qu'il commence a la premiere ligne de texte et finisse a la derniere, plutot
+   qu'a la zone cliquable qui deborde des deux cotes. */
+.cs-nav__prog { grid-column: 1; grid-row: 2; }
+.cs-nav__track {
+  width: 2px; margin-block: var(--s2);
+  height: calc(100% - 2 * var(--s2));
+  background: var(--line-soft); border-radius: 1px; overflow: hidden;
+}
+.cs-nav__bar { width: 100%; height: 0%; background: var(--accent); border-radius: 1px; }
+/* Le pourcentage chiffre disparait : le rail est desormais visible en
+   permanence a cote de la liste, et il dit la meme chose sans occuper de
+   ligne. La valeur reste annoncee aux lecteurs d'ecran — updateProgress tient
+   aria-valuenow a jour sur .cs-nav__track, qui porte role="progressbar". */
+.cs-nav__pct { display: none; }
 
 /* ---- 8c. Une section de processus ---- */
 .cs-sec {
@@ -3204,7 +3246,7 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
     padding: 6px var(--s3);
     font-size: var(--fs-body); line-height: 1.2;
     white-space: nowrap;
-    border-left: 0; border-radius: var(--radius-pill);
+    border-radius: var(--radius-pill);
   }
   .cs-nav a:hover { background: var(--veil-strong); }
 
@@ -3226,14 +3268,9 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
   }
   .cs-nav__num::after { content: attr(data-n); font-size: 13px; line-height: 1; }
 
-  /* L'entree active : bleue, sans pilule de fond — le fond gris est reserve au
-     survol et a l'appui, sinon les deux etats deviendraient indistinguables. */
-  .cs-nav a.is-active {
-    border-left: 0;
-    background: transparent;
-    color: var(--accent);
-    font-weight: var(--w-semibold);
-  }
+  /* L'entree active se contente de la regle de la section 8b (bleue, en gras,
+     sans pilule de fond) : les deux mises en page traitent la selection de la
+     meme facon. Ne reste ici que la pastille, qui n'existe que sur mobile. */
   .cs-nav a.is-active .cs-nav__num { background: var(--accent); }
 
   /* Le soulignement de l'entree active EST sa barre de progression : il se
