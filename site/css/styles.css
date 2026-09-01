@@ -192,6 +192,25 @@ html[data-theme="light"],
   /* Ombres plus discretes : sur fond blanc, une ombre marquee salit. */
   --shadow:      0 8px 24px -12px rgba(16,35,63,.25);
   --shadow-lg:   0 20px 50px -20px rgba(16,35,63,.30);
+
+  /* ---- LE VERRE ---------------------------------------------------------
+     Deux objets seulement flottent AU-DESSUS d'une etude de cas : la croix de
+     fermeture et, sur mobile, la barre de navigation. Ils ne sont pas dans la
+     page, ils sont poses dessus — d'ou le blanc translucide et le flou, qui
+     laissent deviner le texte qui passe en dessous plutot que de le masquer.
+
+     Les trois valeurs vivent ICI et non dans chaque regle : recopiees, elles
+     divergeraient a la premiere retouche, et les deux objets cesseraient de
+     se ressembler. Elles sont dans le theme clair parce que c'est un blanc :
+     les deux elements qui s'en servent portent .theme-light, la croix
+     directement, la barre via #page.                                       */
+  --glass:        rgba(255, 255, 255, .72);
+  --glass-blur:   blur(14px);
+  --glass-shadow: 0 2px 12px -4px rgba(16, 35, 63, .28);
+  /* Le meme blanc, en transparence totale. Sert d'arrivee aux degrades qui
+     estompent les bords de la barre : `transparent` vaut rgba(0,0,0,0), donc
+     un degrade qui y va traverse des gris et salit le fondu. */
+  --glass-0:      rgba(255, 255, 255, 0);
 }
 
 
@@ -707,11 +726,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 /* La fiche d'identite : role, duree, equipe, outils. */
+/* Sans filets au-dessus et en dessous : le padding et la marge suffisent a
+   detacher le bloc, et deux traits pleine largeur en haut d'une etude de cas
+   la decoupaient en tranches avant meme qu'on ait commence a lire. Le retrait
+   vertical reste, lui — c'est lui qui tient le rythme, pas les traits. */
 .gist {
   display: grid; gap: var(--s5);
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   padding-block: var(--s5);
-  border-block: 1px solid var(--line);
   margin-bottom: var(--s7);
 }
 .gist dt {
@@ -813,6 +835,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-left-color: var(--accent); font-weight: var(--w-semibold);
 }
 .cs-nav__num { font-size: var(--fs-tiny); font-variant-numeric: tabular-nums; opacity: .7; }
+
+/* La progression propre a chaque section n'existe QUE sur la barre flottante
+   du mobile (section 12). En colonne, le sommaire tient tout entier a l'ecran
+   et .cs-nav__prog juste dessous dit deja ou l'on en est dans le processus :
+   une seconde barre par entree n'ajouterait qu'un bruit visuel. Le balisage
+   est pose dans tous les cas (pageCase) et masque ici — c'est le mobile qui le
+   revele, plutot que le JS qui construirait deux nav differentes. */
+.cs-nav__sprog { display: none; }
 
 .cs-nav__prog { margin-top: var(--s5); }
 .cs-nav__track { height: 3px; background: var(--line-soft); border-radius: 3px; overflow: hidden; }
@@ -2796,10 +2826,12 @@ body.is-overlay .overlay-close {
   width: 42px; height: 42px;
   border-radius: 50%;
   color: var(--ink);
-  background: rgba(255,255,255,.72);
-  border: 1px solid var(--line);
-  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-  box-shadow: 0 2px 12px -4px rgba(16,35,63,.28);
+  /* Le liser a saute : l'ombre et le flou suffisent a detacher la croix du
+     fond, et un trait fin la faisait lire comme un bouton de formulaire.
+     Voir --glass dans la section 1 : la barre du mobile a le meme verre. */
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
   /* Le fondu d'apparition est une ANIMATION, pas une transition — voir le
      bloc .is-opening / .is-closing plus bas, qui explique pourquoi.
      La transition ne garde que le survol, qui ne joue que sur un element
@@ -2900,6 +2932,14 @@ body.is-overlay .cs:has(.cs-nav) .cs__head { padding-top: var(--s7); }
          background-color: rgba(6, 22, 43, 0); }
 }
 
+/* L'entree de la barre flottante du mobile, une fois la fiche posee. Voir la
+   note dans la section 12, qui explique pourquoi elle ne peut pas monter avec
+   elle. Meme mouvement que la fiche, en plus court : elle vient du bas. */
+@keyframes csBarIn {
+  from { transform: translateY(calc(100% + 20px)); opacity: 0; }
+  to   { transform: none;                          opacity: 1; }
+}
+
 /* .is-opening (ouverture) et .is-closing (fermeture) sont posees puis
    retirees par app.js.
 
@@ -2944,41 +2984,303 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
   }
   .cs__head, .editorial { padding-top: var(--s6); }
 
+  /* --- LA BARRE FLOTTANTE DU BAS (maquette Figma, noeud 284:2290) --------
+     Sous 1000px, le sommaire quittait le flux pour se coller EN HAUT de la
+     fiche, sous l'en-tete. Deux raisons de le descendre :
+
+       - l'en-tete du site est inerte tant qu'une fiche est ouverte (voir
+         section 11 bis) ; toute cette bande haute etait donc du decor mort,
+         alors que le bas de l'ecran est la seule zone qu'un pouce atteint ;
+       - c'etait une barre pleine largeur posee au sommet de la fiche, donc
+         exactement l'element qui repeignait par-dessus ses coins arrondis —
+         la raison d'etre du overflow:clip de #page.
+
+     Elle devient donc une pilule flottante, avec le bouton retour sorti a sa
+     gauche en pastille ronde. La liste, elle, ne change pas de nature : elle
+     defile toujours horizontalement (la maquette le demande explicitement),
+     et revealInStrip (app.js) la fait deja glisser jusqu'a l'etape lue.
+
+     position:fixed et non sticky : la barre doit rester au bas de la FENETRE
+     pendant 4000px de defilement. Elle vit dans #page, dont le contexte
+     d'empilement (z-index 125) la maintient sous la croix (150) et sous le
+     portail du prenom (140) — c'est voulu dans les deux cas. Pendant les
+     animations d'ouverture et de fermeture, #page porte un transform et
+     devient donc son bloc conteneur : la barre monte avec la fiche, puis se
+     recale sur la fenetre. C'est le mouvement qu'on veut de toute facon. */
   .cs-nav {
-    position: sticky; top: var(--head-h);
-    max-height: none; z-index: 100;
-    background: var(--bg);
-    border-bottom: 1px solid var(--line-soft);
-    margin-inline: calc(-1 * var(--gutter));
-    padding: var(--s3) var(--gutter);
+    /* UNE SEULE HAUTEUR POUR LES DEUX OBJETS. La pastille de retour et la
+       pilule doivent faire exactement la meme taille, et la pilule est le
+       cote fragile : sa hauteur suivrait sinon la police, l'interligne et la
+       presence ou non de la barre de progression sous l'entree active — trois
+       choses qui bougent. On la fixe donc ici, et le contenu se centre
+       dedans. Changer la taille du texte ne desaligne plus rien. */
+    --cs-bar-h: 56px;
+
+    position: fixed; z-index: 100;
+    left: var(--gutter); right: var(--gutter);
+    /* env(safe-area-inset-bottom) : la barre d'accueil des iPhone recents
+       mange le bas de l'ecran. Le repli 0px sert partout ailleurs. */
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    display: flex; align-items: center; gap: var(--s3);
+    /* Annule la colonne collante du bureau. */
+    top: auto; max-height: none; overflow: visible;
+    padding: 0;
   }
-  /* La liste devient une barre horizontale defilante. */
+
+  /* LES DEUX FONDUS AUX EXTREMITES DE LA PILULE.
+     La liste defile : a l'arret, une entree se trouve forcement coupee quelque
+     part. Coupee NET contre le bord arrondi, elle se lit comme une erreur de
+     mise en page plutot que comme une suite a faire defiler. Ces deux voiles
+     la font disparaitre en fondu a la place.
+
+     Poses sur .cs-nav et non sur la liste : un pseudo-element de la liste
+     defilerait AVEC son contenu et quitterait le bord des le premier geste.
+     .cs-nav ne defile pas, d'ou le calage a gauche sur la largeur de la
+     pastille de retour, plus l'ecart — la meme variable que celle qui
+     dimensionne la pastille, donc les deux ne peuvent pas diverger. */
+  .cs-nav::before,
+  .cs-nav::after {
+    content: ''; position: absolute; z-index: 1;
+    top: 0; bottom: 0; width: 28px;
+    pointer-events: none;
+  }
+  .cs-nav::before {
+    left: calc(var(--cs-bar-h) + var(--s3));
+    border-radius: 999px 0 0 999px;
+    background: linear-gradient(to right, var(--glass) 45%, var(--glass-0));
+  }
+  .cs-nav::after {
+    right: 0;
+    border-radius: 0 999px 999px 0;
+    background: linear-gradient(to left, var(--glass) 45%, var(--glass-0));
+  }
+
+  /* Le lien retour devient la pastille ronde de la maquette. font-size:0
+     efface le libelle "Back" a l'oeil SANS le retirer de l'arbre
+     d'accessibilite : il reste le nom du lien pour un lecteur d'ecran. */
+  /* .cs-nav a.cs-nav__back et non .cs-nav__back seul : le bouton retour EST un
+     <a> dans .cs-nav, donc la regle generique .cs-nav a (0,1,1) l'emporterait
+     sur une classe nue (0,1,0) — et lui rendrait sa taille de texte, donc son
+     libelle visible. */
+  .cs-nav a.cs-nav__back {
+    flex: 0 0 auto;
+    width: var(--cs-bar-h); height: var(--cs-bar-h); margin-bottom: 0;
+    align-items: center; justify-content: center;
+    /* Le libelle reduit a font-size:0 reste un item flex de largeur nulle : en
+       gardant le gap du bureau, l'icone serait decalee d'un demi-gap. */
+    gap: 0;
+    border-radius: 50%;
+    font-size: 0;
+    color: var(--ink);
+    background: var(--glass);
+    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shadow);
+  }
+  /* La fleche de la maquette, posee en masque plutot qu'en <img> : le masque
+     ne garde que la forme et la peint avec currentColor, donc l'icone suit la
+     couleur du lien (survol compris) sans second fichier.
+     Le chemin est relatif a CE fichier, dans css/ — d'ou le ../ */
+  .cs-nav__back span:first-child {
+    flex: 0 0 auto;
+    width: 18px; height: 18px;
+    background: currentColor;
+    -webkit-mask: url('../assets/icons/cs-back.svg') center / contain no-repeat;
+            mask: url('../assets/icons/cs-back.svg') center / contain no-repeat;
+  }
+  .cs-nav__back:hover { transform: none; }
+
+  /* LA CROIX S'EFFACE DEVANT LA PASTILLE DE RETOUR — SUR MOBILE SEULEMENT.
+     Ici, les deux font le meme travail : la pastille ci-dessus est le lien
+     "Back" de .cs-nav, qui ramene a la section d'ou l'on vient. Garder les
+     deux, c'etait une sortie en haut a droite et une autre en bas a gauche,
+     alors que toute la navigation de la fiche est justement passee en bas.
+     Sur bureau la croix reste : la colonne y range son lien "Back" tout en
+     haut, qui defile et sort de l'ecran, alors que la croix est fixe.
+
+     MAIS PAS SUR UNE FICHE SANS SOMMAIRE. Une etude sans sections de
+     processus (masters-essay) n'a pas de .cs-nav, donc pas de lien "Back" ;
+     le bouton flottant #back-link est masque sur toutes les fiches
+     (setupBackLink) et l'en-tete du site est inerte derriere. Sans la croix,
+     il ne resterait pour sortir que le bouton "precedent" du navigateur. Le
+     :has() la laisse donc exactement la ou elle est le seul chemin.
+
+     :has() sur <body> et non un selecteur de voisinage : la croix est placee
+     AVANT #page dans index.html, donc aucun combinateur ne permet de remonter
+     jusqu'a elle depuis .cs-nav.
+
+     .is-overlay est repris dans le selecteur pour la specificite, pas pour le
+     sens : `body:has(...)` seul pese (0,2,1) — :has() prend celle de son
+     argument — soit exactement autant que `body.is-overlay .overlay-close`
+     (section 11 bis), qui rallume la croix. A egalite c'est elle qui gagnait,
+     en arrivant apres. (0,3,1) tranche. */
+  body.is-overlay:has(.cs-nav) .overlay-close { display: none; }
+
+  /* LA BARRE NE PEUT PAS ETRE A L'ECRAN PENDANT L'OUVERTURE, et il faut en
+     tenir compte plutot que l'ignorer. #page porte un transform tant que dure
+     sheetIn ; un ancetre transforme devient le referentiel de ses descendants
+     en position:fixed, donc "20px au-dessus du bas de la fenetre" devient
+     "20px au-dessus du bas de la fiche", soit plusieurs milliers de pixels
+     sous l'ecran. La croix y echappe parce qu'elle est SOEUR de #page ; la
+     barre, elle, vit dedans, avec les liens qu'elle designe.
+
+     Laissee telle quelle, elle etait donc absente pendant les 620ms de
+     l'ouverture puis apparaissait d'un coup. On assume le decalage et on en
+     fait une entree : masquee tant que la fiche monte, puis posee une fois
+     qu'elle est arrivee. Le :not() est ce qui declenche l'animation — une
+     animation demarre quand son selecteur COMMENCE a s'appliquer, donc au
+     retrait de .is-opening par app.js. Sur une arrivee directe (aucune
+     animation de fiche), le selecteur s'applique d'emblee et la barre entre
+     tout de suite. */
+  body.is-overlay.is-opening .cs-nav,
+  body.is-overlay.is-closing .cs-nav { visibility: hidden; }
+  /* backwards et non both. `both` laisserait la derniere frame de csBarIn
+     s'appliquer indefiniment, or une animation l'emporte sur une declaration
+     ordinaire : le transform de .is-gone juste en dessous n'aurait aucun
+     effet et la barre ne se retirerait jamais. `backwards` ne pose que
+     l'etat de depart, avant le demarrage — l'etat d'arrivee etant deja
+     l'etat naturel (aucun transform, opacite pleine), rien n'est perdu. */
+  body.is-overlay:not(.is-opening) .cs-nav { animation: csBarIn .34s var(--ease) backwards; }
+
+  /* LA BARRE SE RETIRE SUR "PROJET SUIVANT". Passe la derniere section, on ne
+     parcourt plus l'etude de cas : on en sort. Un sommaire qui reste plaque
+     par-dessus les cartes du projet suivant les recouvre pour ne plus rien
+     dire. Posee par setupCaseBehaviours (app.js), qui surveille .cs-next au
+     meme titre que les sections, et retiree des qu'on remonte.
+     Elle glisse vers le bas plutot que de disparaitre : le mouvement dit
+     qu'elle est rangee, pas qu'elle a plante. */
+  .cs-nav.is-gone {
+    transform: translateY(calc(100% + 20px + env(safe-area-inset-bottom, 0px)));
+    opacity: 0; pointer-events: none;
+  }
+  .cs-nav { transition: transform .3s var(--ease), opacity .3s var(--ease); }
+
+  /* La pilule. Blanche sur une fiche blanche : c'est l'ombre SEULE qui lui
+     donne un bord, sans liser — un trait ferme la forme et la fait lire comme
+     un champ, la ou on veut un objet pose au-dessus de la page. (La maquette
+     prevoit a terme un fond de fiche legerement teinte, qui la detacherait
+     encore mieux — pas encore fait.)
+
+     Le retrait horizontal est plus large que le vertical : la liste defile,
+     et une entree coupee net au ras du bord arrondi se lirait comme la fin de
+     la liste. L'air sur les cotes montre au contraire qu'il y a une suite. */
   .cs-nav ol {
-    display: flex; gap: var(--s2);
+    flex: 1 1 auto; min-width: 0;
+    height: var(--cs-bar-h);
+    display: flex; gap: var(--s2); align-items: center;
+    /* Retrait horizontal genereux, et deux fois plus grand que le vertical :
+       c'est la zone que les fondus ci-dessus occupent, et c'est ce qui evite
+       qu'une entree vienne buter contre l'arrondi. */
+    padding-inline: var(--s5);
+    /* Le defilement s'arrete sur ce meme retrait, sinon scroll-snap collerait
+       la premiere entree au bord et l'annulerait des qu'on fait glisser. */
+    scroll-padding-inline: var(--s5);
+    border-radius: 999px;
+    /* Le meme verre que la croix (--glass, section 1) : les deux flottent
+       au-dessus de la meme fiche, ils ne peuvent pas etre en deux matieres. */
+    background: var(--glass);
+    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shadow);
     overflow-x: auto;
     scrollbar-width: none;              /* masque la barre (Firefox) */
     scroll-snap-type: x proximity;      /* chaque element s'aligne proprement */
   }
   .cs-nav ol::-webkit-scrollbar { display: none; }
   .cs-nav li { scroll-snap-align: start; }
+
+  /* Une grille de deux colonnes plutot qu'une rangee flex : la barre de
+     progression peut ainsi occuper une SECONDE ligne sous la pastille et le
+     libelle, sans avoir a les emballer dans un element de plus. */
   .cs-nav a {
-    white-space: nowrap; border-left: 0;
-    border-bottom: 2px solid transparent;
-    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    display: grid; grid-template-columns: auto auto;
+    align-items: center; justify-content: center;
+    gap: 3px var(--s1);
+    /* Le libelle passe a la taille du texte courant : a 15px il etait plus
+       petit que le corps de l'etude de cas qu'il sert a parcourir, alors qu'il
+       se lit du coin de l'oeil, en mouvement, au pouce.
+       L'interligne descend a 1.2 : celui de lecture (1.6) est fait pour des
+       paragraphes, et gonflerait chaque entree d'une dizaine de pixels pour
+       une ligne unique. La hauteur de la pilule etant fixe, ce padding ne
+       regle plus que la pastille de survol. */
+    padding: 6px var(--s3);
+    font-size: var(--fs-body); line-height: 1.2;
+    white-space: nowrap;
+    border-left: 0; border-radius: var(--radius-pill);
   }
-  .cs-nav a.is-active { border-left: 0; border-bottom-color: var(--accent); }
-  .cs-nav__pct { display: none; }
+  .cs-nav a:hover { background: var(--veil-strong); }
 
-  /* Sous 1000px, .cs-nav devient une barre pleine largeur qui vient se
-     coller en haut. En mode fiche elle se collait a --head-h (14px, le
-     retrait de la fiche) : une fois defilee, il restait une bande vide de
-     14px au-dessus d'elle — la fiche etait deja passee, la barre pas encore
-     arrivee. Elle se colle donc a 0 sur petit ecran. Le retrait de 14px de
-     la fiche reste visible en haut de page, la ou il a un sens.
+  /* La pastille numerotee. Ces valeurs sont en pixels et hors de l'echelle
+     typographique du site, qui ne descend pas si bas — c'est normal, c'est un
+     jeton, pas du texte a lire. Deux crans au-dessus de la maquette (18/13
+     contre 13/10) : a 13px, le chiffre etait la seule chose illisible de la
+     barre, et il suit maintenant le libelle passe a 16px.
+     font-size:0 + content:attr(data-n) remplace le "01" de la colonne du
+     bureau par le "1" de la maquette, sans dupliquer le numero dans le DOM. */
+  .cs-nav__num {
+    display: flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; padding-inline: 5px;
+    border-radius: var(--radius-tag);
+    background: var(--ink-faint);
+    color: var(--accent-ink);
+    font-size: 0; opacity: 1;
+    font-weight: var(--w-medium);
+  }
+  .cs-nav__num::after { content: attr(data-n); font-size: 13px; line-height: 1; }
 
-     Aucune reserve a droite pour la croix : la barre va jusqu'au bord, et
-     la croix passe PAR-DESSUS (z-index 140 contre 100, fond translucide et
-     flou). La liste defile horizontalement, donc rien n'est inatteignable. */
+  /* L'entree active : bleue, sans pilule de fond — le fond gris est reserve au
+     survol et a l'appui, sinon les deux etats deviendraient indistinguables. */
+  .cs-nav a.is-active {
+    border-left: 0;
+    background: transparent;
+    color: var(--accent);
+    font-weight: var(--w-semibold);
+  }
+  .cs-nav a.is-active .cs-nav__num { background: var(--accent); }
+
+  /* Le soulignement de l'entree active EST sa barre de progression : il se
+     remplit pendant la lecture de cette section (voir updateSectionProgress
+     dans app.js). Il occupe toute la largeur de l'entree, donc les deux
+     colonnes de la grille.
+
+     ESSAI EN COURS — soulignement retire pour voir ce que donne la barre sans
+     lui. Pour le remettre : `display: none` -> `display: block` sur la ligne
+     ci-dessous, et rien d'autre. Le balisage et le calcul JS sont laisses en
+     place exprès, ils ne coutent rien et rendent le retour immediat. */
+  .cs-nav a.is-active .cs-nav__sprog {
+    display: none; grid-column: 1 / -1;
+    height: 2px; border-radius: 1px;
+    background: var(--line-soft);
+    overflow: hidden;
+  }
+  .cs-nav__sbar {
+    display: block; height: 100%; width: 0%;
+    border-radius: 1px; background: var(--accent);
+    transition: width .2s linear;
+  }
+
+  /* La progression d'ENSEMBLE disparait : sur cette barre, c'est celle de la
+     section en cours qui parle, et la ligne de 2px en haut de la fenetre
+     (.progress, z-index 130, au-dessus de la fiche) continue de donner
+     l'avancement dans toute la page. Le balisage reste en place : app.js y
+     ecrit sans le tester (voir updateProgress). */
+  .cs-nav__prog { display: none; }
+
+  /* La barre flottante recouvre le bas de la fiche : sans cette reserve, elle
+     masquerait la fin de "projet suivant" et le pied de page, qu'aucun
+     defilement ne pourrait alors degager.
+     La reserve va sur #page et non sur .cs : le pied de page est un frere de
+     <main>, donc pousser le contenu de l'article ne le degagerait pas.
+     :has(.cs-nav) la limite aux etudes de cas qui ont un sommaire — partout
+     ailleurs il n'y a pas de barre, et 90px de blanc en bas seraient un
+     defaut. */
+  #page:has(.cs-nav) { padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Herite de l'epoque ou .cs-nav se collait en haut : elle visait --head-h
+     (14px, le retrait de la fiche) et laissait donc une bande vide de 14px
+     au-dessus d'elle une fois defilee. La barre est passee en bas, mais la
+     ligne reste — --head-h sert aussi de repere a scrollToSection et au
+     scroll-spy, et l'en-tete du site est bel et bien invisible derriere la
+     fiche : lui reserver une hauteur ferait descendre chaque ancre de 14px
+     pour rien. */
   body.is-overlay { --head-h: 0px; }
 }
 
@@ -3061,7 +3363,7 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
   }
   /* On garde les barres de progression, qui informent plutot qu'elles ne
      decorent. */
-  .progress__fill, .cs-nav__bar, .loader__bar { transition-duration: .2s !important; }
+  .progress__fill, .cs-nav__bar, .cs-nav__sbar, .loader__bar { transition-duration: .2s !important; }
 }
 
 /* Impression : un recruteur imprime parfois un portfolio. On repasse en noir
