@@ -132,9 +132,9 @@
   --radius-pill: 40px;   /* la pilule de navigation */
   --nav-pad-x:   40px;   /* le retrait interne de la pilule, de la maquette */
   /* La largeur maximale du conteneur .wrap (section 2), d'ou la pilule de
-     navigation tire la sienne : elle mesure cette valeur moins les deux
-     gouttieres, c'est-a-dire exactement la colonne ou vit le contenu. Un
-     jeton parce que deux endroits en dependent et qu'ils doivent bouger
+     navigation tire la sienne : sa boite de contenu mesure cette valeur moins
+     les deux gouttieres, c'est-a-dire exactement la colonne ou vit le contenu.
+     Un jeton parce que deux endroits en dependent et qu'ils doivent bouger
      ensemble. */
   --wrap-max:    1280px;
   --radius-tag:  20px;   /* les etiquettes */
@@ -314,8 +314,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* Conteneur : marges laterales fluides valant 80px sur grand ecran,
    exactement comme la maquette.
    --wrap-max est un jeton (section 1) parce que la pilule de navigation s'y
-   accorde : elle mesure exactement la COLONNE de ce conteneur, soit cette
-   largeur moins les deux gouttieres. Deux endroits, une valeur. */
+   accorde : son CONTENU tombe exactement sur la COLONNE de ce conteneur, soit
+   cette largeur moins les deux gouttieres. Deux endroits, une valeur. */
 .wrap {
   width: 100%; max-width: var(--wrap-max);
   margin-inline: auto;
@@ -488,10 +488,20 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
    maintenant toute la largeur et porte tout, y compris le nom.
    La grille a trois colonnes est partie avec eux : il ne reste qu'un enfant,
    qui se centre tout seul. C'est la pilule qui a repris la grille, et donc le
-   centrage optique des entrees (voir .site-nav). */
+   centrage optique des entrees (voir .site-nav).
+
+   LE RETRAIT LATERAL EST LA GOUTTIERE MOINS LE PADDING DE LA PILULE. Ce qui
+   doit s'aligner sur la colonne de contenu, ce n'est pas le bord du verre :
+   c'est le nom a gauche et Contact a droite, les deux seules choses qu'on lit.
+   Ils sont a --nav-pad-x du bord de la pilule ; on recule donc la pilule
+   d'autant pour que son contenu, et non sa boite, tombe sur la colonne. Le
+   verre deborde alors de 40px de chaque cote, ce qui est voulu.
+   Toujours positif ici : cette regle ne vaut qu'au-dessus de 860px, ou la
+   gouttiere (6.25vw) fait au moins 53.75px, donc 13.75px apres retrait. Sous
+   860px la section 12 remet ce padding a zero et la pilule devient fixe. */
 .site-head {
   position: sticky; top: 0; z-index: 120;
-  padding: var(--s5) var(--gutter);
+  padding: var(--s5) calc(var(--gutter) - var(--nav-pad-x));
 }
 
 .brand {
@@ -514,24 +524,29 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
    space-between, le centre aurait glisse des que le nom ou le groupe de
    droite change de longueur.
 
-   ELLE MESURE LA COLONNE DE CONTENU, PAS LA FENETRE. Elle a d'abord couru
-   d'un bord a l'autre de l'en-tete, soit bien au-dela des textes et des
+   SON CONTENU MESURE LA COLONNE DE CONTENU, PAS SA BOITE. Elle a d'abord
+   couru d'un bord a l'autre de l'en-tete, soit bien au-dela des textes et des
    cartes qu'elle surplombe : une barre plus large que tout ce qu'elle
-   contient et tout ce qu'elle annonce. Ses deux bords tombent maintenant
-   exactement sur ceux de .wrap — --wrap-max moins les deux gouttieres — et
-   au-dessous de --wrap-max le retrait de l'en-tete y suffit seul, le
-   max-width devenant plus grand que la place disponible.
+   contient et tout ce qu'elle annonce. On l'a ensuite ramenee a la colonne de
+   .wrap, mais alors c'etait le verre qui s'y alignait, et le nom se retrouvait
+   40px en dedans des titres qu'il surplombe. Ce qui doit s'aligner, c'est ce
+   qui se lit : le nom a gauche, Contact a droite. Le max-width vaut donc la
+   colonne PLUS les deux retraits internes, de sorte que la boite de contenu de
+   la pilule — et non son bord — tombe exactement sur .wrap. Le verre depasse
+   de --nav-pad-x de chaque cote, ce qui est voulu et discret.
    Calcule et non recopie : c'est la formule meme de la colonne de .wrap
-   (section 2). Y ecrire 1120px figerait le resultat pour une seule taille
-   d'ecran, la gouttiere etant fluide.
+   (section 2), augmentee du padding declare deux lignes plus bas. Y ecrire
+   1200px figerait le resultat pour une seule taille d'ecran, la gouttiere
+   etant fluide. Au-dessous de --wrap-max le retrait de l'en-tete suffit seul,
+   ce max-width devenant plus grand que la place disponible.
 
    Sous 860px cette meme liste quitte l'en-tete et se pose en barre d'onglets
    au bas de la fenetre : elle y repasse en flex, perd le nom et le groupe de
    droite, et garde le meme etat actif. Le max-width ci-dessous ne la gene pas
-   — a 390px il vaut plus de 1200px, soit bien plus que la barre. Voir
+   — a 390px il vaut plus de 1300px, soit bien plus que la barre. Voir
    section 12. */
 .site-nav {
-  max-width: calc(var(--wrap-max) - 2 * var(--gutter));
+  max-width: calc(var(--wrap-max) - 2 * var(--gutter) + 2 * var(--nav-pad-x));
   margin-inline: auto;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
