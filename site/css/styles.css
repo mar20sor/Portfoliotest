@@ -3392,9 +3392,21 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
   }
   .cs-nav a:hover { background: var(--veil-strong); }
 
-  /* L'entree active se contente de la regle de la section 8b (bleue, en gras,
-     sans pilule de fond) : les deux mises en page traitent la selection de la
-     meme facon. */
+  /* LA PILULE BLEUE PASSE DU TOUCHER A L'ETAT ACTIF, ET SUR CETTE MISE EN PAGE
+     SEULEMENT. La section 8b l'interdit sur le bureau, et pour une raison qui
+     tient toujours la-bas : le fond gris y appartient au survol, et le porter
+     aussi sur l'entree active mettait deux pilules a l'ecran des qu'on survolait
+     une AUTRE entree — plus rien ne disait laquelle voulait dire "vous etes
+     ici". Ne pas retirer cette regle de la section 8b.
+
+     Ici il n'y a pas de survol : un doigt ne stationne pas, il touche et part.
+     La seule pilule affichee est donc celle de l'entree active, et elle est
+     necessaire — la barre defile, l'entree en cours n'est plus reperable par sa
+     position dans une colonne comme sur le bureau, et la couleur seule est
+     faible sur un libelle isole qui passe au milieu de trois autres.
+     Meme jeton que le survol : c'est la teinte que la maquette montre, et deux
+     bleus a 7 % voisins se liraient comme une erreur. */
+  .cs-nav a.is-active { background: var(--veil-strong); }
 
   /* Le soulignement de l'entree active EST sa barre de progression : il se
      remplit pendant la lecture de cette section (voir updateSectionProgress
