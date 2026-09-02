@@ -580,9 +580,14 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
    passe sur cinq lignes en francais, le bloc grandit au lieu de deborder.
    ========================================================================== */
 
+/* --hero-min est un jeton et non 400px ecrits ici : le media 860px doit
+   l'augmenter d'autant qu'il augmente le retrait haut (voir section 12), et
+   deux nombres qui doivent bouger ensemble ne peuvent pas etre ecrits deux
+   fois. */
 .hero {
   display: flex; flex-direction: column; justify-content: center;
-  min-height: 400px;
+  --hero-min: 400px;
+  min-height: var(--hero-min);
   padding-block: var(--s7);
 }
 .hero__text { display: flex; flex-direction: column; gap: var(--s5); }
@@ -3499,8 +3504,39 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
   /* --head-h tombe donc a zero. Ce n'est qu'une approximation : syncHeadHeight
      (app.js) mesure l'en-tete et ecrit la vraie valeur sur <html>, qui vaudra
      0px elle aussi. Les ancres se posent maintenant a --s5 du bord haut, ce
-     qui est exactement ce qu'on veut quand rien ne les surplombe. */
-  :root { --head-h: 0px; }
+     qui est exactement ce qu'on veut quand rien ne les surplombe.
+
+     --head-was EST CE QUE L'EN-TETE PRENAIT DANS LE FLUX, et qu'il faut rendre
+     au heros. En vidant la bande, tout le haut de l'accueil est remonte de sa
+     hauteur et le "Hey, nice to meet you!" est venu se coller au bord de
+     l'ecran. On ne remet pas la bande pour autant : c'est le heros seul qui
+     reprend la mesure a son compte (.hero plus bas, et dans le media 560px),
+     la ou elle se voit.
+     Calculee et non ecrite en dur : c'est la formule meme de l'en-tete d'avant
+     — une ligne de texte courant a l'interligne de la nav, plus ses deux
+     retraits. Retoucher --fs-body ou --s4 la suit au lieu de la contredire. */
+  :root {
+    --head-h: 0px;
+    --head-was: calc(var(--fs-body) * var(--lh-nav) + var(--s4) * 2);  /* 55.2px */
+  }
+
+  /* Le retrait propre du heros reste --s7, celui de la feuille de base : on
+     n'ajoute que la hauteur rendue.
+
+     ET LA HAUTEUR MINIMALE SUIT, sans quoi la moitie du retrait est mangee.
+     Le heros centre son contenu dans une boite d'au moins 400px : gonfler le
+     retrait haut ne fait qu'y reduire l'espace libre, que le centrage
+     redistribue de part et d'autre — le texte ne descend alors que de la
+     moitie de ce qu'on a ajoute. En donnant a la boite les 55px de plus
+     qu'elle occupait quand l'en-tete etait au-dessus d'elle, on retrouve
+     l'espace libre d'avant, donc le meme centrage, et le bas du heros retombe
+     exactement ou il etait — les sections en dessous ne bougent pas non plus.
+     (Sous 560px min-height passe a 0 et la question ne se pose plus : le
+     retrait seul suffit, c'est ce que fait le media suivant.) */
+  .hero {
+    padding-top: calc(var(--s7) + var(--head-was));
+    min-height: calc(var(--hero-min) + var(--head-was));
+  }
 
   /* ------------------------------------------------------------------------
      LA BARRE D'ONGLETS DU BAS
@@ -3606,7 +3642,10 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
 
 /* --- Sous 560px : les petits ecrans ----------------------------------- */
 @media (max-width: 560px) {
-  .hero { min-height: 0; padding-block: var(--s6) var(--s7); }
+  /* Le raccourci padding-block ecraserait le padding-top pose dans le media
+     860px : on lui reapplique --head-was, avec le retrait plus serre qui est
+     celui de ce palier. */
+  .hero { min-height: 0; padding-block: calc(var(--s6) + var(--head-was)) var(--s7); }
   .foot__grid { grid-template-columns: 1fr; }
   .gist { grid-template-columns: 1fr 1fr; }
   .back-link { left: 50%; transform: translateX(-50%); bottom: var(--s4); }
