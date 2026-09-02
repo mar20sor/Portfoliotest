@@ -649,22 +649,45 @@ function pageCase(project) {
     //                l'entree active (demande de la maquette : "each active
     //                section its own progressbar"). Masquee sur le bureau, qui
     //                garde .cs-nav__prog, la progression d'ensemble.
+    //   .cs-nav__pill  le conteneur de la pilule mobile : l'anneau de
+    //                progression PUIS la liste. Il existe parce que le <ol> EST
+    //                le conteneur de defilement — tout ce qu'on y met defile
+    //                avec les entrees. L'anneau doit rester plante a gauche,
+    //                donc il est son voisin, pas son enfant, et c'est ce
+    //                conteneur qui porte le verre. Sur le bureau il est annule
+    //                (display: contents, styles.css §8b) : ses enfants
+    //                redeviennent des elements de la grille de .cs-nav, qui
+    //                n'a donc rien a savoir de son existence.
+    //   .cs-nav__ring  l'anneau lui-meme (maquette Figma, noeud 295:2356). Deux
+    //                cercles superposes ; pathLength="1" sur celui du dessus
+    //                rend le motif de tirets FRACTIONNAIRE, donc updateProgress
+    //                ecrit "0.62 1" sans avoir a calculer 2*PI*r.
     const nav = el('nav', { class: 'cs-nav', 'aria-label': d.csSections });
     nav.innerHTML = `
       <a class="cs-nav__back" href="#/#${escapeAttr(c.kind)}">
         <span aria-hidden="true">←</span> ${escapeAttr(d.csBack)}
       </a>
-      <ol>
-        <li><a href="${base}#overview" data-spy="sec-overview">
-          <span>${escapeAttr(d.csOverview)}</span>
-          <span class="cs-nav__sprog" aria-hidden="true"><span class="cs-nav__sbar"></span></span>
-        </a></li>
-        ${c.sections.map(s => `
-          <li><a href="${base}#${escapeAttr(s.id)}" data-spy="sec-${escapeAttr(s.id)}">
-            <span>${escapeAttr(s.label)}</span>
+      <div class="cs-nav__pill">
+        <span class="cs-nav__ring" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+              aria-valuenow="0" aria-label="${escapeAttr(d.csProgress)}">
+          <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <circle class="cs-nav__ring-track" cx="10" cy="10" r="8"/>
+            <circle class="cs-nav__ring-bar" id="cs-ring" cx="10" cy="10" r="8"
+                    pathLength="1" stroke-dasharray="0 1"/>
+          </svg>
+        </span>
+        <ol>
+          <li><a href="${base}#overview" data-spy="sec-overview">
+            <span>${escapeAttr(d.csOverview)}</span>
             <span class="cs-nav__sprog" aria-hidden="true"><span class="cs-nav__sbar"></span></span>
-          </a></li>`).join('')}
-      </ol>
+          </a></li>
+          ${c.sections.map(s => `
+            <li><a href="${base}#${escapeAttr(s.id)}" data-spy="sec-${escapeAttr(s.id)}">
+              <span>${escapeAttr(s.label)}</span>
+              <span class="cs-nav__sprog" aria-hidden="true"><span class="cs-nav__sbar"></span></span>
+            </a></li>`).join('')}
+        </ol>
+      </div>
       <div class="cs-nav__prog">
         <div class="cs-nav__track" role="progressbar" aria-valuemin="0" aria-valuemax="100"
              aria-valuenow="0" aria-label="${escapeAttr(d.csProgress)}">
@@ -4027,6 +4050,11 @@ function setupCaseBehaviours() {
   const bar   = $('#cs-bar');
   const pct   = $('#cs-pct');
   const track = $('.cs-nav__track');
+  // L'anneau de la barre flottante du mobile (styles.css §12). Le rail du
+  // bureau et lui disent la meme chose au meme moment ; ils ne different que
+  // par la forme, et chacun est display:none dans le contexte de l'autre.
+  const ring    = $('#cs-ring');
+  const ringBox = $('.cs-nav__ring');
 
   /* --- scroll-spy : quelle section est en train d'etre lue ? ---
      Calcul deterministe plutot qu'IntersectionObserver.
@@ -4070,9 +4098,10 @@ function setupCaseBehaviours() {
     const listRect = list.getBoundingClientRect();
     /* De l'air entre l'etape et le bord, pour montrer qu'il y a une suite.
        Sur la barre flottante du mobile, cette marge doit DEPASSER le retrait
-       interne de la pilule (24px, styles.css §12) : en dessous, une etape
-       posee pile sur ce retrait serait jugee deja visible, et s'arreterait
-       donc systematiquement au ras du fondu de bord. */
+       interne de la liste (24px, styles.css §12) et la largeur du fondu de
+       bord (28px, pose sur ce retrait) : en dessous, une etape posee pile sur
+       ce retrait serait jugee deja visible, et s'arreterait donc
+       systematiquement au ras du fondu de bord. */
     const pad = 36;
 
     let delta = 0;
@@ -4169,12 +4198,21 @@ function setupCaseBehaviours() {
     const p = Math.round(Math.min(100, Math.max(0, ((top - start) / span) * 100)));
     // height et non width : le rail est vertical, le long de la liste
     // (.cs-nav__prog, styles.css §8b). Il n'existe que sur le bureau — le
-    // mobile masque tout le bloc et affiche la ligne du haut de la fenetre.
+    // mobile masque tout le bloc et montre le meme p sous forme d'anneau,
+    // juste en dessous.
     bar.style.height = p + '%';
     pct.textContent = p + '%';
     // aria-valuenow permet a un lecteur d'ecran d'annoncer la progression,
     // exactement comme la barre la montre a l'oeil.
     track.setAttribute('aria-valuenow', String(p));
+    /* L'anneau de la barre flottante du mobile, alimente par le meme p : une
+       seule mesure, deux formes. Le cercle porte pathLength="1" (voir
+       pageCase), donc le motif de tirets est une FRACTION du tour — pas de
+       2*PI*r a calculer, et changer le rayon dans la CSS ne casse rien ici.
+       Aucune transition CSS ne l'accompagne : il est repeint a chaque
+       evenement de defilement, une transition n'ajouterait que du retard. */
+    if (ring) ring.setAttribute('stroke-dasharray', (p / 100) + ' 1');
+    if (ringBox) ringBox.setAttribute('aria-valuenow', String(p));
   };
 
   /* --- la barre flottante du mobile se range sur "projet suivant" ---

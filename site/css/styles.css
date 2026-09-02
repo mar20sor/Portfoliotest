@@ -833,6 +833,19 @@ button { font: inherit; color: inherit; cursor: pointer; }
   transition: transform .2s var(--ease), color .2s var(--ease);
 }
 .cs-nav__back:hover { transform: translateX(-3px); color: var(--ink); }
+
+/* .cs-nav__pill et .cs-nav__ring n'existent que pour la barre flottante du
+   mobile (section 12). Ici, la colonne laterale n'en veut pas :
+   - display: contents efface le conteneur SANS toucher au balisage. Ses
+     enfants redeviennent des elements de la grille de .cs-nav, donc le
+     grid-column/grid-row de .cs-nav ol ci-dessous continue de le placer, et
+     le rail garde sa colonne. Sans cela, le conteneur serait auto-place dans
+     la grille et pousserait tout le reste.
+   - l'anneau est masque : le rail vertical dit deja la meme chose, en mieux
+     ici, puisqu'il longe la liste et designe donc AUSSI ou l'on en est. */
+.cs-nav__pill { display: contents; }
+.cs-nav__ring { display: none; }
+
 .cs-nav ol { grid-column: 2; grid-row: 2; display: grid; gap: 2px; }
 .cs-nav a {
   display: flex; align-items: baseline; gap: var(--s3);
@@ -3088,6 +3101,11 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
        choses qui bougent. On la fixe donc ici, et le contenu se centre
        dedans. Changer la taille du texte ne desaligne plus rien. */
     --cs-bar-h: 56px;
+    /* Meme discipline pour l'anneau de progression : une seule valeur, lue par
+       l'anneau lui-meme ET par le calage du fondu de gauche (.cs-nav::before,
+       qui doit commencer LA OU la liste commence, donc apres l'anneau). Les
+       deux ne peuvent pas diverger. */
+    --cs-ring: 22px;
 
     position: fixed; z-index: 100;
     left: var(--gutter); right: var(--gutter);
@@ -3108,18 +3126,21 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
 
      Poses sur .cs-nav et non sur la liste : un pseudo-element de la liste
      defilerait AVEC son contenu et quitterait le bord des le premier geste.
-     .cs-nav ne defile pas, d'ou le calage a gauche sur la largeur de la
-     pastille de retour, plus l'ecart — la meme variable que celle qui
-     dimensionne la pastille, donc les deux ne peuvent pas diverger. */
+     .cs-nav ne defile pas, d'ou le calage a gauche sur tout ce qui precede la
+     liste — la pastille de retour, l'ecart, puis le retrait et la largeur de
+     l'anneau. Rien qui ne soit une des deux variables ci-dessus ou une valeur
+     d'espacement, donc rien qui puisse diverger de la mise en page reelle. */
   .cs-nav::before,
   .cs-nav::after {
     content: ''; position: absolute; z-index: 1;
     top: 0; bottom: 0; width: 28px;
     pointer-events: none;
   }
+  /* Pas d'arrondi ici, contrairement au fondu de droite : depuis que l'anneau
+     occupe la gauche de la pilule, ce voile ne couvre plus le bord arrondi
+     mais un morceau de surface plate, au milieu du verre. */
   .cs-nav::before {
-    left: calc(var(--cs-bar-h) + var(--s3));
-    border-radius: 999px 0 0 999px;
+    left: calc(var(--cs-bar-h) + var(--s3) + var(--s5) + var(--cs-ring));
     background: linear-gradient(to right, var(--glass) 45%, var(--glass-0));
   }
   .cs-nav::after {
@@ -3248,24 +3269,79 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
 
      Le retrait horizontal est plus large que le vertical : la liste defile,
      et une entree coupee net au ras du bord arrondi se lirait comme la fin de
-     la liste. L'air sur les cotes montre au contraire qu'il y a une suite. */
-  .cs-nav ol {
+     la liste. L'air sur les cotes montre au contraire qu'il y a une suite.
+
+     LE VERRE EST PORTE PAR .cs-nav__pill, PAS PAR LA LISTE. La liste est le
+     conteneur de defilement ; tout ce qu'on y range defile avec les entrees.
+     L'anneau de progression devant rester plante a gauche, il est son VOISIN
+     dans ce conteneur — et non un enfant plante en position:sticky, qui aurait
+     laisse les entrees passer derriere lui : deux couches de --glass l'une sur
+     l'autre font une tache plus claire au milieu de la pilule. Ici les entrees
+     defilent A COTE de l'anneau, jamais dessous. */
+  .cs-nav__pill {
     flex: 1 1 auto; min-width: 0;
     height: var(--cs-bar-h);
-    display: flex; gap: var(--s2); align-items: center;
-    /* Retrait horizontal genereux, et deux fois plus grand que le vertical :
-       c'est la zone que les fondus ci-dessus occupent, et c'est ce qui evite
-       qu'une entree vienne buter contre l'arrondi. */
-    padding-inline: var(--s5);
-    /* Le defilement s'arrete sur ce meme retrait, sinon scroll-snap collerait
-       la premiere entree au bord et l'annulerait des qu'on fait glisser. */
-    scroll-padding-inline: var(--s5);
+    display: flex; align-items: center;
     border-radius: 999px;
     /* Le meme verre que la croix (--glass, section 1) : les deux flottent
        au-dessus de la meme fiche, ils ne peuvent pas etre en deux matieres. */
     background: var(--glass);
     -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
     box-shadow: var(--glass-shadow);
+  }
+
+  /* L'ANNEAU DE PROGRESSION (maquette Figma, noeud 295:2356).
+     Il ne remplace rien : sous 1000px la barre flottante ne montrait plus du
+     tout l'avancement dans l'etude (le rail du bureau y est masque, et le
+     soulignement par section est en pause — voir plus bas), il ne restait que
+     le filet de 2px en haut de la fenetre, qu'on ne voit pas en lisant.
+
+     Son retrait a gauche vaut l'ancien retrait de la liste : c'est lui qui
+     tient desormais l'air contre le bord arrondi de la pilule. */
+  .cs-nav__ring {
+    flex: 0 0 auto;
+    display: grid; place-items: center;
+    margin-inline-start: var(--s5);
+    width: var(--cs-ring); height: var(--cs-ring);
+  }
+  /* display:block explicite : il n'existe aucune regle de base pour svg dans
+     cette feuille, et la valeur inline de l'agent utilisateur ajouterait
+     l'espace sous la ligne de base, qui decentrerait l'anneau dans la pilule.
+     La rotation fait partir le trace de midi plutot que de 3 heures. */
+  .cs-nav__ring svg {
+    display: block; width: 100%; height: 100%;
+    overflow: visible;                  /* le linecap arrondi deborde du viewBox */
+    transform: rotate(-90deg); transform-origin: center;
+  }
+  /* Le trace prend le meme jeton que le rail du bureau (.cs-nav__bar) : les
+     deux disent la meme chose, ils ne peuvent pas etre de deux couleurs.
+     --accent vaut #2078F0 dans le theme clair — le bleu de la maquette.
+     Le fond, lui, monte d'un cran par rapport au rail (--line et non
+     --line-soft) : un filet de 2px sur 200px de haut se lit meme a 9 %
+     d'opacite, un cercle de 22px n'offre pas la meme surface, et sans lui
+     l'anneau vide n'est plus qu'un point flottant au depart de la lecture. */
+  .cs-nav__ring-track,
+  .cs-nav__ring-bar { fill: none; stroke-width: 2; stroke-linecap: round; }
+  .cs-nav__ring-track { stroke: var(--line); }
+  .cs-nav__ring-bar   { stroke: var(--accent); }
+
+  .cs-nav ol {
+    flex: 1 1 auto; min-width: 0;
+    height: 100%;
+    display: flex; gap: var(--s2); align-items: center;
+    /* Retrait horizontal inchange des deux cotes, malgre l'anneau qui precede
+       maintenant a gauche : c'est exactement la zone que les fondus occupent
+       (28px). L'amaigrir de ce cote ferait commencer la premiere entree SOUS
+       le degrade, donc l'afficherait a demi effacee alors que rien n'est
+       encore cache. Le peu d'air que cela ajoute entre l'anneau et la premiere
+       entree repond de toute facon a son propre retrait, a gauche. */
+    padding-inline: var(--s5);
+    /* Le defilement s'arrete sur ce meme retrait, sinon scroll-snap collerait
+       la premiere entree au bord et l'annulerait des qu'on fait glisser. */
+    scroll-padding-inline: var(--s5);
+    /* La liste va jusqu'au bord droit de la pilule : sans cet arrondi, une
+       entree qui defile depasserait dans le coin arrondi du verre. */
+    border-radius: 999px;
     overflow-x: auto;
     scrollbar-width: none;              /* masque la barre (Firefox) */
     scroll-snap-type: x proximity;      /* chaque element s'aligne proprement */
@@ -3319,11 +3395,17 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
     transition: width .2s linear;
   }
 
-  /* La progression d'ENSEMBLE disparait : sur cette barre, c'est celle de la
-     section en cours qui parle, et la ligne de 2px en haut de la fenetre
-     (.progress, z-index 130, au-dessus de la fiche) continue de donner
-     l'avancement dans toute la page. Le balisage reste en place : app.js y
-     ecrit sans le tester (voir updateProgress). */
+  /* Le RAIL de la progression d'ensemble disparait — pas la progression
+     elle-meme, qui est reprise par l'anneau au debut de la pilule : c'est un
+     changement de forme, la mesure est la meme (le meme p, dans le meme
+     updateProgress). Un rail vertical n'a rien a longer sur une barre
+     horizontale de 56px de haut. Le balisage reste en place : app.js y ecrit
+     sans le tester.
+     Consequence a connaitre : ce bloc porte role="progressbar" et son
+     aria-valuenow. display:none le retire de l'arbre d'accessibilite, donc ici
+     c'est .cs-nav__ring qui porte le role — et l'inverse sur le bureau, ou
+     c'est l'anneau qui est masque. Il n'y en a jamais deux annonces a la
+     fois. */
   .cs-nav__prog { display: none; }
 
   /* La barre flottante recouvre le bas de la fiche : sans cette reserve, elle
