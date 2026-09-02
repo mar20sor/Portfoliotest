@@ -150,15 +150,6 @@
      bloc clair. */
   --glass-blur:   blur(14px);
   --glass-shadow: 0 2px 12px -4px rgba(16, 35, 63, .28);
-
-  /* Le noir translucide des DEUX barres de navigation du site : l'en-tete sur
-     le bureau (section 4) et la barre d'onglets du bas sous 860px
-     (section 12). Une seule teinte parce que c'est le meme objet a deux
-     places — c'est le flou qui change, pas la couleur : 35px pour un en-tete
-     qui ne passe que sur des aplats, 60px pour une barre qui passe sur les
-     visuels des cartes. Distinct de --veil (5 %), qui reste le fond des blocs
-     poses DANS la page et non par-dessus. */
-  --nav-tint:     #00000025;
   --head-h:      82px;   /* 16px de texte + 24px de marge haute et basse */
   --back-h:      38px;   /* hauteur du bouton "Retour", fixe sous l'en-tete */
   --measure:     68ch;   /* largeur de lecture confortable */
@@ -491,19 +482,7 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
   align-items: center;
   gap: var(--s4);
   padding: var(--s5) var(--gutter);
-  /* LE VERRE EST PORTE PAR LA BANDE, PLUS PAR LA PILULE. Il l'etait par
-     .site-nav : un aplat bleu opaque sur toute la largeur, avec une pilule
-     grise floutee posee au milieu — deux surfaces l'une sur l'autre pour un
-     seul objet, et le flou ne servait a rien puisque la bande derriere lui
-     etait deja opaque. Maintenant c'est la bande entiere qui est le verre :
-     le contenu passe dessous et s'y devine, et la pilule n'est plus qu'un
-     groupe de liens (voir .site-nav plus bas, qui a perdu fond et flou).
-     35px et non --glass-blur : la valeur que portait la pilule, reprise
-     telle quelle — voir --nav-tint pour la teinte, partagee avec la barre
-     d'onglets du mobile. */
-  background: var(--nav-tint);
-  -webkit-backdrop-filter: blur(35px);
-  backdrop-filter: blur(35px);
+  background: var(--bg);
   /* Le filet est permanent : il marque la limite de l'en-tete des le premier
      regard, avant tout defilement. Il etait auparavant porte par
      .is-scrolled, donc absent en haut de page — la barre flottait alors sans
@@ -521,19 +500,20 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
   text-decoration: none; white-space: nowrap;
 }
 
-/* LA PILULE, DESORMAIS SANS SURFACE. Elle avait le fond et le flou de la
-   maquette Figma ; ils sont passes a la bande qui la contient (.site-head
-   ci-dessus), qui est le vrai objet de verre. Ce qui reste ici est la mise en
-   place : centrage, ecart de 40px et padding 16px/40px de la maquette.
-   border-radius est garde : c'est la forme de la pilule, inerte tant qu'elle
-   n'a ni fond ni bord, et juste au cas ou une surface lui revienne.
-   Sous 860px cette meme liste quitte l'en-tete et se pose en barre d'onglets
-   au bas de la fenetre — la, elle reprend un verre a elle, parce qu'il n'y a
-   plus de bande autour d'elle pour le porter. Voir section 12. */
+/* LA PILULE. Valeurs exactes de Figma : fond noir a 5 %, flou d'arriere-plan
+   de 35px, rayon 40px, ecart de 40px, padding 16px/40px.
+   backdrop-filter floute ce qui se trouve DERRIERE l'element : la pilule
+   laisse donc deviner le contenu qui defile dessous.
+   Sous 860px, cette meme pilule quitte l'en-tete et se pose en barre
+   d'onglets au bas de la fenetre — meme element, meme liste, meme etat actif ;
+   voir section 12. */
 .site-nav {
   justify-self: center;
   display: flex; align-items: center; gap: 40px;
   padding: 16px 40px;
+  background: var(--veil);
+  -webkit-backdrop-filter: blur(35px);
+  backdrop-filter: blur(35px);
   border-radius: var(--radius-pill);
 }
 .site-nav a {
@@ -3526,14 +3506,6 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
     padding: 0;
     background: none;
     box-shadow: none;
-    /* PAS SEULEMENT POUR NE RIEN PEINDRE. Un backdrop-filter (celui de la
-       section 4) fait de l'element le BLOC CONTENEUR de ses descendants en
-       position:fixed, au meme titre qu'un transform. La barre d'onglets, qui
-       est justement un enfant fixe de l'en-tete, se calerait alors sur cette
-       boite de hauteur nulle collee en haut : "20px au-dessus du bas" la
-       remonterait au sommet de l'ecran. On l'annule donc explicitement, et
-       pas seulement parce qu'il n'y a plus rien a flouter. */
-    -webkit-backdrop-filter: none; backdrop-filter: none;
   }
   .brand { display: none; }
 
@@ -3616,17 +3588,20 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
        largeur, un ecart constant tasserait les trois entrees au centre. */
     justify-content: space-evenly; gap: var(--s3);
     padding-inline: var(--s4);
-    /* LE VERRE, PLUS EPAIS QU'EN HAUT DE PAGE. Meme teinte que l'en-tete du
-       bureau (--nav-tint) et meme ombre que la barre d'une etude de cas : ce
-       sont trois fois le meme objet flottant, ils ne peuvent pas etre en
-       trois matieres. Seul le FLOU monte, a 60px : l'en-tete ne passe que sur
-       des aplats de bleu uni, alors que cette barre-ci passe sur les visuels
-       des cartes, ou 35px ne la separaient plus de rien.
-       Ici la barre porte son propre verre parce qu'il n'y a plus de bande
-       autour d'elle pour le porter — l'en-tete est vide sous 860px.
+    /* LE VERRE, PLUS EPAIS QU'EN HAUT DE PAGE. Meme ombre que la barre d'une
+       etude de cas — les deux sont le meme objet flottant, elles ne peuvent
+       pas etre en deux matieres — mais le gris et le flou montent tous les
+       deux : la pilule de l'en-tete se detache sur un aplat de bleu uni,
+       alors que celle-ci passe sur les visuels des cartes, ou --veil (noir a
+       5 %) et 14px de flou ne la separaient plus de rien. A 14 % de noir et
+       60px, le fond redevient une matiere et le libelle reste lisible sur
+       n'importe quel visuel.
+       Valeur en dur et non un jeton : c'est le reglage de CETTE barre, pas
+       une matiere partagee — la couleur du verre des fiches, elle, reste
+       --glass (section 1).
        L'ombre remplace le liser : un trait fermerait la forme et la ferait
        lire comme un champ, la ou on veut un objet pose sur la page. */
-    background: var(--nav-tint);
+    background: #00000025;
     -webkit-backdrop-filter: blur(60px); backdrop-filter: blur(60px);
     box-shadow: var(--glass-shadow);
   }
