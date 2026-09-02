@@ -217,12 +217,6 @@
          qu'on vienne d'une autre page ou du bas de celle-ci. -->
     <a class="brand" href="#/#hello" aria-label="Marvin Sorhaindo, home">Marvin S.</a>
 
-    <!-- Bouton hamburger, visible seulement sous 860px (voir media query CSS) -->
-    <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="site-nav">
-      <span class="nav-toggle__box" aria-hidden="true"><i></i><i></i></span>
-      <span class="sr-only" data-i18n="navMenu">Menu</span>
-    </button>
-
     <!--
       "Home" ne figure plus ici : c'est le nom, a gauche, qui ramene a
       l'accueil — un lien vers soi-meme dans un menu de cinq entrees etait
@@ -231,6 +225,15 @@
       Consequence assumee : sur l'accueil, plus aucune entree du menu ne
       porte aria-current (markActiveNav cherche un lien data-nav="home", qui
       n'existe plus). Les autres pages gardent la leur.
+
+      SOUS 860px, CETTE MEME PILULE EST LA BARRE D'ONGLETS DU BAS. Il n'y a
+      qu'un menu, qui change de place et non de nature : memes liens, meme
+      ordre, meme soulignement de l'entree en cours. Le bouton hamburger qui
+      se trouvait juste au-dessus, et le tiroir plein ecran qu'il ouvrait,
+      ont disparu avec ce deplacement — un menu de trois entrees visible en
+      permanence n'a rien a ouvrir. Voir la section 12 du CSS.
+      Contact est la seule entree que la barre laisse de cote : c'est un
+      mailto, il sort du site, et le pied de page le porte deja.
     -->
     <nav class="site-nav" id="site-nav" aria-label="Main navigation">
       <!-- data-spy : la section d'accueil que ce lien surveille. C'est la

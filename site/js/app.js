@@ -3486,7 +3486,6 @@ function paint(hash, route, mode) {
     markActiveNav(route);
     setupBackLink(route);
     setupOverlayClose(route);
-    closeMobileNav();
 
     /* OU SE POSE-T-ON DANS LA PAGE ?
        Trois cas, du plus specifique au plus general :
@@ -3585,7 +3584,7 @@ function paint(hash, route, mode) {
 /* Clone un element pour la photo, en retirant les identifiants.
    Deux elements portant le meme id dans la page, c'est du HTML invalide :
    $('#site-nav') pourrait alors renvoyer la copie inerte au lieu de la vraie
-   navigation, et le menu mobile cesserait de s'ouvrir. */
+   navigation, et markActiveNav repeindrait la photo au lieu de l'en-tete. */
 function snapClone(node) {
   const copy = node.cloneNode(true);
   copy.removeAttribute('id');
@@ -3845,10 +3844,11 @@ function setupBackLink(route) {
   link.href = route.name === 'case' ? `#/#${route.project.kind}` : '#/';
 }
 
-function closeMobileNav() {
-  $('#site-nav').classList.remove('is-open');
-  $('#nav-toggle').setAttribute('aria-expanded', 'false');
-}
+/* Il y avait ici closeMobileNav(), qui refermait le tiroir de navigation
+   mobile a chaque changement de page. Le tiroir n'existe plus : sous 860px la
+   pilule est posee en permanence au bas de la fenetre (barre d'onglets,
+   section 12 du CSS), donc il n'y a plus d'etat ouvert/ferme a tenir — ni
+   .is-open, ni aria-expanded, ni bouton hamburger. */
 
 function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -4603,27 +4603,16 @@ function start() {
     else window.scrollTo({ top: 0, behavior });
   });
 
-  // Menu mobile.
-  const toggle = $('#nav-toggle');
-  toggle.addEventListener('click', () => {
-    const open = $('#site-nav').classList.toggle('is-open');
-    toggle.setAttribute('aria-expanded', String(open));
-  });
-
-  // Un clic sur un lien de navigation referme le menu mobile.
-  $$('.site-nav a').forEach(a => a.addEventListener('click', closeMobileNav));
-
-  /* Echap referme le menu mobile ouvert — et, a defaut, la fiche d'etude de
-     cas. Dans cet ordre : quand les deux sont ouverts, la premiere pression
-     ferme le menu, la seconde la fiche. Un element qui se pose par-dessus le
-     reste doit toujours se refermer a la touche Echap ; c'est la sortie que
-     tout le monde essaie en premier. On ignore la frappe si elle vient d'un
-     champ de saisie (le portail du prenom a sa propre gestion). */
+  /* Echap referme la fiche d'etude de cas. Un element qui se pose par-dessus
+     le reste doit toujours se refermer a la touche Echap ; c'est la sortie
+     que tout le monde essaie en premier. On ignore la frappe si elle vient
+     d'un champ de saisie (le portail du prenom a sa propre gestion).
+     Il y avait ici une premiere branche pour le tiroir de navigation mobile,
+     qu'on fermait avant la fiche. Le tiroir n'existe plus (voir la barre
+     d'onglets, section 12 du CSS) : la fiche est desormais la seule chose
+     qu'Echap ait a fermer. */
   document.addEventListener('keydown', (ev) => {
     if (ev.key !== 'Escape') return;
-
-    const nav = $('#site-nav');
-    if (nav.classList.contains('is-open')) { closeMobileNav(); return; }
 
     const tag = (ev.target.tagName || '').toLowerCase();
     if (tag === 'input' || tag === 'textarea') return;
