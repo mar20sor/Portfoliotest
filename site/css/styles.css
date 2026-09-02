@@ -138,13 +138,16 @@
 
   /* ---- LE VERRE, LA MATIERE ---------------------------------------------
      Le flou et l'ombre des objets qui flottent AU-DESSUS d'une page au lieu
-     d'y etre poses : la croix de fermeture, la barre de sections d'une etude
-     de cas, et depuis peu la pilule de navigation du site quand elle devient
-     la barre d'onglets du bas sur mobile (section 12).
-     Ces deux-la sont ici, dans :root, et non dans le theme clair : ce sont
-     des mesures, pas des couleurs, et la barre d'onglets vit sur le bleu de
-     marque. La TEINTE du verre, elle, depend bien du theme — voir --glass
-     dans le bloc clair, et --veil ci-dessus pour la pilule grise du site. */
+     d'y etre poses : la croix de fermeture et la barre de sections d'une
+     etude de cas, qui doivent rester la meme matiere a la retouche pres.
+     Ils sont ici, dans :root, et non dans le theme clair ou ils vivaient :
+     l'ombre sert aussi a la barre d'onglets du bas sur mobile (section 12),
+     qui est sur le bleu de marque, et une variable ne se lit pas depuis un
+     theme qu'on n'a pas. Le flou les a suivis pour ne pas separer deux
+     valeurs qui se lisent ensemble — la barre d'onglets, elle, en demande un
+     bien plus epais et le declare sur place.
+     La TEINTE du verre depend en revanche du theme : voir --glass dans le
+     bloc clair. */
   --glass-blur:   blur(14px);
   --glass-shadow: 0 2px 12px -4px rgba(16, 35, 63, .28);
   --head-h:      82px;   /* 16px de texte + 24px de marge haute et basse */
@@ -213,9 +216,9 @@ html[data-theme="light"],
      de le masquer.
 
      Seule la COULEUR est ici : le flou et l'ombre sont remontes dans :root
-     (section 1), parce que la barre d'onglets de l'accueil s'en sert aussi et
-     qu'elle, elle est sur le bleu de marque. Sa teinte a elle est --veil, le
-     gris qu'elle avait deja en pilule d'en-tete.                           */
+     (section 1), parce que la barre d'onglets de l'accueil reprend l'ombre et
+     qu'elle, elle est sur le bleu de marque. Sa teinte a elle n'est pas un
+     jeton — c'est un noir a 14 % declare sur place, section 12.            */
   --glass:        rgba(255, 255, 255, .72);
   /* Il y avait ici --glass-0, le meme blanc en transparence totale, arrivee des
      degrades qui estompaient les bords de la barre flottante. Ces degrades sont
@@ -3523,14 +3526,21 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
        largeur, un ecart constant tasserait les trois entrees au centre. */
     justify-content: space-evenly; gap: var(--s3);
     padding-inline: var(--s4);
-    /* LE VERRE DE .cs-nav__pill, LA COULEUR DE LA PILULE. Meme flou, meme
-       ombre que la barre d'une etude de cas : les deux sont le meme objet
-       flottant, elles ne peuvent pas etre en deux matieres. Le fond, lui,
-       reste --veil, le gris que la pilule porte deja sur le bureau — ce n'est
-       pas une fiche blanche qui passe dessous ici, c'est le bleu de marque.
+    /* LE VERRE, PLUS EPAIS QU'EN HAUT DE PAGE. Meme ombre que la barre d'une
+       etude de cas — les deux sont le meme objet flottant, elles ne peuvent
+       pas etre en deux matieres — mais le gris et le flou montent tous les
+       deux : la pilule de l'en-tete se detache sur un aplat de bleu uni,
+       alors que celle-ci passe sur les visuels des cartes, ou --veil (noir a
+       5 %) et 14px de flou ne la separaient plus de rien. A 14 % de noir et
+       60px, le fond redevient une matiere et le libelle reste lisible sur
+       n'importe quel visuel.
+       Valeur en dur et non un jeton : c'est le reglage de CETTE barre, pas
+       une matiere partagee — la couleur du verre des fiches, elle, reste
+       --glass (section 1).
        L'ombre remplace le liser : un trait fermerait la forme et la ferait
        lire comme un champ, la ou on veut un objet pose sur la page. */
-    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+    background: #00000025;
+    -webkit-backdrop-filter: blur(60px); backdrop-filter: blur(60px);
     box-shadow: var(--glass-shadow);
   }
 
