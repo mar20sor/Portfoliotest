@@ -184,6 +184,8 @@ function applyStaticI18n() {
   if (input) input.setAttribute('placeholder', d.gatePlaceholder);
   const contact = $('#nav-contact');
   if (contact) contact.href = `mailto:${SITE.email}`;
+  const resume = $('#nav-resume');
+  if (resume) resume.href = SITE.links.resume;
 }
 
 
@@ -3486,7 +3488,6 @@ function paint(hash, route, mode) {
     markActiveNav(route);
     setupBackLink(route);
     setupOverlayClose(route);
-    closeMobileNav();
 
     /* OU SE POSE-T-ON DANS LA PAGE ?
        Trois cas, du plus specifique au plus general :
@@ -3585,7 +3586,7 @@ function paint(hash, route, mode) {
 /* Clone un element pour la photo, en retirant les identifiants.
    Deux elements portant le meme id dans la page, c'est du HTML invalide :
    $('#site-nav') pourrait alors renvoyer la copie inerte au lieu de la vraie
-   navigation, et le menu mobile cesserait de s'ouvrir. */
+   navigation, et markActiveNav repeindrait la photo au lieu de l'en-tete. */
 function snapClone(node) {
   const copy = node.cloneNode(true);
   copy.removeAttribute('id');
@@ -3773,8 +3774,9 @@ function scrollToSection(id, behavior) {
 }
 
 /* --head-h (styles.css) n'est qu'une approximation par point de rupture
-   (82px bureau / 72px mobile) : des qu'un navigateur rend l'en-tete un peu
-   plus haut (police, marge du systeme...), .cs-nav — qui se colle a
+   (82px bureau / 0 sous 860px, ou l'en-tete est vide) : des qu'un navigateur
+   rend l'en-tete un peu plus haut (police, marge du systeme...), .cs-nav —
+   qui se colle a
    top: var(--head-h) en mobile, sans marge supplementaire contrairement a la
    version bureau — se decolle visuellement de la barre du haut. Un
    ResizeObserver ecrit donc la VRAIE hauteur mesuree dans --head-h (variable
@@ -3790,11 +3792,19 @@ function syncHeadHeight() {
 }
 
 /* Lit la hauteur de l'en-tete depuis le CSS plutot que de la coder en dur.
-   Elle change entre bureau et mobile (82px / 72px) : la lire garantit que le
-   JavaScript et la feuille de style ne peuvent pas se contredire. */
+   Elle change entre bureau et mobile (82px / 0 depuis que l'en-tete est vide
+   sous 860px) : la lire garantit que le JavaScript et la feuille de style ne
+   peuvent pas se contredire.
+
+   Le repli est teste sur Number.isFinite et non par `|| 82`, qui confondait
+   "rien lu" avec "lu zero" : sous 860px l'en-tete mesure vraiment 0px, et
+   l'ancien code y repondait 82: les ancres se posaient 82px trop bas et la
+   ligne du scroll-spy allumait la section suivante avec un ecran de
+   retard. */
 function readHeadHeight() {
   const v = getComputedStyle(document.documentElement).getPropertyValue('--head-h');
-  return parseInt(v, 10) || 82;
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) ? n : 82;
 }
 
 /* Souligne l'entree de menu correspondant a la page affichee. */
@@ -3815,7 +3825,18 @@ function markActiveNav(route) {
      reprend la main normalement. */
   if (route.name === 'case' && document.body.classList.contains('is-overlay')) return;
 
-  const map = { home: 'home', case: route.project?.kind, about: 'about', gap: null };
+  /* home: null, ET NON 'home', alors qu'une entree data-nav="home" existe
+     de nouveau (barre d'onglets, sous 860px). Lui poser aria-current="page"
+     sur l'accueil la laisserait allumee en permanence, y compris pendant que
+     le scroll-spy allume Work ou Side quests plus bas : deux entrees
+     soulignees a la fois, puisque cette fonction et le spy posent chacune
+     leur valeur sans se consulter. Sur l'accueil, c'est le spy qui decide,
+     Home comprise — elle surveille sec-hello comme les autres surveillent
+     leur section.
+     L'entree porte quand meme data-nav, pour l'autre moitie du travail fait
+     plus bas : le balayage ne voit que les liens qui en portent un, et c'est
+     lui qui EFFACE le surlignage en quittant l'accueil. */
+  const map = { home: null, case: route.project?.kind, about: 'about', gap: null };
   const current = map[route.name] ?? null;
   // Scope au vrai en-tete : #underlay peut contenir un clone de la barre de
   // navigation (voir captureUnderlay), et une recherche a l'echelle du
@@ -3845,10 +3866,11 @@ function setupBackLink(route) {
   link.href = route.name === 'case' ? `#/#${route.project.kind}` : '#/';
 }
 
-function closeMobileNav() {
-  $('#site-nav').classList.remove('is-open');
-  $('#nav-toggle').setAttribute('aria-expanded', 'false');
-}
+/* Il y avait ici closeMobileNav(), qui refermait le tiroir de navigation
+   mobile a chaque changement de page. Le tiroir n'existe plus : sous 860px la
+   pilule est posee en permanence au bas de la fenetre (barre d'onglets,
+   section 12 du CSS), donc il n'y a plus d'etat ouvert/ferme a tenir — ni
+   .is-open, ni aria-expanded, ni bouton hamburger. */
 
 function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -4299,11 +4321,17 @@ function setupCaseBehaviours() {
 
    UNE DIFFERENCE, VOULUE : ici il peut n'y avoir AUCUNE entree allumee.
    Dans une etude de cas, chaque pixel de la page appartient a une etape du
-   sommaire, donc il y en a toujours exactement une d'active. L'accueil, lui,
-   commence par le heros, qui n'est represente dans la pilule par rien du
-   tout. Reprendre la regle "a defaut, la premiere" y allumerait Work pendant
-   qu'on lit encore la salutation. Au-dessus de la premiere section, personne
-   n'est allume — c'est la reponse juste.
+   sommaire, donc il y en a toujours exactement une d'active. Reprendre la
+   regle "a defaut, la premiere" allumerait Work pendant qu'on lit encore la
+   salutation. Au-dessus de la premiere section surveillee, personne n'est
+   allume — c'est la reponse juste.
+   Depuis que Home (data-spy="sec-hello") existe, ce cas ne se produit
+   pratiquement plus : le heros EST une section surveillee, et sec-hello
+   commence au premier pixel de la page. Mais l'entree est masquee au-dessus
+   de 860px (le nom de l'en-tete y tient son role), donc sur le bureau il n'y
+   a toujours rien d'allume pendant le heros — ce qui reste correct : allumer
+   un lien invisible ne se voit pas, et le spy ne peut pas en allumer un
+   second par-dessus.
 
    aria-current="location" et non "page" : ce lien ne designe pas la page
    affichee (on y est deja), mais un endroit A L'INTERIEUR d'elle. C'est
@@ -4603,27 +4631,16 @@ function start() {
     else window.scrollTo({ top: 0, behavior });
   });
 
-  // Menu mobile.
-  const toggle = $('#nav-toggle');
-  toggle.addEventListener('click', () => {
-    const open = $('#site-nav').classList.toggle('is-open');
-    toggle.setAttribute('aria-expanded', String(open));
-  });
-
-  // Un clic sur un lien de navigation referme le menu mobile.
-  $$('.site-nav a').forEach(a => a.addEventListener('click', closeMobileNav));
-
-  /* Echap referme le menu mobile ouvert — et, a defaut, la fiche d'etude de
-     cas. Dans cet ordre : quand les deux sont ouverts, la premiere pression
-     ferme le menu, la seconde la fiche. Un element qui se pose par-dessus le
-     reste doit toujours se refermer a la touche Echap ; c'est la sortie que
-     tout le monde essaie en premier. On ignore la frappe si elle vient d'un
-     champ de saisie (le portail du prenom a sa propre gestion). */
+  /* Echap referme la fiche d'etude de cas. Un element qui se pose par-dessus
+     le reste doit toujours se refermer a la touche Echap ; c'est la sortie
+     que tout le monde essaie en premier. On ignore la frappe si elle vient
+     d'un champ de saisie (le portail du prenom a sa propre gestion).
+     Il y avait ici une premiere branche pour le tiroir de navigation mobile,
+     qu'on fermait avant la fiche. Le tiroir n'existe plus (voir la barre
+     d'onglets, section 12 du CSS) : la fiche est desormais la seule chose
+     qu'Echap ait a fermer. */
   document.addEventListener('keydown', (ev) => {
     if (ev.key !== 'Escape') return;
-
-    const nav = $('#site-nav');
-    if (nav.classList.contains('is-open')) { closeMobileNav(); return; }
 
     const tag = (ev.target.tagName || '').toLowerCase();
     if (tag === 'input' || tag === 'textarea') return;

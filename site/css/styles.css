@@ -130,11 +130,33 @@
 
   /* ---- DIVERS ---------------------------------------------------------- */
   --radius-pill: 40px;   /* la pilule de navigation */
+  --nav-pad-x:   40px;   /* le retrait interne de la pilule, de la maquette */
+  /* La largeur maximale du conteneur .wrap (section 2), d'ou la pilule de
+     navigation tire la sienne : sa boite de contenu mesure cette valeur moins
+     les deux gouttieres, c'est-a-dire exactement la colonne ou vit le contenu.
+     Un jeton parce que deux endroits en dependent et qu'ils doivent bouger
+     ensemble. */
+  --wrap-max:    1280px;
   --radius-tag:  20px;   /* les etiquettes */
   --radius:      14px;
   --radius-sm:   8px;
   --shadow:      0 10px 30px -12px rgba(0,0,0,.35);
   --shadow-lg:   0 24px 60px -20px rgba(0,0,0,.45);
+
+  /* ---- LE VERRE, LA MATIERE ---------------------------------------------
+     Le flou et l'ombre des objets qui flottent AU-DESSUS d'une page au lieu
+     d'y etre poses : la croix de fermeture et la barre de sections d'une
+     etude de cas, qui doivent rester la meme matiere a la retouche pres.
+     Ils sont ici, dans :root, et non dans le theme clair ou ils vivaient :
+     l'ombre sert aussi a la barre d'onglets du bas sur mobile (section 12),
+     qui est sur le bleu de marque, et une variable ne se lit pas depuis un
+     theme qu'on n'a pas. Le flou les a suivis pour ne pas separer deux
+     valeurs qui se lisent ensemble — la barre d'onglets, elle, en demande un
+     bien plus epais et le declare sur place.
+     La TEINTE du verre depend en revanche du theme : voir --glass dans le
+     bloc clair. */
+  --glass-blur:   blur(14px);
+  --glass-shadow: 0 2px 12px -4px rgba(16, 35, 63, .28);
   --head-h:      82px;   /* 16px de texte + 24px de marge haute et basse */
   --back-h:      38px;   /* hauteur du bouton "Retour", fixe sous l'en-tete */
   --measure:     68ch;   /* largeur de lecture confortable */
@@ -193,20 +215,18 @@ html[data-theme="light"],
   --shadow:      0 8px 24px -12px rgba(16,35,63,.25);
   --shadow-lg:   0 20px 50px -20px rgba(16,35,63,.30);
 
-  /* ---- LE VERRE ---------------------------------------------------------
+  /* ---- LA TEINTE DU VERRE -----------------------------------------------
      Deux objets seulement flottent AU-DESSUS d'une etude de cas : la croix de
-     fermeture et, sur mobile, la barre de navigation. Ils ne sont pas dans la
-     page, ils sont poses dessus — d'ou le blanc translucide et le flou, qui
-     laissent deviner le texte qui passe en dessous plutot que de le masquer.
+     fermeture et, sur mobile, la barre de sections. Ils ne sont pas dans la
+     page, ils sont poses dessus — d'ou le blanc translucide qui, avec le flou
+     de --glass-blur, laisse deviner le texte qui passe en dessous plutot que
+     de le masquer.
 
-     Les trois valeurs vivent ICI et non dans chaque regle : recopiees, elles
-     divergeraient a la premiere retouche, et les deux objets cesseraient de
-     se ressembler. Elles sont dans le theme clair parce que c'est un blanc :
-     les deux elements qui s'en servent portent .theme-light, la croix
-     directement, la barre via #page.                                       */
+     Seule la COULEUR est ici : le flou et l'ombre sont remontes dans :root
+     (section 1), parce que la barre d'onglets de l'accueil reprend l'ombre et
+     qu'elle, elle est sur le bleu de marque. Sa teinte a elle n'est pas un
+     jeton — c'est un noir a 14 % declare sur place, section 12.            */
   --glass:        rgba(255, 255, 255, .72);
-  --glass-blur:   blur(14px);
-  --glass-shadow: 0 2px 12px -4px rgba(16, 35, 63, .28);
   /* Il y avait ici --glass-0, le meme blanc en transparence totale, arrivee des
      degrades qui estompaient les bords de la barre flottante. Ces degrades sont
      devenus un masque pose sur la liste (section 12) : un masque efface, il ne
@@ -292,9 +312,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .skip-link:focus { transform: translateY(0); }
 
 /* Conteneur : marges laterales fluides valant 80px sur grand ecran,
-   exactement comme la maquette. */
+   exactement comme la maquette.
+   --wrap-max est un jeton (section 1) parce que la pilule de navigation s'y
+   accorde : son CONTENU tombe exactement sur la COLONNE de ce conteneur, soit
+   cette largeur moins les deux gouttieres. Deux endroits, une valeur. */
 .wrap {
-  width: 100%; max-width: 1280px;
+  width: 100%; max-width: var(--wrap-max);
   margin-inline: auto;
   padding-inline: var(--gutter);
 }
@@ -457,27 +480,28 @@ button { font: inherit; color: inherit; cursor: pointer; }
    filet reprend son role des qu'on revient sur une page normale. */
 body.is-overlay:has(.cs-nav) .progress { display: none; }
 
-/* Grille en trois colonnes : brand, pilule de nav, et une 3e colonne vide
-   (le site avait un selecteur de langue ici ; retire avec le francais, voir
-   CONVERSATION.md). On garde la 3e piste : une grille CSS reserve l'espace
-   d'une colonne meme sans element dedans, donc la pilule reste optiquement
-   centree sans avoir a recalculer la mise en page. */
+/* L'EN-TETE N'EST PLUS QU'UN SUPPORT : il place la pilule et la rend
+   collante, rien de plus. Il portait un aplat --bg pleine largeur et un filet
+   d'un pixel, avec la pilule posee au milieu — deux surfaces pour un seul
+   objet, et le flou de la pilule ne servait a rien puisque l'aplat derriere
+   elle etait opaque. Le fond et le filet sont partis ; la pilule, elle, prend
+   maintenant toute la largeur et porte tout, y compris le nom.
+   La grille a trois colonnes est partie avec eux : il ne reste qu'un enfant,
+   qui se centre tout seul. C'est la pilule qui a repris la grille, et donc le
+   centrage optique des entrees (voir .site-nav).
+
+   LE RETRAIT LATERAL EST LA GOUTTIERE MOINS LE PADDING DE LA PILULE. Ce qui
+   doit s'aligner sur la colonne de contenu, ce n'est pas le bord du verre :
+   c'est le nom a gauche et Contact a droite, les deux seules choses qu'on lit.
+   Ils sont a --nav-pad-x du bord de la pilule ; on recule donc la pilule
+   d'autant pour que son contenu, et non sa boite, tombe sur la colonne. Le
+   verre deborde alors de 40px de chaque cote, ce qui est voulu.
+   Toujours positif ici : cette regle ne vaut qu'au-dessus de 860px, ou la
+   gouttiere (6.25vw) fait au moins 53.75px, donc 13.75px apres retrait. Sous
+   860px la section 12 remet ce padding a zero et la pilule devient fixe. */
 .site-head {
   position: sticky; top: 0; z-index: 120;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: var(--s4);
-  padding: var(--s5) var(--gutter);
-  background: var(--bg);
-  /* Le filet est permanent : il marque la limite de l'en-tete des le premier
-     regard, avant tout defilement. Il etait auparavant porte par
-     .is-scrolled, donc absent en haut de page — la barre flottait alors sans
-     bord, et le trait apparaissait au premier pixel parcouru.
-     app.js continue de poser .is-scrolled (voir setupScrollProgress) : la classe
-     ne commande plus rien ici, mais elle reste l'etat "on a quitte le haut",
-     lisible depuis le CSS si besoin. */
-  box-shadow: 0 1px 0 var(--line-soft);
+  padding: var(--s5) calc(var(--gutter) - var(--nav-pad-x));
 }
 
 .brand {
@@ -487,19 +511,65 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
   text-decoration: none; white-space: nowrap;
 }
 
-/* LA PILULE. Valeurs exactes de Figma : fond noir a 5 %, flou d'arriere-plan
-   de 35px, rayon 40px, ecart de 40px, padding 16px/40px.
-   backdrop-filter floute ce qui se trouve DERRIERE l'element : la pilule
-   laisse donc deviner le contenu qui defile dessous. */
+/* LA PILULE, QUI EST MAINTENANT LA BARRE ENTIERE. Valeurs de Figma reprises
+   telles quelles : fond noir a 5 %, flou d'arriere-plan de 35px, rayon 40px,
+   ecart de 40px entre les entrees, padding 16px/40px. backdrop-filter floute
+   ce qui se trouve DERRIERE l'element : depuis que l'en-tete n'a plus d'aplat,
+   c'est vraiment le contenu de la page qui defile dessous et s'y devine.
+
+   Trois colonnes, comme l'en-tete en avait : le nom a gauche, les entrees au
+   centre, Resume et Contact a droite. 1fr auto 1fr et non space-between —
+   les deux pistes souples etant egales, la piste du milieu tombe au centre
+   exact de la barre quels que soient les groupes qui l'encadrent. Avec
+   space-between, le centre aurait glisse des que le nom ou le groupe de
+   droite change de longueur.
+
+   SON CONTENU MESURE LA COLONNE DE CONTENU, PAS SA BOITE. Elle a d'abord
+   couru d'un bord a l'autre de l'en-tete, soit bien au-dela des textes et des
+   cartes qu'elle surplombe : une barre plus large que tout ce qu'elle
+   contient et tout ce qu'elle annonce. On l'a ensuite ramenee a la colonne de
+   .wrap, mais alors c'etait le verre qui s'y alignait, et le nom se retrouvait
+   40px en dedans des titres qu'il surplombe. Ce qui doit s'aligner, c'est ce
+   qui se lit : le nom a gauche, Contact a droite. Le max-width vaut donc la
+   colonne PLUS les deux retraits internes, de sorte que la boite de contenu de
+   la pilule — et non son bord — tombe exactement sur .wrap. Le verre depasse
+   de --nav-pad-x de chaque cote, ce qui est voulu et discret.
+   Calcule et non recopie : c'est la formule meme de la colonne de .wrap
+   (section 2), augmentee du padding declare deux lignes plus bas. Y ecrire
+   1200px figerait le resultat pour une seule taille d'ecran, la gouttiere
+   etant fluide. Au-dessous de --wrap-max le retrait de l'en-tete suffit seul,
+   ce max-width devenant plus grand que la place disponible.
+
+   Sous 860px cette meme liste quitte l'en-tete et se pose en barre d'onglets
+   au bas de la fenetre : elle y repasse en flex, perd le nom et le groupe de
+   droite, et garde le meme etat actif. Le max-width ci-dessous ne la gene pas
+   — a 390px il vaut plus de 1300px, soit bien plus que la barre. Voir
+   section 12. */
 .site-nav {
-  justify-self: center;
-  display: flex; align-items: center; gap: 40px;
-  padding: 16px 40px;
+  max-width: calc(var(--wrap-max) - 2 * var(--gutter) + 2 * var(--nav-pad-x));
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--s4);
+  padding: 16px var(--nav-pad-x);
   background: var(--veil);
   -webkit-backdrop-filter: blur(35px);
   backdrop-filter: blur(35px);
   border-radius: var(--radius-pill);
 }
+/* Les deux groupes ne sont que des colonnes : ils rangent leurs liens en
+   rangee et se collent chacun a son bord. Le nom, lui, est un enfant direct
+   de la grille et porte deja son justify-self. */
+.site-nav__links { justify-self: center; display: flex; align-items: center; gap: 40px; }
+.site-nav__end   { justify-self: end;    display: flex; align-items: center; gap: var(--s5); }
+
+/* Le nom est entre dans la pilule, donc .site-nav a s'applique a lui — et le
+   passait a 82 % d'opacite comme une entree de menu. Il n'en est pas une : il
+   nomme le site, il ne designe pas une destination parmi d'autres. Tout le
+   reste de .site-nav a (taille, graisse, interligne, approche) est deja ce
+   que .brand declarait de son cote, il n'y a donc que cette ligne a reprendre. */
+.site-nav .brand { opacity: 1; }
 .site-nav a {
   position: relative;
   text-decoration: none; color: var(--ink);
@@ -526,17 +596,20 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
 .site-nav a[aria-current] { opacity: 1; }
 .site-nav a[aria-current]::after { transform: scaleX(1); }
 
-/* Bouton hamburger : masque par defaut, affiche en media query mobile. */
-.nav-toggle {
-  display: none;
-  justify-self: end;
-  border: 1px solid var(--line); background: var(--veil);
-  border-radius: var(--radius-sm); padding: var(--s2) var(--s3);
-}
-.nav-toggle__box { display: grid; gap: 4px; width: 18px; }
-.nav-toggle__box i { display: block; height: 2px; background: var(--ink); border-radius: 2px; transition: transform .2s var(--ease); }
-.nav-toggle[aria-expanded="true"] .nav-toggle__box i:first-child { transform: translateY(3px) rotate(45deg); }
-.nav-toggle[aria-expanded="true"] .nav-toggle__box i:last-child  { transform: translateY(-3px) rotate(-45deg); }
+/* HOME N'EXISTE QUE DANS LA BARRE DU BAS. Ici, dans l'en-tete, le nom a
+   gauche ramene deja a l'accueil (meme ancre, #hello) : l'entree ferait la
+   meme chose une seconde fois, a 40px de distance. Sous 860px le nom est
+   masque avec l'en-tete et elle devient au contraire le seul chemin — la
+   section 12 la rallume. Symetrique de #nav-contact, qui fait le trajet
+   inverse. */
+#nav-home { display: none; }
+
+/* Il y avait ici le bouton hamburger et ses deux barres qui se croisaient en
+   X a l'ouverture. Il commandait un tiroir plein ecran qui descendait de
+   l'en-tete ; la pilule etant desormais posee en permanence au bas de la
+   fenetre sur mobile (section 12), il n'y avait plus rien a ouvrir. Un
+   bouton "menu" a cote d'un menu deja visible, c'est une question a laquelle
+   la reponse est deja affichee. Retire du HTML et du JS avec lui. */
 
 /* ---- Lien retour persistant ----
    Place SOUS l'en-tete plutot qu'en bas d'ecran : c'est la que l'oeil cherche
@@ -569,9 +642,14 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
    passe sur cinq lignes en francais, le bloc grandit au lieu de deborder.
    ========================================================================== */
 
+/* --hero-min est un jeton et non 400px ecrits ici : le media 860px doit
+   l'augmenter d'autant qu'il augmente le retrait haut (voir section 12), et
+   deux nombres qui doivent bouger ensemble ne peuvent pas etre ecrits deux
+   fois. */
 .hero {
   display: flex; flex-direction: column; justify-content: center;
-  min-height: 400px;
+  --hero-min: 400px;
+  min-height: var(--hero-min);
   padding-block: var(--s7);
 }
 .hero__text { display: flex; flex-direction: column; gap: var(--s5); }
@@ -3462,36 +3540,163 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
   body.is-overlay { --head-h: 0px; }
 }
 
-/* --- Sous 860px : la pilule ne tient plus, on replie la navigation ----- */
+/* --- Sous 860px : la pilule descend en barre d'onglets ----------------- */
 @media (max-width: 860px) {
-  :root { --head-h: 72px; }
+  /* PLUS D'EN-TETE SUR MOBILE. Il ne portait plus que le nom : la pilule est
+     descendue au bas de la fenetre et le bouton menu a disparu avec le tiroir
+     (section 4). Une bande collante en haut d'un ecran de telephone pour un
+     seul mot, c'est un douzieme de la hauteur utile pris a la lecture — et ce
+     mot n'etait qu'un lien vers l'accueil, ou les trois entrees de la barre
+     ramenent deja.
 
-  /* On repasse en flex : avec une grille a deux colonnes et trois elements
-     restants (marque, langue, bouton menu), le troisieme serait renvoye a la
-     ligne. En flex, les trois tiennent sur une seule rangee, la marque calee
-     a gauche et le reste pousse a droite par margin-left:auto. */
-  .site-head { display: flex; align-items: center; gap: var(--s3); padding-block: var(--s4); }
-  .brand { margin-right: auto; }
-  .nav-toggle { display: block; }
+     ON LE VIDE, ON NE LE RETIRE PAS. #site-nav est son ENFANT dans
+     index.html, donc un display:none emporterait la barre avec lui. Reduit a
+     une boite de hauteur nulle, il ne reste que ce qu'on lui demande encore :
+     le contexte d'empilement (position:sticky, z-index 120, section 4) qui
+     pose la barre au-dessus du contenu et sous la fiche.
+     Une seule ligne suffit depuis que la pilule porte tout : l'en-tete n'a
+     plus ni fond, ni filet, ni grille a annuler ici — il n'en a plus du tout
+     (section 4). Reste son retrait, qui ferait sinon descendre la boite. */
+  .site-head { padding: 0; }
+  /* Le nom est dans la pilule maintenant, mais il n'a rien a faire dans une
+     barre d'onglets : Home y tient deja ce role, et il y prendrait la place
+     d'une entree. */
+  .brand { display: none; }
 
-  .site-nav {
-    position: fixed; inset: var(--head-h) 0 auto 0;
-    flex-direction: column; align-items: stretch; gap: 0;
-    padding: var(--s4) var(--gutter) var(--s6);
-    background: var(--bg);
-    border-radius: 0;
-    border-bottom: 1px solid var(--line);
-    box-shadow: var(--shadow-lg);
-    /* Ferme par defaut : on le sort de l'ecran plutot que display:none,
-       ce qui permet d'animer l'ouverture. */
-    transform: translateY(-120%);
-    visibility: hidden;
-    transition: transform .3s var(--ease), visibility .3s;
+  /* --head-h tombe donc a zero. Ce n'est qu'une approximation : syncHeadHeight
+     (app.js) mesure l'en-tete et ecrit la vraie valeur sur <html>, qui vaudra
+     0px elle aussi. Les ancres se posent maintenant a --s5 du bord haut, ce
+     qui est exactement ce qu'on veut quand rien ne les surplombe.
+
+     --head-was EST CE QUE L'EN-TETE PRENAIT DANS LE FLUX, et qu'il faut rendre
+     au heros. En vidant la bande, tout le haut de l'accueil est remonte de sa
+     hauteur et le "Hey, nice to meet you!" est venu se coller au bord de
+     l'ecran. On ne remet pas la bande pour autant : c'est le heros seul qui
+     reprend la mesure a son compte (.hero plus bas, et dans le media 560px),
+     la ou elle se voit.
+     Calculee et non ecrite en dur : c'est la formule meme de l'en-tete d'avant
+     — une ligne de texte courant a l'interligne de la nav, plus ses deux
+     retraits. Retoucher --fs-body ou --s4 la suit au lieu de la contredire. */
+  :root {
+    --head-h: 0px;
+    --head-was: calc(var(--fs-body) * var(--lh-nav) + var(--s4) * 2);  /* 55.2px */
   }
-  .site-nav.is-open { transform: translateY(0); visibility: visible; }
-  .site-nav a { padding-block: var(--s4); border-bottom: 1px solid var(--line-soft); font-size: 1.05rem; opacity: 1; }
-  .site-nav a::after { display: none; }
-  .site-nav a[aria-current] { color: var(--accent); }
+
+  /* Le retrait propre du heros reste --s7, celui de la feuille de base : on
+     n'ajoute que la hauteur rendue.
+
+     ET LA HAUTEUR MINIMALE SUIT, sans quoi la moitie du retrait est mangee.
+     Le heros centre son contenu dans une boite d'au moins 400px : gonfler le
+     retrait haut ne fait qu'y reduire l'espace libre, que le centrage
+     redistribue de part et d'autre — le texte ne descend alors que de la
+     moitie de ce qu'on a ajoute. En donnant a la boite les 55px de plus
+     qu'elle occupait quand l'en-tete etait au-dessus d'elle, on retrouve
+     l'espace libre d'avant, donc le meme centrage, et le bas du heros retombe
+     exactement ou il etait — les sections en dessous ne bougent pas non plus.
+     (Sous 560px min-height passe a 0 et la question ne se pose plus : le
+     retrait seul suffit, c'est ce que fait le media suivant.) */
+  .hero {
+    padding-top: calc(var(--s7) + var(--head-was));
+    min-height: calc(var(--hero-min) + var(--head-was));
+  }
+
+  /* ------------------------------------------------------------------------
+     LA BARRE D'ONGLETS DU BAS
+
+     C'est la MEME pilule que sur le bureau — meme element, memes liens, meme
+     soulignement lime pour la section en cours. Elle change seulement de
+     place : le haut de l'ecran sur un telephone est la zone la plus loin du
+     pouce, et le site a deja pris le parti du bas pour la navigation d'une
+     etude de cas (section 12 plus haut). Deux barres de navigation, une en
+     haut et une en bas selon la page, se seraient contredites.
+
+     Elle remplace le tiroir plein ecran qui descendait de l'en-tete au
+     hamburger. Trois entrees ne valent pas un ecran entier ni un clic
+     prealable : elles tiennent sur une rangee, et etre visibles en
+     permanence est precisement ce qu'on attend d'un menu de trois liens.
+
+     position:fixed sur un enfant de .site-head : sticky ne cree pas de bloc
+     conteneur pour un descendant fixe (seuls transform, filter et consorts le
+     font), donc la barre se cale bien sur la FENETRE. Elle reste en revanche
+     dans le contexte d'empilement de l'en-tete (z-index 120), ce qui la pose
+     au-dessus du contenu ordinaire et sous la fiche (125) et la croix (150) —
+     l'ordre voulu.
+
+     Les mesures sont celles de .cs-nav sous 1000px : meme hauteur de 56px,
+     memes 20px au-dessus du bord (safe-area comprise), memes marges
+     laterales. Les deux barres ne sont jamais visibles ensemble, mais quand
+     l'une remplace l'autre a l'ouverture d'une fiche, elle doit se poser au
+     meme endroit — sinon la navigation saute de quelques pixels. */
+  .site-nav {
+    position: fixed;
+    left: var(--gutter); right: var(--gutter);
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    /* EN RANGEE, PAS EN GRILLE. Sur le bureau la pilule est une grille a trois
+       colonnes (nom | entrees | Resume et Contact) ; ici il ne reste que les
+       entrees, et elles doivent se repartir sur toute la largeur. Sans cette
+       ligne elles heriteraient de la grille et se rangeraient dans ses trois
+       pistes. */
+    display: flex;
+    height: 56px;
+    /* space-evenly et non le gap fixe du bureau : sur une barre pleine
+       largeur, un ecart constant tasserait les entrees au centre. */
+    justify-content: space-evenly; gap: var(--s3);
+    padding-inline: var(--s4);
+    /* LE VERRE, PLUS EPAIS QU'EN HAUT DE PAGE. Meme ombre que la barre d'une
+       etude de cas — les deux sont le meme objet flottant, elles ne peuvent
+       pas etre en deux matieres — mais le gris et le flou montent tous les
+       deux : la pilule de l'en-tete se detache sur un aplat de bleu uni,
+       alors que celle-ci passe sur les visuels des cartes, ou --veil (noir a
+       5 %) et 14px de flou ne la separaient plus de rien. A 14 % de noir et
+       60px, le fond redevient une matiere et le libelle reste lisible sur
+       n'importe quel visuel.
+       Valeur en dur et non un jeton : c'est le reglage de CETTE barre, pas
+       une matiere partagee — la couleur du verre des fiches, elle, reste
+       --glass (section 1).
+       L'ombre remplace le liser : un trait fermerait la forme et la ferait
+       lire comme un champ, la ou on veut un objet pose sur la page. */
+    background: #00000025;
+    -webkit-backdrop-filter: blur(60px); backdrop-filter: blur(60px);
+    box-shadow: var(--glass-shadow);
+  }
+
+  /* LE GROUPE DES ENTREES REDEVIENT SES ENTREES. display:contents retire la
+     boite sans retirer ses enfants : les quatre liens redeviennent des
+     elements flex de la barre, et le space-evenly ci-dessus les repartit un
+     par un au lieu de pousser un seul bloc au milieu. Le div n'existe que
+     pour donner une colonne au centre de la grille du bureau. */
+  .site-nav__links { display: contents; }
+
+  /* LE GROUPE DE DROITE SORT DE LA BARRE. Resume ouvre un PDF, Contact ouvre
+     une application de courrier : les deux quittent le site, ce qui n'est pas
+     de la navigation et n'a donc rien a faire dans une barre d'onglets — les
+     autres entrees menent a un endroit de ce site-ci. Le pied de page les
+     porte tous les deux.
+     display:none et non une suppression du HTML : au-dessus de 860px la
+     pilule les garde. */
+  .site-nav__end { display: none; }
+
+  /* HOME ENTRE DANS LA BARRE, lui. Le nom qui tenait ce role est masque avec
+     l'en-tete (plus haut) : sans cette entree, rien ne ramenerait plus
+     explicitement en haut de l'accueil depuis le bas d'une longue page, ni
+     depuis About. display:block et non revert : les liens de la pilule sont
+     des elements flex, donc deja blocifies — c'est la valeur qu'ils ont
+     partout ailleurs. */
+  #nav-home { display: block; }
+
+  /* La barre appartient a la page, pas a la fiche posee dessus : une etude de
+     cas a sa propre barre au meme endroit (section 12), et les deux
+     s'empileraient. On la retire donc pendant toute la duree de la fiche —
+     y compris sur une etude sans sommaire, ou c'est la croix qui sert de
+     sortie et ou une barre de site par-dessus le texte serait un contresens. */
+  body.is-overlay .site-nav { display: none; }
+
+  /* La reserve du bas, jumelle de celle de #page:has(.cs-nav) : sans elle la
+     barre recouvrirait la fin du pied de page, qu'aucun defilement ne
+     pourrait alors degager. :not(.is-overlay) parce que la regle ci-dessus
+     vient justement de retirer la barre dans ce cas — et que la fiche a deja
+     la sienne. */
+  body:not(.is-overlay) #page { padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
 
   .pair { grid-template-columns: 1fr; }
   .foot__grid { grid-template-columns: 1fr 1fr; }
@@ -3514,13 +3719,36 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
 
 /* --- Sous 560px : les petits ecrans ----------------------------------- */
 @media (max-width: 560px) {
-  .hero { min-height: 0; padding-block: var(--s6) var(--s7); }
+  /* Le raccourci padding-block ecraserait le padding-top pose dans le media
+     860px : on lui reapplique --head-was, avec le retrait plus serre qui est
+     celui de ce palier. */
+  .hero { min-height: 0; padding-block: calc(var(--s6) + var(--head-was)) var(--s7); }
   .foot__grid { grid-template-columns: 1fr; }
   .gist { grid-template-columns: 1fr 1fr; }
   .back-link { left: 50%; transform: translateX(-50%); bottom: var(--s4); }
   .back-link:hover { transform: translateX(-50%) translateY(-2px); }
   .figure__frame { padding: var(--s2); }
   .cards { gap: var(--s7); }
+}
+
+/* --- Sous 360px : la barre d'onglets se resserre ----------------------- */
+/* Quatre libelles a 16px demandent 216px, plus 36px d'ecarts et 32px de
+   retraits : 284px, quand la pilule n'en mesure que 257 sur un ecran de
+   320px (320 moins deux gouttieres). "About" debordait du verre par la
+   droite. Trois entrees tenaient, la quatrieme ne tient plus.
+
+   On resserre la barre — et elle seule — plutot que de retirer une entree,
+   de laisser la liste defiler ou de la faire passer sur deux rangees :
+   quatre onglets qu'on voit tous d'un coup valent mieux que trois plus un
+   cache, et 15px reste une taille de libelle lisible (c'est --fs-small, la
+   meme que les legendes du site).
+
+   320px n'est pas un ecran anecdotique : c'est la largeur de reference du
+   critere de reflow des WCAG (1.4.10). Le seuil est a 360px pour prendre la
+   marge d'un ou deux caracteres si un libelle s'allonge. */
+@media (max-width: 360px) {
+  .site-nav { padding-inline: var(--s2); gap: var(--s2); }
+  .site-nav a { font-size: var(--fs-small); }
 }
 
 
