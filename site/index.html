@@ -201,6 +201,12 @@
   <!--
     ===================== 4. EN-TETE =====================
     position: sticky en CSS -> reste visible pendant le defilement.
+
+    SOUS 860px IL EST VIDE : le nom est masque et la pilule est posee au bas
+    de la fenetre (section 12 du CSS). Il reste dans le document parce que la
+    pilule est son enfant — le supprimer supprimerait la navigation — mais il
+    ne mesure plus rien et ne peint plus rien. Ne pas y remettre de contenu
+    sans regarder ce media : il reapparaitrait en bande collante.
   -->
   <!--
     Structure calquee sur la maquette : le nom a gauche, la pilule de

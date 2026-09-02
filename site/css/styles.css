@@ -3475,14 +3475,32 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
 
 /* --- Sous 860px : la pilule descend en barre d'onglets ----------------- */
 @media (max-width: 860px) {
-  /* L'en-tete n'a plus qu'un element, le nom : le bouton menu est parti avec
-     le tiroir (section 4), et la pilule descend en bas de fenetre. Il mesure
-     donc 16px de texte a interligne 1.45 plus deux fois --s4, soit 56px. */
-  :root { --head-h: 56px; }
+  /* PLUS D'EN-TETE SUR MOBILE. Il ne portait plus que le nom : la pilule est
+     descendue au bas de la fenetre et le bouton menu a disparu avec le tiroir
+     (section 4). Une bande collante en haut d'un ecran de telephone pour un
+     seul mot, c'est un douzieme de la hauteur utile pris a la lecture — et ce
+     mot n'etait qu'un lien vers l'accueil, ou les trois entrees de la barre
+     ramenent deja.
 
-  /* Une seule chose a placer, mais on garde le flex : la grille a trois
-     colonnes de l'en-tete large centrerait le nom dans la piste du milieu. */
-  .site-head { display: flex; align-items: center; padding-block: var(--s4); }
+     ON LE VIDE, ON NE LE RETIRE PAS. #site-nav est son ENFANT dans
+     index.html — c'est la grille du bureau qui les reunit — donc un
+     display:none emporterait la barre avec lui. Reduit a une boite de hauteur
+     nulle, sans fond ni filet, il ne reste que ce qu'on lui demande encore :
+     le contexte d'empilement (position:sticky, z-index 120, section 4) qui
+     pose la barre au-dessus du contenu et sous la fiche. */
+  .site-head {
+    display: block;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .brand { display: none; }
+
+  /* --head-h tombe donc a zero. Ce n'est qu'une approximation : syncHeadHeight
+     (app.js) mesure l'en-tete et ecrit la vraie valeur sur <html>, qui vaudra
+     0px elle aussi. Les ancres se posent maintenant a --s5 du bord haut, ce
+     qui est exactement ce qu'on veut quand rien ne les surplombe. */
+  :root { --head-h: 0px; }
 
   /* ------------------------------------------------------------------------
      LA BARRE D'ONGLETS DU BAS

@@ -3772,8 +3772,9 @@ function scrollToSection(id, behavior) {
 }
 
 /* --head-h (styles.css) n'est qu'une approximation par point de rupture
-   (82px bureau / 72px mobile) : des qu'un navigateur rend l'en-tete un peu
-   plus haut (police, marge du systeme...), .cs-nav — qui se colle a
+   (82px bureau / 0 sous 860px, ou l'en-tete est vide) : des qu'un navigateur
+   rend l'en-tete un peu plus haut (police, marge du systeme...), .cs-nav —
+   qui se colle a
    top: var(--head-h) en mobile, sans marge supplementaire contrairement a la
    version bureau — se decolle visuellement de la barre du haut. Un
    ResizeObserver ecrit donc la VRAIE hauteur mesuree dans --head-h (variable
@@ -3789,11 +3790,19 @@ function syncHeadHeight() {
 }
 
 /* Lit la hauteur de l'en-tete depuis le CSS plutot que de la coder en dur.
-   Elle change entre bureau et mobile (82px / 72px) : la lire garantit que le
-   JavaScript et la feuille de style ne peuvent pas se contredire. */
+   Elle change entre bureau et mobile (82px / 0 depuis que l'en-tete est vide
+   sous 860px) : la lire garantit que le JavaScript et la feuille de style ne
+   peuvent pas se contredire.
+
+   Le repli est teste sur Number.isFinite et non par `|| 82`, qui confondait
+   "rien lu" avec "lu zero" : sous 860px l'en-tete mesure vraiment 0px, et
+   l'ancien code y repondait 82: les ancres se posaient 82px trop bas et la
+   ligne du scroll-spy allumait la section suivante avec un ecran de
+   retard. */
 function readHeadHeight() {
   const v = getComputedStyle(document.documentElement).getPropertyValue('--head-h');
-  return parseInt(v, 10) || 82;
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) ? n : 82;
 }
 
 /* Souligne l'entree de menu correspondant a la page affichee. */
