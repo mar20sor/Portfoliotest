@@ -649,22 +649,45 @@ function pageCase(project) {
     //                l'entree active (demande de la maquette : "each active
     //                section its own progressbar"). Masquee sur le bureau, qui
     //                garde .cs-nav__prog, la progression d'ensemble.
+    //   .cs-nav__pill  le conteneur de la pilule mobile : l'anneau de
+    //                progression PUIS la liste. Il existe parce que le <ol> EST
+    //                le conteneur de defilement — tout ce qu'on y met defile
+    //                avec les entrees. L'anneau doit rester plante a gauche,
+    //                donc il est son voisin, pas son enfant, et c'est ce
+    //                conteneur qui porte le verre. Sur le bureau il est annule
+    //                (display: contents, styles.css §8b) : ses enfants
+    //                redeviennent des elements de la grille de .cs-nav, qui
+    //                n'a donc rien a savoir de son existence.
+    //   .cs-nav__ring  l'anneau lui-meme (maquette Figma, noeud 295:2356). Deux
+    //                cercles superposes ; pathLength="1" sur celui du dessus
+    //                rend le motif de tirets FRACTIONNAIRE, donc updateProgress
+    //                ecrit "0.62 1" sans avoir a calculer 2*PI*r.
     const nav = el('nav', { class: 'cs-nav', 'aria-label': d.csSections });
     nav.innerHTML = `
       <a class="cs-nav__back" href="#/#${escapeAttr(c.kind)}">
         <span aria-hidden="true">←</span> ${escapeAttr(d.csBack)}
       </a>
-      <ol>
-        <li><a href="${base}#overview" data-spy="sec-overview">
-          <span>${escapeAttr(d.csOverview)}</span>
-          <span class="cs-nav__sprog" aria-hidden="true"><span class="cs-nav__sbar"></span></span>
-        </a></li>
-        ${c.sections.map(s => `
-          <li><a href="${base}#${escapeAttr(s.id)}" data-spy="sec-${escapeAttr(s.id)}">
-            <span>${escapeAttr(s.label)}</span>
+      <div class="cs-nav__pill">
+        <span class="cs-nav__ring" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+              aria-valuenow="0" aria-label="${escapeAttr(d.csProgress)}">
+          <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <circle class="cs-nav__ring-track" cx="10" cy="10" r="8"/>
+            <circle class="cs-nav__ring-bar" id="cs-ring" cx="10" cy="10" r="8"
+                    pathLength="1" stroke-dasharray="0 1"/>
+          </svg>
+        </span>
+        <ol>
+          <li><a href="${base}#overview" data-spy="sec-overview">
+            <span>${escapeAttr(d.csOverview)}</span>
             <span class="cs-nav__sprog" aria-hidden="true"><span class="cs-nav__sbar"></span></span>
-          </a></li>`).join('')}
-      </ol>
+          </a></li>
+          ${c.sections.map(s => `
+            <li><a href="${base}#${escapeAttr(s.id)}" data-spy="sec-${escapeAttr(s.id)}">
+              <span>${escapeAttr(s.label)}</span>
+              <span class="cs-nav__sprog" aria-hidden="true"><span class="cs-nav__sbar"></span></span>
+            </a></li>`).join('')}
+        </ol>
+      </div>
       <div class="cs-nav__prog">
         <div class="cs-nav__track" role="progressbar" aria-valuemin="0" aria-valuemax="100"
              aria-valuenow="0" aria-label="${escapeAttr(d.csProgress)}">
@@ -4027,6 +4050,11 @@ function setupCaseBehaviours() {
   const bar   = $('#cs-bar');
   const pct   = $('#cs-pct');
   const track = $('.cs-nav__track');
+  // L'anneau de la barre flottante du mobile (styles.css §12). Le rail du
+  // bureau et lui disent la meme chose au meme moment ; ils ne different que
+  // par la forme, et chacun est display:none dans le contexte de l'autre.
+  const ring    = $('#cs-ring');
+  const ringBox = $('.cs-nav__ring');
 
   /* --- scroll-spy : quelle section est en train d'etre lue ? ---
      Calcul deterministe plutot qu'IntersectionObserver.
@@ -4049,6 +4077,19 @@ function setupCaseBehaviours() {
      On la fait donc glisser d'elle-meme jusqu'a l'etape en cours, dans les
      deux sens : vers la droite en descendant, vers la gauche en remontant.
 
+     ELLE SE CENTRE, elle ne se contente plus d'entrer dans le champ. Une
+     entree simplement "amenee a l'ecran" s'arrete la ou elle a ete rattrapee :
+     contre le bord droit en descendant, contre le gauche en remontant. La
+     position de l'etape en cours dans la pilule dependait donc du SENS de
+     lecture, alors qu'elle ne dit rien — et collee au bord, on ne voyait plus
+     ce qui vient apres. Au centre, elle est toujours au meme endroit, avec de
+     part et d'autre ce qui precede et ce qui suit.
+
+     Les extremites font exception d'elles-memes, sans condition a ecrire :
+     scrollBy borne aux bouts de la course, donc la premiere entree reste
+     collee a gauche et la derniere a droite — les centrer demanderait un vide
+     que la liste n'a pas.
+
      Trois precautions :
        - on ne fait defiler QUE la liste, jamais la page. scrollIntoView()
          ferait les deux : il remonterait le document pour amener l'element
@@ -4057,8 +4098,8 @@ function setupCaseBehaviours() {
          (scrollBy). Les coordonnees absolues supposeraient que <li> se cale
          sur <ol> ; il se cale en fait sur .cs-nav, qui est positionnee et
          porte un padding. Un ecart relatif ne se trompe pas.
-       - rien ne bouge tant que l'etiquette est deja lisible, sinon la barre
-         tremblerait a chaque pixel de defilement. */
+       - le seuil du pixel plus bas : sans lui, un ecart residuel d'un demi
+         pixel relancerait un defilement anime a chaque changement d'etape. */
   const list = $('.cs-nav ol');
 
   const revealInStrip = (link) => {
@@ -4068,17 +4109,13 @@ function setupCaseBehaviours() {
     const item = link.parentElement;            // le <li>
     const itemRect = item.getBoundingClientRect();
     const listRect = list.getBoundingClientRect();
-    /* De l'air entre l'etape et le bord, pour montrer qu'il y a une suite.
-       Sur la barre flottante du mobile, cette marge doit DEPASSER le retrait
-       interne de la pilule (24px, styles.css §12) : en dessous, une etape
-       posee pile sur ce retrait serait jugee deja visible, et s'arreterait
-       donc systematiquement au ras du fondu de bord. */
-    const pad = 36;
 
-    let delta = 0;
-    if (itemRect.left - listRect.left < pad)   delta = (itemRect.left - listRect.left) - pad;
-    else if (listRect.right - itemRect.right < pad) delta = pad - (listRect.right - itemRect.right);
-    if (!delta) return;
+    /* L'ecart entre le centre de l'etape et le centre de la pilule. Les
+       retraits internes de la liste ne comptent pas ici : on vise le milieu de
+       la zone visible, pas le milieu du contenu. */
+    const delta = (itemRect.left + itemRect.width / 2)
+                - (listRect.left + listRect.width / 2);
+    if (Math.abs(delta) < 1) return;
 
     // scrollBy borne tout seul aux extremites ; inutile de le faire ici.
     list.scrollBy({ left: delta, behavior: prefersReducedMotion() ? 'instant' : 'smooth' });
@@ -4169,12 +4206,21 @@ function setupCaseBehaviours() {
     const p = Math.round(Math.min(100, Math.max(0, ((top - start) / span) * 100)));
     // height et non width : le rail est vertical, le long de la liste
     // (.cs-nav__prog, styles.css §8b). Il n'existe que sur le bureau — le
-    // mobile masque tout le bloc et affiche la ligne du haut de la fenetre.
+    // mobile masque tout le bloc et montre le meme p sous forme d'anneau,
+    // juste en dessous.
     bar.style.height = p + '%';
     pct.textContent = p + '%';
     // aria-valuenow permet a un lecteur d'ecran d'annoncer la progression,
     // exactement comme la barre la montre a l'oeil.
     track.setAttribute('aria-valuenow', String(p));
+    /* L'anneau de la barre flottante du mobile, alimente par le meme p : une
+       seule mesure, deux formes. Le cercle porte pathLength="1" (voir
+       pageCase), donc le motif de tirets est une FRACTION du tour — pas de
+       2*PI*r a calculer, et changer le rayon dans la CSS ne casse rien ici.
+       Aucune transition CSS ne l'accompagne : il est repeint a chaque
+       evenement de defilement, une transition n'ajouterait que du retard. */
+    if (ring) ring.setAttribute('stroke-dasharray', (p / 100) + ' 1');
+    if (ringBox) ringBox.setAttribute('aria-valuenow', String(p));
   };
 
   /* --- la barre flottante du mobile se range sur "projet suivant" ---
