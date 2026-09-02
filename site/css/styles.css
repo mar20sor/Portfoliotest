@@ -440,6 +440,21 @@ button { font: inherit; color: inherit; cursor: pointer; }
   height: 100%; width: 0%;
   background: var(--accent);
 }
+/* SAUF SUR UNE FICHE QUI PORTE SA PROPRE NAV. Depuis que la progression est
+   portee par la nav elle-meme — le rail vertical le long de la liste sur le
+   bureau (section 8b), l'anneau au debut de la pilule sur mobile (section 12)
+   — ce filet mesurait la meme chose une seconde fois, et depuis le bord haut
+   de la FENETRE, alors que la fiche commence plus bas et que l'en-tete qu'il
+   souligne est inerte. Deux traits pour une seule valeur se lisent comme deux
+   valeurs.
+   :has(.cs-nav) et non body.is-overlay seul : une fiche sans processus (un
+   texte, une etude sans sections) n'a ni rail ni anneau, et le filet y reste
+   son unique reperage. Meme condition que celle qui rallume la croix de
+   fermeture sur mobile, section 12.
+   Masque et non retire : setupScrollProgress continue d'y ecrire (et de poser
+   .is-scrolled sur l'en-tete) sans avoir a connaitre le mode fiche, et le
+   filet reprend son role des qu'on revient sur une page normale. */
+body.is-overlay:has(.cs-nav) .progress { display: none; }
 
 /* Grille en trois colonnes : brand, pilule de nav, et une 3e colonne vide
    (le site avait un selecteur de langue ici ; retire avec le francais, voir
@@ -3138,9 +3153,15 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
   }
   /* Pas d'arrondi ici, contrairement au fondu de droite : depuis que l'anneau
      occupe la gauche de la pilule, ce voile ne couvre plus le bord arrondi
-     mais un morceau de surface plate, au milieu du verre. */
+     mais un morceau de surface plate, au milieu du verre.
+     Sa largeur suit le retrait gauche de la liste au lieu des 28px communs :
+     c'est ce retrait, et lui seul, qui separe l'anneau du premier libelle. Un
+     voile plus court laissait une entree en train de defiler ressortir avant
+     lui, donc s'afficher collee a l'anneau — exactement l'effet que le retrait
+     est cense empecher a l'arret. */
   .cs-nav::before {
     left: calc(var(--cs-bar-h) + var(--s3) + var(--s5) + var(--cs-ring));
+    width: var(--s6);
     background: linear-gradient(to right, var(--glass) 45%, var(--glass-0));
   }
   .cs-nav::after {
@@ -3329,16 +3350,18 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
     flex: 1 1 auto; min-width: 0;
     height: 100%;
     display: flex; gap: var(--s2); align-items: center;
-    /* Retrait horizontal inchange des deux cotes, malgre l'anneau qui precede
-       maintenant a gauche : c'est exactement la zone que les fondus occupent
-       (28px). L'amaigrir de ce cote ferait commencer la premiere entree SOUS
-       le degrade, donc l'afficherait a demi effacee alors que rien n'est
-       encore cache. Le peu d'air que cela ajoute entre l'anneau et la premiere
-       entree repond de toute facon a son propre retrait, a gauche. */
-    padding-inline: var(--s5);
-    /* Le defilement s'arrete sur ce meme retrait, sinon scroll-snap collerait
-       la premiere entree au bord et l'annulerait des qu'on fait glisser. */
-    scroll-padding-inline: var(--s5);
+    /* A gauche, un cran de plus qu'a droite : l'anneau est immediatement
+       avant, et a retrait egal il se lisait colle au premier libelle, comme
+       s'il lui appartenait au lieu de mesurer toute l'etude. Ce retrait doit
+       de toute facon rester SUPERIEUR a la largeur du fondu de bord (28px) —
+       en dessous, la premiere entree commencerait sous le degrade et
+       s'afficherait a demi effacee alors que rien n'est encore cache. */
+    padding-inline: var(--s6) var(--s5);
+    /* Pas de scroll-padding : il servait a empecher un calage sur `start` de
+       coller la premiere entree au bord. Le calage est maintenant `center`,
+       plus rien ne bute contre un bord — et un retrait ASYMETRIQUE decalerait
+       le centre de la zone de calage de la moitie de sa difference, soit 4px
+       de desaccord permanent avec revealInStrip, qui vise le centre reel. */
     /* La liste va jusqu'au bord droit de la pilule : sans cet arrondi, une
        entree qui defile depasserait dans le coin arrondi du verre. */
     border-radius: 999px;
@@ -3347,7 +3370,14 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
     scroll-snap-type: x proximity;      /* chaque element s'aligne proprement */
   }
   .cs-nav ol::-webkit-scrollbar { display: none; }
-  .cs-nav li { scroll-snap-align: start; }
+  /* center et non start : revealInStrip (app.js) CENTRE l'etape en cours dans
+     la pilule. Avec un calage sur `start`, le calage de proximite reprenait la
+     main juste apres et ramenait l'entree contre le bord gauche — les deux se
+     battaient, et c'est le calage qui gagnait, puisqu'il agit en dernier.
+     Ils disent maintenant la meme chose : le doigt qui s'arrete pres du centre
+     y est termine par le navigateur, exactement ou le scroll-spy l'aurait
+     pose. */
+  .cs-nav li { scroll-snap-align: center; }
 
   /* Une grille plutot qu'une rangee flex : la barre de progression peut ainsi
      occuper une SECONDE ligne sous le libelle, sans avoir a l'emballer dans un

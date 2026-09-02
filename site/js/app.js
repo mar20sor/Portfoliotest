@@ -4077,6 +4077,19 @@ function setupCaseBehaviours() {
      On la fait donc glisser d'elle-meme jusqu'a l'etape en cours, dans les
      deux sens : vers la droite en descendant, vers la gauche en remontant.
 
+     ELLE SE CENTRE, elle ne se contente plus d'entrer dans le champ. Une
+     entree simplement "amenee a l'ecran" s'arrete la ou elle a ete rattrapee :
+     contre le bord droit en descendant, contre le gauche en remontant. La
+     position de l'etape en cours dans la pilule dependait donc du SENS de
+     lecture, alors qu'elle ne dit rien — et collee au bord, on ne voyait plus
+     ce qui vient apres. Au centre, elle est toujours au meme endroit, avec de
+     part et d'autre ce qui precede et ce qui suit.
+
+     Les extremites font exception d'elles-memes, sans condition a ecrire :
+     scrollBy borne aux bouts de la course, donc la premiere entree reste
+     collee a gauche et la derniere a droite — les centrer demanderait un vide
+     que la liste n'a pas.
+
      Trois precautions :
        - on ne fait defiler QUE la liste, jamais la page. scrollIntoView()
          ferait les deux : il remonterait le document pour amener l'element
@@ -4085,8 +4098,8 @@ function setupCaseBehaviours() {
          (scrollBy). Les coordonnees absolues supposeraient que <li> se cale
          sur <ol> ; il se cale en fait sur .cs-nav, qui est positionnee et
          porte un padding. Un ecart relatif ne se trompe pas.
-       - rien ne bouge tant que l'etiquette est deja lisible, sinon la barre
-         tremblerait a chaque pixel de defilement. */
+       - le seuil du pixel plus bas : sans lui, un ecart residuel d'un demi
+         pixel relancerait un defilement anime a chaque changement d'etape. */
   const list = $('.cs-nav ol');
 
   const revealInStrip = (link) => {
@@ -4096,18 +4109,13 @@ function setupCaseBehaviours() {
     const item = link.parentElement;            // le <li>
     const itemRect = item.getBoundingClientRect();
     const listRect = list.getBoundingClientRect();
-    /* De l'air entre l'etape et le bord, pour montrer qu'il y a une suite.
-       Sur la barre flottante du mobile, cette marge doit DEPASSER le retrait
-       interne de la liste (24px, styles.css §12) et la largeur du fondu de
-       bord (28px, pose sur ce retrait) : en dessous, une etape posee pile sur
-       ce retrait serait jugee deja visible, et s'arreterait donc
-       systematiquement au ras du fondu de bord. */
-    const pad = 36;
 
-    let delta = 0;
-    if (itemRect.left - listRect.left < pad)   delta = (itemRect.left - listRect.left) - pad;
-    else if (listRect.right - itemRect.right < pad) delta = pad - (listRect.right - itemRect.right);
-    if (!delta) return;
+    /* L'ecart entre le centre de l'etape et le centre de la pilule. Les
+       retraits internes de la liste ne comptent pas ici : on vise le milieu de
+       la zone visible, pas le milieu du contenu. */
+    const delta = (itemRect.left + itemRect.width / 2)
+                - (listRect.left + listRect.width / 2);
+    if (Math.abs(delta) < 1) return;
 
     // scrollBy borne tout seul aux extremites ; inutile de le faire ici.
     list.scrollBy({ left: delta, behavior: prefersReducedMotion() ? 'instant' : 'smooth' });
