@@ -80,6 +80,10 @@ export const UI = {
 
   navWork: 'Work', navSide: 'Side quests', navAbout: 'About', navContact: 'Contact',
   navHome: 'Home', navMenu: 'Menu', navClose: 'Close',
+  /* Court, contrairement a footerResume ("Download my resume") : dans la
+     barre il est a cote de Contact, et deux verbes cote a cote allongent la
+     ligne sans rien ajouter. Meme fichier au bout des deux. */
+  navResume: 'Resume',
 
   helloBefore: 'Hey',
   helloAfter: ', nice to meet you!',

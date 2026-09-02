@@ -130,6 +130,12 @@
 
   /* ---- DIVERS ---------------------------------------------------------- */
   --radius-pill: 40px;   /* la pilule de navigation */
+  /* Le retrait interne de la pilule de navigation, de la maquette. Un jeton
+     parce que l'en-tete doit le RETRANCHER de sa gouttiere pour que le nom,
+     qui vit maintenant dans la pilule, reste aligne sur le reste de la page
+     (section 4). Deux valeurs qui s'annulent ne peuvent pas etre ecrites deux
+     fois : la premiere retouche les desaccorderait. */
+  --nav-pad-x:   40px;
   --radius-tag:  20px;   /* les etiquettes */
   --radius:      14px;
   --radius-sm:   8px;
@@ -470,27 +476,26 @@ button { font: inherit; color: inherit; cursor: pointer; }
    filet reprend son role des qu'on revient sur une page normale. */
 body.is-overlay:has(.cs-nav) .progress { display: none; }
 
-/* Grille en trois colonnes : brand, pilule de nav, et une 3e colonne vide
-   (le site avait un selecteur de langue ici ; retire avec le francais, voir
-   CONVERSATION.md). On garde la 3e piste : une grille CSS reserve l'espace
-   d'une colonne meme sans element dedans, donc la pilule reste optiquement
-   centree sans avoir a recalculer la mise en page. */
+/* L'EN-TETE N'EST PLUS QU'UN SUPPORT : il place la pilule et la rend
+   collante, rien de plus. Il portait un aplat --bg pleine largeur et un filet
+   d'un pixel, avec la pilule posee au milieu — deux surfaces pour un seul
+   objet, et le flou de la pilule ne servait a rien puisque l'aplat derriere
+   elle etait opaque. Le fond et le filet sont partis ; la pilule, elle, prend
+   maintenant toute la largeur et porte tout, y compris le nom.
+   La grille a trois colonnes est partie avec eux : il ne reste qu'un enfant,
+   qui remplit la largeur tout seul. C'est la pilule qui a repris la grille,
+   et donc le centrage optique des entrees (voir .site-nav).
+
+   LE RETRAIT LATERAL EST AMPUTE DU RETRAIT INTERNE DE LA PILULE. Le nom etait
+   a --gutter du bord de la fenetre quand il etait pose directement ici ; il
+   est maintenant dans la pilule, derriere ses 40px de padding. Sans cette
+   soustraction il aurait glisse de 40px vers l'interieur. La pilule deborde
+   donc de --nav-pad-x de chaque cote, et son CONTENU reste aligne sur la
+   gouttiere — comme le reste de la page. Reste positif sur toute la plage
+   bureau : --gutter y vaut au minimum 6.25vw de 861px, soit 54px. */
 .site-head {
   position: sticky; top: 0; z-index: 120;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: var(--s4);
-  padding: var(--s5) var(--gutter);
-  background: var(--bg);
-  /* Le filet est permanent : il marque la limite de l'en-tete des le premier
-     regard, avant tout defilement. Il etait auparavant porte par
-     .is-scrolled, donc absent en haut de page — la barre flottait alors sans
-     bord, et le trait apparaissait au premier pixel parcouru.
-     app.js continue de poser .is-scrolled (voir setupScrollProgress) : la classe
-     ne commande plus rien ici, mais elle reste l'etat "on a quitte le haut",
-     lisible depuis le CSS si besoin. */
-  box-shadow: 0 1px 0 var(--line-soft);
+  padding: var(--s5) calc(var(--gutter) - var(--nav-pad-x));
 }
 
 .brand {
@@ -500,22 +505,45 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
   text-decoration: none; white-space: nowrap;
 }
 
-/* LA PILULE. Valeurs exactes de Figma : fond noir a 5 %, flou d'arriere-plan
-   de 35px, rayon 40px, ecart de 40px, padding 16px/40px.
-   backdrop-filter floute ce qui se trouve DERRIERE l'element : la pilule
-   laisse donc deviner le contenu qui defile dessous.
-   Sous 860px, cette meme pilule quitte l'en-tete et se pose en barre
-   d'onglets au bas de la fenetre — meme element, meme liste, meme etat actif ;
-   voir section 12. */
+/* LA PILULE, QUI EST MAINTENANT LA BARRE ENTIERE. Valeurs de Figma reprises
+   telles quelles : fond noir a 5 %, flou d'arriere-plan de 35px, rayon 40px,
+   ecart de 40px entre les entrees, padding 16px/40px. backdrop-filter floute
+   ce qui se trouve DERRIERE l'element : depuis que l'en-tete n'a plus d'aplat,
+   c'est vraiment le contenu de la page qui defile dessous et s'y devine.
+
+   Trois colonnes, comme l'en-tete en avait : le nom a gauche, les entrees au
+   centre, Resume et Contact a droite. 1fr auto 1fr et non space-between —
+   les deux pistes souples etant egales, la piste du milieu tombe au centre
+   exact de la barre quels que soient les groupes qui l'encadrent. Avec
+   space-between, le centre aurait glisse des que le nom ou le groupe de
+   droite change de longueur.
+
+   Sous 860px cette meme liste quitte l'en-tete et se pose en barre d'onglets
+   au bas de la fenetre : elle y repasse en flex, perd le nom et le groupe de
+   droite, et garde le meme etat actif. Voir section 12. */
 .site-nav {
-  justify-self: center;
-  display: flex; align-items: center; gap: 40px;
-  padding: 16px 40px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--s4);
+  padding: 16px var(--nav-pad-x);
   background: var(--veil);
   -webkit-backdrop-filter: blur(35px);
   backdrop-filter: blur(35px);
   border-radius: var(--radius-pill);
 }
+/* Les deux groupes ne sont que des colonnes : ils rangent leurs liens en
+   rangee et se collent chacun a son bord. Le nom, lui, est un enfant direct
+   de la grille et porte deja son justify-self. */
+.site-nav__links { justify-self: center; display: flex; align-items: center; gap: 40px; }
+.site-nav__end   { justify-self: end;    display: flex; align-items: center; gap: var(--s5); }
+
+/* Le nom est entre dans la pilule, donc .site-nav a s'applique a lui — et le
+   passait a 82 % d'opacite comme une entree de menu. Il n'en est pas une : il
+   nomme le site, il ne designe pas une destination parmi d'autres. Tout le
+   reste de .site-nav a (taille, graisse, interligne, approche) est deja ce
+   que .brand declarait de son cote, il n'y a donc que cette ligne a reprendre. */
+.site-nav .brand { opacity: 1; }
 .site-nav a {
   position: relative;
   text-decoration: none; color: var(--ink);
@@ -3496,17 +3524,17 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
      ramenent deja.
 
      ON LE VIDE, ON NE LE RETIRE PAS. #site-nav est son ENFANT dans
-     index.html — c'est la grille du bureau qui les reunit — donc un
-     display:none emporterait la barre avec lui. Reduit a une boite de hauteur
-     nulle, sans fond ni filet, il ne reste que ce qu'on lui demande encore :
+     index.html, donc un display:none emporterait la barre avec lui. Reduit a
+     une boite de hauteur nulle, il ne reste que ce qu'on lui demande encore :
      le contexte d'empilement (position:sticky, z-index 120, section 4) qui
-     pose la barre au-dessus du contenu et sous la fiche. */
-  .site-head {
-    display: block;
-    padding: 0;
-    background: none;
-    box-shadow: none;
-  }
+     pose la barre au-dessus du contenu et sous la fiche.
+     Une seule ligne suffit depuis que la pilule porte tout : l'en-tete n'a
+     plus ni fond, ni filet, ni grille a annuler ici — il n'en a plus du tout
+     (section 4). Reste son retrait, qui ferait sinon descendre la boite. */
+  .site-head { padding: 0; }
+  /* Le nom est dans la pilule maintenant, mais il n'a rien a faire dans une
+     barre d'onglets : Home y tient deja ce role, et il y prendrait la place
+     d'une entree. */
   .brand { display: none; }
 
   /* --head-h tombe donc a zero. Ce n'est qu'une approximation : syncHeadHeight
@@ -3577,15 +3605,15 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
     position: fixed;
     left: var(--gutter); right: var(--gutter);
     bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-    /* justify-self s'applique AUSSI a une boite positionnee : le
-       `justify-self: center` de la pilule de bureau la faisait retomber a la
-       largeur de son contenu, puis la centrait entre les deux bords — une
-       pilule de 227px flottant au milieu d'une barre de 342px. stretch lui
-       rend les deux bords qu'on vient de lui donner. */
-    justify-self: stretch;
+    /* EN RANGEE, PAS EN GRILLE. Sur le bureau la pilule est une grille a trois
+       colonnes (nom | entrees | Resume et Contact) ; ici il ne reste que les
+       entrees, et elles doivent se repartir sur toute la largeur. Sans cette
+       ligne elles heriteraient de la grille et se rangeraient dans ses trois
+       pistes. */
+    display: flex;
     height: 56px;
     /* space-evenly et non le gap fixe du bureau : sur une barre pleine
-       largeur, un ecart constant tasserait les trois entrees au centre. */
+       largeur, un ecart constant tasserait les entrees au centre. */
     justify-content: space-evenly; gap: var(--s3);
     padding-inline: var(--s4);
     /* LE VERRE, PLUS EPAIS QU'EN HAUT DE PAGE. Meme ombre que la barre d'une
@@ -3606,13 +3634,21 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
     box-shadow: var(--glass-shadow);
   }
 
-  /* CONTACT SORT DE LA BARRE. C'est un mailto : il quitte le site et ouvre
-     une application tierce, ce qui n'est pas de la navigation et n'a donc
-     rien a faire dans une barre d'onglets — les autres entrees menent a un
-     endroit de ce site-ci. Il reste atteignable dans le pied de page.
+  /* LE GROUPE DES ENTREES REDEVIENT SES ENTREES. display:contents retire la
+     boite sans retirer ses enfants : les quatre liens redeviennent des
+     elements flex de la barre, et le space-evenly ci-dessus les repartit un
+     par un au lieu de pousser un seul bloc au milieu. Le div n'existe que
+     pour donner une colonne au centre de la grille du bureau. */
+  .site-nav__links { display: contents; }
+
+  /* LE GROUPE DE DROITE SORT DE LA BARRE. Resume ouvre un PDF, Contact ouvre
+     une application de courrier : les deux quittent le site, ce qui n'est pas
+     de la navigation et n'a donc rien a faire dans une barre d'onglets — les
+     autres entrees menent a un endroit de ce site-ci. Le pied de page les
+     porte tous les deux.
      display:none et non une suppression du HTML : au-dessus de 860px la
-     pilule d'en-tete le garde. */
-  #nav-contact { display: none; }
+     pilule les garde. */
+  .site-nav__end { display: none; }
 
   /* HOME ENTRE DANS LA BARRE, lui. Le nom qui tenait ce role est masque avec
      l'en-tete (plus haut) : sans cette entree, rien ne ramenerait plus

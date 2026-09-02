@@ -184,6 +184,8 @@ function applyStaticI18n() {
   if (input) input.setAttribute('placeholder', d.gatePlaceholder);
   const contact = $('#nav-contact');
   if (contact) contact.href = `mailto:${SITE.email}`;
+  const resume = $('#nav-resume');
+  if (resume) resume.href = SITE.links.resume;
 }
 
 

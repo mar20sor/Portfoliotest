@@ -209,22 +209,17 @@
     sans regarder ce media : il reapparaitrait en bande collante.
   -->
   <!--
-    Structure calquee sur la maquette : le nom a gauche, la pilule de
-    navigation centree. Le site n'a plus de selecteur de langue depuis le
-    retrait du francais (voir CONVERSATION.md) ; les trois colonnes de
-    grille d'origine sont retombees a deux, le nom et la nav.
+    L'EN-TETE N'EST PLUS QU'UN SUPPORT. Il n'a plus qu'un enfant, la pilule,
+    qui prend toute sa largeur et porte desormais TOUT : le nom a gauche, les
+    entrees au centre, Resume et Contact a droite. Lui-meme n'a plus ni fond
+    ni filet — c'est la pilule qu'on voit, une seule surface au lieu de deux
+    (un aplat pleine largeur avec une pilule posee au milieu).
+    Le nom etait auparavant un frere de la pilule, dans une grille a trois
+    colonnes ; il est entre dedans sans bouger d'un pixel, le retrait interne
+    de la pilule etant retire du retrait de l'en-tete (voir --nav-pad-x,
+    section 4 du CSS).
   -->
   <header class="site-head" id="site-head">
-    <!-- Le nom est le lien d'accueil depuis que "Home" a quitte la pilule.
-         Il vise l'ancre #hello (le heros de la page d'accueil, id sec-hello,
-         pose par pageHome) et non "#/" tout court : depuis
-         l'accueil, "#/" ne changerait rien a l'URL et le clic serait sans
-         effet visible. Avec l'ancre, il ramene toujours a la salutation,
-         qu'on vienne d'une autre page ou du bas de celle-ci.
-         Il est masque sous 860px avec le reste de l'en-tete : c'est
-         #nav-home, dans la barre du bas, qui reprend son role la-bas. -->
-    <a class="brand" href="#/#hello" aria-label="Marvin Sorhaindo, home">Marvin S.</a>
-
     <!--
       SOUS 860px, CETTE MEME PILULE EST LA BARRE D'ONGLETS DU BAS. Il n'y a
       qu'un menu, qui change de place et non de nature : memes liens, meme
@@ -233,12 +228,12 @@
       ont disparu avec ce deplacement — un menu visible en permanence n'a
       rien a ouvrir. Voir la section 12 du CSS.
 
-      DEUX ENTREES NE SONT PAS DANS LES DEUX ETATS, chacune pour la raison
-      inverse :
+      CE QUI N'EST PAS DANS LES DEUX ETATS, et pourquoi :
 
-        - Contact ne descend pas dans la barre. C'est un mailto : il sort du
-          site et ouvre une application tierce, ce qui n'est pas de la
-          navigation, et le pied de page le porte deja.
+        - Le nom et le groupe de droite (Resume, Contact) ne descendent pas
+          dans la barre. Resume et Contact sortent du site — un PDF, un
+          mailto — ce qui n'est pas de la navigation, et le pied de page les
+          porte deja tous les deux. Le nom, lui, ferait doublon avec Home.
         - Home ne monte pas dans la pilule. Sur le bureau c'est le nom, a
           gauche, qui ramene a l'accueil : une entree de plus serait la meme
           destination une seconde fois. Mais sous 860px le nom est masque
@@ -247,11 +242,25 @@
           section 4 pour le masquage, section 12 pour l'inverse).
     -->
     <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+      <!-- Le nom est le lien d'accueil depuis que "Home" a quitte la pilule.
+           Il vise l'ancre #hello (le heros de la page d'accueil, id
+           sec-hello, pose par pageHome) et non "#/" tout court : depuis
+           l'accueil, "#/" ne changerait rien a l'URL et le clic serait sans
+           effet visible. Avec l'ancre, il ramene toujours a la salutation,
+           qu'on vienne d'une autre page ou du bas de celle-ci.
+           Il est masque sous 860px avec le reste de l'en-tete : c'est
+           #nav-home, dans la barre du bas, qui reprend son role la-bas. -->
+      <a class="brand" href="#/#hello" aria-label="Marvin Sorhaindo, home">Marvin S.</a>
+
+      <!-- LES DEUX GROUPES SONT LA POUR LA GRILLE DU BUREAU, pas pour le
+           sens : ils donnent au centre et a la droite chacun leur colonne,
+           ce qu'une liste plate de liens ne permettait pas. Sous 860px ils
+           repassent en display:contents (le centre) ou disparaissent (la
+           droite), et la barre retrouve ses entrees en enfants directs. -->
       <!-- data-spy : la section d'accueil que ce lien surveille. C'est la
            meme convention que la nav laterale d'une etude de cas, et c'est
            setupHomeNavSpy (app.js) qui s'en sert pour allumer le lien quand
-           on entre dans la section. Les deux dernieres entrees n'en ont
-           pas : About est une page, Contact un mailto. -->
+           on entre dans la section. About n'en a pas : c'est une page. -->
       <!-- Home porte les deux attributs, et c'est data-nav qui compte le
            moins : markActiveNav ne l'allumera jamais, parce que la route
            "home" ne designe plus aucune entree (voir la table de
@@ -262,11 +271,20 @@
            "location", et markActiveNav ne balaye que les liens porteurs de
            data-nav. C'est data-spy qui l'allume, et lui seul, tant qu'on lit
            le heros — exactement comme Work et Side quests. -->
-      <a id="nav-home" href="#/#hello" data-nav="home" data-spy="sec-hello" data-i18n="navHome">Home</a>
-      <a href="#/#work" data-nav="work" data-spy="sec-work" data-i18n="navWork">Work</a>
-      <a href="#/#side" data-nav="side" data-spy="sec-side" data-i18n="navSide">Side quests</a>
-      <a href="#/about" data-nav="about" data-i18n="navAbout">About</a>
-      <a id="nav-contact" href="mailto:" data-i18n="navContact">Contact</a>
+      <div class="site-nav__links">
+        <a id="nav-home" href="#/#hello" data-nav="home" data-spy="sec-hello" data-i18n="navHome">Home</a>
+        <a href="#/#work" data-nav="work" data-spy="sec-work" data-i18n="navWork">Work</a>
+        <a href="#/#side" data-nav="side" data-spy="sec-side" data-i18n="navSide">Side quests</a>
+        <a href="#/about" data-nav="about" data-i18n="navAbout">About</a>
+      </div>
+
+      <!-- Les deux href sont poses par applyTexts (app.js) : l'adresse et le
+           fichier vivent dans SITE (content.js), comme pour les liens du pied
+           de page, et non recopies ici ou ils divergeraient. -->
+      <div class="site-nav__end">
+        <a id="nav-resume" href="#" target="_blank" rel="noopener noreferrer" data-i18n="navResume">Resume</a>
+        <a id="nav-contact" href="mailto:" data-i18n="navContact">Contact</a>
+      </div>
     </nav>
   </header>
 
