@@ -542,6 +542,14 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
 .site-nav a[aria-current] { opacity: 1; }
 .site-nav a[aria-current]::after { transform: scaleX(1); }
 
+/* HOME N'EXISTE QUE DANS LA BARRE DU BAS. Ici, dans l'en-tete, le nom a
+   gauche ramene deja a l'accueil (meme ancre, #hello) : l'entree ferait la
+   meme chose une seconde fois, a 40px de distance. Sous 860px le nom est
+   masque avec l'en-tete et elle devient au contraire le seul chemin — la
+   section 12 la rallume. Symetrique de #nav-contact, qui fait le trajet
+   inverse. */
+#nav-home { display: none; }
+
 /* Il y avait ici le bouton hamburger et ses deux barres qui se croisaient en
    X a l'ouverture. Il commandait un tiroir plein ecran qui descendait de
    l'en-tete ; la pilule etant desormais posee en permanence au bas de la
@@ -3600,12 +3608,19 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
 
   /* CONTACT SORT DE LA BARRE. C'est un mailto : il quitte le site et ouvre
      une application tierce, ce qui n'est pas de la navigation et n'a donc
-     rien a faire dans une barre d'onglets — les trois autres entrees menent
-     a un endroit de ce site-ci. Il reste atteignable dans le pied de page,
-     et la barre garde trois entrees, largeur confortable sur 320px.
+     rien a faire dans une barre d'onglets — les autres entrees menent a un
+     endroit de ce site-ci. Il reste atteignable dans le pied de page.
      display:none et non une suppression du HTML : au-dessus de 860px la
      pilule d'en-tete le garde. */
   #nav-contact { display: none; }
+
+  /* HOME ENTRE DANS LA BARRE, lui. Le nom qui tenait ce role est masque avec
+     l'en-tete (plus haut) : sans cette entree, rien ne ramenerait plus
+     explicitement en haut de l'accueil depuis le bas d'une longue page, ni
+     depuis About. display:block et non revert : les liens de la pilule sont
+     des elements flex, donc deja blocifies — c'est la valeur qu'ils ont
+     partout ailleurs. */
+  #nav-home { display: block; }
 
   /* La barre appartient a la page, pas a la fiche posee dessus : une etude de
      cas a sa propre barre au meme endroit (section 12), et les deux
@@ -3652,6 +3667,26 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
   .back-link:hover { transform: translateX(-50%) translateY(-2px); }
   .figure__frame { padding: var(--s2); }
   .cards { gap: var(--s7); }
+}
+
+/* --- Sous 360px : la barre d'onglets se resserre ----------------------- */
+/* Quatre libelles a 16px demandent 216px, plus 36px d'ecarts et 32px de
+   retraits : 284px, quand la pilule n'en mesure que 257 sur un ecran de
+   320px (320 moins deux gouttieres). "About" debordait du verre par la
+   droite. Trois entrees tenaient, la quatrieme ne tient plus.
+
+   On resserre la barre — et elle seule — plutot que de retirer une entree,
+   de laisser la liste defiler ou de la faire passer sur deux rangees :
+   quatre onglets qu'on voit tous d'un coup valent mieux que trois plus un
+   cache, et 15px reste une taille de libelle lisible (c'est --fs-small, la
+   meme que les legendes du site).
+
+   320px n'est pas un ecran anecdotique : c'est la largeur de reference du
+   critere de reflow des WCAG (1.4.10). Le seuil est a 360px pour prendre la
+   marge d'un ou deux caracteres si un libelle s'allonge. */
+@media (max-width: 360px) {
+  .site-nav { padding-inline: var(--s2); gap: var(--s2); }
+  .site-nav a { font-size: var(--fs-small); }
 }
 
 

@@ -3823,7 +3823,18 @@ function markActiveNav(route) {
      reprend la main normalement. */
   if (route.name === 'case' && document.body.classList.contains('is-overlay')) return;
 
-  const map = { home: 'home', case: route.project?.kind, about: 'about', gap: null };
+  /* home: null, ET NON 'home', alors qu'une entree data-nav="home" existe
+     de nouveau (barre d'onglets, sous 860px). Lui poser aria-current="page"
+     sur l'accueil la laisserait allumee en permanence, y compris pendant que
+     le scroll-spy allume Work ou Side quests plus bas : deux entrees
+     soulignees a la fois, puisque cette fonction et le spy posent chacune
+     leur valeur sans se consulter. Sur l'accueil, c'est le spy qui decide,
+     Home comprise — elle surveille sec-hello comme les autres surveillent
+     leur section.
+     L'entree porte quand meme data-nav, pour l'autre moitie du travail fait
+     plus bas : le balayage ne voit que les liens qui en portent un, et c'est
+     lui qui EFFACE le surlignage en quittant l'accueil. */
+  const map = { home: null, case: route.project?.kind, about: 'about', gap: null };
   const current = map[route.name] ?? null;
   // Scope au vrai en-tete : #underlay peut contenir un clone de la barre de
   // navigation (voir captureUnderlay), et une recherche a l'echelle du
@@ -4308,11 +4319,17 @@ function setupCaseBehaviours() {
 
    UNE DIFFERENCE, VOULUE : ici il peut n'y avoir AUCUNE entree allumee.
    Dans une etude de cas, chaque pixel de la page appartient a une etape du
-   sommaire, donc il y en a toujours exactement une d'active. L'accueil, lui,
-   commence par le heros, qui n'est represente dans la pilule par rien du
-   tout. Reprendre la regle "a defaut, la premiere" y allumerait Work pendant
-   qu'on lit encore la salutation. Au-dessus de la premiere section, personne
-   n'est allume — c'est la reponse juste.
+   sommaire, donc il y en a toujours exactement une d'active. Reprendre la
+   regle "a defaut, la premiere" allumerait Work pendant qu'on lit encore la
+   salutation. Au-dessus de la premiere section surveillee, personne n'est
+   allume — c'est la reponse juste.
+   Depuis que Home (data-spy="sec-hello") existe, ce cas ne se produit
+   pratiquement plus : le heros EST une section surveillee, et sec-hello
+   commence au premier pixel de la page. Mais l'entree est masquee au-dessus
+   de 860px (le nom de l'en-tete y tient son role), donc sur le bureau il n'y
+   a toujours rien d'allume pendant le heros — ce qui reste correct : allumer
+   un lien invisible ne se voit pas, et le spy ne peut pas en allumer un
+   second par-dessus.
 
    aria-current="location" et non "page" : ce lien ne designe pas la page
    affichee (on y est deja), mais un endroit A L'INTERIEUR d'elle. C'est
