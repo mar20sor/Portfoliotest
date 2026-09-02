@@ -489,6 +489,59 @@ function pageHome() {
   return page;
 }
 
+/* Une ligne de temps : suite d'etapes reliees par un trait continu (ex.
+   Licence management/Solution) — voir .cs-timeline dans styles.css.
+   `thumb: false` sur une entree permet d'omettre son placeholder gris.
+   Fonction plutot que gabarit en ligne dans pageCase() : une section peut en
+   afficher DEUX (sa ligne principale, puis celle d'un bloc `after` — voir
+   s.after), et chacune doit rester un trait a part, pas la suite de l'autre.
+   Chaque entree accepte aussi la forme objet `{ image, zoomable }` quand elle a
+   besoin de la classe .zoomable-media (voir zoomableClass()) — une chaine
+   simple reste rendue telle quelle, sans zoom. */
+function timelineMarkup(items) {
+  return `<div class="cs-timeline">${items.map(item => `
+    <div class="cs-timeline__row${item.image ? ' cs-timeline__row--figure' : ''}${item.tight ? ' cs-timeline__row--tight' : ''}">
+      <div class="cs-timeline__line-col"><div class="cs-timeline__line"></div></div>
+      <div class="cs-timeline__content">
+        ${item.thumb === false ? '' : item.image
+          ? `<picture class="cs-timeline__thumb${zoomableClass(item.imageZoomable)}">
+               <source srcset="assets/img/${item.image}.webp" type="image/webp">
+               <img src="assets/img/${item.image}.png" alt="" loading="lazy" decoding="async">
+             </picture>`
+          : '<div class="cs-timeline__thumb" aria-hidden="true"></div>'}
+        <div class="cs-timeline__text">
+          ${item.title ? `<p class="cs-timeline__title">${escapeAttr(item.title)}</p>` : ''}
+          ${item.body.map(p => `<p>${emphasize(p)}</p>`).join('')}
+          ${item.imageAfter
+            ? `<picture class="cs-timeline__thumb cs-timeline__thumb--auto${zoomableClass(item.imageAfterZoomable, item.imageAfterZoomableRipple)}"${item.imageAfterZoomScaleMobile ? ` style="--zoom-scale-mobile: ${item.imageAfterZoomScaleMobile}%"` : ''}>
+                 <source srcset="assets/img/${item.imageAfter}.webp" type="image/webp">
+                 <img src="assets/img/${item.imageAfter}.png" alt="" loading="lazy" decoding="async">
+               </picture>` : ''}
+          ${item.constraints
+            ? `<ul class="cs-timeline__constraints${item.constraintsLoose ? ' cs-timeline__constraints--loose' : ''}">${item.constraints.map(c => `
+                <li class="cs-timeline__constraint${c.n ? '' : ' cs-timeline__constraint--unnumbered'}">
+                  <span class="cs-timeline__constraint-num" aria-hidden="true">${c.n || ''}</span>
+                  <div class="cs-timeline__constraint-body">
+                    ${(c.body || [c.text]).map(p => `<p>${emphasize(p)}</p>`).join('')}
+                    ${c.list ? `<ul class="cs-sec__list">${c.list.map(li => `<li>${emphasize(li)}</li>`).join('')}</ul>` : ''}
+                    ${c.bodyAfterList ? c.bodyAfterList.map(p => `<p>${emphasize(p)}</p>`).join('') : ''}
+                  </div>
+                </li>`).join('')}</ul>` : ''}
+          ${item.imagesAfter
+            ? item.imagesAfter.map(img => {
+                const name = typeof img === 'string' ? img : img.image;
+                const cls = typeof img === 'string' ? '' : zoomableClass(img.zoomable);
+                return `
+                <picture class="cs-timeline__thumb cs-timeline__thumb--auto${cls}">
+                  <source srcset="assets/img/${name}.webp" type="image/webp">
+                  <img src="assets/img/${name}.png" alt="" loading="lazy" decoding="async">
+                </picture>`;
+              }).join('') : ''}
+        </div>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
 /* ---- 5e. Une etude de cas ----
    Structure : en-tete "30 secondes", puis grille [nav laterale | sections],
    puis lien vers le projet suivant. */
@@ -528,12 +581,20 @@ function pageCase(project) {
       ${c.gist.tools ? `<div><dt>${escapeAttr(d.csTools)}</dt><dd>${escapeAttr(c.gist.tools)}</dd></div>` : ''}
     </dl>
 
+    <!-- L'etiquette de l'apercu, posee ICI et non tout en haut de l'en-tete :
+         ce qui la precede (client, titre, accroche, media, fiche d'identite)
+         identifie l'etude de cas elle-meme — c'est la couverture, pas une
+         section. L'apercu proprement dit commence a Probleme / Resultat /
+         Impacts, et c'est ce groupe-la que l'etiquette annonce, exactement
+         comme "Process" annonce la section suivante. -->
+    <h2 class="cs-sec__title">${escapeAttr(d.csOverview)}</h2>
+
     <div class="pair">
-      <div><h2>${escapeAttr(d.csProblem)}</h2><p>${escapeAttr(c.problem)}</p></div>
-      <div class="pair__out"><h2>${escapeAttr(d.csOutcome)}</h2><p>${escapeAttr(c.outcome)}</p></div>
+      <div><h2 class="cs-sec__headline">${escapeAttr(d.csProblem)}</h2><p>${escapeAttr(c.problem)}</p></div>
+      <div class="pair__out"><h2 class="cs-sec__headline">${escapeAttr(d.csOutcome)}</h2><p>${escapeAttr(c.outcome)}</p></div>
     </div>
 
-    ${stats ? `<h2 class="stats__title">${escapeAttr(d.csImpacts)}</h2><div class="stats">${stats}</div>` : ''}
+    ${stats ? `<h2 class="stats__title cs-sec__headline">${escapeAttr(d.csImpacts)}</h2><div class="stats">${stats}</div>` : ''}
 
     <div class="cs__cta">
       ${(c.extLinks || []).map(l =>
@@ -578,17 +639,12 @@ function pageCase(project) {
     // setupBackLink() (plus bas) le garde donc masque sur ces pages
     // precises et ne l'utilise que sur les pages sans processus (about,
     // gap, projets sans sections).
-    // TROIS DETAILS DU BALISAGE CI-DESSOUS N'EXISTENT QUE POUR LE MOBILE
-    // (sous 1000px la nav devient la barre flottante du bas — styles.css §12) :
+    // Les entrees ne sont plus numerotees, ni ici ni dans les titres de
+    // section (voir content.js) : l'ordre est deja porte par le <ol>, et le
+    // rail de progression a gauche de la liste dit ou l'on en est. Reste un
+    // seul detail de balisage, et il n'existe que pour le mobile (sous 1000px
+    // la nav devient la barre flottante du bas — styles.css §12) :
     //
-    //   data-n       le meme numero, sans son zero de tete. La maquette met un
-    //                simple "1" dans la pastille du mobile, la colonne du
-    //                bureau garde "01" (aligne, tabular-nums). Un attribut
-    //                plutot qu'un second <span> : le CSS du mobile le lit avec
-    //                content: attr(data-n), donc rien n'est duplique dans le DOM.
-    //   aria-hidden  le numero est decoratif dans les deux mises en page — la
-    //                liste est deja un <ol>, qui porte l'ordre. Sans ca, le
-    //                mobile ferait annoncer "01, 1, Overview".
     //   .cs-nav__sprog  la progression PROPRE A LA SECTION en cours, soulignant
     //                l'entree active (demande de la maquette : "each active
     //                section its own progressbar"). Masquee sur le bureau, qui
@@ -600,13 +656,11 @@ function pageCase(project) {
       </a>
       <ol>
         <li><a href="${base}#overview" data-spy="sec-overview">
-          <span class="cs-nav__num" data-n="1" aria-hidden="true">01</span>
           <span>${escapeAttr(d.csOverview)}</span>
           <span class="cs-nav__sprog" aria-hidden="true"><span class="cs-nav__sbar"></span></span>
         </a></li>
-        ${c.sections.map((s, i) => `
+        ${c.sections.map(s => `
           <li><a href="${base}#${escapeAttr(s.id)}" data-spy="sec-${escapeAttr(s.id)}">
-            <span class="cs-nav__num" data-n="${i + 2}" aria-hidden="true">${String(i + 2).padStart(2, '0')}</span>
             <span>${escapeAttr(s.label)}</span>
             <span class="cs-nav__sprog" aria-hidden="true"><span class="cs-nav__sbar"></span></span>
           </a></li>`).join('')}
@@ -667,9 +721,24 @@ function pageCase(project) {
         // figure juste au-dessus (ex. Admin model, pastille "1" de la
         // capture Figma reprise ici sur le paragraphe qui l'explique).
         const num = s.numbered && s.numbered[i];
-        const paragraph = num
-          ? `<div class="cs-sec__num-row"><span class="cs-sec__num" aria-hidden="true">${num}</span><p>${emphasize(p)}</p></div>`
-          : `<p>${emphasize(p)}</p>`;
+        /* Un paragraphe prefixe de ## ou ### n'en est pas un : c'est un titre
+           intercale dans le corps de la section (ex. Licence management/
+           Context, qui enchaine deux sous-parties).
+             ##   la grosse ligne, comme s.headline (.cs-sec__headline)
+             ###  l'etiquette, comme un titre de section (.cs-sec__title)
+           Moins de diese = plus gros, comme en Markdown.
+           Un prefixe dans le texte plutot qu'une table {index: titre} a cote :
+           les cles par index (s.media, s.numbered) se decalent toutes des
+           qu'on insere un paragraphe, un prefixe voyage avec sa ligne.
+           <h3> dans les deux cas : ce sont de vrais sous-titres de la section,
+           et le niveau ne doit pas dependre de la taille choisie. */
+        const heading = p.match(/^(#{2,3})\s+/);
+        const paragraph = heading
+          ? `<h3 class="${heading[1] === '##' ? 'cs-sec__headline' : 'cs-sec__title'}">${
+              emphasize(p.slice(heading[0].length))}</h3>`
+          : num
+            ? `<div class="cs-sec__num-row"><span class="cs-sec__num" aria-hidden="true">${num}</span><p>${emphasize(p)}</p></div>`
+            : `<p>${emphasize(p)}</p>`;
         return `${paragraph}${after}${terms}${figure}`;
       }).join('');
 
@@ -690,8 +759,9 @@ function pageCase(project) {
         ? `<ul class="cs-sec__list">${s.bullets.map(b => `<li>${emphasize(b)}</li>`).join('')}</ul>` : '';
       const mockups = s.mockups
         ? `<div class="cs-mockups">${s.mockups.map(figureFor).join('')}</div>` : '';
+      // VOIR timelineMarkup() PLUS HAUT — le gabarit vit la, pas ici.
       // s.timeline : suite d'etapes en ligne de temps (ex. Licence
-      // management/Design trials) — voir .cs-timeline dans styles.css.
+      // management/Solution) — voir .cs-timeline dans styles.css.
       // `thumb: false` sur une entree permet d'omettre son placeholder
       // d'image ; `image: 'name'` (paire webp+png, assets/img/) remplace le
       // rectangle gris par la vraie capture, affichee avant le texte (ex.
@@ -710,61 +780,35 @@ function pageCase(project) {
       // forme objet `{ image, zoomable }` quand elle a besoin de la classe
       // .zoomable-media (voir zoomableClass() plus bas) — une chaine simple
       // reste rendue telle quelle, sans zoom.
-      const timeline = s.timeline
-        ? `<div class="cs-timeline">${s.timeline.map(item => `
-            <div class="cs-timeline__row${item.image ? ' cs-timeline__row--figure' : ''}${item.tight ? ' cs-timeline__row--tight' : ''}">
-              <div class="cs-timeline__line-col"><div class="cs-timeline__line"></div></div>
-              <div class="cs-timeline__content">
-                ${item.thumb === false ? '' : item.image
-                  ? `<picture class="cs-timeline__thumb${zoomableClass(item.imageZoomable)}">
-                       <source srcset="assets/img/${item.image}.webp" type="image/webp">
-                       <img src="assets/img/${item.image}.png" alt="" loading="lazy" decoding="async">
-                     </picture>`
-                  : '<div class="cs-timeline__thumb" aria-hidden="true"></div>'}
-                <div class="cs-timeline__text">
-                  ${item.title ? `<p class="cs-timeline__title">${escapeAttr(item.title)}</p>` : ''}
-                  ${item.body.map(p => `<p>${emphasize(p)}</p>`).join('')}
-                  ${item.imageAfter
-                    ? `<picture class="cs-timeline__thumb cs-timeline__thumb--auto${zoomableClass(item.imageAfterZoomable, item.imageAfterZoomableRipple)}"${item.imageAfterZoomScaleMobile ? ` style="--zoom-scale-mobile: ${item.imageAfterZoomScaleMobile}%"` : ''}>
-                         <source srcset="assets/img/${item.imageAfter}.webp" type="image/webp">
-                         <img src="assets/img/${item.imageAfter}.png" alt="" loading="lazy" decoding="async">
-                       </picture>` : ''}
-                  ${item.constraints
-                    ? `<ul class="cs-timeline__constraints${item.constraintsLoose ? ' cs-timeline__constraints--loose' : ''}">${item.constraints.map(c => `
-                        <li class="cs-timeline__constraint${c.n ? '' : ' cs-timeline__constraint--unnumbered'}">
-                          <span class="cs-timeline__constraint-num" aria-hidden="true">${c.n || ''}</span>
-                          <div class="cs-timeline__constraint-body">
-                            ${(c.body || [c.text]).map(p => `<p>${emphasize(p)}</p>`).join('')}
-                            ${c.list ? `<ul class="cs-sec__list">${c.list.map(li => `<li>${emphasize(li)}</li>`).join('')}</ul>` : ''}
-                            ${c.bodyAfterList ? c.bodyAfterList.map(p => `<p>${emphasize(p)}</p>`).join('') : ''}
-                          </div>
-                        </li>`).join('')}</ul>` : ''}
-                  ${item.imagesAfter
-                    ? item.imagesAfter.map(img => {
-                        const name = typeof img === 'string' ? img : img.image;
-                        const cls = typeof img === 'string' ? '' : zoomableClass(img.zoomable);
-                        return `
-                        <picture class="cs-timeline__thumb cs-timeline__thumb--auto${cls}">
-                          <source srcset="assets/img/${name}.webp" type="image/webp">
-                          <img src="assets/img/${name}.png" alt="" loading="lazy" decoding="async">
-                        </picture>`;
-                      }).join('') : ''}
-                </div>
-              </div>
-            </div>`).join('')}</div>` : '';
+      const timeline = s.timeline ? timelineMarkup(s.timeline) : '';
+
+      /* s.after : blocs rattaches a la fin de la section — un sous-titre, du
+         texte, et au besoin leur propre ligne de temps.
+         Sert a replier une etape dans une autre sans perdre sa structure : le
+         modele d'administration de Licence management etait une section a lui
+         seul, il vit maintenant dans Solution, avec son titre en sous-titre et
+         sa ligne de temps toujours distincte de celle qui la precede.
+         Un bloc et non des paragraphes ajoutes a s.body : le corps se rend
+         AVANT la ligne de temps de la section, un texte qui doit la suivre n'y
+         a donc pas sa place. */
+      const after = (s.after || []).map(b => `
+        ${b.headline ? `<h3 class="cs-sec__headline">${escapeAttr(b.headline)}</h3>` : ''}
+        ${(b.body || []).map(p => `<p>${emphasize(p)}</p>`).join('')}
+        ${b.timeline ? timelineMarkup(b.timeline) : ''}`).join('');
       // Chiffres cites dans le texte, sortis en cartes (voir s.stats dans
       // content.js) — meme balisage que les .stat d'en-tete, en plus petit.
       const secStats = s.stats
         ? `<div class="stats stats--sec">${s.stats.map(x =>
             `<div class="stat"><div class="stat__n">${escapeAttr(x.n)}</div>
              <div class="stat__l">${escapeAttr(x.l)}</div></div>`).join('')}</div>` : '';
-      // Bloc "Visual helpers" : rendu apres le widget interactif (pas dans
-      // body[]/lottieCarousel indexe par paragraphe) — voir s.helpers dans
-      // content.js. Titre + texte dans le meme <p> (le titre reste en gras
-      // via <strong>, meme taille que le reste du paragraphe).
-      const helpers = s.helpers
-        ? `<p><strong>${escapeAttr(s.helpers.title)}</strong><br>${escapeAttr(s.helpers.body)}</p>
-           ${s.lottieCarousel ? lottieCarouselMarkup(s.lottieCarousel) : ''}` : '';
+      // Le carrousel des 4 illustrations animees (voir s.lottieCarousel dans
+      // content.js). Rendu en fin de section, apres le texte et les widgets —
+      // il n'est pas indexe par paragraphe comme les media[].
+      // Etait auparavant imbrique dans un bloc `helpers` (un sous-titre en
+      // <h3> au sein de la section Solution). Ces illustrations ont maintenant
+      // leur propre section, donc le sous-titre a disparu et le carrousel se
+      // rend seul.
+      const lottie = s.lottieCarousel ? lottieCarouselMarkup(s.lottieCarousel) : '';
 
       // s.aside : bloc "definitions" a cote du texte (ex. Services
       // exclusion/Design) — voir .cs-sec__row/.cs-sec__aside dans
@@ -798,8 +842,15 @@ function pageCase(project) {
         ? `<div class="cs-sec__media-pair">${figureFor(s)}${carouselMarkup(s.carousel)}</div>`
         : `${s.image ? figureFor(s) : ''}${s.carousel ? carouselMarkup(s.carousel) : ''}`;
 
+      // s.headline : une seconde ligne de titre, en grosse typo, sous le
+      // .cs-sec__title devenu sur-titre (ex. Services exclusion/Context).
+      // Optionnelle : la plupart des sections se contentent de leur titre.
+      const headline = s.headline
+        ? `<p class="cs-sec__headline">${escapeAttr(s.headline)}</p>` : '';
+
       sec.innerHTML = `
         <h2 class="cs-sec__title">${escapeAttr(s.title)}</h2>
+        ${headline}
         ${intro}
         ${list}
         ${bullets}
@@ -813,7 +864,8 @@ function pageCase(project) {
         ${s.builder ? constraintBuilderMarkup(s.builder) : ''}
         ${s.builder && s.builder.components ? componentsShowcaseMarkup(s.builder.components, s.builder) : ''}
         ${s.modal ? exclModalMarkup(s.modal) : ''}
-        ${helpers}
+        ${lottie}
+        ${after}
         ${s.moreDrawer ? moreDrawerMarkup(s.moreDrawer) : ''}`;
       secs.append(sec);
     });

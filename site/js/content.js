@@ -245,7 +245,8 @@ export const PROJECTS = [
     ],
     sections: [
       {
-        id: 'audit', label: 'Process', title: '2. Process',
+        id: 'audit', label: 'Process', title: 'Process',
+        headline: 'From kickoff to exploration',
         body: [
           'After discussing with members of the internal team, I identified that complexity was due to a great number of rules (24 in total), leading to redundancies and frequent agent configuration errors. Mapping and categorizing most used constraints with shared outcomes allowed me to group them together.'
         ],
@@ -309,7 +310,8 @@ export const PROJECTS = [
         }
       },
       {
-        id: 'design', label: 'Solution', title: '3. Solution',
+        id: 'design', label: 'Solution', title: 'Solution',
+        headline: 'Display only relevant information according to the context',
         /* `intro` s'affiche directement sous le titre de section, avant
            `body` — separe du systeme body/media/carousel indexe par
            paragraphe (voir plus bas) parce que cette phrase n'a pas de
@@ -344,18 +346,6 @@ export const PROJECTS = [
         mockups: [
           { image: 'constraints-solution-list', caption: 'Constraints list', zoomable: 'mobile' },
           { image: 'constraints-solution-configure', caption: 'Configure a constraint', zoomable: 'mobile' }
-        ],
-        /* Carrousel des 4 illustrations animees : un seul JSON Lottie visible
-           a la fois, choisi en cliquant son libelle (figma node 34:817).
-           N'est plus rattache a un paragraphe de body[] (deplace apres le
-           widget interactif, voir `helpers` plus bas) : ce n'est pas une
-           grille statique mais un etat exclusif (voir
-           lottieCarouselMarkup()/setupLottieCarousel() dans app.js). */
-        lottieCarousel: [
-          { src: 'assets/media/Blocking-complete lottie.json', label: 'Blocking' },
-          { src: 'assets/media/Protection-(hollow).json', label: 'Protection' },
-          { src: 'assets/media/Spacing lottie.json', label: 'Spacing' },
-          { src: 'assets/media/Availability.json', label: 'Availability' }
         ],
         /* Widget interactif : le "sentence builder". N'est PAS un media (voir
            constraintBuilderMarkup()/setupConstraintBuilder() dans app.js) :
@@ -465,16 +455,30 @@ export const PROJECTS = [
             ]
           }
         },
-        /* Rendu apres le widget interactif (voir pageCase() dans app.js) :
-           titre en gras (meme taille que le paragraphe, pas de kicker
-           dedie) suivi du texte, puis le carrousel des 4 Lottie. */
-        helpers: {
-          title: 'Visual helpers :',
-          body: 'I created animated abstract illustrations, both to make each constraint identifiable  and to represent visually what it does.'
-        }
       },
       {
-        id: 'takeaways', label: 'Takeaways', title: '4. Takeaways',
+        /* Les illustrations animees etaient un sous-bloc "Visual helpers" a la
+           fin de la section Solution. Elles ont maintenant leur propre etape :
+           elles ne decrivent pas la solution livree, elles racontent ce qui a
+           ete ajoute ensuite pour la rendre lisible. */
+        id: 'helpers', label: 'Iteration', title: 'Iteration',
+        headline: 'Animations as visual helpers',
+        body: [
+          'I created animated abstract illustrations, both to make each constraint identifiable  and to represent visually what it does.'
+        ],
+        /* Carrousel des 4 illustrations animees : un seul JSON Lottie visible
+           a la fois, choisi en cliquant son libelle (figma node 34:817). Ce
+           n'est pas une grille statique mais un etat exclusif (voir
+           lottieCarouselMarkup()/setupLottieCarousel() dans app.js). */
+        lottieCarousel: [
+          { src: 'assets/media/Blocking-complete lottie.json', label: 'Blocking' },
+          { src: 'assets/media/Protection-(hollow).json', label: 'Protection' },
+          { src: 'assets/media/Spacing lottie.json', label: 'Spacing' },
+          { src: 'assets/media/Availability.json', label: 'Availability' }
+        ]
+      },
+      {
+        id: 'takeaways', label: 'Takeaways', title: 'Takeaways',
         intro: [
           'Working across 24 rules (more data points than I usually get) was a chance to exercise thematic analysis and systems thinking on a bigger scale.',
           'If I did it again, I would flip the order : start from usage frequency and scope by impact first, even though I don\'t regret the path I took, but that\'s the lesson.'
@@ -499,7 +503,11 @@ export const PROJECTS = [
     outcome: 'A clearer four-step wizard that makes exclusion explicit. After release surfaced a usage error we hadn’t anticipated. So we inverted the selection logic and added a warning to make sure it was well used.',
     sections: [
       {
-        id: 'kickoff', label: 'Context', title: '1. Context : the current synchronization flow',
+        id: 'kickoff', label: 'Context', title: 'Context',
+        // headline : la seconde ligne du titre, sous l'etiquette. Voir
+        // .cs-sec__headline dans styles.css — c'est elle qui porte la grosse
+        // typo, le titre au-dessus n'etant plus qu'un sur-titre.
+        headline: 'The current synchronization flow',
         body: [
           'Synchronization is the process of importing hospitals data (appointments, patients, services and suppliers) through their EMR, at Québec’s scale. It’s only during this process that staff members can edit their services through a modal.'
         ],
@@ -515,7 +523,8 @@ export const PROJECTS = [
         ]
       },
       {
-        id: 'design', label: 'Concept', title: '2. First concept',
+        id: 'design', label: 'Solution', title: 'Solution',
+        headline: 'The first concept',
         body: [
           'We introduced **exclusion** as an additional step separated from **deactivation** to bring clarity.',
           'Operations are explained, and it’s possible to go back through the process in case of error. What could go wrong ?'
@@ -548,7 +557,8 @@ export const PROJECTS = [
         ]
       },
       {
-        id: 'ship', label: 'Problem', title: '3. A new problem arises',
+        id: 'ship', label: 'Problem', title: 'Problem',
+        headline: 'A new issue arises',
         body: [
           'After release, an issue showed up :'
         ],
@@ -557,7 +567,8 @@ export const PROJECTS = [
         }
       },
       {
-        id: 'iterate', label: 'Fixes', title: '4. Fixes',
+        id: 'iterate', label: 'Iteration', title: 'Iteration',
+        headline: 'Adapt the solution to users',
         intro: ['Three fixes :'],
         bullets: [
           'Removed “select all” from the inactive services list.',
@@ -592,7 +603,7 @@ export const PROJECTS = [
         }
       },
       {
-        id: 'takeaways', label: 'Takeaways', title: '5. Takeaways',
+        id: 'takeaways', label: 'Takeaways', title: 'Takeaways',
         body: [
           'This project confirmed that users don’t read. The “select all” incident was proof that clear labels aren’t enough, actions need visible feedback and signals.',
           'It also sharpened how I think about testing, especially for critical processes. Testing earlier would have told us whether keeping the screens managers already knew (instead of introducing a new four-step wizard) was the safer choice.'
@@ -616,11 +627,11 @@ export const PROJECTS = [
     outcome: 'We redefined the permission system and implemented a new registration process so that managers, according to their authorization level, can add different types of member.',
     sections: [
       {
-        id: 'context', label: 'Context', title: '1. Context',
+        id: 'context', label: 'Context', title: 'Context',
         body: [
-          '**Different types of users and possibilities**',
+          '## Different types of users and possibilities',
           'Before, 3 roles existed, which identified permissions and the type of people they can invite:',
-          '**The format wasn’t reflecting reality**',
+          '## The format wasn’t reflecting reality',
           'Only the Administrator role had add-rights, when in reality, clinicians HR, cost-management staffer, whose job is provisioning access for clinicians, could also need it.',
           'The process wasn’t reflecting that reality, as the role managing interface was rigid, only allowing to select a role, not to set a right.',
           '**Result:** Administrator as role → adding members as a right.'
@@ -641,23 +652,24 @@ export const PROJECTS = [
         caption: 'Reframing admin access: a fixed role becomes one addable right.'
       },
       {
-        id: 'before', label: 'Before', title: '2. A modification page, not a registration flow',
+        id: 'before', label: 'Before', title: 'Before',
+        headline: 'A modification page, not a registration flow',
         body: [
-          '**The screens before**',
           'Before this project, registration was operated through an external software with Petal deployment team.',
           'Planners could only go to the detail page of an already-existing member to edit their access, in a multi-page setup.',
           '**The problem was:** the page is not a registration page, but a modification page.'
         ],
         // Capture ecran de l'ancienne page (fournie par l'utilisateur,
         // texte francais original traduit en anglais avant export) —
-        // inseree apres le 3e paragraphe via s.figureAfter.
+        // inseree apres le 2e paragraphe via s.figureAfter.
         figureAfter: {
-          after: 2,
+          after: 1,
           image: 'licence-3-member-edit-before-en', bare: true, zoomable: 'mobile'
         }
       },
       {
-        id: 'design', label: 'Design', title: '3. The registration flow',
+        id: 'design', label: 'Solution', title: 'Solution',
+        headline: 'The registration flow',
         body: [
           'The registration flow needed one component that could serve both planners and admins with minimum differences to facilitate implementation, while the possible actions weren’t the same for both.'
         ],
@@ -789,40 +801,47 @@ export const PROJECTS = [
               }
             ]
           }
-        ]
-      },
-      {
-        id: 'admin', label: 'Admin model', title: '4. Admin as a rule, not a role.',
-        body: [
-          'To reflect the decisions we had taken concerning admin being a right rather than a role, I modified the role management table as well as the member list:'
         ],
-        // Timeline separee de celle de la section 3 (Design trials) — sa
-        // propre ligne continue + pastilles, independante. 2 captures Figma
-        // (node 250:11947 "Manager tag" et 250:11948 "Role table") : la 1ere
-        // porte deja une pastille "1" annotant le tag dans la liste des
-        // membres — reprise ici sur le paragraphe qui l'explique.
-        timeline: [
+        /* Le modele d'administration etait une section a part ("Admin model").
+           Il est replie ici : c'est la meme solution vue sous un autre angle,
+           pas une etape de plus du processus. Passe donc par `after` (voir
+           pageCase) plutot que par body[] — il doit se lire APRES la ligne de
+           temps ci-dessus, et il garde la sienne, distincte. */
+        after: [
           {
-            thumb: false, tight: true,
-            body: [],
-            imageAfter: 'licence-10-manager-tag-en',
-            imageAfterZoomable: 'mobile',
-            constraints: [
-              { n: 1, text: 'The licence management indicator is shown as a tag in the member list.' }
-            ],
-            constraintsLoose: true,
-            imagesAfter: [{ image: 'licence-11-role-table-en', zoomable: 'mobile' }]
-          },
-          {
-            thumb: false,
+            headline: 'Admin as a rule, not a role',
             body: [
-              'For the table, the challenge was to give the ability to still keep a role, while being able to have the licence manager right (I didn’t want to go into a full setting table as there would be no benefits to have roles in this case). So I implemented it as a right, with the same tag.'
+              'To reflect the decisions we had taken concerning admin being a right rather than a role, I modified the role management table as well as the member list:'
+            ],
+            // Ligne de temps propre a ce bloc — trait continu + pastilles
+            // independants de ceux du flux d'inscription. 2 captures Figma
+            // (node 250:11947 "Manager tag" et 250:11948 "Role table") : la
+            // 1ere porte deja une pastille "1" annotant le tag dans la liste
+            // des membres — reprise ici sur le paragraphe qui l'explique.
+            timeline: [
+              {
+                thumb: false, tight: true,
+                body: [],
+                imageAfter: 'licence-10-manager-tag-en',
+                imageAfterZoomable: 'mobile',
+                constraints: [
+                  { n: 1, text: 'The licence management indicator is shown as a tag in the member list.' }
+                ],
+                constraintsLoose: true,
+                imagesAfter: [{ image: 'licence-11-role-table-en', zoomable: 'mobile' }]
+              },
+              {
+                thumb: false,
+                body: [
+                  'For the table, the challenge was to give the ability to still keep a role, while being able to have the licence manager right (I didn’t want to go into a full setting table as there would be no benefits to have roles in this case). So I implemented it as a right, with the same tag.'
+                ]
+              }
             ]
           }
         ]
       },
       {
-        id: 'takeaways', label: 'Takeaways', title: '5. Takeaways',
+        id: 'takeaways', label: 'Takeaways', title: 'Takeaways',
         body: [
           'This project, which I thought would be simple at first, pushed me to pay attention to details I\'d usually overlook. It challenged me in a new way, and I ended up spending a surprising amount of time on a small part of the design which I didn\'t expect to have such an impact. It also highlighted, for me, just how important prototyping is to get a real feel for the solution, but also the influence of technical constraints.'
         ]
@@ -848,7 +867,7 @@ export const PROJECTS = [
     ],
     sections: [
       {
-        id: 'discovery', label: 'Discovery', title: '1. Discovery',
+        id: 'discovery', label: 'Discovery', title: 'Discovery',
         body: [
           'Analytics, heuristic evaluation, survey. The old site already gave plenty of clues, but we needed to hear from customers to understand why they reached for the phone.',
           'To get answers at volume, I set up a loyalty scheme: a completed survey in exchange for a promo code. It was the most effective lever available to a small company. The survey covered three themes — habits and motivations, opinion of the service, opinion of the website.',
@@ -856,14 +875,14 @@ export const PROJECTS = [
         ]
       },
       {
-        id: 'definition', label: 'Definition', title: '2. Definition',
+        id: 'definition', label: 'Definition', title: 'Definition',
         body: [
           'Personas, user flow, prioritisation matrix. The old path required six steps before confirming a plan. Starting again from the actual need — pick a plan, adjust it, pay — halved the number of steps.',
           'The structural change: products reachable directly from the homepage, and adding or removing specific meals moved onto the plan detail page, where the user has the context to decide.'
         ]
       },
       {
-        id: 'design', label: 'Design', title: '3. Design',
+        id: 'design', label: 'Design', title: 'Design',
         body: [
           'Wireframes, then UI. The homepage opens on a sentence stating the value proposition, followed by the ordering steps and direct access to the offers.',
           'On the product page, a filter narrows results and a calorie calculator steers undecided users towards a suitable plan — that was the main source of hesitation the survey identified. The system also checks the address is served before letting someone order, rather than after payment.',
@@ -871,7 +890,7 @@ export const PROJECTS = [
         ]
       },
       {
-        id: 'test', label: 'Testing', title: '4. Testing',
+        id: 'test', label: 'Testing', title: 'Testing',
         body: [
           'Usability testing and a five-second test, run remotely on a prototype. 92% of participants rate the concept and the call-to-action leading to the order as important elements — which validated the homepage hierarchy.',
           'We measured the SUS score to have a numerical before-and-after benchmark for the redesign.'
@@ -902,7 +921,7 @@ export const PROJECTS = [
     ],
     sections: [
       {
-        id: 'research', label: 'Research', title: '1. Quantitative research',
+        id: 'research', label: 'Research', title: 'Quantitative research',
         body: [
           'We built a 30-question survey to understand users’ habits, profiles and favourite features, with the UMUX usability scale embedded in it. Distributed on Twitter and LinkedIn, it gathered 815 responses, mostly from 16-to-25-year-olds — which incidentally tells you something about the platform’s average user age.',
           'Transposed onto the SUS scale, the result is 69.57. That is mediocre: it puts Soundcloud somewhere between the usability of Excel and an old GPS.',
@@ -931,7 +950,7 @@ export const PROJECTS = [
         ]
       },
       {
-        id: 'tests', label: 'Testing', title: '2. User testing',
+        id: 'tests', label: 'Testing', title: 'User testing',
         body: [
           'We built a test scenario on the desktop version around three missions: find a specific artist and track, to assess where the search bar sits; start playback, the site’s primary function; and leave a comment at a specific moment in the track, the exclusive feature. Every tester got the same scenario, and was asked to narrate their actions out loud.',
           'Across six testers, some of whom had never used the site, the results:',
@@ -945,7 +964,7 @@ export const PROJECTS = [
         ]
       },
       {
-        id: 'solution', label: 'Solution', title: '3. Solution',
+        id: 'solution', label: 'Solution', title: 'Solution',
         body: [
           'We prototyped the fixes to make them manipulable rather than merely describable. Then I reworked the artist page, lifting the comment section up the right-hand side, level with the player, so it is visible without scrolling and reads like a conversation in progress.'
         ],
@@ -976,21 +995,21 @@ export const PROJECTS = [
     ],
     sections: [
       {
-        id: 'explore', label: 'Exploration', title: '1. Exploration',
+        id: 'explore', label: 'Exploration', title: 'Exploration',
         body: [
           'Benchmark first: Glovo, Please, John Paul, Premium. The finding came quickly — the night slot was empty. That wasn’t an oversight on our part, it was an opening.',
           'Then a survey across around fifty qualified respondents. The answers were sharper than expected. 90% say night work has had a significant impact on their health. Every single person interviewed recognises an effect on family and friendships. And 7 out of 10 name meal delivery as a major problem: at night, nothing is open.'
         ]
       },
       {
-        id: 'analysis', label: 'Analysis', title: '2. Analysis',
+        id: 'analysis', label: 'Analysis', title: 'Analysis',
         body: [
           'The responses described two distinct profiles, which we formalised as personas. For the first group, night work is physically hard and disrupts sleep. The second is more bothered by the social and dietary impact.',
           'We then listed possible features across four axes: delivery, workplace wellness, social, and services. Plenty of ideas, only some of which we kept — it’s a hackathon, and the demo has to stand up.'
         ]
       },
       {
-        id: 'design', label: 'Design', title: '3. Design',
+        id: 'design', label: 'Design', title: 'Design',
         body: [
           'Wireframes to structure, then UI. We chose a dark theme, since the app is used at night, with brighter colours reserved for important content. The owl, a nocturnal animal, gave the app a personality you read instantly.',
           'Four features were pushed all the way to screens: meal ordering, with the nearest open restaurants on a map, filterable, and nutritional information shown; personalised relaxation or wake-up programmes depending on what the moment calls for; mini-events between colleagues during breaks; and voting on equipment to order to make the night easier.',

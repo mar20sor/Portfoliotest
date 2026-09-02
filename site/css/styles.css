@@ -856,12 +856,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
   color: var(--accent); font-weight: var(--w-semibold);
 }
 
-/* En colonne, le numero reste du texte nu : "01", "02", alignes sur une meme
-   largeur. La pastille ronde de la maquette n'existe que sur la barre du
-   mobile (section 12), ou elle sert a distinguer le numero du libelle dans une
-   rangee horizontale serree — ici, la colonne les separe deja. */
-.cs-nav__num { font-size: var(--fs-tiny); font-variant-numeric: tabular-nums; opacity: .7; }
-
 /* La progression propre a chaque section n'existe QUE sur la barre flottante
    du mobile (section 12). En colonne, le sommaire tient tout entier a l'ecran
    et le rail juste a cote (.cs-nav__prog) dit deja ou l'on en est dans le
@@ -897,8 +891,45 @@ button { font: inherit; color: inherit; cursor: pointer; }
   /* Decale la cible d'ancrage pour que le titre ne finisse pas sous l'en-tete. */
   scroll-margin-top: calc(var(--head-h) + var(--s4));
 }
-.cs-sec__title { font-size: var(--fs-h2); margin-bottom: var(--s4); font-weight: var(--w-medium); }
-.cs-sec p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }
+/* Le titre de section a la meme typographie que .gist dt (section 8a) : une
+   etiquette petite, capitales, interlettree, plutot qu'un gros titre. Les deux
+   jouent le meme role — nommer ce qui suit sans se mettre devant — et doivent
+   donc bouger ensemble : toucher a l'un sans l'autre casserait la paire.
+   Seule la marge basse reste celle de la section (--s4, pas --s1) : une etape
+   de processus a besoin de plus d'air qu'un couple terme/definition. */
+.cs-sec__title {
+  font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: .1em;
+  color: var(--ink-faint); font-weight: var(--w-semibold);
+  margin-bottom: var(--s4);
+}
+/* --ink-faint et non --ink-soft : le corps des etudes de cas s'eclaircit d'un
+   cran. C'est le PLANCHER — 4,54:1 sur blanc, tout juste au-dessus des 4,5:1
+   exiges par WCAG AA pour du texte courant. Le cran suivant ne serait plus
+   conforme. */
+/* La seconde ligne du titre : elle reprend telle quelle la typographie que
+   .cs-sec__title portait avant de devenir une etiquette — --fs-h2, poids
+   moyen, encre pleine. Le titre au-dessus devient alors un sur-titre, et c'est
+   cette ligne-ci qui fait le vrai titre.
+   Deux usages : s.headline dans une section de processus (un <p>), et les
+   titres Probleme / Resultat / Impacts de l'apercu (des <h2>, section 8a).
+   L'ancetre est .cs et non .cs-sec, sinon l'apercu — qui vit dans .cs__head,
+   hors de toute .cs-sec — n'y aurait pas droit.
+   Deux classes (0,2,0) et non la classe seule (0,1,0) : les deux usages sont
+   deja vises par une regle a (0,1,1) — .cs-sec p pour le <p>, .pair h2 pour
+   les <h2> — qui l'emporterait. Le poids des classes tranche avant celui des
+   elements, donc (0,2,0) passe devant. Meme piege que .cs-sec__card-title. */
+.cs .cs-sec__headline {
+  max-width: var(--measure); margin-bottom: var(--s4);
+  font-size: var(--fs-h2); font-weight: var(--w-medium); color: var(--ink);
+  /* C'est un <p>, donc il herite de l'interligne de lecture (1.6). Celui des
+     titres est 1.2 (voir h1,h2,h3) : sans ca, une seconde ligne de titre
+     s'aererait comme un paragraphe. */
+  line-height: 1.2;
+}
+/* Le sur-titre se rapproche de la ligne qu'il annonce : les --s4 qui separent
+   un titre de son corps de texte feraient, ici, deux blocs sans rapport. */
+.cs-sec__title:has(+ .cs-sec__headline) { margin-bottom: var(--s2); }
+.cs-sec p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-faint); }
 .cs-sec p:last-child { margin-bottom: 0; }
 /* s.numbered (voir app.js) : pastille numerotee violette accolee a un
    paragraphe, meme style que .cs-timeline__constraint-num — pour faire echo
@@ -914,7 +945,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
    moreDrawer), a la place d'un paragraphe unique. */
 .cs-sec__list {
   max-width: var(--measure); margin: 0 0 var(--s4); padding-left: 1.2em;
-  color: var(--ink-soft);
+  color: var(--ink-faint);
   /* Le reset global (ul,ol { list-style:none } plus haut dans ce fichier)
      retire les puces par defaut : on les restaure ici, cette liste-ci n'est
      pas decorative. */
@@ -3106,6 +3137,12 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
      libelle visible. */
   .cs-nav a.cs-nav__back {
     flex: 0 0 auto;
+    /* display:flex et NON la grille de .cs-nav a : ce bouton-ci ne porte pas de
+       barre de progression, juste une icone et un libelle efface. En grille a
+       une colonne, les deux s'empilent sur deux rangees et l'icone remonte
+       au-dessus du centre du cercle. En rangee flex, elle est seule a occuper
+       de la place, donc centree. */
+    display: flex;
     width: var(--cs-bar-h); height: var(--cs-bar-h); margin-bottom: 0;
     align-items: center; justify-content: center;
     /* Le libelle reduit a font-size:0 reste un item flex de largeur nulle : en
@@ -3118,16 +3155,23 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
     -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
     box-shadow: var(--glass-shadow);
   }
-  /* La fleche de la maquette, posee en masque plutot qu'en <img> : le masque
-     ne garde que la forme et la peint avec currentColor, donc l'icone suit la
-     couleur du lien (survol compris) sans second fichier.
+  /* UNE CROIX, PAS UNE FLECHE. Sous 1000px cette pastille est la seule sortie
+     de la fiche — la vraie croix (.overlay-close) est masquee juste en dessous
+     — et ce qu'elle fait, c'est fermer l'etude de cas, pas reculer d'un cran
+     dans l'historique. Elle en porte donc le dessin, repris trait pour trait
+     de la croix de index.html (meme trace, meme epaisseur, memes bouts ronds)
+     via cs-close.svg : les deux ne sont jamais visibles en meme temps, mais
+     elles doivent etre la meme icone.
+     Pose en masque plutot qu'en <img> : le masque ne garde que la forme et la
+     peint avec currentColor, donc l'icone suit la couleur du lien (survol
+     compris) sans second fichier.
      Le chemin est relatif a CE fichier, dans css/ — d'ou le ../ */
   .cs-nav__back span:first-child {
     flex: 0 0 auto;
     width: 18px; height: 18px;
     background: currentColor;
-    -webkit-mask: url('../assets/icons/cs-back.svg') center / contain no-repeat;
-            mask: url('../assets/icons/cs-back.svg') center / contain no-repeat;
+    -webkit-mask: url('../assets/icons/cs-close.svg') center / contain no-repeat;
+            mask: url('../assets/icons/cs-close.svg') center / contain no-repeat;
   }
   .cs-nav__back:hover { transform: none; }
 
@@ -3229,13 +3273,13 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
   .cs-nav ol::-webkit-scrollbar { display: none; }
   .cs-nav li { scroll-snap-align: start; }
 
-  /* Une grille de deux colonnes plutot qu'une rangee flex : la barre de
-     progression peut ainsi occuper une SECONDE ligne sous la pastille et le
-     libelle, sans avoir a les emballer dans un element de plus. */
+  /* Une grille plutot qu'une rangee flex : la barre de progression peut ainsi
+     occuper une SECONDE ligne sous le libelle, sans avoir a l'emballer dans un
+     element de plus. */
   .cs-nav a {
-    display: grid; grid-template-columns: auto auto;
+    display: grid; grid-template-columns: auto;
     align-items: center; justify-content: center;
-    gap: 3px var(--s1);
+    gap: 3px;
     /* Le libelle passe a la taille du texte courant : a 15px il etait plus
        petit que le corps de l'etude de cas qu'il sert a parcourir, alors qu'il
        se lit du coin de l'oeil, en mouvement, au pouce.
@@ -3250,28 +3294,9 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
   }
   .cs-nav a:hover { background: var(--veil-strong); }
 
-  /* La pastille numerotee. Ces valeurs sont en pixels et hors de l'echelle
-     typographique du site, qui ne descend pas si bas — c'est normal, c'est un
-     jeton, pas du texte a lire. Deux crans au-dessus de la maquette (18/13
-     contre 13/10) : a 13px, le chiffre etait la seule chose illisible de la
-     barre, et il suit maintenant le libelle passe a 16px.
-     font-size:0 + content:attr(data-n) remplace le "01" de la colonne du
-     bureau par le "1" de la maquette, sans dupliquer le numero dans le DOM. */
-  .cs-nav__num {
-    display: flex; align-items: center; justify-content: center;
-    min-width: 18px; height: 18px; padding-inline: 5px;
-    border-radius: var(--radius-tag);
-    background: var(--ink-faint);
-    color: var(--accent-ink);
-    font-size: 0; opacity: 1;
-    font-weight: var(--w-medium);
-  }
-  .cs-nav__num::after { content: attr(data-n); font-size: 13px; line-height: 1; }
-
   /* L'entree active se contente de la regle de la section 8b (bleue, en gras,
      sans pilule de fond) : les deux mises en page traitent la selection de la
-     meme facon. Ne reste ici que la pastille, qui n'existe que sur mobile. */
-  .cs-nav a.is-active .cs-nav__num { background: var(--accent); }
+     meme facon. */
 
   /* Le soulignement de l'entree active EST sa barre de progression : il se
      remplit pendant la lecture de cette section (voir updateSectionProgress
