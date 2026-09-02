@@ -207,10 +207,11 @@ html[data-theme="light"],
   --glass:        rgba(255, 255, 255, .72);
   --glass-blur:   blur(14px);
   --glass-shadow: 0 2px 12px -4px rgba(16, 35, 63, .28);
-  /* Le meme blanc, en transparence totale. Sert d'arrivee aux degrades qui
-     estompent les bords de la barre : `transparent` vaut rgba(0,0,0,0), donc
-     un degrade qui y va traverse des gris et salit le fondu. */
-  --glass-0:      rgba(255, 255, 255, 0);
+  /* Il y avait ici --glass-0, le meme blanc en transparence totale, arrivee des
+     degrades qui estompaient les bords de la barre flottante. Ces degrades sont
+     devenus un masque pose sur la liste (section 12) : un masque efface, il ne
+     peint pas, il n'a donc pas de couleur d'arrivee. Le jeton n'avait plus
+     aucun usage. */
 }
 
 
@@ -3116,10 +3117,9 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
        choses qui bougent. On la fixe donc ici, et le contenu se centre
        dedans. Changer la taille du texte ne desaligne plus rien. */
     --cs-bar-h: 56px;
-    /* Meme discipline pour l'anneau de progression : une seule valeur, lue par
-       l'anneau lui-meme ET par le calage du fondu de gauche (.cs-nav::before,
-       qui doit commencer LA OU la liste commence, donc apres l'anneau). Les
-       deux ne peuvent pas diverger. */
+    /* La taille de l'anneau de progression. Une variable et non deux valeurs
+       en dur : elle dimensionne a la fois la boite et le svg qu'elle contient
+       (.cs-nav__ring plus bas). */
     --cs-ring: 22px;
 
     position: fixed; z-index: 100;
@@ -3133,42 +3133,18 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
     padding: 0;
   }
 
-  /* LES DEUX FONDUS AUX EXTREMITES DE LA PILULE.
-     La liste defile : a l'arret, une entree se trouve forcement coupee quelque
-     part. Coupee NET contre le bord arrondi, elle se lit comme une erreur de
-     mise en page plutot que comme une suite a faire defiler. Ces deux voiles
-     la font disparaitre en fondu a la place.
-
-     Poses sur .cs-nav et non sur la liste : un pseudo-element de la liste
-     defilerait AVEC son contenu et quitterait le bord des le premier geste.
-     .cs-nav ne defile pas, d'ou le calage a gauche sur tout ce qui precede la
-     liste — la pastille de retour, l'ecart, puis le retrait et la largeur de
-     l'anneau. Rien qui ne soit une des deux variables ci-dessus ou une valeur
-     d'espacement, donc rien qui puisse diverger de la mise en page reelle. */
-  .cs-nav::before,
-  .cs-nav::after {
-    content: ''; position: absolute; z-index: 1;
-    top: 0; bottom: 0; width: 28px;
-    pointer-events: none;
-  }
-  /* Pas d'arrondi ici, contrairement au fondu de droite : depuis que l'anneau
-     occupe la gauche de la pilule, ce voile ne couvre plus le bord arrondi
-     mais un morceau de surface plate, au milieu du verre.
-     Sa largeur suit le retrait gauche de la liste au lieu des 28px communs :
-     c'est ce retrait, et lui seul, qui separe l'anneau du premier libelle. Un
-     voile plus court laissait une entree en train de defiler ressortir avant
-     lui, donc s'afficher collee a l'anneau — exactement l'effet que le retrait
-     est cense empecher a l'arret. */
-  .cs-nav::before {
-    left: calc(var(--cs-bar-h) + var(--s3) + var(--s5) + var(--cs-ring));
-    width: var(--s6);
-    background: linear-gradient(to right, var(--glass) 45%, var(--glass-0));
-  }
-  .cs-nav::after {
-    right: 0;
-    border-radius: 0 999px 999px 0;
-    background: linear-gradient(to left, var(--glass) 45%, var(--glass-0));
-  }
+  /* LES DEUX FONDUS AUX EXTREMITES DE LA LISTE : voir .cs-nav ol plus bas.
+     Ce sont deux masques poses sur la liste elle-meme, plus deux voiles poses
+     par-dessus. Historique, parce que la difference n'est pas evidente et que
+     la premiere version etait fausse : deux pseudo-elements de .cs-nav
+     peignaient un degrade de --glass au-dessus de la pilule pour effacer ce
+     qui defilait dessous. Or --glass est translucide : par-dessus le verre il
+     en fait un SECOND, et le fondu se voyait comme un rectangle plus clair,
+     avec un bord net, au milieu de la pilule — sur un fond sombre surtout. Il
+     fallait en plus les caler par calcul sur tout ce qui precede la liste (la
+     pastille, l'ecart, l'anneau et sa marge), un calcul a refaire a chaque
+     changement de mise en page. Un masque, lui, efface le contenu au lieu de
+     le recouvrir : rien a repeindre, rien a caler, et il suit la liste. */
 
   /* Le lien retour devient la pastille ronde de la maquette. font-size:0
      efface le libelle "Back" a l'oeil SANS le retirer de l'arbre
@@ -3318,11 +3294,17 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
      le filet de 2px en haut de la fenetre, qu'on ne voit pas en lisant.
 
      Son retrait a gauche vaut l'ancien retrait de la liste : c'est lui qui
-     tient desormais l'air contre le bord arrondi de la pilule. */
+     tient desormais l'air contre le bord arrondi de la pilule.
+
+     Sa marge de DROITE, elle, est le seul espace ou une entree ne peut pas
+     entrer : elle repousse la boite du <ol>, donc le bord de la zone de
+     defilement. Le retrait interne de la liste, lui, est A L'INTERIEUR de
+     cette zone — un libelle qui defile passe dessous, simplement estompe par
+     le fondu. Sans cette marge, il finissait donc contre l'anneau. */
   .cs-nav__ring {
     flex: 0 0 auto;
     display: grid; place-items: center;
-    margin-inline-start: var(--s5);
+    margin-inline: var(--s5) var(--s4);
     width: var(--cs-ring); height: var(--cs-ring);
   }
   /* display:block explicite : il n'existe aucune regle de base pour svg dans
@@ -3350,13 +3332,10 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
     flex: 1 1 auto; min-width: 0;
     height: 100%;
     display: flex; gap: var(--s2); align-items: center;
-    /* A gauche, un cran de plus qu'a droite : l'anneau est immediatement
-       avant, et a retrait egal il se lisait colle au premier libelle, comme
-       s'il lui appartenait au lieu de mesurer toute l'etude. Ce retrait doit
-       de toute facon rester SUPERIEUR a la largeur du fondu de bord (28px) —
-       en dessous, la premiere entree commencerait sous le degrade et
-       s'afficherait a demi effacee alors que rien n'est encore cache. */
-    padding-inline: var(--s6) var(--s5);
+    /* A gauche, un cran de moins : c'est la marge droite de l'anneau qui tient
+       maintenant l'ecart, et elle le tient MIEUX — rien ne peut y defiler.
+       Les deux additionnees redonnent le meme air qu'a droite. */
+    padding-inline: var(--s4) var(--s5);
     /* Pas de scroll-padding : il servait a empecher un calage sur `start` de
        coller la premiere entree au bord. Le calage est maintenant `center`,
        plus rien ne bute contre un bord — et un retrait ASYMETRIQUE decalerait
@@ -3368,6 +3347,19 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
     overflow-x: auto;
     scrollbar-width: none;              /* masque la barre (Firefox) */
     scroll-snap-type: x proximity;      /* chaque element s'aligne proprement */
+    /* LES DEUX FONDUS. Une entree qui sort de la liste est coupee net par
+       overflow ; le masque la fait disparaitre en fondu a la place.
+       Les deux paliers valent EXACTEMENT les deux retraits internes : le
+       masque est donc opaque partout ou un libelle se pose a l'arret, et ne
+       degrade que la bande ou il ne fait que passer. Les repeter en dur les
+       ferait diverger du padding a la premiere retouche.
+       Le masque se cale sur la boite de la liste et ne defile pas avec son
+       contenu — c'est ce qui rendait un pseudo-element de la liste inutilisable
+       ici, et ce qui obligeait a le poser sur .cs-nav. */
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--s4),
+                        #000 calc(100% - var(--s5)), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 var(--s4),
+                #000 calc(100% - var(--s5)), transparent 100%);
   }
   .cs-nav ol::-webkit-scrollbar { display: none; }
   /* center et non start : revealInStrip (app.js) CENTRE l'etape en cours dans
