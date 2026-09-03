@@ -72,6 +72,22 @@
   --veil:        rgba(0,0,0,.05);        /* fond de la pilule de navigation */
   --veil-strong: rgba(0,0,0,.12);        /* blocs mis en avant */
 
+  /* ---- LA GRILLE DE FOND DE L'ACCUEIL ----------------------------------
+     Le quadrillage pose sous la page d'accueil (dessine section 6). Deux
+     jetons parce que la maille et la teinte se regardent l'une l'autre : une
+     maille plus serree multiplie les traits a l'ecran et demande donc un
+     trait plus pale, sinon le bleu vire au gris.
+
+     --grid-line est ici, dans le bloc de MARQUE, et non dans :root : c'est du
+     blanc translucide, il n'a de sens que sur le bleu. La grille ne sort
+     jamais de l'accueil, aucun theme clair n'a donc a la redefinir.
+
+     .09 et non les .14 de --line-soft : un filet, on en voit un a la fois ;
+     une grille, on en voit des centaines d'un coup. Reutiliser le jeton du
+     filet aurait donne un papier millimetre, pas une trame.               */
+  --grid-line:   rgba(255,255,255,.09);
+  --grid-cell:   32px;                   /* multiple du rythme de 8px */
+
   /* --accent porte tout ce qui doit ressortir : barres de progression,
      section active, chiffres cles, anneau de focus. Lime sur le bleu, bleu
      sur le blanc — le lime sur blanc serait illisible (1,34:1). */
@@ -557,7 +573,77 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
   -webkit-backdrop-filter: blur(35px);
   backdrop-filter: blur(35px);
   border-radius: var(--radius-pill);
+  /* Le seul changement d'etat de la pilule : voir .is-on-light juste apres.
+     background seul, et surtout PAS backdrop-filter — animer un flou force le
+     navigateur a le recalculer image par image, et la barre saccade. */
+  transition: background .22s var(--ease);
 }
+
+/* ---- QUAND LA PILULE PASSE SUR UN VISUEL CLAIR ------------------------
+   Le probleme : le verre ne pese que --veil, un noir a 5 %. Sur le bleu de
+   marque, ça suffit — le libelle blanc y tient a 3,60:1, ce que la note de
+   conformite de la section 1 assume deja. Sur la capture creme d'une carte,
+   le meme libelle tombe a 1,13:1 : il disparait. La section 12 avait deja
+   rencontre exactement ça pour la barre du bas et l'avait resolu en alourdi-
+   ssant sa matiere en permanence (noir a 14 %, flou de 60px) — elle, elle
+   passe sur les visuels a chaque defilement. La pilule de l'en-tete, elle,
+   est sur du bleu uni la plupart du temps : lui donner la meme matiere fixe
+   la noircirait sur toute la page pour un probleme qui n'existe qu'a certains
+   endroits.
+
+   ON NE PEUT PAS S'EN SORTIR AVEC UN SEUL FILTRE. brightness() est
+   MULTIPLICATIF : ramener le blanc (255) a un niveau lisible, c'est diviser
+   le bleu de marque par le meme facteur. Aucun filtre n'est neutre sur
+   #2078F0 et sombre sur #FFFFFF — il faut donc deux etats, et quelqu'un pour
+   dire lequel s'applique. C'est setupNavContrast() (app.js) qui le dit.
+
+   15 % EST UN CHOIX D'APPARENCE, ASSUME, ET IL NE REND PAS LA NORME. Il faut
+   l'ecrire une bonne fois pour que personne ne relise cette regle en croyant
+   le probleme regle :
+
+     sur du blanc pur, ce voile donne un fond a L≈0.714, et le libelle blanc a
+     82 % d'opacite y mesure 1,29:1 — contre 1,13:1 sans lui. Le seuil AA est
+     a 4,5:1. Autrement dit, le gain est de l'ordre du centieme : sur une
+     capture claire, le libelle reste illisible.
+
+   Le voile qui tenait la norme etait a 66 % (fond L≈0.128, libelle a 4,54:1).
+   Entre les deux, il n'y a pas de reglage heureux : c'est une droite, et
+   chaque point d'opacite rendu a la transparence se paie en contraste.
+
+   SI ON VEUT LES DEUX — une pilule qui laisse voir le visuel ET un libelle
+   lisible — le voile plat n'est pas le bon outil. Il faut ASSOMBRIR LE VISUEL
+   au lieu de le RECOUVRIR, c'est-a-dire ajouter brightness() au
+   backdrop-filter de cet etat-ci (et de lui seul) :
+
+     .site-nav.is-on-light {
+       background: rgba(6, 22, 43, .15);
+       backdrop-filter: blur(35px) saturate(1.4) brightness(.45);
+     }
+
+   ça mesure 4,52:1 sur du blanc tout en gardant ce voile a 15 % : on voit
+   alors le visuel, sombre, au lieu d'une plaque bleu nuit. Le prix est que la
+   transition ne peut plus porter sur `background` seul — deux listes de
+   filtres de longueurs differentes ne s'interpolent pas, il faudrait declarer
+   `saturate(1) brightness(1)` sur la regle de base pour qu'elles se
+   correspondent, et animer un backdrop-filter coute cher. Piste ouverte, pas
+   prise.
+
+   #06162B et non du noir : c'est le bleu nuit du fond de scene des fiches
+   (.underlay, section 11 bis). Un noir pur virerait la capture creme au brun.
+
+   Deux classes (0,2,0) : la section 12 redeclare `background` sur .site-nav
+   (0,1,0) pour la barre du bas. Cette regle-ci gagne donc dans les deux mises
+   en page, quel que soit l'ordre des blocs — l'etat vaut donc AUSSI pour la
+   barre d'onglets de l'accueil sur mobile, sans une ligne de plus.
+
+   MAIS IL N'Y FAIT PRESQUE RIEN, ET C'EST ARITHMETIQUE. La section 12 avait
+   deja alourdi cette barre-la en permanence, precisement parce qu'elle passe
+   sur les visuels a chaque defilement : elle porte #00000025, soit un noir a
+   14,5 %. Un voile a 15 % vient donc REMPLACER un fond de meme poids par un
+   autre — bleu nuit au lieu de noir, un demi-point d'opacite d'ecart. La
+   classe se pose bien sous 860px, elle ne change simplement rien a l'oeil.
+   C'est a 66 % que l'etat se voyait sur mobile.                           */
+.site-nav.is-on-light { background: rgba(6, 22, 43, .15); }
 /* Les deux groupes ne sont que des colonnes : ils rangent leurs liens en
    rangee et se collent chacun a son bord. Le nom, lui, est un enfant direct
    de la grille et porte deja son justify-self. */
@@ -641,6 +727,52 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
    avec 80px de marge laterale. min-height plutot que height : si la phrase
    passe sur cinq lignes en francais, le bloc grandit au lieu de deborder.
    ========================================================================== */
+
+/* ---- LE QUADRILLAGE DE FOND ------------------------------------------
+   Une trame de 32px sous toute la page d'accueil, en-tete et pied de page
+   compris. Elle donne au bleu plat une echelle et une texture, sans rien
+   ajouter a lire.
+
+   DEUX DEGRADES CSS, PAS UNE IMAGE NI UN SVG. `linear-gradient(couleur 1px,
+   transparent 1px)` n'est pas un vrai degrade : c'est une bascule nette au
+   premier pixel, donc une ligne. Repetee par background-size, elle pave la
+   page. Le second degrade fait la meme chose a 90 degres pour les colonnes.
+   Cout : zero requete, zero octet telecharge, zero noeud dans le DOM, et une
+   teinte qui reste un var() — donc modifiable en une ligne section 1. Un SVG,
+   meme en data-URI, aurait fallu l'encoder, l'ecrire en dur et le rendre
+   sourd aux jetons ; une image aurait ete un fichier a charger pour dessiner
+   ce que le moteur de rendu sait faire seul.
+
+   `body:has(.home)`, ET NON .home : la classe est posee sur le <div> que
+   pageHome() glisse dans <main>, qui ne descend ni jusqu'au pied de page (son
+   frere dans #page) ni jusqu'a la bande de l'en-tete (#page commence 103px
+   plus bas, l'en-tete etant dans le flux). Peindre sur <body> couvre la
+   hauteur entiere du document ; le :has() fait de <main> l'INTERRUPTEUR sans
+   qu'app.js ait une classe de plus a poser et a retirer.
+
+   `:not(.is-overlay)` : quand une etude de cas est ouverte, la photo de
+   l'accueil (#underlay) contient un CLONE du DOM, classe .home comprise, et
+   le :has() continuerait donc de matcher. Le calque est opaque, on ne verrait
+   rien — mais peindre une grille sous une page qui n'est plus a l'ecran est
+   un piege pour la prochaine lecture. On l'eteint explicitement.
+
+   background-position: -1px -1px decale la trame d'un pixel pour que la
+   PREMIERE ligne tombe sur le bord de la page au lieu d'un pixel en dessous ;
+   sans ce decalage, le haut et la gauche montrent une cellule tronquee.
+
+   min-height: 100vh — <html> porte deja `background: var(--bg)` (section 2),
+   donc le fond de <body> ne se propage PAS au canevas du navigateur : il est
+   peint sur la boite de <body>, qui s'arrete a la hauteur de son contenu. Sur
+   un ecran tres haut, ou si le contenu se raccourcissait, la grille
+   s'arreterait en cours de fenetre sur du bleu nu.                        */
+body:not(.is-overlay):has(.home) {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: var(--grid-cell) var(--grid-cell);
+  background-position: -1px -1px;
+  min-height: 100vh;
+}
 
 /* --hero-min est un jeton et non 400px ecrits ici : le media 860px doit
    l'augmenter d'autant qu'il augmente le retrait haut (voir section 12), et
