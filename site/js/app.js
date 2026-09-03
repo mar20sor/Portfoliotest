@@ -433,7 +433,12 @@ function emphasize(str) {
    prenom du visiteur — a des liens et des mots accentues. */
 function pageHome() {
   const d = t(), h = HERO;
-  const page = el('div');
+  /* .home ne sert a rien ICI : elle sert de temoin a <body>, que styles.css
+     interroge en `body:has(.home)` pour poser le quadrillage de fond sur la
+     hauteur entiere du document (section 6). Le marqueur vit sur la page
+     plutot que sur <body> pour que paint() n'ait pas une classe de plus a
+     poser et — surtout — a penser a retirer. */
+  const page = el('div', { class: 'home' });
 
   /* --- Le heros ---
      sec-hello est pose ICI, sur la section, et non sur le paragraphe "Hey ..."

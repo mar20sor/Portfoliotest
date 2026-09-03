@@ -72,6 +72,22 @@
   --veil:        rgba(0,0,0,.05);        /* fond de la pilule de navigation */
   --veil-strong: rgba(0,0,0,.12);        /* blocs mis en avant */
 
+  /* ---- LA GRILLE DE FOND DE L'ACCUEIL ----------------------------------
+     Le quadrillage pose sous la page d'accueil (dessine section 6). Deux
+     jetons parce que la maille et la teinte se regardent l'une l'autre : une
+     maille plus serree multiplie les traits a l'ecran et demande donc un
+     trait plus pale, sinon le bleu vire au gris.
+
+     --grid-line est ici, dans le bloc de MARQUE, et non dans :root : c'est du
+     blanc translucide, il n'a de sens que sur le bleu. La grille ne sort
+     jamais de l'accueil, aucun theme clair n'a donc a la redefinir.
+
+     .09 et non les .14 de --line-soft : un filet, on en voit un a la fois ;
+     une grille, on en voit des centaines d'un coup. Reutiliser le jeton du
+     filet aurait donne un papier millimetre, pas une trame.               */
+  --grid-line:   rgba(255,255,255,.09);
+  --grid-cell:   32px;                   /* multiple du rythme de 8px */
+
   /* --accent porte tout ce qui doit ressortir : barres de progression,
      section active, chiffres cles, anneau de focus. Lime sur le bleu, bleu
      sur le blanc — le lime sur blanc serait illisible (1,34:1). */
@@ -641,6 +657,52 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
    avec 80px de marge laterale. min-height plutot que height : si la phrase
    passe sur cinq lignes en francais, le bloc grandit au lieu de deborder.
    ========================================================================== */
+
+/* ---- LE QUADRILLAGE DE FOND ------------------------------------------
+   Une trame de 32px sous toute la page d'accueil, en-tete et pied de page
+   compris. Elle donne au bleu plat une echelle et une texture, sans rien
+   ajouter a lire.
+
+   DEUX DEGRADES CSS, PAS UNE IMAGE NI UN SVG. `linear-gradient(couleur 1px,
+   transparent 1px)` n'est pas un vrai degrade : c'est une bascule nette au
+   premier pixel, donc une ligne. Repetee par background-size, elle pave la
+   page. Le second degrade fait la meme chose a 90 degres pour les colonnes.
+   Cout : zero requete, zero octet telecharge, zero noeud dans le DOM, et une
+   teinte qui reste un var() — donc modifiable en une ligne section 1. Un SVG,
+   meme en data-URI, aurait fallu l'encoder, l'ecrire en dur et le rendre
+   sourd aux jetons ; une image aurait ete un fichier a charger pour dessiner
+   ce que le moteur de rendu sait faire seul.
+
+   `body:has(.home)`, ET NON .home : la classe est posee sur le <div> que
+   pageHome() glisse dans <main>, qui ne descend ni jusqu'au pied de page (son
+   frere dans #page) ni jusqu'a la bande de l'en-tete (#page commence 103px
+   plus bas, l'en-tete etant dans le flux). Peindre sur <body> couvre la
+   hauteur entiere du document ; le :has() fait de <main> l'INTERRUPTEUR sans
+   qu'app.js ait une classe de plus a poser et a retirer.
+
+   `:not(.is-overlay)` : quand une etude de cas est ouverte, la photo de
+   l'accueil (#underlay) contient un CLONE du DOM, classe .home comprise, et
+   le :has() continuerait donc de matcher. Le calque est opaque, on ne verrait
+   rien — mais peindre une grille sous une page qui n'est plus a l'ecran est
+   un piege pour la prochaine lecture. On l'eteint explicitement.
+
+   background-position: -1px -1px decale la trame d'un pixel pour que la
+   PREMIERE ligne tombe sur le bord de la page au lieu d'un pixel en dessous ;
+   sans ce decalage, le haut et la gauche montrent une cellule tronquee.
+
+   min-height: 100vh — <html> porte deja `background: var(--bg)` (section 2),
+   donc le fond de <body> ne se propage PAS au canevas du navigateur : il est
+   peint sur la boite de <body>, qui s'arrete a la hauteur de son contenu. Sur
+   un ecran tres haut, ou si le contenu se raccourcissait, la grille
+   s'arreterait en cours de fenetre sur du bleu nu.                        */
+body:not(.is-overlay):has(.home) {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: var(--grid-cell) var(--grid-cell);
+  background-position: -1px -1px;
+  min-height: 100vh;
+}
 
 /* --hero-min est un jeton et non 400px ecrits ici : le media 860px doit
    l'augmenter d'autant qu'il augmente le retrait haut (voir section 12), et
