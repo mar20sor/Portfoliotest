@@ -3528,6 +3528,7 @@ function paint(hash, route, mode) {
     main.focus({ preventScroll: true });
 
     if (route.name === 'home') setupHomeNavSpy();
+    if (route.name === 'home') setupNavContrast();
     if (route.name === 'case') setupCaseBehaviours();
     if (route.name === 'case') setupMoreDrawerEmbeds();
     if (route.name === 'case' && route.project.slug === 'constraints') setupConstraintBuilder();
@@ -4430,6 +4431,74 @@ function setupHomeNavSpy() {
        derriere, et cette page-la etait bien sur cette section. */
   });
   update();
+}
+
+
+/* ---- 8 ter. LA PILULE SUR FOND CLAIR ----
+   Alourdit la matiere de la barre de navigation, et elle seule, pendant
+   qu'un visuel clair passe dessous. Le pourquoi (et le calcul du 4,54:1) est
+   dans styles.css, section 5, sous .site-nav.is-on-light.
+
+   PAS D'ECOUTEUR DE DEFILEMENT. Un IntersectionObserver dont la racine est
+   RETAILLEE sur la bande de la pilule repond exactement a la question posee —
+   "est-ce qu'un visuel de carte touche cette bande ?" — et le navigateur la
+   reevalue lui-meme, hors du fil principal. Un handler de scroll referait la
+   meme mesure a chaque pixel pour changer une classe deux fois par page.
+
+   CE QU'ON OBSERVE, C'EST .card__media : sur ce site, les seules surfaces
+   claires qui defilent sous l'en-tete sont les visuels des cartes (le reste
+   est le bleu de marque). Pas de lecture de pixels, donc, et pas de liste de
+   couleurs a tenir a jour — juste "un visuel est-il la ?".
+
+   UN Set ET NON UN BOOLEEN : deux cartes voisines peuvent toucher la bande en
+   meme temps (la grille est a deux colonnes). Avec un booleen, la premiere
+   qui sort eteindrait la classe alors que la seconde est encore dessous. */
+function setupNavContrast() {
+  const nav = $('#site-nav');
+  if (!nav || typeof IntersectionObserver !== 'function') return;
+
+  const lights = $$('#main .card__media');
+  if (!lights.length) { nav.classList.remove('is-on-light'); return; }
+
+  const over = new Set();
+  let io = null;
+
+  /* La bande se mesure, elle ne se devine pas : la pilule est collee EN HAUT
+     sur le bureau et FIXEE EN BAS sous 860px (section 12), et rootMargin se
+     compte depuis les bords de la fenetre. Des valeurs ecrites en dur
+     designeraient le haut de l'ecran dans les deux cas, et la barre du bas —
+     celle qui en a le plus besoin — ne s'allumerait jamais. */
+  const build = () => {
+    if (io) io.disconnect();
+    over.clear();
+
+    const r  = nav.getBoundingClientRect();
+    const up = Math.round(r.top);
+    const dn = Math.round(window.innerHeight - r.bottom);
+
+    io = new IntersectionObserver(entries => {
+      entries.forEach(e => e.isIntersecting ? over.add(e.target) : over.delete(e.target));
+      nav.classList.toggle('is-on-light', over.size > 0);
+    }, { rootMargin: `${-up}px 0px ${-dn}px 0px`, threshold: 0 });
+
+    lights.forEach(m => io.observe(m));
+  };
+
+  build();
+
+  /* Seul un redimensionnement deplace la pilule : collee ou fixee, elle ne
+     bouge pas quand le document grandit (une image qui arrive, une police qui
+     se substitue). Pas de ResizeObserver ici, contrairement au scroll-spy
+     ci-dessus, qui lui mesure des sections et en a donc besoin. */
+  window.addEventListener('resize', build);
+  addCleanup(() => {
+    window.removeEventListener('resize', build);
+    if (io) io.disconnect();
+    /* On eteint la classe en partant : l'en-tete survit au changement de
+       page, et une etude de cas qui s'ouvre laisserait sinon la pilule
+       alourdie pour un visuel qui n'est plus a l'ecran. */
+    nav.classList.remove('is-on-light');
+  });
 }
 
 
