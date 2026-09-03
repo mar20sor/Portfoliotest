@@ -3246,7 +3246,16 @@ body.is-overlay .cs:has(.cs-nav) .cs__head { padding-top: var(--s7); }
 
 /* L'entree de la barre flottante du mobile, une fois la fiche posee. Voir la
    note dans la section 12, qui explique pourquoi elle ne peut pas monter avec
-   elle. Meme mouvement que la fiche, en plus court : elle vient du bas. */
+   elle. Meme mouvement que la fiche, en plus court : elle vient du bas.
+
+   ELLE SERT AUX DEUX BARRES, et c'est volontaire. La pilule du site (.site-nav
+   sous 860px) est retiree pendant toute la duree d'une fiche et doit revenir
+   quand celle-ci se referme : meme hauteur, meme retrait de 20px, meme place a
+   l'ecran, donc exactement le meme translateY pour les sortir de la fenetre.
+   Ecrire une seconde animation identique aurait garanti qu'un jour l'une des
+   deux serait retouchee sans l'autre — et le raccord entre les deux barres,
+   qui se relaient au meme endroit, tient precisement a ce qu'elles bougent
+   pareil. Voir body.is-returning .site-nav, section 12. */
 @keyframes csBarIn {
   from { transform: translateY(calc(100% + 20px)); opacity: 0; }
   to   { transform: none;                          opacity: 1; }
@@ -3822,6 +3831,31 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
      y compris sur une etude sans sommaire, ou c'est la croix qui sert de
      sortie et ou une barre de site par-dessus le texte serait un contresens. */
   body.is-overlay .site-nav { display: none; }
+
+  /* ...ET ELLE REVIENT COMME LA BARRE DE LA FICHE ETAIT ARRIVEE.
+     Le display:none ci-dessus tombe d'un seul coup, au moment ou paint()
+     retire is-overlay : la pilule se retrouvait plaquee au bas de l'ecran,
+     sans transition, juste apres que la fiche eut mis 380ms a descendre. Elle
+     etait le seul element non anime de toute la sequence de fermeture, et
+     c'est celui que l'oeil regarde — le pouce y retourne.
+
+     On rejoue csBarIn (section 11 bis), LA MEME animation que celle de la
+     barre de sections, pas une copie : les deux barres se relaient au meme
+     endroit de l'ecran, l'une doit donc partir d'ou l'autre partait.
+
+     POURQUOI UNE CLASSE ET NON LE SIMPLE RETOUR DU DISPLAY. Une animation
+     redemarre bien toute seule quand un element quitte display:none — c'est
+     ce qui suffit a .cs-nav. Mais ici elle redemarrerait AUSSI au tout
+     premier rendu du site, ou la barre n'a rien a rejouer : rien ne l'a
+     chassee, elle est simplement la. is-returning (app.js, paint()) restreint
+     le mouvement au seul cas ou il veut dire quelque chose : une fiche vient
+     de se refermer, la page qui etait dessous nous est rendue.
+
+     backwards et non both, pour la meme raison qu'a la ligne de .cs-nav :
+     l'etat d'arrivee est deja l'etat naturel de la barre, et un `both` la
+     laisserait sous une animation terminee — donc au-dessus de toute
+     declaration ordinaire qu'on poserait ensuite. */
+  body.is-returning .site-nav { animation: csBarIn .34s var(--ease) backwards; }
 
   /* La reserve du bas, jumelle de celle de #page:has(.cs-nav) : sans elle la
      barre recouvrirait la fin du pied de page, qu'aucun defilement ne

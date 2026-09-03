@@ -3407,6 +3407,33 @@ function paint(hash, route, mode) {
   body.classList.remove('is-closing');
   if (!isCase) clearUnderlay();       // on jette la photo : elle a servi
 
+  /* LA BARRE DU MOBILE REVIENT AVEC LA PAGE.
+     Sous 860px, la pilule du site est retiree (display:none) tant qu'une
+     fiche est ouverte, parce que l'etude de cas a la sienne au meme endroit.
+     En sortir la remettait d'un coup — le seul element non anime d'une
+     fermeture qui, elle, dure 380ms. is-returning rejoue sur elle l'animation
+     d'entree de la barre de sections (csBarIn, styles.css §12).
+
+     POSEE ICI ET NON DANS swap(). La classe doit changer d'etat dans le meme
+     recalcul que le is-overlay juste au-dessus : c'est lui qui rend la barre
+     a l'affichage, et si les deux changements tombaient dans deux images
+     differentes, on verrait la barre en place une image avant qu'elle ne
+     parte d'en bas. En mode 'close' swap() est appele de façon synchrone
+     (voir `plain` plus bas), donc les deux tiennent bien dans la meme tache.
+
+     RETIREE PAR LE NETTOYAGE DE LA NAVIGATION SUIVANTE, pas par un minuteur.
+     Rien ne presse : l'animation se termine sur l'etat naturel de la barre
+     (fill backwards, cote CSS), donc une classe qui s'attarde ne fige rien.
+     Et un minuteur de plus serait un minuteur de plus a annuler quand on
+     repart avant la fin — cette fonction en compte deja un.
+
+     Pas de garde pour le mouvement reduit : render() ne passe jamais par le
+     mode 'close' quand il est actif, la fermeture y est un echange sec. */
+  if (mode === 'close') {
+    body.classList.add('is-returning');
+    addCleanup(() => body.classList.remove('is-returning'));
+  }
+
   /* L'en-tete du site reste VISIBLE sous la fiche (voir styles.css), mais il
      n'est plus atteignable : ce qui est derriere un calque ne se clique pas.
      inert coupe d'un coup le clic, le focus clavier et l'annonce vocale —
