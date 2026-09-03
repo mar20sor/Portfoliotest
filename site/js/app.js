@@ -4436,8 +4436,14 @@ function setupHomeNavSpy() {
 
 /* ---- 8 ter. LA PILULE SUR FOND CLAIR ----
    Alourdit la matiere de la barre de navigation, et elle seule, pendant
-   qu'un visuel clair passe dessous. Le pourquoi (et le calcul du 4,54:1) est
-   dans styles.css, section 5, sous .site-nav.is-on-light.
+   qu'un visuel clair passe dessous. Le pourquoi — et le calcul de ce que le
+   voile retenu rend vraiment en contraste, qui n'est PAS la norme — est dans
+   styles.css, section 5, sous .site-nav.is-on-light. A lire avant de toucher
+   a l'opacite dans un sens ou dans l'autre.
+
+   Vaut pour les DEUX mises en page : la pilule collee en haut sur le bureau
+   et la barre d'onglets fixee en bas sous 860px. Rien ici ne distingue les
+   deux cas — la bande se mesure sur la pilule elle-meme, ou qu'elle soit.
 
    PAS D'ECOUTEUR DE DEFILEMENT. Un IntersectionObserver dont la racine est
    RETAILLEE sur la bande de la pilule repond exactement a la question posee —

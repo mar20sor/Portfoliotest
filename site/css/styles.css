@@ -597,19 +597,53 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
    #2078F0 et sombre sur #FFFFFF — il faut donc deux etats, et quelqu'un pour
    dire lequel s'applique. C'est setupNavContrast() (app.js) qui le dit.
 
-   .66 est calcule, pas choisi a l'oeil : sur du blanc pur, ce voile donne un
-   fond a L≈0.128, et le libelle blanc a 82 % d'opacite y mesure 4,54:1 —
-   juste au-dessus du seuil AA de 4,5:1. C'est le meme plancher que celui de
-   --ink-faint sur blanc (section 1) : ici comme la, une teinte plus claire
-   repasse sous la norme.
+   15 % EST UN CHOIX D'APPARENCE, ASSUME, ET IL NE REND PAS LA NORME. Il faut
+   l'ecrire une bonne fois pour que personne ne relise cette regle en croyant
+   le probleme regle :
+
+     sur du blanc pur, ce voile donne un fond a L≈0.714, et le libelle blanc a
+     82 % d'opacite y mesure 1,29:1 — contre 1,13:1 sans lui. Le seuil AA est
+     a 4,5:1. Autrement dit, le gain est de l'ordre du centieme : sur une
+     capture claire, le libelle reste illisible.
+
+   Le voile qui tenait la norme etait a 66 % (fond L≈0.128, libelle a 4,54:1).
+   Entre les deux, il n'y a pas de reglage heureux : c'est une droite, et
+   chaque point d'opacite rendu a la transparence se paie en contraste.
+
+   SI ON VEUT LES DEUX — une pilule qui laisse voir le visuel ET un libelle
+   lisible — le voile plat n'est pas le bon outil. Il faut ASSOMBRIR LE VISUEL
+   au lieu de le RECOUVRIR, c'est-a-dire ajouter brightness() au
+   backdrop-filter de cet etat-ci (et de lui seul) :
+
+     .site-nav.is-on-light {
+       background: rgba(6, 22, 43, .15);
+       backdrop-filter: blur(35px) saturate(1.4) brightness(.45);
+     }
+
+   ça mesure 4,52:1 sur du blanc tout en gardant ce voile a 15 % : on voit
+   alors le visuel, sombre, au lieu d'une plaque bleu nuit. Le prix est que la
+   transition ne peut plus porter sur `background` seul — deux listes de
+   filtres de longueurs differentes ne s'interpolent pas, il faudrait declarer
+   `saturate(1) brightness(1)` sur la regle de base pour qu'elles se
+   correspondent, et animer un backdrop-filter coute cher. Piste ouverte, pas
+   prise.
 
    #06162B et non du noir : c'est le bleu nuit du fond de scene des fiches
    (.underlay, section 11 bis). Un noir pur virerait la capture creme au brun.
 
    Deux classes (0,2,0) : la section 12 redeclare `background` sur .site-nav
    (0,1,0) pour la barre du bas. Cette regle-ci gagne donc dans les deux mises
-   en page, quel que soit l'ordre des blocs.                               */
-.site-nav.is-on-light { background: rgba(6, 22, 43, .66); }
+   en page, quel que soit l'ordre des blocs — l'etat vaut donc AUSSI pour la
+   barre d'onglets de l'accueil sur mobile, sans une ligne de plus.
+
+   MAIS IL N'Y FAIT PRESQUE RIEN, ET C'EST ARITHMETIQUE. La section 12 avait
+   deja alourdi cette barre-la en permanence, precisement parce qu'elle passe
+   sur les visuels a chaque defilement : elle porte #00000025, soit un noir a
+   14,5 %. Un voile a 15 % vient donc REMPLACER un fond de meme poids par un
+   autre — bleu nuit au lieu de noir, un demi-point d'opacite d'ecart. La
+   classe se pose bien sous 860px, elle ne change simplement rien a l'oeil.
+   C'est a 66 % que l'etat se voyait sur mobile.                           */
+.site-nav.is-on-light { background: rgba(6, 22, 43, .15); }
 /* Les deux groupes ne sont que des colonnes : ils rangent leurs liens en
    rangee et se collent chacun a son bord. Le nom, lui, est un enfant direct
    de la grille et porte deja son justify-self. */
