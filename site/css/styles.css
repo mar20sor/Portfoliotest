@@ -84,9 +84,46 @@
 
      .09 et non les .14 de --line-soft : un filet, on en voit un a la fois ;
      une grille, on en voit des centaines d'un coup. Reutiliser le jeton du
-     filet aurait donne un papier millimetre, pas une trame.               */
+     filet aurait donne un papier millimetre, pas une trame.
+
+     ESSAYE A .14, REPOSE A .09. L'argument etait qu'un pointille ne pose que
+     la moitie de son encre (8px de tiret pour 16px de periode) et que .14 lui
+     rendait donc le poids d'une ligne pleine a .09. C'est vrai sur le papier,
+     mais a l'ecran la trame se met a concurrencer le contenu : on la regarde
+     au lieu de la traverser. Une trame de fond a le droit d'etre a la limite
+     du visible — c'est meme sa definition. .18 avait ete ecarte d'emblee,
+     franchement millimetre.                                                */
   --grid-line:   rgba(255,255,255,.09);
-  --grid-cell:   32px;                   /* multiple du rythme de 8px */
+  /* 96px et non les 32px du premier jet : la trame est passee en pointilles
+     (section 6), et un pointille sur une maille serree fait grouiller l'ecran
+     — trois fois plus de tirets que de traits pleins auparavant. En espaçant
+     la maille, chaque ligne redevient lisible en tant que ligne. Toujours un
+     multiple du rythme de 8px, et de --grid-period ci-dessous pour que le
+     motif retombe juste a chaque croisement.
+     CE 96 APPARTIENT AU POINTILLE. L'ancienne trame en traits pleins est
+     conservee, desactivee, en fin de section 6 : si on la rallume, il faut
+     REMETTRE 32px ici — sa note explique pourquoi. */
+  --grid-cell:   96px;
+  /* Le pointille lui-meme. --grid-period est la distance d'un cycle complet,
+     donc AUSSI la distance dont on translate pour boucler (voir gridMarchX /
+     gridMarchY, section 6) : les deux ne peuvent pas diverger puisqu'il n'y a
+     qu'une valeur. Tiret et vide egaux, c'est le pointille le plus neutre.
+     Les deux masques sont des jetons parce qu'ils ne different que par leur
+     angle : les ecrire deux fois, c'est se garantir d'en retoucher un seul. */
+  --grid-dash:   8px;
+  --grid-period: 16px;
+  --grid-dash-x: repeating-linear-gradient(90deg, #000 0 var(--grid-dash), transparent var(--grid-dash) var(--grid-period));
+  --grid-dash-y: repeating-linear-gradient(0deg,  #000 0 var(--grid-dash), transparent var(--grid-dash) var(--grid-period));
+  /* LA VITESSE SE LIT --grid-period / --grid-march, et c'est le seul calcul a
+     faire pour la regler : une periode entiere parcourue en une duree.
+     Le premier reglage — 16px en 6s, soit 2,7px par seconde — etait invisible :
+     un tiret mettait trois secondes a parcourir sa propre longueur, ce qui est
+     sous le seuil ou l'oeil voit un mouvement plutot qu'une image fixe.
+     A 1.5s on est a 10,7px/s : chaque tiret avance de sa longueur en huit
+     dixiemes de seconde, ce qui se voit sans happer le regard.
+     Descendre vers 1s accelere encore, monter vers 3s repasse dans le
+     subliminal. */
+  --grid-march:  1.5s;
 
   /* --accent porte tout ce qui doit ressortir : barres de progression,
      section active, chiffres cles, anneau de focus. Lime sur le bleu, bleu
@@ -179,6 +216,28 @@
 
   /* Courbe d'animation : demarre vite, se pose doucement. */
   --ease: cubic-bezier(.2, .7, .2, 1);
+
+  /* Ce qu'il reste du RESTE de la page quand on survole une vignette
+     d'accueil (section 7 bis). Un jeton parce que c'est le seul reglage de
+     l'effet : tout le monde recule de la meme quantite, et la retoucher se
+     fait ici plutot qu'en six endroits. .35 laisse lire ce qu'on ecarte —
+     descendre vers .2 le change en projecteur, monter vers .5 rend l'effet
+     a peine perceptible sur un bleu deja sature.
+     L'EFFET EST DESACTIVE (voir la note en tete de la section 7 bis). Les
+     deux jetons restent declares : --showcase-ms sert encore a la pilule de
+     navigation (section 5), et un jeton que l'on supprime est un reglage que
+     l'on doit retrouver le jour ou l'on rallume. */
+  --showcase-dim: .35;
+  --showcase-ms:  .3s;
+
+  /* Le balayage lime qui presente le prenom au retour du portail (section 6).
+     La duree vient de la maquette Lottie d'origine : 24 images a 60/s pour
+     pousser la barre, 24 pour la retirer, soit deux fois 400ms.
+     Le retard, lui, doit laisser passer `pageIn` (.38s, section 11) : la page
+     finit d'arriver, PUIS le prenom est presente. Les deux gestes lances
+     ensemble se marcheraient dessus — on ne verrait ni l'un ni l'autre. */
+  --hello-wipe:  .8s;
+  --hello-delay: .42s;
 }
 
 /* ---- LE THEME CLAIR, applique aux etudes de cas ----------------------
@@ -298,6 +357,26 @@ a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; 
   outline-offset: 3px;
   border-radius: 4px;
 }
+
+/* ...SAUF SUR #main, ET C'ETAIT LA "LIGNE VERTE".
+   paint() (app.js) appelle main.focus() a chaque rendu pour qu'un lecteur
+   d'ecran annonce la nouvelle page au lieu de continuer l'ancienne. Or
+   :focus-visible ne regarde pas COMMENT l'element a reçu le focus, mais si la
+   derniere interaction de la personne etait au clavier : valider le portail
+   avec la touche Entree suffit. L'anneau se posait alors autour de #main —
+   1265px de large sur 3478 de haut sur l'accueil, donc on n'en voyait jamais
+   que le bord SUPERIEUR : un filet vert pleine largeur sous l'en-tete, qui
+   s'en allait au premier defilement avec le reste de la boite. Reproduit
+   exactement : Tab, puis main.focus(), et le filet revient.
+   (Passer par le portail a la souris — le bouton "Skip this" — ne le declenche
+   pas : c'est pour ça qu'il ne se voyait pas a tous les chargements.)
+
+   L'eteindre ici ne coute rien en accessibilite. #main porte tabindex="-1" :
+   il n'est pas atteignable au clavier, donc cet anneau n'a jamais signale une
+   position de navigation — il cernait la page entiere, ce qui n'indique rien.
+   Le focus lui-meme, celui qui sert aux lecteurs d'ecran, est conserve. */
+#main:focus,
+#main:focus-visible { outline: none; }
 
 h1,h2,h3 { line-height: 1.2; font-weight: var(--w-medium); }
 h1,h2 { text-wrap: balance; }
@@ -573,10 +652,20 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
   -webkit-backdrop-filter: blur(35px);
   backdrop-filter: blur(35px);
   border-radius: var(--radius-pill);
-  /* Le seul changement d'etat de la pilule : voir .is-on-light juste apres.
-     background seul, et surtout PAS backdrop-filter — animer un flou force le
-     navigateur a le recalculer image par image, et la barre saccade. */
-  transition: background .22s var(--ease);
+  /* Les deux changements d'etat de la pilule, declares ensemble parce qu'une
+     seule propriete `transition` peut vivre sur un element : la seconde
+     ecraserait la premiere en silence.
+       background — voir .is-on-light juste apres ;
+       opacity    — le recul du survol d'une vignette (section 7 bis). Cet
+                    effet-la est DESACTIVE : plus rien ne touche a l'opacite
+                    de la pilule, la ligne ne fait donc rien pour l'instant.
+                    On la laisse en place — elle est inerte, et elle doit etre
+                    ici (et non dans la section 7 bis) le jour ou l'on rallume
+                    l'effet, pour la raison ecrite juste au-dessus.
+     Et surtout PAS backdrop-filter : animer un flou force le navigateur a le
+     recalculer image par image, et la barre saccade. */
+  transition: background .22s var(--ease),
+              opacity var(--showcase-ms) var(--ease);
 }
 
 /* ---- QUAND LA PILULE PASSE SUR UN VISUEL CLAIR ------------------------
@@ -756,15 +845,104 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
    rien — mais peindre une grille sous une page qui n'est plus a l'ecran est
    un piege pour la prochaine lecture. On l'eteint explicitement.
 
-   background-position: -1px -1px decale la trame d'un pixel pour que la
-   PREMIERE ligne tombe sur le bord de la page au lieu d'un pixel en dessous ;
-   sans ce decalage, le haut et la gauche montrent une cellule tronquee.
+   DEUX PSEUDO-ELEMENTS, ET NON LE FOND DE <body> COMME AVANT. Des traits
+   POINTILLES ne se dessinent pas avec un degrade : un linear-gradient ne varie
+   que sur UN axe, or une ligne horizontale en pointilles demande les deux — un
+   trait de 1px tous les --grid-cell en y, ET une alternance trait/vide en x.
+   Aucune combinaison de background-size ou de background-repeat n'y arrive
+   (essayees : la tuile finit toujours par peindre des COLONNES de la hauteur
+   d'une cellule au lieu d'un filet).
+   On separe donc les deux familles de traits, chacune sur son pseudo-element
+   avec son propre masque : ::before porte les horizontales, masquees en x ;
+   ::after les verticales, masquees en y. Un masque s'applique a l'element
+   entier, pas a une couche de fond — d'ou deux elements et non deux couches.
+   Les mettre sur <body> lui-meme etait exclu : le masque aurait decoupe le
+   CONTENU de la page avec la grille.
 
-   min-height: 100vh — <html> porte deja `background: var(--bg)` (section 2),
-   donc le fond de <body> ne se propage PAS au canevas du navigateur : il est
-   peint sur la boite de <body>, qui s'arrete a la hauteur de son contenu. Sur
-   un ecran tres haut, ou si le contenu se raccourcissait, la grille
-   s'arreterait en cours de fenetre sur du bleu nu.                        */
+   POURQUOI PAS UN SVG en data-URI, qui ferait ça d'une ligne (stroke-dasharray) :
+   il faudrait y ecrire la couleur en dur, donc perdre --grid-line, et c'est
+   precisement ce qu'on avait refuse en posant la grille (note ci-dessus).
+
+   L'ANIMATION EST UNE TRANSLATION, PAS UN background-position ANIME.
+   Deplacer un fond fait repeindre toute la surface a chaque image ; `translate`
+   est delegue au compositeur. Et surtout le rendu est le bon : les horizontales
+   sont IDENTIQUES le long de x, donc les glisser en x ne deplace pas les lignes
+   — seuls les tirets defilent. Idem en y pour les verticales. C'est l'effet
+   recherche, obtenu sans que rien d'autre ne bouge.
+   La boucle est raccord parce qu'on translate d'exactement une periode : au
+   dernier keyframe le motif se superpose a lui-meme, la reprise est invisible.
+   inset negatif d'une cellule : la translation ne doit jamais decouvrir de
+   bord vide, et une cellule est plus large qu'une periode.
+
+   position: fixed — la grille ne defile plus avec la page, elle reste posee
+   sur la fenetre. C'est ce qui evite d'animer un calque de plusieurs milliers
+   de pixels de haut, et ce qui rend --hero-min/min-height inutiles ici.
+
+   z-index: 0 — tout le contenu vit dans #page (125) et .site-head (120), donc
+   au-dessus. Sous 0 on passerait derriere le fond de <body>, et la grille
+   disparaitrait.                                                          */
+body:not(.is-overlay):has(.home)::before,
+body:not(.is-overlay):has(.home)::after {
+  content: '';
+  position: fixed;
+  inset: calc(-1 * var(--grid-cell));
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Les horizontales : un filet de 1px tous les --grid-cell, pointille en x. */
+body:not(.is-overlay):has(.home)::before {
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px);
+  background-size: 100% var(--grid-cell);
+  -webkit-mask-image: var(--grid-dash-x);
+          mask-image: var(--grid-dash-x);
+  animation: gridMarchX var(--grid-march) linear infinite;
+}
+
+/* Les verticales : meme chose d'un quart de tour, pointille en y. */
+body:not(.is-overlay):has(.home)::after {
+  background-image: linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: var(--grid-cell) 100%;
+  -webkit-mask-image: var(--grid-dash-y);
+          mask-image: var(--grid-dash-y);
+  animation: gridMarchY var(--grid-march) linear infinite;
+}
+
+@keyframes gridMarchX { to { translate: var(--grid-period) 0; } }
+@keyframes gridMarchY { to { translate: 0 var(--grid-period); } }
+
+
+/* ---- L'ANCIENNE GRILLE, CONSERVEE ET DESACTIVEE ----------------------
+   La trame d'origine : traits PLEINS, maille de 32px, immobile, peinte
+   directement sur le fond de <body>. C'est elle que remplacent les deux
+   pseudo-elements ci-dessus.
+
+   REVENIR EN ARRIERE — TROIS GESTES, ET IL FAUT LES TROIS :
+     1. decommenter la regle ci-dessous ;
+     2. commenter les trois regles qui precedent (le ::before/::after commun,
+        puis chacun des deux) ainsi que gridMarchX / gridMarchY ;
+     3. remettre --grid-cell a 32px en section 1.
+   Le point 3 n'est pas cosmetique, et l'oublier ferait passer un retour en
+   arriere pour un bug : 96px a ete choisi POUR le pointille (voir la note du
+   jeton). Des traits pleins tous les 96px donnent une trame trop lache, ou
+   l'on ne lit plus une grille mais quelques lignes perdues.
+   --grid-line, lui, n'a pas a bouger : il est reste a .09, la valeur d'origine.
+
+   Les jetons du pointille (--grid-dash, --grid-period, les deux masques,
+   --grid-march) deviennent alors inutilises. Les laisser declares ne coute
+   rien et evite d'avoir a les retrouver au retour.
+
+   CE QUE L'ON REPERD EN REVENANT. Un fond de <body> defile avec la page,
+   d'ou le min-height: 100vh de la regle : <html> porte deja son propre
+   `background` (section 2), donc le fond de <body> ne se propage PAS au
+   canevas et s'arreterait a la hauteur du contenu — sur un grand ecran, la
+   grille cesserait en plein milieu de la fenetre. La version en pseudo-
+   elements est `position: fixed` et n'a pas ce probleme.
+   background-position: -1px -1px decale la trame d'un pixel pour que la
+   PREMIERE ligne tombe sur le bord de la page ; sans lui, le haut et la
+   gauche montrent une cellule tronquee.
+   En echange, c'est une seule regle, sans masque ni animation. */
+/*
 body:not(.is-overlay):has(.home) {
   background-image:
     linear-gradient(var(--grid-line) 1px, transparent 1px),
@@ -773,6 +951,7 @@ body:not(.is-overlay):has(.home) {
   background-position: -1px -1px;
   min-height: 100vh;
 }
+*/
 
 /* --hero-min est un jeton et non 400px ecrits ici : le media 860px doit
    l'augmenter d'autant qu'il augmente le retrait haut (voir section 12), et
@@ -790,8 +969,66 @@ body:not(.is-overlay):has(.home) {
 .hero__hello {
   font-size: var(--fs-h2);
   font-weight: var(--w-regular);
+  position: relative;          /* le referentiel de la barre ci-dessous */
+  /* Ramene le paragraphe a la largeur de son texte. Sans cette ligne il
+     s'etire sur toute la colonne (comportement par defaut d'un enfant de
+     flex), et la barre balaierait plusieurs centaines de pixels de vide a
+     droite de la phrase. Le texte etant deja cale a gauche, rien ne bouge
+     a l'ecran ; seule la boite change. */
+  align-self: flex-start;
 }
 .hero__hello b { font-weight: var(--w-semibold); }
+
+/* ---- Le balayage qui presente le prenom -------------------------------
+   Rejoue le geste de la maquette Lottie : un rectangle lime pousse depuis la
+   gauche jusqu'a couvrir toute la ligne, puis se retire par la droite en
+   decouvrant le prenom. Il ne joue QU'UNE FOIS, au premier affichage du
+   prenom apres le portail (voir state.helloReveal dans app.js).
+
+   POURQUOI DEUX ANIMATIONS ET NON UNE SEULE. Pour que la barre PRESENTE le
+   prenom, il faut que le prenom soit invisible avant son passage — sinon on
+   voit un texte deja la, qu'un rectangle efface puis redecouvre. Or la barre
+   est un ::after, donc un ENFANT du paragraphe : masquer le texte par
+   l'opacite emporterait la barre avec lui. Le texte est donc masque par sa
+   COULEUR (transparent), que la barre ne suit pas puisqu'elle se peint avec
+   un background. La bascule est instantanee et placee a mi-parcours, a
+   l'instant precis ou la barre est a pleine largeur : le texte reprend sa
+   couleur DERRIERE la barre, personne ne peut le voir arriver. */
+.hero__hello.is-revealing {
+  animation: helloInk var(--hello-wipe) var(--hello-delay) both;
+}
+.hero__hello.is-revealing::after {
+  content: '';
+  position: absolute;
+  /* La barre deborde legerement le texte. Une boite de ligne s'arrete aux
+     jambages et au blanc lateral des glyphes : reglee a `inset: 0`, la barre
+     laisserait depasser le bas des "y" et la premiere lettre pendant la
+     fraction de seconde ou elle est censee tout couvrir. */
+  inset: -.14em -.3em;
+  background: var(--accent);
+  pointer-events: none;
+  animation: helloWipe var(--hello-wipe) var(--hello-delay) both;
+}
+
+/* Une seule propriete animee, trois etapes : largeur nulle collee a gauche,
+   pleine largeur, largeur nulle collee a droite. C'est exactement ce que fait
+   la maquette, ou le rectangle grandit vers la droite puis voit son bord
+   GAUCHE rattraper son bord droit.
+   Les deux courbes en viennent aussi : la barre arrive en freinant (elle se
+   pose sur le prenom), elle repart en accelerant (elle s'en va). Une courbe
+   unique sur les deux moities donnerait un aller-retour mou. */
+@keyframes helloWipe {
+  0%   { clip-path: inset(0 100% 0 0); animation-timing-function: cubic-bezier(.5, 0, 0, 1); }
+  50%  { clip-path: inset(0 0 0 0);    animation-timing-function: cubic-bezier(.5, 0, 1, 1); }
+  100% { clip-path: inset(0 0 0 100%); }
+}
+
+/* 49.9 puis 50 : la couleur revient d'un coup. L'interpolation dure 0,08ms,
+   soit rien du tout, et elle se produit de toute facon sous la barre. */
+@keyframes helloInk {
+  0%, 49.9% { color: transparent; }
+  50%, 100% { color: inherit; }
+}
 
 .hero__block { display: flex; flex-direction: column; gap: var(--s5); }
 .hero__lines { display: flex; flex-direction: column; gap: var(--s2); }
@@ -898,14 +1135,26 @@ body:not(.is-overlay):has(.home) {
 /* Le nom du client, 16px Regular. */
 .card__client { font-size: var(--fs-body); font-weight: var(--w-regular); }
 
-/* Le titre du cas, 24px Regular. */
+/* Le titre du cas, 24px Regular. Il RESTE BLANC au survol : il passait au
+   vert d'accent, ce qui en faisait le signal de survol de la carte. Ce role
+   avait ete repris par le recul de tout le reste de la page (section 7 bis) —
+   et le vert, lui, restait allume sur la carte survolee pendant que ses
+   voisines s'effaçaient, donc deux signaux pour un seul geste.
+   La transition sur `color` part avec la regle : plus rien ne fait varier
+   cette couleur, une transition n'aurait plus rien a interpoler.
+
+   ATTENTION, LE RAISONNEMENT CI-DESSUS N'EST PLUS COMPLET : le recul de la
+   section 7 bis est maintenant desactive. Le seul signal de survol restant
+   sur une carte est donc l'echelle de 1.03 (plus bas dans cette section). Ca
+   suffit — le geste reste lisible — mais si l'on juge la carte trop muette,
+   c'est ici qu'on rallume le vert, sans avoir a toucher a la section 7 bis.
+   REVENIR EN ARRIERE : `transition: color .18s var(--ease)` ici, plus
+   `.card:hover .card__title { color: var(--accent); }`. */
 .card__title {
   font-size: var(--fs-h2);
   font-weight: var(--w-regular);
   line-height: 1.3;
-  transition: color .18s var(--ease);
 }
-.card:hover .card__title { color: var(--accent); }
 /* Les chiffres marquants du titre passent en SemiBold, comme dans Figma
    ("...reducing rules from 24 to 9"). */
 .card__title b { font-weight: var(--w-semibold); }
@@ -919,6 +1168,190 @@ body:not(.is-overlay):has(.home) {
   border-radius: var(--radius-tag);
   font-size: var(--fs-body); font-weight: var(--w-semibold);
   line-height: 1.35; white-space: nowrap;
+}
+
+
+/* ==========================================================================
+   7 bis. LE SURVOL "VITRINE" DES VIGNETTES D'ACCUEIL
+   --------------------------------------------------------------------------
+   LES DEUX EFFETS DE CETTE SECTION SONT DESACTIVES. Le code est conserve
+   entier, avec ses explications, et chacun se rallume par UN SEUL geste :
+
+     - LE RECUL "VITRINE" : decommenter les deux regles marquees DESACTIVE
+       plus bas dans cette section (la transition, puis le :has() qui pose
+       --showcase-dim). Rien d'autre a toucher.
+
+     - LA PASTILLE : decommenter l'appel `setupCursorPill();` dans paint()
+       (app.js). Tout le CSS de la pastille ci-dessous est DEJA en place et
+       n'a pas eu besoin d'etre commente : chacune de ses regles exige soit la
+       classe has-card-cursor, soit un element .card-cursor, et le script est
+       le seul a produire l'une et l'autre. Sans lui, elles ne designent rien.
+
+   Le reste de cette note decrit les deux effets tels qu'ils jouent une fois
+   rallumes ; elle reste donc valable telle quelle.
+
+   Survoler une vignette fait reculer TOUT LE RESTE de la page : les autres
+   cartes, le heros, les intitules de section, le pied de page et la pilule de
+   navigation. La vignette visee ne bouge pas — c'est le decor qui s'efface
+   autour d'elle. L'echelle de 1.03 posee sur .card:hover (section 7) continue
+   de jouer par-dessus, les deux se cumulent ; le titre, lui, ne passe plus au
+   vert (voir sa note en section 7).
+
+   Le meme survol remplace aussi le pointeur par une pastille "View case
+   study" : voir .card-cursor a la fin de cette section.
+
+   POURQUOI SIX SELECTEURS ET NON UN VOILE PAR-DESSUS LA PAGE.
+   La solution evidente — un calque de la couleur du fond qu'on fait monter en
+   opacite, la carte survolee passant au-dessus — est ici IMPOSSIBLE. Les
+   cartes vivent dans #page, qui porte `overflow: clip` et un z-index de 125
+   (section 11 bis) : c'est un contexte d'empilement, donc rien de ce qu'il
+   contient ne peut passer devant un calque pose a l'exterieur, quel que soit
+   son z-index. Il aurait fallu mettre le voile DANS #page, ou il n'aurait
+   couvert ni l'en-tete ni le fond de la fenetre. On eclaircit donc chaque
+   bloc separement.
+
+   ET NON PAS UNE OPACITE SUR UN PARENT COMMUN, pour la meme famille de
+   raisons : `opacity` s'applique au sous-arbre APLATI, un enfant ne peut pas
+   la reprendre a son compte. Eclaircir .home puis rendre sa pleine valeur a
+   la carte survolee ne marche pas — il n'existe pas de "opacity: 1 quand
+   meme".
+
+   LA LISTE EST COMPLETE, et on peut le verifier : pageHome() ne produit que
+   le heros, puis deux sections faites d'un .section__head et d'une grille de
+   .card. Ces trois selecteurs couvrent donc 100% du contenu de l'accueil ;
+   restent le pied de page et la pilule, qui vivent en dehors de #main.
+
+   .card:not(:hover) et non :not(:has(.card__media:hover)) : le survol remonte
+   aux ancetres, donc survoler la vignette survole deja sa carte. Les deux
+   ecritures designent le meme element, la premiere sans imbriquer un :has().
+
+   PORTEE. `#main .home` exclut d'un coup deux faux positifs : les cartes
+   "projet suivant" d'une etude de cas (meme composant, meme classe, rendu par
+   le meme projectCard()) et le clone de l'accueil pose dans #underlay pendant
+   qu'une fiche est ouverte.
+
+   (hover: hover) and (pointer: fine) fait le vrai travail du garde-fou : sur
+   un ecran tactile, :hover se declenche au TOUCHER et RESTE accroche jusqu'au
+   toucher suivant — la page resterait eteinte apres un tap sur une vignette.
+   La largeur minimale n'est la que parce que l'effet a ete demande pour le
+   bureau seul ; c'est la borne de la barre d'onglets (section 12).
+   ========================================================================== */
+
+@media (hover: hover) and (pointer: fine) and (min-width: 861px) {
+  /* La transition est posee au REPOS, pas dans l'etat survole : declaree sur
+     l'etat d'arrivee seulement, elle n'aurait rien a interpoler au retour et
+     la page se rallumerait d'un coup. */
+  /* DESACTIVE — REVENIR EN ARRIERE : decommenter ce bloc ET le suivant.
+     Les deux vont ensemble : celui-ci ne fait que preparer le mouvement, seul
+     il ne change rien a l'ecran ; c'est le suivant qui eteint la page. */
+  /*
+  #main .home .hero,
+  #main .home .section__head,
+  #main .home .card,
+  .site-foot { transition: opacity var(--showcase-ms) var(--ease); }
+  */
+  /* .site-nav a la sienne dans la section 5 : elle transitionne deja son
+     fond, et une seconde declaration `transition` effacerait la premiere. */
+
+  /* DESACTIVE — REVENIR EN ARRIERE : decommenter ce bloc ET celui du dessus. */
+  /*
+  body:has(#main .home .card__media:hover) :is(
+    #main .home .hero,
+    #main .home .section__head,
+    #main .home .card:not(:hover),
+    .site-foot,
+    .site-nav
+  ) { opacity: var(--showcase-dim); }
+  */
+
+  /* ---- LA PASTILLE QUI REMPLACE LE POINTEUR ---------------------------
+     Le pointeur systeme s'efface sur la vignette et une pastille "View case
+     study" prend sa place, centree sur lui et le suivant a la trace.
+
+     LE `cursor: none` EST CONDITIONNE A LA PRESENCE DU JAVASCRIPT, via la
+     classe que setupCardCursor pose sur <body>. C'est tout l'interet de la
+     poser : si le script ne tourne pas — erreur en amont, module non charge —
+     la regle ne s'applique pas et l'on garde un pointeur ordinaire. L'ecrire
+     sans condition aurait donne, dans ce cas, une vignette sur laquelle le
+     pointeur disparait sans que rien ne le remplace.
+
+     C'est CSS, et non le script, qui decide quand l'effet joue : la pastille
+     n'est visible que dans ce media et sous ce :has(). Le script se contente
+     de fournir des coordonnees. Redimensionner la fenetre sous 861px eteint
+     donc tout — pastille ET cursor:none — sans que le script ait a surveiller
+     quoi que ce soit, et sans risque de voir les deux gardes diverger. */
+  /* LES DEUX FAMILLES DE CIBLES, ici et dans CURSOR_PILL_TARGETS (app.js).
+     L'accueil : les vignettes de projet, pastille "View case study".
+     Les etudes de cas : les visuels agrandissables, pastille "Zoom".
+
+     :not(.is-zoomed) — une fois l'image agrandie on ne l'ouvre plus, on la
+     PROMENE (cursor: grab, section 8) : la pastille mentirait, et masquer le
+     pointeur pendant un glisser-deposer est exactement ce qu'il ne faut pas
+     faire. La classe va et vient au clic, bien apres le montage du script,
+     d'ou une condition CSS et non une condition JS.
+     :not(--mobile-only) — ces visuels-la ne sont agrandissables que sous
+     700px (zoomableClass, app.js), donc jamais dans ce media. */
+  /* .cursor-pill-idle est pose par le script quand le DEFILEMENT a fait glisser
+     le contenu sous un pointeur immobile : :hover n'est alors plus reevalue par
+     le navigateur et designe encore le visuel d'avant (voir setupCursorPill,
+     app.js §8 quater). Il coupe les deux regles a la fois — la pastille ET le
+     masquage du pointeur — parce que c'est precisement ensemble qu'elles
+     tournaient a vide : une etiquette figee au milieu de l'ecran, et plus
+     aucun pointeur visible dessous.
+     Ecrit DANS les deux selecteurs et non comme une regle qui les annule
+     ensuite : un :has() prend la specificite de son argument le plus fort,
+     donc (1,4,1) ici, qu'une regle d'annulation ordinaire ne pourrait pas
+     battre sans surenchere. */
+  body.has-card-cursor:not(.cursor-pill-idle) :is(
+    #main .home .card__media,
+    #main .zoomable-media:not(.is-zoomed):not(.zoomable-media--mobile-only)
+  ) { cursor: none; }
+
+  body:not(.cursor-pill-idle):has(#main .home .card__media:hover) .card-cursor,
+  body:not(.cursor-pill-idle):has(#main .zoomable-media:not(.is-zoomed):not(.zoomable-media--mobile-only):hover) .card-cursor {
+    opacity: 1; scale: 1;
+  }
+}
+
+/* La pastille vit en dehors du media : le script l'ajoute au document quelle
+   que soit la largeur, et ce sont les deux regles ci-dessus qui l'allument.
+   Hors du media elle reste donc a opacity 0, inerte et invisible.
+
+   ENFANT DE <body>, ET C'EST OBLIGATOIRE. Dans #page elle serait prise dans
+   son `overflow: clip` et dans son contexte d'empilement (section 11 bis) :
+   rognee au bord de la fiche, et incapable de passer devant l'en-tete.
+
+   translate ET scale EN PROPRIETES SEPAREES, pas un `transform` unique. Le
+   script ecrit la position (via --cc-x / --cc-y) pendant que le CSS anime
+   l'apparition : deux auteurs pour une seule propriete `transform`
+   s'ecraseraient l'un l'autre a chaque image. Ce sont deux proprietes
+   independantes, elles se composent sans se marcher dessus.
+   Les pourcentages de `translate` se calculent sur la boite de l'element :
+   `- 50%` la centre donc sur le pointeur quelle que soit la longueur du
+   libelle, qu'on n'a jamais a mesurer.
+
+   pointer-events: none, sinon la pastille se glisse sous le pointeur, devient
+   elle-meme la cible du survol, la vignette cesse d'etre survolee, la regle
+   :has() tombe, la pastille disparait — et le cycle recommence a l'infini. */
+.card-cursor {
+  position: fixed; left: 0; top: 0; z-index: 160;
+  pointer-events: none;
+  translate: calc(var(--cc-x, 50vw) - 50%) calc(var(--cc-y, 50vh) - 50%);
+  scale: .82;
+  opacity: 0;
+  padding: 10px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--accent); color: var(--accent-ink);
+  font-size: var(--fs-small); font-weight: var(--w-semibold);
+  line-height: 1.2; white-space: nowrap;
+  /* Capitales posees ICI et non dans les chaines de content.js : la casse est
+     une decision d'apparence. L'approche est elargie parce qu'une capitale
+     serree se lit mal — c'est le reglage habituel de tout texte tout en
+     capitales, et il n'y en a qu'un a tenir puisque les deux libelles
+     partagent cette regle. */
+  text-transform: uppercase; letter-spacing: .06em;
+  box-shadow: var(--glass-shadow);
+  transition: opacity .16s var(--ease), scale .16s var(--ease);
 }
 
 

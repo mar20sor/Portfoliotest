@@ -66,6 +66,12 @@ function el(tag, attrs = {}, children = []) {
 const state = {
   visitor: '',       // le prenom saisi. VIT EN MEMOIRE UNIQUEMENT (cf. section 2)
   route: '',         // le hash courant
+
+  /* Le balayage lime qui presente le prenom doit jouer UNE FOIS, au retour du
+     portail, et jamais aux rendus suivants — or l'accueil est reconstruit a
+     chaque retour d'etude de cas. Un drapeau a usage unique : setupGate() le
+     leve a la validation, renderHello() le baisse en le consommant. */
+  helloReveal: false,
   cleanup: [],       // fonctions a rappeler quand on quitte une page (voir addCleanup)
 
   /* --- Ouverture des etudes de cas "en fiche" (voir section 7 bis) --- */
@@ -311,6 +317,15 @@ function renderHello() {
   const d = t();
   const wrap = el('p', { class: 'hero__hello' });
   if (state.visitor) {
+    /* Le balayage de presentation (styles.css section 6). Le drapeau est
+       consomme ICI et non a la saisie parce que c'est cette ligne-ci qui joue
+       l'animation : si le portail a ete valide depuis une etude de cas (lien
+       partage, rechargement en profondeur), le geste attend sagement le
+       premier affichage de l'accueil au lieu d'etre perdu. */
+    if (state.helloReveal) {
+      wrap.classList.add('is-revealing');
+      state.helloReveal = false;
+    }
     wrap.append(document.createTextNode(d.helloBefore + ' '));
     const strong = el('b');
     strong.textContent = state.visitor;      // <- l'insertion sure
@@ -3556,6 +3571,23 @@ function paint(hash, route, mode) {
 
     if (route.name === 'home') setupHomeNavSpy();
     if (route.name === 'home') setupNavContrast();
+    /* Sans condition de route : la pastille sert l'accueil ET les etudes de
+       cas, et setupCursorPill sort d'elle-meme quand la page n'a aucune cible
+       (About, l'article, une 404). */
+    /* DESACTIVE — L'INTERRUPTEUR DE LA PASTILLE EST CETTE LIGNE.
+       REVENIR EN ARRIERE : retirer les marques de commentaire ci-dessous, et
+       rien d'autre. Tout le reste est intact et attend ce seul appel :
+       setupCursorPill (section 8 quater), CURSOR_PILL_TARGETS, les libelles
+       cardCursor / zoomCursor de content.js et les regles .card-cursor du CSS
+       (section 7 bis).
+       Pourquoi une seule ligne suffit a tout eteindre : sans cet appel, aucun
+       element .card-cursor n'est cree et la classe has-card-cursor n'est
+       jamais posee sur <body>. Or CHAQUE regle CSS de la pastille exige l'un
+       ou l'autre — c'est le meme garde-fou qui protegeait deja du cas "le
+       script n'a pas tourne" (voir sa note en section 7 bis du CSS). Le
+       pointeur systeme reste donc visible partout, et le CSS conserve est
+       inerte. */
+    // setupCursorPill();
     if (route.name === 'case') setupCaseBehaviours();
     if (route.name === 'case') setupMoreDrawerEmbeds();
     if (route.name === 'case' && route.project.slug === 'constraints') setupConstraintBuilder();
@@ -4535,6 +4567,167 @@ function setupNavContrast() {
 }
 
 
+/* ---- 8 quater. LE POINTEUR CHANGE EN PASTILLE ----
+   DESACTIVE : plus personne n'appelle setupCursorPill. Tout ce qui suit est
+   conserve intact et ne tourne pas. REVENIR EN ARRIERE : decommenter l'appel
+   dans paint() (chercher "L'INTERRUPTEUR DE LA PASTILLE"), rien d'autre.
+
+   Au survol de certains visuels, le pointeur systeme s'efface et une pastille
+   prend sa place en le suivant : "View case study" sur les vignettes de
+   l'accueil, "Zoom" sur les visuels agrandissables d'une etude de cas.
+
+   UNE SEULE PASTILLE POUR LES DEUX, et une seule liste ci-dessous a etendre
+   pour en ajouter d'autres. Deux mecanismes jumeaux auraient fini par diverger
+   sur la duree d'apparition ou le decalage au pointeur, alors que c'est
+   justement d'etre le MEME objet qui fait lire les deux comme une seule
+   convention du site.
+
+   Le libelle est fige au montage (label() est appele une fois par groupe) :
+   les textes d'interface ne changent pas en cours de page.
+
+   is-zoomed n'est PAS filtre ici. Un visuel deja agrandi se manipule au
+   glisser (cursor: grab, section 8), la pastille n'y a plus de sens — mais
+   cet etat va et vient au clic, bien apres ce montage. C'est donc le :has()
+   du CSS qui l'exclut, la ou la condition est relue en permanence. */
+const CURSOR_PILL_TARGETS = [
+  { sel: '#main .home .card__media',                              label: () => t().cardCursor },
+  { sel: '#main .zoomable-media:not(.zoomable-media--mobile-only)', label: () => t().zoomCursor }
+];
+
+/* CETTE FONCTION NE DECIDE PAS QUAND L'EFFET JOUE — elle ne teste ni la
+   largeur, ni (hover: hover), ni is-zoomed. Tout cela vit dans le media de la
+   section 7 bis de styles.css, qui allume ou eteint a la fois la pastille et
+   le cursor:none. Le script ne fait que deux choses : mettre l'element dans le
+   document, et y ecrire des coordonnees. C'est volontaire — un garde-fou en JS
+   doublant celui du CSS, ce sont deux conditions qui finissent par ne plus dire
+   la meme chose, et un redimensionnement de fenetre demanderait en plus d'etre
+   surveille de ce cote-ci. Ecrire dans un element invisible ne coute rien.
+
+   LES ECOUTEURS SONT SUR LES VISUELS, pas sur le document : ils ne se
+   declenchent donc que la ou la pastille est visible, au lieu de suivre le
+   pointeur sur toute la page pour rien.
+   pointerenter EN PLUS de pointermove, pour deux raisons : la pastille s'allume
+   des l'entree — sans lui elle apparaitrait une image a sa position precedente,
+   ailleurs sur l'ecran, avant que le premier deplacement ne la recale — et
+   c'est la qu'on pose le libelle du groupe qu'on vient d'entrer. */
+function setupCursorPill() {
+  const groups = CURSOR_PILL_TARGETS
+    .map(g => ({ label: g.label(), nodes: $$(g.sel) }))
+    .filter(g => g.nodes.length);
+  if (!groups.length) return;
+
+  /* ON BALAIE AVANT DE POSER, et ce n'est pas de la prudence gratuite : le cas
+     se produit. afterSwap n'est pas appelee dans paint(), elle est DIFFEREE
+     par updateCallbackDone (voir la note en fin de paint()). Deux rendus
+     rapproches — un double clic sur une entree de la nav, le portail valide
+     deux fois — s'enchainent donc ainsi :
+       paint 1 : runCleanup (rien a faire), transition lancee, afterSwap differee
+       paint 2 : runCleanup — la pastille du paint 1 N'EXISTE PAS ENCORE
+       afterSwap 1 : pastille A
+       afterSwap 2 : pastille B
+     Deux pastilles dans <body>, dont une orpheline : ses ecouteurs sont sur
+     des visuels que replaceChildren a jetes, elle ne suit donc plus rien et
+     reste plantee au milieu de l'ecran. Observe a l'ecran avant d'etre corrige
+     ici.
+     Les autres setups ne posent pas le probleme : ils n'ajoutent pas d'element
+     durable a <body>, ils accrochent des ecouteurs a des noeuds qui meurent
+     avec la page. C'est la premiere fonction du fichier a le faire, donc la
+     premiere a devoir se garantir unique elle-meme plutot que de compter sur
+     l'ordre du nettoyage. */
+  $$('.card-cursor').forEach(stale => stale.remove());
+
+  const pill = el('div', { class: 'card-cursor', 'aria-hidden': 'true' });
+  document.body.append(pill);
+  /* Ce que le CSS attend pour oser masquer le pointeur systeme : la classe
+     dit "le script tourne, il y a bien quelque chose pour le remplacer". */
+  document.body.classList.add('has-card-cursor');
+
+  /* On ne peint qu'une fois par image. Un pointermove peut arriver plusieurs
+     fois entre deux rendus (souris a haute frequence, trackpad) : sans ce
+     filtre, on ferait recalculer le style autant de fois pour un seul
+     affichage. */
+  let x = -1, y = -1, frame = null;         // -1 : le pointeur n'a pas encore parle
+  let idle = false, scrollFrame = null;     // voir "le defilement perime le survol"
+  const draw = () => {
+    frame = null;
+    pill.style.setProperty('--cc-x', x + 'px');
+    pill.style.setProperty('--cc-y', y + 'px');
+  };
+  const move = ev => {
+    x = ev.clientX; y = ev.clientY;
+    if (frame === null) frame = requestAnimationFrame(draw);
+    /* Le pointeur bouge : ce qu'il survole n'est plus une supposition, on rend
+       la main au CSS (voir idle juste en dessous). */
+    if (idle) { idle = false; document.body.classList.remove('cursor-pill-idle'); }
+  };
+
+  /* On garde la trace de ce qu'on a accroche : les libelles different d'un
+     groupe a l'autre, donc les gestionnaires d'entree aussi, et removeEventListener
+     exige la MEME reference de fonction que celle qu'on a posee. */
+  const bound = [];
+  groups.forEach(g => {
+    const enter = ev => { pill.textContent = g.label; move(ev); };
+    g.nodes.forEach(n => {
+      n.addEventListener('pointerenter', enter);
+      n.addEventListener('pointermove', move);
+      bound.push({ n, enter });
+    });
+  });
+
+  /* ---- LE DEFILEMENT PERIME LE SURVOL ----
+     :hover n'est PAS reevalue pendant qu'on defile — le navigateur attend le
+     prochain mouvement de souris. Le pointeur, lui, n'a pas bouge : c'est le
+     contenu qui a glisse dessous. On descend donc une etude de cas a la molette
+     en passant devant plusieurs visuels agrandissables, et la pastille reste
+     accrochee au dernier survole, plantee au milieu de l'ecran — avec, pire, le
+     pointeur systeme toujours masque sous elle.
+
+     On rejuge donc nous-memes ce qui se trouve sous le pointeur, avec la SEULE
+     question que le script sache poser sans repeter le CSS : "est-ce encore un
+     des noeuds auxquels je me suis accroche ?". Le reste des conditions
+     (is-zoomed, la largeur, hover: hover) reste au CSS, qui les relit tout
+     seul — d'ou un simple interrupteur `cursor-pill-idle` plutot qu'une
+     seconde copie des regles.
+
+     elementFromPoint force un calcul de mise en page : une fois par image
+     affichee (rAF), jamais une fois par evenement de defilement, qui arrive
+     bien plus souvent.
+
+     Tant que le pointeur n'a rien dit (x = -1), il n'y a rien a juger : on ne
+     sait pas ou il est, et elementFromPoint(-1, -1) ne veut rien dire.
+
+     capture: true — un `scroll` ne remonte pas depuis l'element qui defile ;
+     seule la phase de capture sur window les voit tous. Une etude de cas en
+     contient plusieurs (la bande de sections, un visuel agrandi qu'on promene),
+     et ce sont justement ceux-la qui deplacent le contenu sous le pointeur. */
+  const judge = () => {
+    scrollFrame = null;
+    if (x < 0) return;
+    const under = document.elementFromPoint(x, y);
+    const still = !!under && bound.some(b => b.n === under || b.n.contains(under));
+    if (still === !idle) return;
+    idle = !still;
+    document.body.classList.toggle('cursor-pill-idle', idle);
+  };
+  const onScroll = () => {
+    if (scrollFrame === null) scrollFrame = requestAnimationFrame(judge);
+  };
+  window.addEventListener('scroll', onScroll, { passive: true, capture: true });
+
+  addCleanup(() => {
+    bound.forEach(({ n, enter }) => {
+      n.removeEventListener('pointerenter', enter);
+      n.removeEventListener('pointermove', move);
+    });
+    window.removeEventListener('scroll', onScroll, { capture: true });
+    if (frame !== null) cancelAnimationFrame(frame);
+    if (scrollFrame !== null) cancelAnimationFrame(scrollFrame);
+    document.body.classList.remove('has-card-cursor', 'cursor-pill-idle');
+    pill.remove();
+  });
+}
+
+
 /* ==========================================================================
    9. LE PORTAIL DU PRENOM
    ========================================================================== */
@@ -4614,6 +4807,10 @@ function setupGate() {
       return;
     }
     state.visitor = capitalize(value);
+    // On demande le balayage de presentation. Uniquement ici : un prenom
+    // relu du stockage (open() plus haut) ou un "passer" n'ont rien a
+    // presenter, la personne a deja vu le geste ou n'a pas donne de prenom.
+    state.helloReveal = true;
     writeStoredVisitor(state.visitor);           // survit au rechargement, 1h
     close();
   });

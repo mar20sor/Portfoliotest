@@ -94,6 +94,23 @@ export const UI = {
   sideIntro: 'The things that don’t fit under “work experience” but still count.',
   aboutTitle: 'About',
 
+  /* La pastille qui remplace le pointeur au survol d'une vignette d'accueil
+     (setupCursorPill). CET EFFET EST DESACTIVE : ces deux libelles ne sont
+     donc lus par personne pour l'instant. On les garde — ils se rallument
+     avec lui, et une chaine d'interface supprimee est une chaine a reecrire.
+     Toutes les cartes des deux listes mènent a une etude
+     de cas — les "side quests" aussi, rendues par le meme pageCase() — donc
+     un seul libelle suffit. Le jour ou une carte pointerait ailleurs (un lien
+     externe, que projectCard() sait deja rendre), il faudrait le choisir par
+     carte plutot qu'ici. */
+  cardCursor: 'View case study',
+  /* Meme pastille, dans les etudes de cas, sur les visuels agrandissables.
+     Ecrits en minuscules ici et passes en capitales par le CSS
+     (text-transform) : la casse est une affaire d'apparence, et la garder
+     hors des chaines evite d'avoir a la refaire a la main le jour ou l'on
+     traduit, ou de se retrouver avec DEUX conventions dans ce fichier. */
+  zoomCursor: 'Zoom',
+
   seeProject: 'See project',
   seeMore: 'See the detail',
   readFull: 'Read the full process',
