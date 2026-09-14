@@ -220,7 +220,12 @@ const ACCENTS = {
   d: { bg: '#BEF007', fg: '#16220A', sub: 'rgba(22,34,10,.66)'   },
   e: { bg: '#08306B', fg: '#FFFFFF', sub: 'rgba(255,255,255,.6)' },
   f: { bg: '#0C4CA8', fg: '#FFFFFF', sub: 'rgba(255,255,255,.66)'},
-  g: { bg: '#FFFFFF', fg: '#0C4CA8', sub: 'rgba(12,76,168,.7)'   }
+  g: { bg: '#FFFFFF', fg: '#0C4CA8', sub: 'rgba(12,76,168,.7)'   },
+  /* #10233F est le --ink du theme clair, pas une teinte de plus : c'est le
+     seul fond de la liste assez sombre pour que le lime y respire. NE PAS
+     revenir a #2078F0 ici — c'est exactement le bleu de la page d'accueil,
+     et l'affiche s'y fondait, sans bord visible (essaye, et corrige). */
+  h: { bg: '#10233F', fg: '#BEF007', sub: 'rgba(255,255,255,.66)'}
 };
 
 /* Les motifs geometriques. Chacun raconte quelque chose du projet :
@@ -256,6 +261,15 @@ function motif(kind, fg) {
               <circle cx="326" cy="170" r="21" fill="none" stroke="${s}" stroke-width="2.5" opacity=".8"/>
               <circle cx="278" cy="170" r="7" fill="${s}"/><circle cx="326" cy="170" r="7" fill="${s}"/>
               <path d="M296 192 L302 200 L308 192" fill="none" stroke="${s}" stroke-width="2.5" opacity=".8"/>`;
+    case 'clave':   // la clave 3-2 : deux mesures de huit croches, cinq frappes.
+                    // C'est le motif rythmique sur lequel la salsa est ecrite ;
+                    // les temps joues sont pleins, les autres a peine poses.
+      return [[0, 3, 6], [2, 4]].map((hits, row) =>
+        Array.from({ length: 8 }, (_, i) => {
+          const on = hits.includes(i);
+          return `<circle cx="${246 + i * 15}" cy="${158 + row * 32}" r="${on ? 6 : 3}"
+                          fill="${s}" opacity="${on ? .95 : .25}"/>`;
+        }).join('')).join('');
     case 'book':    // des lignes de texte
       return Array.from({ length: 7 }, (_, i) =>
         `<rect x="244" y="${146 + i * 12}" width="${[112, 132, 96, 126, 84, 118, 62][i]}" height="4" rx="2"
@@ -593,7 +607,7 @@ function pageCase(project) {
     <h1 class="cs__title">${escapeAttr(c.title)}</h1>
     <p class="cs__tagline">${emphasize(c.tagline)}</p>
 
-    ${c.heroMedia ? `<div class="cs__hero-media">${mediaMarkup(c.heroMedia)}</div>` : ''}
+    ${c.heroMedia ? `<div class="cs__hero-media" data-slug="${escapeAttr(c.slug)}">${mediaMarkup(c.heroMedia)}</div>` : ''}
 
     <dl class="gist">
       ${c.gist.company && c.gist.company.href ? `<div><dt>${escapeAttr(d.csCompany)}</dt><dd><a href="${escapeAttr(c.gist.company.href)}" target="_blank" rel="noopener">${escapeAttr(c.gist.company.label)}</a></dd></div>` : ''}
@@ -923,37 +937,264 @@ function pageCase(project) {
     page.append(head);
   }
 
-  /* --- Pied : les autres projets ---
-     Trois suggestions plutot qu'une seule : arrive au bas d'une etude de cas,
-     un recruteur qui a aime doit avoir un choix, pas un couloir.
+  const foot = nextProjectsFooter(project);
+  if (foot) page.append(foot);
 
-     On pioche dans TOUS les projets, pas seulement ceux de la meme categorie,
-     ce qui garantit d'en trouver trois meme pour les projets "a cote" qui ne
-     sont que deux. L'operateur % (modulo) fait tourner la liste en boucle :
-     apres le dernier, on revient au premier. */
+  return page;
+}
+
+/* --- Pied : les autres projets ---
+   Trois suggestions plutot qu'une seule : arrive au bas d'une etude de cas,
+   un recruteur qui a aime doit avoir un choix, pas un couloir.
+
+   On pioche dans TOUS les projets, pas seulement ceux de la meme categorie,
+   ce qui garantit d'en trouver trois meme pour les projets "a cote" qui ne
+   sont que deux. L'operateur % (modulo) fait tourner la liste en boucle :
+   apres le dernier, on revient au premier.
+
+   Sorti de pageCase() pour que pageArticle() (5e ter) rende exactement le
+   meme pied : c'est aussi le point d'arret du rail de progression et de la
+   barre flottante du mobile, qui cherchent tous deux `.cs-next` — un projet
+   qui ne l'aurait pas retomberait silencieusement sur le bas du document.
+   Rend null quand il n'y a rien a proposer (un seul projet dans PROJECTS) ;
+   l'appelant teste. */
+function nextProjectsFooter(project) {
+  const d = t();
   const NEXT_COUNT = 3;
   const others = [];
   const startAt = PROJECTS.findIndex(p => p.slug === project.slug);
   for (let i = 1; others.length < NEXT_COUNT && i < PROJECTS.length; i++) {
     others.push(PROJECTS[(startAt + i) % PROJECTS.length]);
   }
+  if (!others.length) return null;
 
-  if (others.length) {
-    const foot = el('div', { class: 'wrap' });
-    const box  = el('div', { class: 'cs-next' });
-    box.append(el('p', { class: 'kicker cs-next__kicker', text: d.csNext }));
+  const foot = el('div', { class: 'wrap' });
+  const box  = el('div', { class: 'cs-next' });
+  box.append(el('p', { class: 'kicker cs-next__kicker', text: d.csNext }));
 
-    // On reutilise la carte de la page d'accueil : meme composant, donc un
-    // seul endroit a maintenir si la carte evolue. Ses couleurs suivent le
-    // theme de la page grace aux variables CSS.
-    const grid = el('div', { class: 'cards cards--next' });
-    others.forEach(p => grid.append(projectCard(p)));
-    box.append(grid);
-    foot.append(box);
-    page.append(foot);
-  }
+  // On reutilise la carte de la page d'accueil : meme composant, donc un
+  // seul endroit a maintenir si la carte evolue. Ses couleurs suivent le
+  // theme de la page grace aux variables CSS.
+  const grid = el('div', { class: 'cards cards--next' });
+  others.forEach(p => grid.append(projectCard(p)));
+  box.append(grid);
+  foot.append(box);
+  return foot;
+}
+
+/* ---- 5e ter. Un projet rendu comme un ARTICLE --------------------------
+   Pour un projet qui porte `format: 'article'` dans content.js (aujourd'hui
+   la seule side quest "Documenting salsa dance"). Ce n'est pas une etude de
+   cas : il n'y a ni fiche d'identite, ni Probleme/Resultat, ni processus
+   decoupe en etapes, donc ni nav laterale ni barre flottante. C'est un texte
+   illustre — la forme de PAGES.gap ("Why I didn't work for 2 years"), mais
+   ouvert depuis une carte comme n'importe quel autre projet.
+
+   CE QUI RESTE COMMUN AUX ETUDES DE CAS, ET POURQUOI :
+   - la route (`#/side/<slug>`) et donc `route.name === 'case'` : la page
+     s'ouvre en fiche par-dessus l'accueil, sur fond blanc, avec la croix de
+     fermeture. Un projet qui s'ouvrirait en page pleine depuis la meme
+     grille serait la seule carte du site a se comporter autrement ;
+   - `.cs` sur la racine et `.cs__head` sur l'en-tete : meme rythme vertical,
+     meme degagement sous la croix, meme titre que les autres fiches ;
+   - `.cs-next` en pied (nextProjectsFooter) : c'est aussi ce que cherchent
+     setupScrollProgress() et updateNavRetreat() pour savoir ou la lecture
+     s'arrete.
+
+   CE QUI CHANGE : le corps est une liste de blocs { h, p, media }, lus dans
+   cet ordre et sans aucune indexation croisee. Un media se declare DANS son
+   bloc, jamais par un numero de paragraphe — c'est volontaire : les etudes
+   de cas indexent leurs medias par position (`s.media[i]`), et inserer un
+   paragraphe y decale tout silencieusement (voir CLAUDE.md). Ici, deplacer
+   du texte ne peut pas desynchroniser une image. Pour poser un media avant
+   le texte, on ecrit simplement un bloc qui n'a que `media`. */
+function pageArticle(project) {
+  const d = t(), c = project;
+  const page = el('article', { class: 'cs cs--article' });
+
+  /* --- En-tete : client, titre, accroche, media d'ouverture --- */
+  const head = el('header', { class: 'cs__head' });
+  const hw = el('div', { class: 'wrap wrap--narrow' });
+  hw.insertAdjacentHTML('beforeend', `
+    ${c.isDraft ? `<p style="margin-bottom:var(--s4)"><span class="draft-badge">${escapeAttr(d.draftBadge)}</span></p>` : ''}
+    <p class="cs__client">${escapeAttr(c.client)}</p>
+    <h1 class="cs__title">${escapeAttr(c.title)}</h1>
+    ${c.lede ? `<p class="cs__tagline">${emphasize(c.lede)}</p>` : ''}
+    ${c.heroMedia && !c.hideHeroInArticle ? `<div class="article__hero">${mediaMarkup(c.heroMedia)}</div>` : ''}
+    <div class="cs__cta">
+      ${(c.extLinks || []).map(l =>
+        `<a class="btn btn--ghost" href="${escapeAttr(l.href)}" target="_blank" rel="noopener noreferrer">
+           ${escapeAttr(l.label)} ↗</a>`).join('')}
+    </div>
+    ${c.draftNote ? `<p class="todo" style="margin-top:var(--s6)">${escapeAttr(c.draftNote)}</p>` : ''}`);
+  head.append(hw);
+  page.append(head);
+
+  /* --- Corps : les blocs, dans l'ordre --- */
+  const bw = el('div', { class: 'wrap wrap--narrow' });
+  bw.insertAdjacentHTML('beforeend', (c.blocks || []).map(b => `
+    <section class="article__block">
+      ${b.h ? `<h2>${escapeAttr(b.h)}</h2>` : ''}
+      ${(b.p || []).map(par => {
+        /* Meme convention que pageEditorial() : un paragraphe entierement
+           entre crochets est une consigne de redaction, pas du contenu. Il
+           s'affiche en jaune pour qu'on ne le publie pas par distraction. */
+        const isTodo = /^\[.*\]$/s.test(par.trim());
+        return isTodo
+          ? `<p class="todo">${escapeAttr(par)}</p>`
+          : `<p>${emphasize(par)}</p>`;
+      }).join('')}
+      ${articleTerms(b.terms)}
+      ${mediaGroup(b.media)}
+      ${beatSyncMarkup(b.beatSync)}
+    </section>`).join(''));
+  page.append(bw);
+
+  /* Meme pied que les etudes de cas, mais ramene a la colonne etroite de
+     l'article : nextProjectsFooter() rend un .wrap (1280px) alors que tout ce
+     qui precede tient dans un .wrap--narrow (860px). Sans cette ligne, les
+     cartes "projet suivant" commencent 200px a gauche du premier mot. */
+  const foot = nextProjectsFooter(project);
+  if (foot) { foot.classList.add('wrap--narrow'); page.append(foot); }
 
   return page;
+}
+
+/* Le glossaire d'un bloc d'article : `terms` = [{ term, body, media?, sub? }].
+   Un <dl> VERTICAL, un terme par ligne — deliberement pas .cs-sec__terms, qui
+   est un flex horizontal de 2-3 cartes teintees (Licence management). Ici la
+   liste en compte cinq, aux definitions longues : en colonnes elles seraient
+   illisibles, et cinq aplats de couleur d'affilee ecraseraient le texte
+   autour. D'ou le filet a gauche plutot qu'un fond.
+
+   `sub` imbrique UN seul niveau (les quatre facettes de "Body possibilities"),
+   rendu en <dl> dans le <dd> parent — c'est du HTML valide et c'est ce que la
+   structure dit vraiment : une definition qui se subdivise. Pas de recursion
+   au-dela : deux niveaux suffisent a ce texte, et une profondeur libre
+   inviterait une hierarchie qu'un article ne devrait pas avoir.
+
+   `media` vit DANS le <dd>, pas apres la liste. Chaque concept de l'article
+   salsa a son schema (timing, lignes, pas, hauteurs de tour...) : les poser
+   apres le glossaire donnerait neuf figures d'affilee sans plus rien pour
+   dire laquelle illustre quoi. C'est la raison d'etre de ce champ — sans lui
+   il aurait fallu casser le glossaire en un bloc par concept, et perdre la
+   hierarchie que la liste porte. Meme forme que `media` sur un bloc. */
+function articleTerms(terms) {
+  if (!terms || !terms.length) return '';
+  const rows = list => list.map(t => `
+    <dt>${emphasize(t.term)}</dt>
+    <dd>${emphasize(t.body)}${mediaGroup(t.media)}${
+      t.sub && t.sub.length
+        ? `<dl class="article__subterms">${rows(t.sub)}</dl>`
+        : ''}</dd>`).join('');
+  return `<dl class="article__terms">${rows(terms)}</dl>`;
+}
+
+/* ---- 5e quater. LA VIDEO SYNCHRONISEE AVEC LA PARTITION ------------------
+   `beatSync` sur un bloc d'article (aujourd'hui : salsa / "Writing it down").
+   Un extrait danse, et sous lui la planche de notation du meme enchainement ;
+   pendant la lecture, la case du temps en cours s'allume sur la planche.
+   C'est la demonstration du propos de la section — la notation ne vaut que si
+   on peut la relire contre le mouvement reel.
+
+   FICHIER LOCAL, PAS D'EMBARQUEMENT YOUTUBE.
+   Une premiere version passait par une iframe YouTube pilotee en postMessage.
+   Le fichier servi depuis assets/media rend tout cela inutile, et le gain est
+   franc : plus de `frame-src` dans la CSP, plus de tiers charge, plus de
+   dependance a `infoDelivery` (un message que YouTube n'a jamais documente et
+   qui n'arrivait qu'en lecture). Surtout, `video.currentTime` est LU
+   directement — la synchronisation devient exacte au lieu d'etre estimee
+   depuis des messages espaces de 250ms. Le site peut de nouveau dire qu'il ne
+   charge aucun tiers (voir le pied de page).
+
+   POURQUOI UNE IMAGE + UN CADRE MOBILE, ET NON 12 IMAGES.
+   Decouper la planche en douze fichiers, c'est douze requetes, douze
+   exports a refaire au moindre changement, et surtout la perte de la
+   planche EN TANT QUE PLANCHE : ce qu'on lit ici, c'est justement la suite
+   complete, avec le temps courant situe dedans. Le cadre est donc un
+   rectangle en pourcentage par-dessus une seule image, et les pourcentages
+   viennent des coordonnees Figma des cases (voir `frames` dans content.js). */
+function beatSyncMarkup(s) {
+  if (!s) return '';
+  const d = t();
+  const W = s.sheetW, H = s.sheetH;
+  // Chaque case devient un bouton pose en pourcentage sur l'image : cliquer
+  // deplace la video. Un <button> et non une <div> — c'est une commande, et
+  // le clavier doit pouvoir l'atteindre.
+  // `data-slot` : le rang du temps dans la grille des 16, pas le rang de la
+  // case. C'est la grille qui porte le temps, et deux temps (4 et 8) n'ont
+  // aucune case — indexer par case ne permettrait pas de les atteindre.
+  const spots = s.frames.map(f => `
+    <button type="button" class="beatsync__spot" data-slot="${f.slot}"
+            style="left:${(f.x / W * 100).toFixed(3)}%;top:${(f.y / H * 100).toFixed(3)}%;
+                   width:${(f.w / W * 100).toFixed(3)}%;height:${(f.h / H * 100).toFixed(3)}%"
+            aria-label="${escapeAttr(f.part)} — ${escapeAttr(d.beatSyncBeat)} ${escapeAttr(String(f.beat))}"></button>`).join('');
+
+  /* PAS d'attribut `controls` : les commandes natives afficheraient une barre
+     de progression sur la video ENTIERE (13s), alors que seul l'extrait 3-11s
+     est en jeu, et le visiteur pourrait s'en echapper d'un clic. Deux boutons
+     a nous, qui ne peuvent commander que ce qu'on veut.
+     PAS de `data-autoplay` non plus : setupVideos() ne doit pas s'en saisir —
+     ici la lecture demarre sur une demande explicite. */
+  return `
+    <div class="beatsync" data-beatsync='${escapeAttr(JSON.stringify({
+      start: s.start, end: s.end, counts: s.counts,
+      // L'indice de case pour chaque temps de la grille, ou -1 quand ce temps
+      // n'a pas de case (les temps 4 et 8, les pauses). Calcule ici plutot que
+      // cherche a chaque image : c'est une table de 16 entrees, figee.
+      slotFrame: s.counts.map((_, i) => s.frames.findIndex(f => f.slot === i))
+    }))}'>
+      <div class="beatsync__video">
+        <video class="beatsync__player" src="${escapeAttr(s.video)}"
+               preload="metadata" playsinline muted
+               aria-label="${escapeAttr(s.videoTitle)}"></video>
+        <!-- Le compte en cours, en haut a droite. C'est ce qu'un danseur
+             compte a voix haute (1 a 8) : il inclut donc les temps 4 et 8, qui
+             n'ont pas de case sur la planche mais existent bel et bien dans la
+             mesure. aria-hidden parce que la meme information est deja
+             annoncee, en toutes lettres et avec sa partie, par
+             .beatsync__read juste en dessous — la lire deux fois n'apporterait
+             rien.
+             ATTENTION : pas de backtick dans ces commentaires HTML. Ils vivent
+             dans un template literal, donc un backtick le termine et la suite
+             du balisage part en erreur de syntaxe (deja arrive ici). -->
+        <p class="beatsync__count" aria-hidden="true"></p>
+        <!-- Les commandes sont POSEES SUR la video, en bas a gauche. Une
+             rangee plutot qu'un gros bouton central : le bouton de son la
+             rejoint le jour ou on le rallume (voir plus bas), et un rond de
+             56px au milieu de l'image masquerait les danseurs, c'est-a-dire
+             exactement ce qu'on demande de regarder. -->
+        ${/* LE BOUTON DE SON EST CONSTRUIT ET DESACTIVE ICI : il ne sort que si
+              `sound: true` est pose sur le beatSync dans content.js, et
+              l'extrait El Tiburon ne le demande pas — il n'a pas de son utile.
+              Le reste existe et reste inerte : le gestionnaire dans
+              setupBeatSync() est deja garde par `if (soundBtn)`.
+              TANT QU'IL EST ETEINT, le <video> doit rester `muted` : sans
+              commande, un son qu'on ne peut pas couper serait pire que pas de
+              son du tout. La video de la section "So what is a move?",
+              elle, l'allume (voir videoPlayerMarkup). */''}
+        ${mediaControlsMarkup(s.sound, speedButtonMarkup())}
+      </div>
+      <!-- Le rail de defilement. Sous 700px la planche ne peut pas rentrer :
+           douze cases sur 831px de large tombent a 30px chacune sur un
+           telephone — illisibles, et sous la taille minimale d'une cible
+           tactile. Elle garde donc une largeur minimale et se parcourt
+           horizontalement, comme la barre de sections des etudes de cas.
+           Le rail est un PARENT de .beatsync__sheet et non la planche
+           elle-meme : les cases et le cadre se reperent en pourcentage de la
+           planche, qui doit donc rester a sa taille pleine pendant que c'est
+           le conteneur qui rogne. -->
+      <div class="beatsync__rail">
+        <div class="beatsync__sheet">
+          <img src="${escapeAttr(s.sheet)}" alt="${escapeAttr(s.sheetAlt)}"
+               loading="lazy" decoding="async">
+          <div class="beatsync__marker" hidden></div>
+          ${spots}
+        </div>
+      </div>
+      <p class="beatsync__read" aria-live="polite"></p>
+      ${s.caption ? `<p class="beatsync__caption">${emphasize(s.caption)}</p>` : ''}
+    </div>`;
 }
 
 /* ---- 5e bis. LES MEDIAS HEBERGES (Contra) -------------------------------
@@ -983,7 +1224,39 @@ function mediaUrl(m) {
      reglage systeme "mouvement reduit".
    - `aria-label` remplace le texte alternatif : une video n'a pas d'attribut
      alt, et sans libelle elle est muette pour un lecteur d'ecran. */
+/* `maxWidth` (px) : borne une figure a sa taille reelle au lieu de la laisser
+   remplir la colonne. Necessaire pour les schemas de l'article salsa, qui sont
+   des exports Figma en 2x ou 3x : une carte de 400x750 devient un fichier de
+   800x1500, et etiree sur les ~700px de la colonne elle s'affichait sur
+   1100px de haut, avec un titre de 24px et du vide partout. La valeur a poser
+   est donc la largeur du fichier divisee par son facteur d'export — sa taille
+   a l'echelle 1, celle du node dans Figma. Les figures plus larges que la
+   colonne ne sont pas concernees : elles sont deja bridees par le
+   `width: 100%` de .figure--remote img. Optionnel : sans lui, rien ne change
+   pour les medias existants.
+
+   CALEES A GAUCHE, PAS CENTREES. Une figure plus etroite que la colonne etait
+   centree (`margin-inline: auto`), ce qui lui donnait deux retraits inegaux par
+   rapport au paragraphe qu'elle illustre : l'oeil devait rattraper le bord
+   gauche du texte a chaque visuel. Alignee sur ce bord, la colonne de lecture
+   reste une seule ligne verticale du haut en bas de l'article. */
+function boundStyle(maxWidth) {
+  return Number.isFinite(maxWidth) ? ` style="max-width:${maxWidth}px"` : '';
+}
+
 function mediaMarkup(m) {
+  /* `type: 'carousel'` : une entree media qui contient plusieurs images a
+     faire defiler, au lieu d'une seule. On delegue au carrousel deja ecrit
+     pour les etudes de cas (carouselMarkup/setupImageCarousel plus bas) —
+     memes fleches, memes puces, meme glissement au doigt, rien a redoubler.
+     Sortie ici et pas plus bas : la suite de la fonction construit UNE
+     figure a partir de mediaUrl(m), et un carrousel n'a pas de `src`. */
+  if (m.type === 'carousel') return carouselMarkup(m.items, m);
+  /* `controls: true` sur une video : lecteur a commandes (lecture/pause, et
+     son si `sound`) au lieu de la video qui se lance seule au defilement.
+     Meme raison de sortir ici : le balisage differe (une couche de commandes
+     posee sur l'image), pas seulement l'element interieur. */
+  if (m.type === 'video' && m.controls) return videoPlayerMarkup(m);
   const url = escapeAttr(mediaUrl(m));
   const cap = escapeAttr(m.caption || '');
   // `poster` affiche une image fixe avant que la video ne demarre. Sans lui,
@@ -1003,11 +1276,44 @@ function mediaMarkup(m) {
               data-autoplay aria-label="${cap}" disablepictureinpicture></video>`
     : `<img src="${url}" alt="${cap}" loading="lazy" decoding="async">`;
   const kind = m.type === 'lottie' ? 'figure figure--remote figure--lottie' : 'figure figure--remote';
+  const bound = boundStyle(m.maxWidth);
   // `hideCaption` : garde `cap` comme aria-label/alt (accessibilite) mais
   // masque la <figcaption> visible — utile pour un media d'ouverture qui
   // n'a pas besoin de legende affichee sous lui.
-  return `<figure class="${kind}">
-      <div class="figure__frame">${inner}</div>
+  // `m.zoomable` (voir zoomableClass()) : meme mecanisme que figureFor() pour
+  // les etudes de cas — true = zoomable partout, 'mobile' = seulement sous
+  // 700px (schemas d'article deja assez grands sur desktop, illisibles une
+  // fois retreecis a la colonne mobile).
+  return `<figure class="${kind}"${bound}>
+      <div class="figure__frame${zoomableClass(m.zoomable)}">${inner}</div>
+      ${cap && !m.hideCaption ? `<figcaption>${cap}</figcaption>` : ''}
+    </figure>`;
+}
+
+/* Lecteur video autonome : la video en boucle, avec une rangee de commandes
+   posee dessus (voir mediaControlsMarkup). C'est le rendu de
+   `{ type: 'video', controls: true }` dans content.js.
+
+   EN PAUSE ET MUET AU CHARGEMENT, les deux volontairement :
+   - en pause, parce qu'une video qui part seule au milieu d'un texte prend la
+     main sur la lecture. Elle boucle comme un gif UNE FOIS lancee, ce qui est
+     le comportement demande, mais c'est le lecteur qui la lance ;
+   - muette, parce qu'un son qui demarre sans prevenir est le pire defaut d'une
+     page. Le bouton de son (`sound: true`) est la pour l'allumer.
+   `loop` fait le gif, `playsinline` empeche le plein ecran force sur iPhone.
+   PAS de `data-autoplay` : c'est l'attribut que setupVideos() cherche pour
+   lancer une video au defilement, et le poser ici annulerait tout ce qui
+   precede. */
+function videoPlayerMarkup(m) {
+  const cap = escapeAttr(m.caption || '');
+  const poster = m.poster ? ` poster="${escapeAttr(m.poster)}"` : '';
+  return `<figure class="figure figure--remote figure--player"${boundStyle(m.maxWidth)}>
+      <div class="figure__frame vplayer">
+        <video class="vplayer__video" src="${escapeAttr(mediaUrl(m))}"${poster}
+               loop muted playsinline preload="metadata"
+               aria-label="${cap}" disablepictureinpicture></video>
+        ${mediaControlsMarkup(m.sound)}
+      </div>
       ${cap && !m.hideCaption ? `<figcaption>${cap}</figcaption>` : ''}
     </figure>`;
 }
@@ -1155,6 +1461,66 @@ function chevronIcon(cls) {
   return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
       aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+}
+
+/* Les icones du lecteur de .beatsync (Lucide, licence MIT — meme parti pris
+   que chevronIcon ci-dessus : le <path> copie plutot qu'une dependance pour
+   quatre icones). Les DEUX etats sont toujours dans le bouton ; c'est le CSS
+   qui montre l'un ou l'autre selon `aria-pressed`, de sorte que basculer
+   l'etat n'implique aucune reconstruction de balisage. `fill` plein pour
+   play/pause (des formes, pas des traits), contour pour le son. */
+/* CLASSES `media-ico`, PAS `beatsync__ico` : ces quatre icones servent aux
+   commandes de DEUX lecteurs — la planche synchronisee (beatSyncMarkup) et le
+   lecteur video autonome (videoPlayerMarkup). Le CSS qui les fait apparaitre
+   l'une ou l'autre selon `aria-pressed` est ecrit une fois, sur .media-btn. */
+function playIcon()  { return `<svg class="media-ico media-ico--play" viewBox="0 0 24 24"
+      fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>`; }
+function pauseIcon() { return `<svg class="media-ico media-ico--pause" viewBox="0 0 24 24"
+      fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>`; }
+function soundOnIcon()  { return `<svg class="media-ico media-ico--sound-on" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`; }
+function soundOffIcon() { return `<svg class="media-ico media-ico--sound-off" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><line x1="22" y1="9" x2="16" y2="15"/>
+      <line x1="16" y1="9" x2="22" y2="15"/></svg>`; }
+
+/* La rangee de commandes posee SUR une video : le meme balisage pour les deux
+   lecteurs. `sound` : le bouton de son n'existe que si le media le demande —
+   une video sans son utile n'a rien a proposer, et un bouton inerte est pire
+   qu'un bouton absent.
+   Les libelles sont les seuls noms accessibles de ces boutons (les icones sont
+   aria-hidden), d'ou l'aria-label systematique. L'etat de depart est celui du
+   lecteur au chargement : en pause et muet, donc aria-pressed="false" sur les
+   deux — c'est setupVideoPlayers()/setupBeatSync() qui le tient a jour
+   ensuite. */
+function mediaControlsMarkup(sound, extra) {
+  const d = t();
+  return `
+    <div class="media-controls">
+      <button type="button" class="media-btn" data-act="play"
+              aria-pressed="false" aria-label="${escapeAttr(d.playerPlay)}">
+        ${playIcon()}${pauseIcon()}
+      </button>
+      ${sound ? `<button type="button" class="media-btn" data-act="sound"
+              aria-pressed="false" aria-label="${escapeAttr(d.playerSoundOn)}">
+          ${soundOnIcon()}${soundOffIcon()}
+        </button>` : ''}
+      ${extra || ''}
+    </div>`;
+}
+
+/* Bouton de vitesse : x1 (normal) ou x0.5 (ralenti), propre a la planche
+   synchronisee (El Tiburon) — voir beatSyncMarkup()/setupBeatSync(). Pas
+   d'icone : un texte se lit plus vite qu'un pictogramme pour un chiffre. PAS
+   passe par `sound` dans mediaControlsMarkup : cette commande n'existe que
+   pour ce seul lecteur, contrairement a lecture/son qui servent aux deux
+   (voir mediaControlsMarkup() plus haut). */
+function speedButtonMarkup() {
+  const d = t();
+  return `<button type="button" class="media-btn media-btn--speed" data-act="speed"
+          aria-pressed="false" aria-label="${escapeAttr(d.playerSpeedHalf)}">1×</button>`;
 }
 
 /* Icone alerte pour .cs-callout (voir s.callout dans content.js) — matches
@@ -1478,26 +1844,53 @@ function setupLottieCarousel() {
    transform est ce qui produit l'animation de glissement (voir goTo() dans
    setupImageCarousel()). Fleches prev/next + puces incrustees en bas de la
    scene plutot que des onglets textuels. */
-function carouselMarkup(items) {
+function carouselMarkup(items, opts) {
   // item.zoomable (voir zoomableClass() plus haut) : posee sur le <picture>
   // du panneau, pas sur .cs-carousel__panel lui-meme — c'est le panneau qui
   // glisse via transform pour changer de slide, le zoom ne doit toucher que
   // son contenu. Le glissement du carrousel se coupe tout seul pendant
   // qu'un panneau est zoome (stopPropagation dans setupZoomableMedia()).
-  const panels = items.map((item, i) => `
+  //
+  // DEUX FACONS DE DESIGNER UNE IMAGE, au choix par item :
+  //   item.image = 'nom-sans-extension'  -> paire assets/img/<nom>.webp +
+  //     repli .png, servie par un <picture>. C'est la convention des etudes
+  //     de cas, dont tous les visuels existent dans les deux formats.
+  //   item.src   = 'assets/img/nom.webp' -> chemin complet, un seul fichier.
+  //     C'est la convention des medias de l'article salsa (voir mediaUrl()),
+  //     exports Figma en WebP uniquement. Emettre un <picture> avec un repli
+  //     .png la-bas ne ferait que provoquer un 404 pour un fichier qui
+  //     n'existe pas.
+  const panels = items.map((item, i) => {
+    const zoom = zoomableClass(item.zoomable).trim();
+    const alt = escapeAttr(item.caption || '');
+    // item.type === 'video' : boucle muette, meme regle de declenchement que
+    // le reste du site (data-autoplay -> setupVideos(), lecture seulement
+    // quand le panneau est visible — voir setupVideos() plus bas).
+    const img = item.type === 'video'
+      ? `<video class="${zoom}" src="${escapeAttr(item.src)}" muted loop playsinline
+                preload="metadata" data-autoplay aria-label="${alt}"
+                disablepictureinpicture></video>`
+      : item.src
+      ? `<img class="${zoom}" src="${escapeAttr(item.src)}" alt="${alt}" loading="lazy" decoding="async">`
+      : `<picture class="${zoom}">
+        <source srcset="assets/img/${item.image}.webp" type="image/webp">
+        <img src="assets/img/${item.image}.png" alt="${alt}" loading="lazy" decoding="async">
+      </picture>`;
+    return `
     <div class="cs-carousel__panel" data-role="carousel-panel"
          data-index="${i}" data-caption="${escapeAttr(item.caption || '')}">
-      <picture class="${zoomableClass(item.zoomable).trim()}">
-        <source srcset="assets/img/${item.image}.webp" type="image/webp">
-        <img src="assets/img/${item.image}.png" alt="${escapeAttr(item.caption || '')}" loading="lazy" decoding="async">
-      </picture>
-    </div>`).join('');
+      ${img}
+    </div>`;
+  }).join('');
+  // Meme borne que mediaMarkup() : cadre la figure a sa taille reelle plutot
+  // que de la laisser remplir la colonne (voir boundStyle()).
+  const bound = boundStyle(opts && opts.maxWidth);
   const dots = items.map((item, i) => `
     <button type="button" class="cs-carousel__dot${i === 0 ? ' is-active' : ''}" data-role="carousel-dot"
             data-index="${i}" aria-label="${escapeAttr(t().csCarouselGoTo)} ${i + 1}"
             aria-current="${i === 0 ? 'true' : 'false'}"></button>`).join('');
   return `
-    <figure class="cs-carousel" data-role="carousel">
+    <figure class="cs-carousel" data-role="carousel"${bound}>
       <div class="cs-carousel__stage">
         <div class="cs-carousel__track" data-role="carousel-track">${panels}</div>
         <button type="button" class="cs-carousel__arrow cs-carousel__arrow--prev" data-role="carousel-prev"
@@ -3389,7 +3782,14 @@ function paint(hash, route, mode) {
   let node, title = SITE.name;
   switch (route.name) {
     case 'home':  node = pageHome();                    break;
-    case 'case':  node = pageCase(route.project);
+    /* Un projet qui porte `format: 'article'` (content.js) est rendu par
+       pageArticle() plutot que par pageCase() : meme route, meme ouverture
+       en fiche, mais un texte illustre au lieu du gabarit etude de cas.
+       Le test vit ICI et nulle part ailleurs — tout le reste du site (carte,
+       route, fiche, croix, lien retour) ne sait rien de ce format. */
+    case 'case':  node = route.project.format === 'article'
+                    ? pageArticle(route.project)
+                    : pageCase(route.project);
                   title = `${route.project.title} — ${SITE.name}`; break;
     case 'about': node = pageEditorial('about');
                   title = `${t().navAbout} — ${SITE.name}`; break;
@@ -3594,10 +3994,21 @@ function paint(hash, route, mode) {
     if (route.name === 'case' && route.project.slug === 'constraints') setupComponentsShowcase();
     if (route.name === 'case' && route.project.slug === 'constraints') setupLottieCarousel();
     if (route.name === 'case' && route.project.slug === 'services-exclusion') setupImageCarousel();
+    // L'article salsa a lui aussi un carrousel (voir le media `type:
+    // 'carousel'` de "Lines and lanes" dans content.js). setupImageCarousel()
+    // ne fait rien s'il n'y a pas de [data-role="carousel"] dans la page, mais
+    // on garde la condition de route par symetrie avec la ligne au-dessus.
+    if (route.name === 'case' && route.project.format === 'article') setupImageCarousel();
     if (route.name === 'case' && route.project.slug === 'services-exclusion') setupExclModal();
     setupScrollProgress();
     setupVideos();
+    // Sans condition de route, comme setupBeatSync() plus bas : la fonction
+    // sort d'elle-meme s'il n'y a pas de .vplayer dans la page.
+    setupVideoPlayers();
     setupZoomableMedia();
+    // Sans condition de route : la fonction sort d'elle-meme s'il n'y a pas
+    // de .beatsync dans la page (c'est-a-dire partout sauf l'article salsa).
+    setupBeatSync();
   };
 
   // Transition de page. startViewTransition est l'API moderne : le navigateur
@@ -4035,6 +4446,233 @@ function setupVideos() {
 
   videos.forEach(v => io.observe(v));
   addCleanup(() => io.disconnect());   // sinon l'observateur survit au changement de page
+}
+
+/* Les lecteurs video autonomes (voir videoPlayerMarkup()). Le pendant de
+   setupVideos() juste au-dessus, pour les videos qui NE doivent PAS se lancer
+   seules : ici c'est le lecteur qui decide, et les deux boutons ne font rien
+   d'autre que basculer `paused` et `muted`.
+
+   ON SUIT LES EVENEMENTS DU LECTEUR, PAS LE CLIC. Une lecture peut etre
+   refusee (economiseur de batterie, onglet en arriere-plan) : mettre a jour
+   l'icone depuis le clic afficherait une pause sur une video restee immobile.
+   Les libelles passent par `aria-label` parce que les icones sont
+   aria-hidden — c'est le seul nom accessible de ces boutons. */
+function setupVideoPlayers() {
+  $$('.vplayer').forEach(root => {
+    const video    = root.querySelector('.vplayer__video');
+    const playBtn  = root.querySelector('[data-act="play"]');
+    const soundBtn = root.querySelector('[data-act="sound"]');
+    if (!video || !playBtn) return;
+    const d = t();
+
+    const setPlayLabel = () => {
+      playBtn.setAttribute('aria-label', video.paused ? d.playerPlay : d.playerPause);
+      playBtn.setAttribute('aria-pressed', String(!video.paused));
+    };
+    const onPlay = () => {
+      if (video.paused) video.play().catch(() => {});
+      else video.pause();
+    };
+    playBtn.addEventListener('click', onPlay);
+    video.addEventListener('play', setPlayLabel);
+    video.addEventListener('pause', setPlayLabel);
+    setPlayLabel();
+
+    if (soundBtn) {
+      const setSoundLabel = () => {
+        soundBtn.setAttribute('aria-label', video.muted ? d.playerSoundOn : d.playerSoundOff);
+        soundBtn.setAttribute('aria-pressed', String(!video.muted));
+      };
+      const onSound = () => { video.muted = !video.muted; setSoundLabel(); };
+      soundBtn.addEventListener('click', onSound);
+      setSoundLabel();
+      addCleanup(() => soundBtn.removeEventListener('click', onSound));
+    }
+
+    // Une video laissee en lecture apres un changement de page continuerait de
+    // jouer sans etre visible (et sans bouton pour l'arreter).
+    addCleanup(() => { playBtn.removeEventListener('click', onPlay); video.pause(); });
+  });
+}
+
+/* La planche qui suit la video (voir beatSyncMarkup(), section 5e quater).
+
+   LA GRILLE EST FAITE DE COMPTES, PAS DE CASES. `cfg.counts` decrit les 16
+   temps de l'enchainement (2 mesures de 8), y compris les temps 4 et 8 —
+   ceux-la n'ont pas de case sur la planche mais existent dans la mesure, et
+   c'est justement ce que le compteur en haut de la video doit afficher. La
+   correspondance vers les cases passe par `cfg.slotFrame`, qui vaut -1 sur
+   ces deux temps : le cadre reste alors sur la derniere case, parce que le
+   mouvement qu'elle decrit est encore en cours pendant la pause.
+
+   Les temps vivent dans content.js, pas ici : ce sont des mesures faites sur
+   un fichier precis, donc du contenu, pas du comportement. */
+function setupBeatSync() {
+  const box = $('.beatsync');
+  if (!box) return;
+
+  let cfg;
+  try { cfg = JSON.parse(box.dataset.beatsync); } catch (e) { return; }
+  const d      = t();
+  const counts = cfg.counts || [];
+  const toFrame = cfg.slotFrame || [];
+  const video  = box.querySelector('.beatsync__player');
+  const marker = box.querySelector('.beatsync__marker');
+  const read   = box.querySelector('.beatsync__read');
+  const badge  = box.querySelector('.beatsync__count');
+  const spots  = $$('.beatsync__spot', box);
+  const playBtn  = box.querySelector('[data-act="play"]');
+  const soundBtn = box.querySelector('[data-act="sound"]');
+  const speedBtn = box.querySelector('[data-act="speed"]');
+  if (!video || !marker || !counts.length) return;
+
+  /* --- sens 1 : la case commande la video ---
+     ON MET EN PAUSE, on ne lance pas la lecture. Cliquer une case est un
+     geste d'examen : on veut voir CETTE position, la comparer au dessin,
+     y rester. Enchainer sur une lecture emporterait l'image deux temps plus
+     loin avant meme d'avoir regarde. Le bouton reste la pour repartir. */
+  spots.forEach(s => s.addEventListener('click', () => {
+    const slot = Number(s.dataset.slot);
+    video.pause();
+    video.currentTime = counts[slot].t;
+    show(slot);                 // immediat : `seeked` arrive une frame plus tard
+  }));
+
+  /* --- l'affichage du temps courant --- */
+  let current = -1;
+  const show = slot => {
+    if (slot === current) return;
+    current = slot;
+    if (badge && counts[slot]) badge.textContent = counts[slot].n;
+    const s = spots[toFrame[slot]];
+    if (!s) return;             // temps 4 ou 8 : le cadre ne bouge pas
+    marker.hidden = false;
+    // Le cadre reprend la boite de la case : une seule source pour les deux,
+    // donc rien a resynchroniser si les coordonnees changent dans content.js.
+    marker.style.cssText = s.style.cssText;
+    spots.forEach(x => x.classList.toggle('is-active', x === s));
+    if (read) read.textContent = s.getAttribute('aria-label');
+    revealBeat(s);
+  };
+
+  /* Sur telephone la planche deborde son rail (voir .beatsync__rail) : suivre
+     le temps courant ne sert a rien s'il est hors champ. On centre donc la
+     case active dans le rail — meme geste que revealInStrip() pour la barre
+     de sections. `scrollLeft` et non scrollIntoView() : celui-ci fait aussi
+     defiler la PAGE pour amener le rail a l'ecran, ce qui arracherait la
+     lecture a chaque temps. Sur le bureau, le rail ne deborde pas et
+     scrollLeft y est simplement sans effet.
+
+     DEPLACEMENT INSTANTANE, PAS 'smooth'. Les temps se suivent a moins d'une
+     seconde d'intervalle : une animation de defilement de ~300ms serait
+     relancee avant d'avoir fini, et le rail glisserait en permanence sans
+     jamais se poser. C'est le cadre qui doit attirer l'oeil, pas la planche
+     qui bouge sous lui. (Accessoirement, un 'smooth' qui ne se termine
+     jamais bloque le rendu dans un onglet en arriere-plan — vu au test.) */
+  const rail = box.querySelector('.beatsync__rail');
+  const revealBeat = s => {
+    if (!rail || rail.scrollWidth <= rail.clientWidth) return;
+    rail.scrollLeft = s.offsetLeft + s.offsetWidth / 2 - rail.clientWidth / 2;
+  };
+
+  show(0);
+
+  /* --- sens 2 : la video commande la case --- */
+  /* EPS : deux images a 60 i/s. Un `seekTo` ne tombe pas sur la valeur
+     demandee au millieme — le lecteur se cale sur une frontiere d'image, et
+     atterrit volontiers QUELQUES MILLISECONDES EN DESSOUS. Sans tolerance,
+     cliquer la case du temps 5 posait currentTime a 6,7329 pour un temps
+     annonce a 6,733, et `at()` renvoyait le temps 4 : la case cliquee
+     s'allumait puis le `seeked` la reprenait pour la precedente. La marge rend
+     le temps "acquis" 30ms plus tot, ce qui ne se voit pas et supprime la
+     classe entiere de ce probleme. */
+  const EPS = 0.03;
+  const at = time => {
+    // Dernier temps deja commence. Les temps sont ordonnes, la liste fait 16
+    // entrees : une boucle a l'envers est plus courte qu'une dichotomie et se
+    // relit sans effort.
+    for (let i = counts.length - 1; i >= 0; i--) if (time + EPS >= counts[i].t) return i;
+    return 0;
+  };
+
+  /* Suivi en requestAnimationFrame, PAS sur l'evenement `timeupdate`.
+     `timeupdate` ne se declenche que 4 a 5 fois par seconde : sur des temps
+     espaces d'une demi-seconde, le cadre arriverait jusqu'a un quart de temps
+     en retard — visible, et sur une demonstration de synchronisation c'est
+     precisement ce qu'il ne faut pas rater. La boucle ne tourne QUE pendant la
+     lecture et s'arrete a la pause, donc elle ne coute rien au repos. */
+  let raf = 0;
+  const tick = () => {
+    if (video.paused) { raf = 0; return; }
+    const time = video.currentTime;
+    // Fin de l'extrait : on reboucle au debut plutot que de laisser filer la
+    // video sur ce qui suit (l'enchainement est refait plusieurs fois dans le
+    // fichier, et la planche ne decrit que cette occurrence-ci).
+    if (time >= cfg.end) video.currentTime = cfg.start;
+    else if (time < cfg.start) video.currentTime = cfg.start;
+    else show(at(time));
+    raf = requestAnimationFrame(tick);
+  };
+  const startTicking = () => { if (!raf) raf = requestAnimationFrame(tick); };
+  const stopTicking  = () => { if (raf) { cancelAnimationFrame(raf); raf = 0; } };
+
+  /* --- les deux commandes ---
+     Le bouton ne porte plus de texte, seulement deux icones dont le CSS montre
+     l'une ou l'autre selon `aria-pressed`. Le libelle passe donc par
+     `aria-label` : c'est desormais le SEUL nom accessible du bouton, et
+     l'oublier rendrait la commande muette pour un lecteur d'ecran. */
+  const setPlayLabel = () => {
+    if (!playBtn) return;
+    playBtn.setAttribute('aria-label', video.paused ? d.playerPlay : d.playerPause);
+    playBtn.setAttribute('aria-pressed', String(!video.paused));
+  };
+  const play = () => {
+    // play() rend une promesse qui peut etre rejetee (economiseur d'energie,
+    // onglet en arriere-plan). Ce n'est pas une erreur : la video reste
+    // simplement en pause, et le libelle du bouton le dira.
+    video.play().catch(() => {});
+  };
+  if (playBtn) playBtn.addEventListener('click', () => {
+    if (video.paused) {
+      // Repartir du debut de l'extrait quand la lecture est finie ou n'a
+      // jamais commence : sans ca, un clic sur Play apres la fin relance sur
+      // une image qui n'est plus decrite par la planche.
+      if (video.currentTime < cfg.start || video.currentTime >= cfg.end) video.currentTime = cfg.start;
+      play();
+    } else {
+      video.pause();
+    }
+  });
+  if (soundBtn) soundBtn.addEventListener('click', () => {
+    video.muted = !video.muted;
+    soundBtn.setAttribute('aria-label', video.muted ? d.playerSoundOn : d.playerSoundOff);
+    soundBtn.setAttribute('aria-pressed', String(!video.muted));
+  });
+  /* Vitesse : x1 <-> x0.5. `playbackRate` se pose directement sur le <video> —
+     rien d'autre a recalculer, `tick()` lit `video.currentTime` a chaque
+     image quelle que soit la vitesse a laquelle il avance. */
+  if (speedBtn) speedBtn.addEventListener('click', () => {
+    const slow = video.playbackRate !== 0.5;
+    video.playbackRate = slow ? 0.5 : 1;
+    speedBtn.textContent = slow ? '0.5×' : '1×';
+    speedBtn.setAttribute('aria-label', slow ? d.playerSpeedNormal : d.playerSpeedHalf);
+    speedBtn.setAttribute('aria-pressed', String(slow));
+  });
+
+  // Les libelles suivent l'ETAT du lecteur, pas le clic : la lecture peut etre
+  // refusee, ou s'arreter d'elle-meme en fin de fichier.
+  video.addEventListener('play',  () => { setPlayLabel(); startTicking(); });
+  video.addEventListener('pause', () => { setPlayLabel(); stopTicking(); });
+  video.addEventListener('seeked', () => show(at(video.currentTime)));
+  addCleanup(stopTicking);
+
+  /* Poser la premiere image de l'extrait plutot que celle du fichier (a 0s, un
+     plan qui n'a rien a voir avec la planche). `preload="metadata"` suffit a
+     ce que le navigateur sache seeker ; l'image arrive avec `seeked`. */
+  const seedFrame = () => { video.currentTime = cfg.start; };
+  if (video.readyState >= 1) seedFrame();
+  else video.addEventListener('loadedmetadata', seedFrame, { once: true });
 }
 
 /* .zoomable-media (posee par item.imageAfterZoomable dans content.js pour

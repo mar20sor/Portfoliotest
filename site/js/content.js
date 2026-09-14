@@ -129,6 +129,24 @@ export const UI = {
   figureSeeMore: 'See more',
   csCarouselPrev: 'Previous slide', csCarouselNext: 'Next slide',
   csCarouselDots: 'Slides', csCarouselGoTo: 'Go to slide',
+  /* Etiquette d'une case de la planche synchronisee (article salsa) : elle
+     sert d'aria-label du bouton ET de legende du temps courant, lue a voix
+     haute par aria-live. Un seul mot, mais il est affiche : il vit donc ici
+     avec les autres libelles d'interface, pas en dur dans app.js. */
+  beatSyncBeat: 'beat',
+  /* Les deux commandes des lecteurs video. Le libelle dit L'ACTION a
+     declencher, pas l'etat courant : "Play" quand c'est en pause, "Sound on"
+     quand c'est muet. C'est la convention d'un bouton, et aria-pressed porte
+     l'etat.
+     `player` et non `beatSync` : ces libelles servent aux DEUX lecteurs de
+     l'article — la planche synchronisee et la video de "So what is a
+     move?" (voir mediaControlsMarkup() dans app.js). */
+  playerPlay: 'Play', playerPause: 'Pause',
+  playerSoundOn: 'Sound on', playerSoundOff: 'Sound off',
+  /* Bouton de vitesse de la planche synchronisee (El Tiburon) uniquement —
+     voir beatSyncMarkup()/setupBeatSync() dans app.js. Meme convention que les
+     deux au-dessus : le libelle dit l'action a declencher. */
+  playerSpeedHalf: 'Half speed', playerSpeedNormal: 'Normal speed',
 
   footerSitemap: 'Sitemap',
   footerContact: 'Get in touch',
@@ -519,6 +537,10 @@ export const PROJECTS = [
     tags: ['Wizard', 'User testing', 'Iteration'],
     gist: { role: 'UX / UI', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer',
       company: { label: 'Petal', href: 'https://www.petal-health.com/en/' } },
+    // Cover statique d'origine. Plusieurs essais de fond anime (degrade CSS,
+    // video fournie par l'utilisateur avec boucle corrigee en boomerang,
+    // <canvas> en JS) sont restes dans l'historique de conversation sans
+    // convaincre — revenu ici a l'image fixe de depart.
     heroMedia: { type: 'image', src: 'assets/img/exclusion-hero.webp' },
     problem: 'In the HUB, some services are no longer used, or only temporarily (like a seasonal flu clinic). They skew a clinic’s statistics, but can only be deleted in the EMR, which is a heavy procedure for medical staff. So they needed to be excluded from synchronization setup without being deleted, inside a modal already carrying many steps.',
     outcome: 'A clearer four-step wizard that makes exclusion explicit. After release surfaced a usage error we hadn’t anticipated. So we inverted the selection logic and added a warning to make sure it was well used.',
@@ -933,6 +955,7 @@ export const PROJECTS = [
     tagline: '**815 responses** and 6 tests to work out why nobody finds the comment button.',
     tags: ['Research', 'Usability testing', 'UI'],
     gist: { role: 'Research, testing, UI', duration: 'Nov 2019 – Nov 2020', team: '3 designers', tools: 'Figma, Google Forms, Sheets' },
+    heroMedia: { type: 'video', src: 'assets/media/soundcloud-hero.mp4', poster: 'assets/img/soundcloud-hero-poster.webp', hideCaption: true },
     problem: 'Soundcloud has a feature its competitors don’t: commenting on a track at a specific moment. You just have to find it first. We wanted to measure the platform’s actual usability, then make that feature reachable for someone opening the site for the first time.',
     outcome: 'A SUS score of 69.57 measured across 815 respondents, six user tests isolating two specific problems, and a redesigned artist page that lifts the comment section up the right-hand side.',
     stats: [
@@ -995,6 +1018,394 @@ export const PROJECTS = [
     ],
     extLinks: [
       { label: 'Full work document (Notion, French only)', href: 'https://www.notion.so/mar20/Usability-test-Soundcloud-518394b0bb404f1ebf467bc99f2bc064' }
+    ]
+  },
+
+  /* ============ SIDE QUEST — DOCUMENTING SALSA DANCE ==================
+     CE PROJET NE SUIT PAS LA STRUCTURE DES AUTRES ETUDES DE CAS.
+
+     `format: 'article'` est le seul champ qui le declare, et app.js ne le lit
+     qu'a un endroit (le routeur, section 7) : la carte, la route, l'ouverture
+     en fiche et la croix de fermeture sont exactement celles de tous les
+     autres projets — seul le GABARIT DE PAGE change. On tombe alors sur
+     pageArticle() au lieu de pageCase() : un texte illustre, dans l'esprit de
+     PAGES.gap ("Why I didn't work for 2 years"), sans fiche d'identite, sans
+     Probleme/Resultat, sans processus decoupe, donc sans nav laterale ni
+     barre flottante.
+
+     CHAMPS LUS PAR pageArticle() :
+       lede    facultatif — la phrase d'accroche sous le titre (rendue par
+               emphasize(), donc **gras** et [texte](url) y sont acceptes).
+               Elle remplace `tagline`, qui reste reserve a la carte.
+       blocks  le corps de l'article, dans l'ordre. Chaque bloc vaut
+               { h?, p?, media? } et se rend dans cet ordre :
+                 h      intertitre facultatif
+                 p      tableau de paragraphes (emphasize() aussi). Un
+                        paragraphe entierement entre crochets s'affiche en
+                        jaune : c'est une consigne de redaction, pas du texte
+                        publiable.
+                 media  tableau de medias, MEME FORME que `heroMedia` et que
+                        les medias des etudes de cas :
+                          { type: 'image' | 'video' | 'lottie',
+                            src: 'assets/media/xxx.mp4',  // fichier du depot
+                            // ... ou bien id: '...' pour le CDN (voir MEDIA)
+                            caption: 'la legende affichee',
+                            poster: 'assets/img/xxx.jpg', // video seulement
+                            hideCaption: true }           // garde l'aria-label
+                        Un seul media occupe toute la largeur ; a partir de
+                        deux ils se rangent en grille (mediaGroup(), app.js).
+       extLinks facultatif — les memes boutons "lien externe" que les etudes
+               de cas, sous l'en-tete.
+
+     Un media se declare DANS son bloc et jamais par un numero de paragraphe :
+     contrairement aux etudes de cas (s.media[i]), inserer ou deplacer du
+     texte ici ne peut rien desynchroniser. Pour poser une image AVANT le
+     texte, on ecrit un bloc qui n'a que `media`.
+
+     Les champs communs a toutes les cartes restent obligatoires — poster,
+     title, client, tagline, tags — parce que c'est projectCard() qui les lit
+     et qu'il ne sait rien du format de la page derriere. */
+  {
+    slug: 'salsa', kind: 'side', accent: 'h', year: '2025',
+    format: 'article',
+    /* "8 → 4" comme "24 → 9" chez Contraintes : l'affiche porte le chiffre que
+       l'article retient. En cours, un move se compte sur 8 temps ; l'unite
+       retenue ici est la moitie, 4. Le motif `clave` (app.js) dessine les deux
+       mesures de huit croches sur lesquelles cette division se lit. */
+    poster: { label: '8 → 4', figure: 'clave' },
+    title: 'Documenting Salsa Dance',
+    client: 'Personal project',
+    tagline: 'An interest in salsa dance, then an attempt to **write it down**.',
+    tags: ['Systems design', 'Notation', 'Personal'],
+    // Derniere frame de l'ancien cover video (salsa-cover.mp4), extraite et
+    // exportee en WebP : deja recadree au centre sur le couple au ratio
+    // 1280/1072 de .card__media (1024x858). N'alimente plus que la vignette
+    // de la carte d'accueil (cardMedia()) : hideHeroInArticle retire le
+    // bandeau .article__hero correspondant en tete de l'article (demande
+    // utilisateur, ce cas seulement — voir pageArticle() dans app.js).
+    heroMedia: { type: 'image', src: 'assets/img/salsa-cover-frame.webp' },
+    hideHeroInArticle: true,
+    /* Les schemas viennent du fichier Figma "Claude portfolio image
+       generation", page "Salsa concepts" (fileKey itn1kZeKMMFva4PUSX9hlS,
+       noeud 302:2382) : une planche de travail dont chaque section porte un
+       concept. Exportes en PNG 2x puis convertis en .webp, largeur bridee a
+       1400px (la colonne de l'article fait ~700px, donc 2x suffit).
+       UN SEUL fichier par visuel, en .webp : mediaMarkup() rend un <img src>
+       simple, sans la paire <picture> webp+png de figureFor() — un .png a
+       cote serait du poids mort (meme regle que heroMedia, voir CLAUDE.md).
+       salsa-notation.webp est recadre sur la bande du haut de la section
+       "Complete breakdown" : le reste de cette section est un brouillon
+       annote en francais ("Think about arrows placement"...). */
+    blocks: [
+      {
+        p: [
+          'During those two years I wasn’t working, I developed an interest for salsa dance.',
+          'After a few months of practice, I ran into a problem: I felt far less creative than the dancers I was watching online. The moves taught in my school were way different from the ones I was seeing on YouTube.',
+          'Watching videos wasn’t practical in itself, as they varied in length. Imitating a move meant pausing, replaying, slowing it down, and still understanding only half of what the dancers were doing.'
+        ]
+      },
+      {
+        h: 'The goal',
+        p: [
+          'What I was missing was a key to decode the moves and compare them without relying on videos.',
+          'With such a tool, I thought I would be able to create my own, as I believe that **creativity comes from constraints**. If I could describe the rules, then going beyond them would make me creative by definition.',
+          'To do that, I thought it would be a good exercise to visually map what I knew.'
+        ]
+      },
+      {
+        /* DEUX BLOCS POUR UNE SEULE SECTION : la video doit venir JUSTE APRES
+           le titre, avant le texte. pageArticle() rend toujours un bloc dans
+           l'ordre titre -> paragraphes -> medias, donc on coupe en deux — un
+           bloc titre + media, un bloc texte. C'est le mecanisme prevu (voir le
+           commentaire de pageArticle dans app.js), et il ne casse rien : ici
+           les medias appartiennent a leur bloc, ils ne sont pas indexes par
+           position comme dans les etudes de cas. */
+        h: 'So what is a move?',
+        media: [
+          // 360x640 : c'est une video de telephone, verticale. La laisser
+          // occuper les 700px de la colonne lui donnerait 1244px de haut, soit
+          // un ecran entier pour une illustration. On la borne donc a 240px
+          // (427 de haut) : sous sa taille naturelle, jamais au-dessus — une
+          // video agrandie devient floue, et celle-ci n'a que 360px a donner.
+          { type: 'video', src: 'assets/media/salsa-combo.mp4', controls: true,
+            sound: true, maxWidth: 240,
+            caption: 'Example of a move sequence.' }
+        ]
+      },
+      {
+        p: [
+          'A move is a sequence of positions, meaning where each dancer stands on the line and which way they face, between the leader and the follower over 8 beats, set by the steps and by the handholds that change along the way.'
+        ]
+      },
+      {
+        h: 'Finding the unit',
+        p: [
+          'From all the different moves I collected, I looked for what they had in common. To do so, I had to cut the videos into smaller pieces: the smaller the component, the better it is for comparison.',
+          'In class, moves were taught over 8 beats. But even there, the possibilities were endless. So I cut again into halves of 4, so I could pay closer attention to the details.',
+          'That’s what let me build the concepts below:'
+        ]
+      },
+      {
+        h: 'Concepts',
+        /* Un glossaire plutot que cinq paragraphes : ce sont des definitions
+           qu'on relit une par une, et "Body possibilities" se subdivise en
+           quatre facettes — c'est exactement ce que `sub` sert a montrer. */
+        terms: [
+          {
+            term: 'Timing',
+            body: 'The ability to synchronize moves with the beats of a song. I realized that some moves can only start on a certain beat, which means that if two moves happen on the same timing, there’s a good chance they have something in common. This helped me group the moves in families (see the Steps section below).',
+            media: [
+              // 687 = la largeur du schema a l'echelle 1 (fichier exporte en
+              // 3x, soit 2061px). Voir `maxWidth` dans mediaMarkup().
+              { type: 'image', src: 'assets/img/salsa-timing-v2.webp', maxWidth: 687, zoomable: 'mobile',
+                caption: 'Moves placed on the count they start on.' }
+            ]
+          },
+          {
+            term: 'Lines and lanes',
+            body: 'Salsa is a line dance. The follower travels along a main line while the leader steps out of the way to let them go, into one side or the other of the line. That let me categorize moves by where each dancer stands relative to the line.',
+            // Deux schemas plutot qu'un : la ligne d'abord, puis ce qu'elle
+            // permet de nommer (le cote choisi par le leader). Ils se lisent
+            // l'un apres l'autre, d'ou le carrousel — voir carouselMarkup()
+            // dans app.js. `src` (chemin complet) et non `image` : ces exports
+            // Figma n'existent qu'en WebP.
+            media: [
+              { type: 'carousel', maxWidth: 400, items: [
+                { src: 'assets/img/salsa-lines-lanes-v3.webp',
+                  caption: 'Main track for the follower, side lane for the leader.' },
+                { src: 'assets/img/salsa-cbl-sides-v2.webp',
+                  caption: 'In a cross-body lead, the leader can pass on either side of the follower.' },
+                // Boucle muette, recadree sur les danseurs (voir
+                // carouselMarkup() dans app.js pour item.type === 'video') :
+                // source 854x480, coupee a 380x370 pour ecarter le sous-titre
+                // et le logo incrustes, puis recompressee sans son (~210 Ko
+                // pour 9,4 s, contre plusieurs Mo a la source).
+                { type: 'video', src: 'assets/media/salsa-cbl-loop.mp4',
+                  caption: 'A cross-body lead, in motion.' }
+              ] }
+            ]
+          },
+          {
+            term: 'Steps',
+            body: 'The spot in which we put our feet down, at a given beat. Almost every combination I looked at comes from three foundational steps: the turn, the cross-body lead (CBL), and the backstep.',
+            media: [
+              { type: 'image', src: 'assets/img/salsa-steps-v2.webp', maxWidth: 800, zoomable: true,
+                caption: 'The key figures, derived from the three foundational steps.' }
+            ]
+          },
+          {
+            term: 'Body possibilities',
+            body: 'The positions two people can physically hold together.',
+            sub: [
+              { term: 'Turn height', body: 'Turns happen at three heights only: above the head, at neck level, or at waist level.',
+                media: [{ type: 'image', src: 'assets/img/salsa-turn-height-v2.webp', maxWidth: 496, zoomable: 'mobile',
+                          caption: 'The three levels a turn can happen at.' }] },
+              { term: 'Arm position', body: 'Each arm is either in front of or behind a specific body part. Combining that with the heights is what produces named positions (e.g. a hammerlock is one arm behind at waist level with the other neutral above the head; a cuddle is both arms in front at waist level).',
+                media: [{ type: 'image', src: 'assets/img/salsa-arm-position-v2.webp', maxWidth: 496, zoomable: 'mobile',
+                          caption: 'Arms in front or behind, at a given height.' }] },
+              { term: 'Direction', body: 'The dancers face each other, stand back to back, or both face the same way, with either the leader or the follower in front.',
+                media: [{ type: 'image', src: 'assets/img/salsa-direction-v2.webp', maxWidth: 601, zoomable: 'mobile',
+                          caption: 'Facing, opposed, or one shadowing the other.' }] },
+              { term: 'Holds', body: 'How the dancers hold each other, from two hands parallel or crossed, down to no hands at all.',
+                media: [{ type: 'image', src: 'assets/img/salsa-holds-v2.webp', maxWidth: 496, zoomable: 'mobile',
+                          caption: 'Holds examples.' }] }
+            ]
+          },
+          {
+            term: 'Operators',
+            body: 'What happens to the hands during a move: locks, cuts, flicks, rebounds, haircombs, etc.',
+            media: [
+              { type: 'carousel', maxWidth: 400, items: [
+                { type: 'video', src: 'assets/media/salsa-operators-rebound.mp4',
+                  caption: 'Rebound' },
+                { type: 'video', src: 'assets/media/salsa-operators-haircomb.mp4',
+                  caption: 'Drops, Haircombs and Loops' },
+                { type: 'video', src: 'assets/media/salsa-operators-flick.mp4',
+                  caption: 'Flicks' },
+                { type: 'video', src: 'assets/media/salsa-operators-blocks.mp4',
+                  caption: 'Checks' },
+                { type: 'video', src: 'assets/media/salsa-operators-cuts.mp4',
+                  caption: 'Handswitches and cuts' },
+                { type: 'video', src: 'assets/media/salsa-operators-checks.mp4',
+                  caption: 'Locks' },
+                { type: 'video', src: 'assets/media/salsa-operators-wax.mp4',
+                  caption: 'Wax on and off' }
+              ] }
+            ]
+          }
+        ]
+      },
+      /* La conclusion des concepts est un bloc a elle seule, et non le `p` du
+         bloc ci-dessus : pageArticle() rend toujours h, puis p, puis terms —
+         un paragraphe ecrit la-haut passerait AVANT le glossaire qu'il
+         conclut. Meme regle que pour les medias : ce qui doit venir apres
+         s'ecrit dans le bloc suivant. */
+      {
+        p: [
+          'This made me realize that most moves share the same footwork and differ only above the waist.'
+        ]
+      },
+      {
+        h: 'Writing it down',
+        p: [
+          'I went looking through dance books to see whether the transcription problem had been solved before, and it has been attempted, in several ways.',
+          'Here are some examples:'
+        ],
+        // Deux references existantes, cote a cote : c'est ce que le
+        // paragraphe qui precede annonce ("it has been attempted, in several
+        // ways"). Une grille de deux plutot qu'un carrousel : elles doivent se
+        // comparer d'un coup d'oeil, pas se feuilleter l'une apres l'autre.
+        // BLOC A PART (voir plus bas) : mediaGroup() rend toujours APRES tous
+        // les `p` d'un bloc, donc pour la faire atterrir entre les deux
+        // paragraphes, le second paragraphe part dans le bloc suivant — meme
+        // mecanisme que "So what is a move?" plus haut dans ce fichier.
+        // MEME HAUTEUR RENDUE POUR LES DEUX (275px, impose par
+        // .article__block .media-grid dans styles.css — voir le commentaire
+        // la-bas) : la carte (365x415 native) et l'illustration (1014x670,
+        // exportee en 2x pour rester nette une fois redimensionnee) doivent
+        // s'aligner cote a cote sans que l'une paraisse un post-scriptum plus
+        // petit de l'autre. 275px et non la hauteur native de la carte (415) :
+        // a 415 les deux images cote a cote demandent ~993px, largement plus
+        // que les 700px de la colonne (.wrap--narrow moins les gouttieres) —
+        // elles retomberaient sur deux lignes. A 275, ~242px + ~416px + 24px
+        // de gap tiennent dans les 700px. `maxWidth` ici ne fait plus que
+        // plafonner/documenter la taille source de chaque fichier — la
+        // largeur affichee vient de la hauteur commune, pas de `maxWidth`.
+        // `hideCaption` : legende retiree de l'affichage (demande utilisateur),
+        // le texte reste comme alt/aria-label pour l'accessibilite.
+        media: [
+          { type: 'image', src: 'assets/img/salsa-ref-footwork-card.webp', maxWidth: 365,
+            caption: 'A beat-by-beat footwork card (JustSalsa, 2005).', hideCaption: true },
+          { type: 'image', src: 'assets/img/salsa-ref-dancing-made-easy-v2.webp', maxWidth: 1014,
+            caption: '"Dancing Made Easy": an older attempt, figure by figure.', hideCaption: true }
+        ]
+      },
+      {
+        p: [
+          'I ended up with my own version which looks a bit like sheet music. Each frame is a beat, with the leader and follower positions on a grid. Arrows show which way each of them travels and turns.'
+        ],
+        /* La demonstration de la section : l'extrait danse et la planche du
+           MEME enchainement (El Tiburon), le temps courant encadre sur la
+           planche pendant la lecture. Voir beatSyncMarkup()/setupBeatSync()
+           dans app.js et .beatsync dans styles.css (section 9 ter).
+
+           LES COORDONNEES DES CASES viennent du fichier Figma "Salsa position
+           and steps sheets" (fileKey oJvHwY1G3OxALPnXIAtbQd, noeud 10:53),
+           relevees sur les noeuds de chaque case et exprimees dans le repere
+           de la planche : 744 x 397. L'image exportee est recadree EXACTEMENT
+           sur ces bornes (l'export Figma ajoute 40px de marge tout autour,
+           retires a la conversion), donc x/744 et y/397 donnent directement
+           le pourcentage. Rogner l'image autrement decale tous les cadres.
+
+           LA PLANCHE A DEJA ETE REDIMENSIONNEE UNE FOIS (831x473 -> 744x397).
+           Les cases font toujours 99x99, mais elles ont TOUTES bouge. Si elle
+           bouge encore : relire le noeud 10:53 dans Figma, reprendre sheetW /
+           sheetH sur la section et x/y sur chaque case, et reexporter l'image.
+           Ne jamais ajuster une seule des trois choses — le cadre du temps
+           courant se calcule a partir des trois ensemble.
+
+           LA GRILLE DES TEMPS (`counts`) : les 16 temps de l'enchainement, 2
+           mesures de 8. Elle porte AUSSI les temps 4 et 8, qui n'ont pas de
+           case sur la planche mais que le danseur compte quand meme — c'est ce
+           que le compteur en haut de la video affiche. Chaque case dit, par
+           `slot`, a quel temps de cette grille elle correspond.
+
+           D'OU VIENNENT CES VALEURS. Relevees par l'auteur sur le fichier, en
+           SECONDES:IMAGES a 60 i/s : 1 a 04:13, 2 a 04:48, 3 a 05:23, 5 a
+           06:44, 6 a 07:16, 7 a 07:56 — soit 4,217 / 4,800 / 5,383 / 6,733 /
+           7,267 / 7,933 s. Le temps 4 est pose au milieu de 3 et 5, comme
+           indique. Lecture en images et non en centiemes parce qu'elle donne
+           des intervalles reguliers (0,58 a 0,68 s, ~97 BPM) la ou les
+           centiemes donneraient 0,35 puis 0,75 s entre deux temps voisins,
+           ce qu'aucune mesure musicale ne fait. SI C'ETAIT DES CENTIEMES :
+           reprendre 4,13 / 4,48 / 5,23 / 6,44 / 7,16 / 7,56 et refaire la
+           mesure 2 au meme pas.
+
+           LA MESURE 2 (slots 8 a 15) N'A PAS ETE RELEVEE : elle est prolongee
+           au tempo mesure sur la mesure 1, 0,619 s par temps — donc le temps 1
+           de la 2e mesure a 9,17 s et son temps 7 a 12,89 s, ce qui tient dans
+           les 13,33 s du fichier. A verifier a l'oeil, et a corriger ici
+           seulement si ca derape.
+
+           `sound` n'est pas pose : le bouton de son existe mais reste eteint
+           (voir beatSyncMarkup() dans app.js). Le mettre a true le rallume. */
+        beatSync: {
+          video: 'assets/media/salsa-tiburon.mp4',
+          videoTitle: 'El Tiburon danced, the excerpt this sheet transcribes',
+          // La boucle couvre desormais tout le fichier : le pas de base avant
+          // l'enchainement, l'enchainement lui-meme (mesures 1 et 2), et le
+          // pas de base apres. Le fichier fait 13,33 s ; on s'arrete a 13.28
+          // (meme marge qu'avant le rallongement de la boucle) plutot que sur
+          // la toute derniere image.
+          start: 0.15, end: 13.28,
+          sheet: 'assets/img/salsa-sheet-tiburon.webp',
+          sheetW: 744, sheetH: 397,
+          sheetAlt: 'The El Tiburon sheet: four parts, one frame per beat, each showing the leader and follower on a grid.',
+          // Pas de `caption` : legende retiree (demande utilisateur) — le
+          // texte "press play / click any frame" etait redondant avec
+          // l'aria-label de chaque bouton et de chaque case, deja lus par un
+          // lecteur d'ecran. `sheetAlt` ci-dessus reste le texte alternatif
+          // de la planche elle-meme.
+          // `slot` = le rang du temps dans `counts` ci-dessous. Seuls les
+          // temps de l'enchainement (mesures 1 et 2, slots 8 a 23) ont une
+          // case : ni les temps 4 et 8 de chaque mesure (pause du pas de
+          // base, pas de case sur la planche), ni le pas de base avant/apres
+          // l'enchainement (slots 0-7 et 24-28 : la planche ne dessine que
+          // l'enchainement, pas ce pas de base — voir plus bas).
+          frames: [
+            { slot: 8,  beat: 1, part: '1st part: enchufla (lead)', x: 20,  y: 49,  w: 99, h: 99 },
+            { slot: 9,  beat: 2, part: '1st part: enchufla (lead)', x: 139, y: 49,  w: 99, h: 99 },
+            { slot: 10, beat: 3, part: '1st part: enchufla (lead)', x: 258, y: 49,  w: 99, h: 99 },
+            { slot: 12, beat: 5, part: '2nd part: Tiburon part 1',  x: 377, y: 49,  w: 99, h: 99 },
+            { slot: 13, beat: 6, part: '2nd part: Tiburon part 1',  x: 506, y: 49,  w: 99, h: 99 },
+            { slot: 14, beat: 7, part: '2nd part: Tiburon part 1',  x: 625, y: 49,  w: 99, h: 99 },
+            { slot: 16, beat: 1, part: '3rd part: Tiburon part 2',  x: 20,  y: 233, w: 99, h: 99 },
+            { slot: 17, beat: 2, part: '3rd part: Tiburon part 2',  x: 139, y: 233, w: 99, h: 99 },
+            { slot: 18, beat: 3, part: '3rd part: Tiburon part 2',  x: 258, y: 233, w: 99, h: 99 },
+            { slot: 20, beat: 5, part: '4th part: right turn',      x: 389, y: 233, w: 99, h: 99 },
+            { slot: 21, beat: 6, part: '4th part: right turn',      x: 506, y: 233, w: 99, h: 99 },
+            { slot: 22, beat: 7, part: '4th part: right turn',      x: 625, y: 233, w: 99, h: 99 }
+          ],
+          // n = le chiffre annonce (1 a 8), t = sa seconde dans le fichier,
+          // en secondes + CENTIEMES (et non en frames : "04:13" = 4,13 s).
+          //
+          // Quatre segments a la suite : le pas de base avant l'enchainement,
+          // les deux mesures de l'enchainement, puis le pas de base apres.
+          // Dans chaque segment, les temps releves a l'oreille sont donnes
+          // tels quels ; les temps manquants (pauses du pas de base, sans
+          // case sur la planche) sont la MOYENNE des deux temps voisins —
+          // demande explicite : garder ces temps la ou aucune case ne peut de
+          // toute facon les distinguer visuellement.
+          counts: [
+            // Pas de base, avant l'enchainement.
+            { n: 1, t: 0.15 },               { n: 2, t: 0.53 },
+            { n: 3, t: 1.34 },               { n: 4, t: 1.73 },  // moyenne(3, 5)
+            { n: 5, t: 2.12 },               { n: 6, t: 2.37 },
+            { n: 7, t: 3.11 },               { n: 8, t: 3.62 },  // moyenne(7, mesure 1 / 1)
+            // Mesure 1.
+            { n: 1, t: 4.130 },              { n: 2, t: 4.480 },
+            { n: 3, t: 5.230 },              { n: 4, t: 5.835 },
+            { n: 5, t: 6.14 },               { n: 6, t: 6.44 },
+            { n: 7, t: 7.16 },               { n: 8, t: 7.58 },  // moyenne(7, mesure 2 / 1)
+            // Mesure 2.
+            { n: 1, t: 8.00 },               { n: 2, t: 8.39 },
+            { n: 3, t: 9.08 },               { n: 4, t: 9.235 }, // moyenne(3, 5)
+            { n: 5, t: 9.39 },               { n: 6, t: 10.18 },
+            { n: 7, t: 10.47 },              { n: 8, t: 10.815 }, // moyenne(7, pas de base / 1)
+            // Pas de base, apres l'enchainement.
+            { n: 1, t: 11.16 },              { n: 2, t: 11.59 },
+            { n: 3, t: 12.33 },              { n: 4, t: 12.70 }, // moyenne(3, 5)
+            { n: 5, t: 13.07 }
+          ]
+        }
+      },
+      {
+        h: 'What it taught me',
+        p: [
+          'This exercise gave me the ability to break a move apart and invent new ones by changing its variables.',
+          'But it also changed my mind about how much that matters. Creativity (the ability to invent) is nice to have, but I don\'t think it matters as much as technique (the ability to do a move well), because a well-done move feels "right": it makes sense to both partners and is comfortable for them. Without technique, there\'s no creativity to build on.'
+        ]
+      }
     ]
   },
 

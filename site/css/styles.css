@@ -878,9 +878,23 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
    sur la fenetre. C'est ce qui evite d'animer un calque de plusieurs milliers
    de pixels de haut, et ce qui rend --hero-min/min-height inutiles ici.
 
-   z-index: 0 — tout le contenu vit dans #page (125) et .site-head (120), donc
-   au-dessus. Sous 0 on passerait derriere le fond de <body>, et la grille
-   disparaitrait.                                                          */
+   z-index: 0 — pas plus bas : sous 0 on passerait derriere le fond de
+   <body>, et la grille disparaitrait.
+
+   #page RECOIT UN z-index PROPRE JUSTE APRES, ET C'EST OBLIGATOIRE. #page ne
+   porte position/z-index QUE dans body.is-overlay (125, pour recouvrir
+   .site-head a 120 — voir plus bas). Hors fiche, sur la page d'accueil
+   elle-meme, #page restait donc statique (z-index: auto) : dans l'ordre de
+   peinture d'un contexte d'empilement, le contenu en flux normal non
+   positionne (etape 3 de CSS2 Appendix E) passe AVANT les descendants
+   positionnes a z-index 0 (etape 6) — et ::before/::after, `position: fixed`,
+   en sont. Resultat : la grille se peignait AU-DESSUS de toutes les cartes de
+   la page d'accueil, pas dessous, quel que soit son ordre dans le DOM. #page
+   a donc besoin de son propre z-index (peu importe lequel, tant qu'il est
+   positif) pour rejoindre l'etape 7 et passer devant les deux pseudo-
+   elements. */
+#page { position: relative; z-index: 1; }
+
 body:not(.is-overlay):has(.home)::before,
 body:not(.is-overlay):has(.home)::after {
   content: '';
@@ -1105,6 +1119,7 @@ body:not(.is-overlay):has(.home) {
 /* aspect-ratio releve dans Figma (1280/1072). Il garantit que toutes les
    vignettes ont la meme hauteur sans fixer de pixels. */
 .card__media {
+  position: relative;
   aspect-ratio: 1280 / 1072;
   overflow: hidden;
   background: rgba(0,0,0,.12);
@@ -1128,6 +1143,21 @@ body:not(.is-overlay):has(.home) {
    constraint-limit.jpg, la meme couleur de fond que la video elle-meme —
    voir le commentaire complet sur .cs__hero-media .figure__frame. */
 .card[data-slug="constraints"] .card__media { background: #e9e1f9; }
+
+/* Meme raison que le lilas de "Scheduling constraints" ci-dessus : la video
+   n'a de quoi peindre qu'une fois decodee (preload="metadata" ne charge que
+   l'entete), et .card__media n'est que 12% opaque (rgba(0,0,0,.12), pensee
+   pour un <img> qui decode en un instant). Le temps que la video demarre —
+   surtout sur la page d'accueil, ou la grille de fond est juste derriere —
+   la carte laissait voir cette grille par transparence. #581938 est la
+   couleur moyenne du fichier (salle eclairee au magenta), releve sur
+   plusieurs images de salsa-cover.mp4. */
+.card[data-slug="salsa"] .card__media { background: #581938; }
+
+/* Meme raison, pour la vignette Soundcloud (soundcloud-hero.mp4) : #f3591c
+   est la meme moyenne de coins que .cs__hero-media[data-slug="soundcloud"]
+   plus bas, releve sur son poster. */
+.card[data-slug="soundcloud"] .card__media { background: #f3591c; }
 
 .card__body { display: flex; flex-direction: column; gap: var(--s4); }
 .card__title-block { display: flex; flex-direction: column; gap: var(--s2); }
@@ -2048,6 +2078,13 @@ body:not(.is-overlay):has(.home) {
   aspect-ratio: 16 / 9;
   object-fit: contain;
 }
+/* Soundcloud : video carree (soundcloud-hero.mp4, source 1087x1087), pas de
+   cadre 16:9 a lui imposer. #f3591c est la moyenne des quatre coins de son
+   poster, pour que le fond ne tranche pas pendant le decodage. */
+.cs__hero-media[data-slug="soundcloud"] .figure__frame { background: #f3591c; }
+.cs__hero-media[data-slug="soundcloud"] .figure--remote video {
+  aspect-ratio: 1 / 1;
+}
 /* Hero passe en Lottie (assets/media/constraint-limit.json, meme 524x600
    que l'ancienne video) : dotlottie-wc ne supporte pas object-fit comme
    <video> (voir la note pres de .figure--lottie plus haut — son <canvas>
@@ -2072,6 +2109,7 @@ body:not(.is-overlay):has(.home) {
      .card__media dotlottie-wc plus bas) : le fichier source le porte aussi. */
   clip-path: inset(0 0 4% 0);
 }
+
 
 /* ---- Contraintes, section "Solution" : les deux captures (mockups,
    content.js) -------------------------------------------------------------
@@ -2219,7 +2257,9 @@ body:not(.is-overlay):has(.home) {
 }
 .cs-carousel__track:active { cursor: grabbing; }
 .cs-carousel__panel { flex: 0 0 100%; min-width: 0; }
-.cs-carousel__panel img { display: block; width: 100%; height: 100%; -webkit-user-drag: none; }
+.cs-carousel__panel img, .cs-carousel__panel video {
+  display: block; width: 100%; height: 100%; -webkit-user-drag: none;
+}
 .cs-carousel__arrow {
   position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
   display: flex; align-items: center; justify-content: center;
@@ -2275,6 +2315,65 @@ body:not(.is-overlay):has(.home) {
    .cs-carousel et .lottie-carousel, memes classes de fleche. */
 @media (max-width: 700px) {
   .cs-carousel__arrow { display: none; }
+}
+
+/* ---- Le meme carrousel dans l'article (voir le media `type: 'carousel'` de
+   "Lines and lanes" dans content.js). Les deux schemas Figma des deux slides
+   font tous deux 990x962 (meme noeud source, meme export 2x) : le ratio de la
+   scene est donc celui-la, pas un compromis comme pour Services exclusion
+   (997/936, deux captures du meme ecran). L'image remplit alors la scene EN
+   ENTIER, sans bande laterale — c'est ce qui permet aux fleches (posees en
+   `left`/`right` sur la scene, voir .cs-carousel__arrow plus haut) de tomber
+   SUR l'image plutot que dans une marge vide de part et d'autre.
+   `object-fit: contain` reste pose : si un jour une des deux images change
+   pour un format different, la scene contient toujours le schema entier au
+   lieu de le rogner, elle ne redevient simplement plus invisible tant que les
+   deux formats matchent. */
+.article__block .cs-carousel__stage { aspect-ratio: 495 / 481; }
+.article__block .cs-carousel__panel img, .article__block .cs-carousel__panel video {
+  height: 100%; object-fit: contain;
+}
+
+/* ---- La paire de references dans "Writing it down" (voir le 2e `media` de
+   content.js — la carte de pas et "Dancing Made Easy"). .media-grid generique
+   (plus haut) range ses figures en colonnes EGALES (`1fr` chacune), ce qui va
+   bien pour des captures du meme ecran mais etire ou ratatine deux images de
+   formats differents a des LARGEURS egales, donc des HAUTEURS differentes —
+   l'effet inverse de ce qui est demande ici.
+   Passe donc en ligne flex : chaque figure garde la largeur que lui donne son
+   image (`flex: 0 0 auto`, pas de stretch), et c'est l'IMAGE qui recoit une
+   hauteur fixe plutot que le `width: 100%` habituel de .figure--remote img.
+   275px, PAS la hauteur native de la carte de pas (365x415) : a 415 les deux
+   images cote a cote demandent ~993px + le gap, largement plus que les 700px
+   de la colonne (.wrap--narrow moins les gouttieres) — elles retomberaient
+   sur deux lignes au lieu de rester cote a cote. A 275 : ~242px (carte) +
+   ~416px (illustration) + 24px de gap = ~682px, sous les 700px. L'illustration
+   est exportee en 2x (1014x670) pour rester nette a cette taille affichee
+   (retrecissement depuis le fichier, jamais un agrandissement). Si l'une des
+   deux images change de format, refaire ce calcul et ajuster 275px ici. */
+.article__block .media-grid {
+  display: flex; flex-wrap: wrap; align-items: flex-start;
+}
+.article__block .media-grid .figure { flex: 0 0 auto; max-width: 100%; }
+.article__block .media-grid .figure__frame img {
+  width: auto; height: 275px; max-width: 100%;
+}
+/* Sous 700px, `flex-wrap` fait deja retomber les deux figures chacune sur sa
+   propre ligne — mais height:275px/width:auto ci-dessus leur donne alors
+   chacune une largeur DIFFERENTE (la hauteur commune qui les alignait cote a
+   cote n'a plus de sens une fois empilees). Demande utilisateur : aligner la
+   largeur de la seconde (Dancing Made Easy) sur la premiere (JustSalsa),
+   donc les deux a 100% de la colonne plutot qu'a une hauteur commune. */
+@media (max-width: 700px) {
+  /* Le pourcentage vit sur .figure (pas sur l'img comme sur desktop) : mettre
+     width:80% directement sur l'img aurait ete circulaire si .figure__frame
+     avait du s'ajuster a son contenu (fit-content depend de l'image, l'image
+     depend de fit-content). Ici .figure__frame reste un bloc qui remplit
+     .figure, et l'img remplit le frame a 100% — donc le frame (fond + liseré
+     de .figure--remote) colle exactement au bord de l'image reduite, au lieu
+     de deborder a la largeur pleine colonne. */
+  .article__block .media-grid .figure { flex: 0 0 auto; width: 80%; }
+  .article__block .media-grid .figure__frame img { width: 100%; height: auto; }
 }
 
 /* ---- Services exclusion, section "Fixes" : demo interactif "modal
@@ -3235,11 +3334,20 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 }
 .cs-more__embed iframe { width: 100%; height: 100%; border: none; display: block; }
 
-/* La vignette video des cartes de projet (uniquement "Scheduling
-   constraints", seul projet avec heroMedia de type video). object-fit:
-   contain plutot que cover : la video est cadree en portrait (voir
-   .cs__hero-media plus bas) et cover la recadrerait au lieu de la montrer en
-   entier. Legerement plus petite que la boite (92%, centree par le flex de
+/* La vignette video des cartes de projet : par defaut, meme traitement que
+   les images/SVG juste au-dessus (100%, object-fit: cover) — le fichier est
+   deja cadre au ratio de .card__media (voir heroMedia dans content.js), donc
+   cover ne fait qu'absorber un ecart d'arrondi, pas un vrai recadrage. */
+.card__media video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform .5s var(--ease);
+}
+.card:hover .card__media video { transform: scale(1.03); }
+/* "Scheduling constraints" est le cas particulier : sa video est cadree en
+   portrait (voir .cs__hero-media plus bas), donc cover la recadrerait au
+   lieu de la montrer en entier — on repasse ici en object-fit: contain.
+   Legerement plus petite que la boite (92%, centree par le flex de
    .card__media) pour laisser respirer le fond #e9e1f9 autour d'elle plutot
    que de toucher les bords de la carte. clip-path rogne le bas : le fichier
    source a un fin liseré sombre au bord inferieur de son cadre (visible a
@@ -3247,13 +3355,11 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    video occupe toute la hauteur de son element (object-fit: contain, cote
    contraignant), ce pourcentage retire exactement ce liseré plutot que de
    l'agrandir. */
-.card__media video {
+.card[data-slug="constraints"] .card__media video {
   width: 92%; height: 92%;
   object-fit: contain;
   clip-path: inset(0 0 4% 0);
-  transition: transform .5s var(--ease);
 }
-.card:hover .card__media video { transform: scale(1.03); }
 
 /* Meme vignette, en Lottie (voir cardMedia() dans app.js) : dotlottie-wc ne
    supporte pas object-fit, donc on lui donne directement son propre ratio
@@ -3300,6 +3406,320 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 .editorial__block h2 { font-size: var(--fs-h2); margin-bottom: var(--s4); font-weight: var(--w-medium); }
 .editorial__block p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }
 .editorial__block p:last-child { margin-bottom: 0; }
+
+/* --- 9 bis. UN PROJET RENDU COMME UN ARTICLE (pageArticle, app.js 5e ter) --
+   "Documenting salsa dance" est une side quest, donc une fiche : elle garde
+   .cs (fond blanc, rythme vertical, croix de fermeture) et son en-tete est un
+   .cs__head ordinaire. Ce bloc ne decrit donc QUE le corps — ce qu'une etude
+   de cas met dans .cs-sec et qu'un article met dans une suite de blocs.
+
+   Les regles reprennent celles de .editorial__block plus haut plutot que
+   celles de .cs-sec : la colonne est etroite (.wrap--narrow) et la mesure de
+   lecture est la meme que sur l'article des deux ans. Elles ne sont pas
+   partagees avec .editorial__block par une liste de selecteurs parce que les
+   deux vivent dans des themes differents — l'article-projet sur la fiche
+   blanche, l'editorial sur le bleu du site — et qu'ils divergeront (medias,
+   citations) du cote projet seulement. */
+.cs--article { padding-bottom: var(--s9); }
+
+/* Le media d'ouverture. Volontairement PAS .cs__hero-media : celui-la impose
+   un cadre 16:9 et un fond #e9e1f9 releves sur l'animation de Contraintes,
+   ce qui n'a aucun sens pour une photo. Ici le media garde son ratio natif. */
+.article__hero { margin-top: var(--s6); margin-bottom: var(--s2); }
+.article__hero .figure { margin-block: 0; }
+
+.article__block { margin-bottom: var(--s7); }
+.article__block:last-child { margin-bottom: 0; }
+.article__block h2 { font-size: var(--fs-h2); margin-bottom: var(--s4); font-weight: var(--w-medium); }
+.article__block p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }
+.article__block p:last-child { margin-bottom: 0; }
+
+/* Le glossaire d'un bloc (articleTerms(), app.js). Un <dl> vertical au filet
+   gauche, et NON les cartes teintees horizontales de .cs-sec__terms : voir la
+   note au-dessus de la fonction — cinq definitions longues ne tiennent pas en
+   colonnes, et cinq aplats #E9F2FE d'affilee ecrasent le texte autour.
+   Le terme reprend le poids et la couleur pleine de --ink pour se detacher du
+   corps en --ink-soft : c'est le seul contraste dont la liste a besoin.
+
+   UN SEUL filet continu court le long de toute la liste, plutot qu'un filet
+   par terme. C'est ce qui evite d'avoir a annuler l'ecart entre un <dt> et son
+   <dd> (en grille ils sont deux enfants distincts, et un `gap` couperait le
+   trait au milieu de chaque definition) : ici dt et dd sont dans le flux, ils
+   portent le meme bord gauche, et l'espace entre deux termes est simplement le
+   padding bas du <dd>. Rien a resynchroniser. */
+.article__terms { margin: var(--s5) 0; }
+.article__terms > dt,
+.article__terms > dd { padding-left: var(--s5); border-left: 2px solid var(--line); }
+.article__terms > dt {
+  font-weight: var(--w-semibold); color: var(--ink);
+  margin: 0; padding-top: var(--s1);
+}
+.article__terms > dd {
+  margin: 0; padding-top: var(--s2); padding-bottom: var(--s5);
+  color: var(--ink-soft); max-width: var(--measure);
+}
+/* Le filet s'arrete a la derniere ligne lue, pas plus bas. */
+.article__terms > dd:last-child { padding-bottom: 0; }
+
+/* Le schema d'un concept, a l'interieur de sa definition. Marges plus serrees
+   que dans le corps de l'article (--s4 au lieu de --s6) : il appartient au
+   terme au-dessus de lui, et un ecart trop large le detacherait de ce qu'il
+   illustre pour le faire flotter entre deux concepts.
+   NOTE : la figure herite du `max-width: var(--measure)` pose sur le <dd>,
+   puisqu'elle est dedans. C'est sans effet ici — 68ch depasse deja la colonne
+   de l'article — mais si un jour la colonne s'elargit, c'est ce qui bridera
+   les schemas, et il faudra le lever ici plutot que retirer la mesure du
+   texte. */
+.article__terms .media-single,
+.article__terms .media-grid { margin-block: var(--s4); }
+.article__terms dd > .media-single:last-child,
+.article__terms dd > .media-grid:last-child { margin-bottom: 0; }
+/* Un carrousel (voir "Lines and lanes") porte son propre `margin-block:
+   var(--s6)` (32px, .cs-carousel plus haut) — plus large que le
+   `margin-block: var(--s4)` du wrapper ci-dessus, c'est donc lui qui gagne le
+   collapse et qui fixait l'ecart avec le paragraphe. Reduit ici cote haut
+   seulement : le bas garde ses 32px avant le terme suivant. */
+.article__terms .media-single .cs-carousel,
+.article__terms .media-grid .cs-carousel { margin-top: var(--s3); }
+
+/* Le niveau imbrique (les facettes de "Body possibilities"). Le RETRAIT est ce
+   qui dit "ceci est dedans" : sans lui, "Turn height" s'aligne exactement sur
+   "Timing" et se lit comme un concept de plus. Le corps plus petit seul ne
+   suffisait pas — teste, la difference passe inapercue. Pas de second filet en
+   revanche : a ce retrait il longerait le premier de trop pres. */
+.article__subterms { margin: var(--s4) 0 0; padding-left: var(--s5); }
+.article__subterms dt { font-weight: var(--w-semibold); color: var(--ink); font-size: var(--fs-small); }
+.article__subterms dd { margin: var(--s1) 0 var(--s4); font-size: var(--fs-small); }
+.article__subterms dd:last-child { margin-bottom: 0; }
+/* Sur telephone la colonne de texte descend a ~257px (mesure a 320px, la
+   largeur de reflow WCAG 1.4.10) et le retrait lui en prend encore 40. On le
+   reduit de moitie : assez pour que la subordination se lise toujours, pas
+   assez pour hacher les definitions en cinq mots par ligne. Media query
+   locale plutot que la section 12, comme .cs-sec__terms juste au-dessus : la
+   regle n'a de sens qu'a cote de celle qu'elle corrige. */
+@media (max-width: 700px) {
+  .article__subterms { padding-left: var(--s3); }
+}
+
+/* Les medias gardent le `margin-block: var(--s6)` de .media-single/.media-grid
+   (section 8), qui les detache deja du texte. Rien a redire ici — sauf la
+   marge basse du dernier enfant du bloc : .article__block porte la sienne, et
+   les deux s'ajouteraient. Le texte, lui, reste sur --measure ; les visuels
+   prennent toute la colonne, qui est deja etroite (.wrap--narrow). */
+.article__block > :last-child { margin-bottom: 0; }
+
+/* --- 9 ter. LA PLANCHE SYNCHRONISEE AVEC LA VIDEO ------------------------
+   Voir beatSyncMarkup()/setupBeatSync() dans app.js. Video en haut, planche
+   en dessous, le temps courant encadre sur la planche.
+
+   EMPILE, JAMAIS EN DEUX COLONNES. Les deux doivent etre lus ENSEMBLE : cote
+   a cote dans une colonne de 700px, la planche tomberait a ~340px, soit des
+   cases de 45px avec des annotations de 5px — illisibles. La planche a besoin
+   de toute la largeur ; la video, non (elle est bridee a 400px, voir plus
+   bas), et l'empilement garde les deux dans un meme ecran. */
+.beatsync { margin-block: var(--s6); }
+/* Pas d'`aspect-ratio` : un <video> local porte ses propres dimensions (ici
+   640x480), donc la boite se dimensionne seule et reste juste si le fichier
+   change de format un jour. C'etait l'iframe YouTube qui en avait besoin,
+   n'ayant aucun ratio naturel. */
+.beatsync__video {
+  /* `relative` : c'est le repere des commandes et du compteur, tous deux
+     poses SUR l'image. */
+  position: relative;
+  /* LA VIDEO EST BRIDEE A 360px, PAS A LA LARGEUR DE LA COLONNE. A 100% elle
+     faisait 700x525 (elle est en 4:3), et 525 + la planche (373) + la legende
+     donnaient un bloc de ~1020px : il fallait defiler entre la danse et la
+     planche, alors que tout l'interet est de les lire ensemble. A 360x270 le
+     bloc tombe a ~770px et les deux tiennent dans un meme ecran.
+     Si ce chiffre bouge un jour, refaire le calcul en entier : hauteur du bloc
+     = video (largeur x 0,75) + 373 (la planche a 698px) + ~100 (marges, ligne
+     de lecture, legende). `min()` pour que le telephone garde 100%. */
+  max-width: min(360px, 100%);
+  /* CALEE A GAUCHE, comme toutes les figures de l'article (voir boundStyle()
+     dans app.js) : bridee a 360px et centree, elle flottait au milieu d'une
+     colonne de 700px, decalee du bord du texte et du bord de la planche juste
+     en dessous. Alignee a gauche, la video, la planche et le paragraphe
+     partagent la meme verticale. Pas de `margin-inline` du tout ici : la boite
+     est un bloc, elle se cale donc a gauche d'elle-meme. */
+  border-radius: var(--radius); overflow: hidden;
+  background: #000;                     /* le noir du lecteur avant chargement */
+  border: 1px solid var(--frame-line);
+}
+.beatsync__player { display: block; width: 100%; height: auto; }
+
+/* Les commandes, posees sur la video en bas a gauche. Pas les controles
+   natifs : ceux-ci exposeraient la barre de progression du fichier ENTIER
+   (13s) alors que seul l'enchainement compte, et un clic dessus sortirait de
+   la zone que la planche decrit.
+
+   .media-controls / .media-btn / .media-ico NE SONT PAS PROPRES A LA PLANCHE
+   (d'ou l'absence de prefixe .beatsync__) : le lecteur video autonome de la
+   section "So what is a move?" porte exactement la meme rangee de
+   boutons (voir mediaControlsMarkup() dans app.js et .vplayer plus bas). Le
+   seul pre-requis pour les reutiliser est un parent en `position: relative`.
+   Regles a garder generiques : rien ici ne doit supposer une planche. */
+.media-controls {
+  position: absolute; left: var(--s3); bottom: var(--s3);
+  display: flex; gap: var(--s2);
+}
+.media-btn {
+  display: grid; place-items: center;
+  width: 44px; height: 44px;            /* la cible tactile recommandee, pile */
+  padding: 0; cursor: pointer;
+  color: #fff; border-radius: 999px;
+  /* Verre sombre plutot que le --glass clair du reste du site : il flotte sur
+     une image video, dont on ne sait rien — le clair disparaitrait sur un plan
+     clair. Le noir translucide + le flou tiennent sur n'importe quel fond. */
+  background: rgba(12,18,28,.55);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,.22);
+}
+.media-btn:hover { background: rgba(12,18,28,.75); }
+.media-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.media-ico { width: 20px; height: 20px; display: block; }
+/* Le bouton de vitesse (voir speedButtonMarkup() dans app.js) porte un texte
+   ("1×"/"0.5×"), pas une icone : `width: 44px` le tronquerait. `min-width`
+   garde la cible tactile pile sur le rond de lecture tout en laissant le
+   texte respirer. */
+.media-btn--speed {
+  width: auto; min-width: 44px; padding-inline: var(--s3);
+  font-size: var(--fs-small); font-weight: var(--w-semibold);
+  font-variant-numeric: tabular-nums;
+}
+/* Une seule des deux icones est visible, choisie par l'etat du bouton. Les
+   deux restent dans le DOM : basculer n'est alors qu'un changement
+   d'attribut, sans reconstruction ni rechargement de SVG.
+
+   LES DEUX BOUTONS NE SUIVENT PAS LA MEME CONVENTION, et c'est deliberE :
+   - LECTURE : l'icone montre L'ACTION. En pause (aria-pressed="false") on
+     affiche le triangle de lecture. C'est ce que fait tout lecteur video.
+   - SON : l'icone montre L'ETAT. Muet (aria-pressed="false") on affiche le
+     haut-parleur barre. C'est aussi ce que fait tout lecteur video — et
+     l'inverse (le haut-parleur intact affiche pendant que la video est muette,
+     pour annoncer l'action) se lit comme un bug : on croit le son actif.
+   Les aria-label, eux, restent des ACTIONS pour les deux ("Play", "Sound on") :
+   c'est la convention d'un bouton, et aria-pressed porte deja l'etat. */
+.media-btn[aria-pressed="false"] .media-ico--pause,
+.media-btn[aria-pressed="true"]  .media-ico--play,
+.media-btn[aria-pressed="false"] .media-ico--sound-on,
+.media-btn[aria-pressed="true"]  .media-ico--sound-off { display: none; }
+
+/* Le lecteur video autonome (voir videoPlayerMarkup()/setupVideoPlayers()).
+   UNE SEULE LIGNE, et c'est voulu : l'habillage des boutons est deja ci-dessus,
+   le cadre et la legende viennent de .figure--remote, et la video elle-meme est
+   deja mise en forme par `.figure--remote video` (display:block, width:100%,
+   coins arrondis). Redeclarer tout ca ici ne ferait que dupliquer des valeurs
+   qui perdraient de toute facon la cascade face a ce selecteur.
+   `position: relative` est le seul ajout indispensable : c'est lui qui ancre
+   .media-controls sur l'image plutot que sur la page. */
+.vplayer { position: relative; }
+
+/* Le compte en cours, en haut a droite de la video. Chiffre seul et gros :
+   c'est ce qu'on lit du coin de l'oeil en regardant danser, pas une etiquette
+   a dechiffrer. MEME TAILLE que .media-btn (44px, la cible tactile
+   recommandee) : les trois ronds de la video (compte, lecture, vitesse)
+   doivent former une seule famille visuelle, pas deux tailles differentes.
+   Fond plus opaque et bordure plus marquee que les commandes (.media-btn
+   reste a .55/.22) : ce rond porte l'information la plus utile de la demo —
+   LE temps courant — et doit rester lisible sur un plan clair du sujet, pas
+   seulement sur le fond noir du lecteur. */
+.beatsync__count {
+  position: absolute; top: var(--s3); right: var(--s3); margin: 0;
+  min-width: 44px; height: 44px;
+  display: grid; place-items: center;
+  font-size: var(--fs-h3); font-weight: var(--w-semibold);
+  font-variant-numeric: tabular-nums;   /* le rond ne tressaute pas de 1 a 8 */
+  color: #fff; border-radius: 999px;
+  background: rgba(12,18,28,.78);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,.4);
+  box-shadow: 0 2px 10px rgba(0,0,0,.35);
+}
+/* Vide tant que rien n'est pose (avant le premier show()) : sans ca, une
+   pastille vide flotterait sur l'image. */
+.beatsync__count:empty { display: none; }
+
+/* La planche. `position: relative` porte le reperage en pourcentage des cases
+   ET du cadre : tous deux sont positionnes par rapport a CETTE boite, donc
+   elle doit epouser l'image au pixel pres — d'ou le `display: block` sur
+   l'image (sans lui, la ligne de base laisse ~4px sous elle et tout le
+   reperage glisse d'autant). */
+/* Le rail : c'est LUI qui rogne et qui defile, jamais la planche. Le cadre et
+   les cases se reperent en pourcentage de .beatsync__sheet, donc celle-ci
+   doit garder sa taille pleine — la rogner deplacerait tous les reperes. */
+.beatsync__rail {
+  margin-top: var(--s5);
+  overflow-x: auto; overflow-y: hidden;
+  border-radius: var(--radius); border: 1px solid var(--frame-line);
+  /* Le cadre du temps courant est colle au bord haut/bas de sa case : sans
+     cette ligne, un rail qui defile le rognerait de 2px. */
+  scrollbar-width: thin;
+}
+.beatsync__sheet {
+  position: relative;
+  /* La planche fait 744px de large dans Figma (elle en faisait 831 : elle a
+     ete resserree exprES pour tenir ici). La colonne de l'article fait ~700px,
+     soit 94% du naturel — assez proche pour que les annotations restent
+     lisibles, et SANS defilement horizontal sur ordinateur, ce qui etait le
+     defaut de la version 831px.
+     Le plancher a 640px n'existe donc que pour le telephone : en dessous, on
+     prefere faire defiler le rail plutot que reduire encore. A 640px les cases
+     font 85px, toujours bien au-dessus de la cible tactile de 44px. */
+  min-width: 640px; width: 100%;
+}
+.beatsync__sheet img { display: block; width: 100%; }
+
+/* PAS DE DEBORDEMENT HORS COLONNE. Une version precedente elargissait le bloc
+   de 90px de chaque cote au-dessus de 1200px pour que la planche tienne sans
+   defiler ; c'est annule — la video et la planche restent dans le
+   .wrap--narrow comme tout le reste de l'article, sur demande. Ce n'est plus
+   un compromis depuis que la planche est passee a 744px : elle tient dans la
+   colonne. Le rail ne defile que sous 640px, et le cadre du temps courant y
+   est suivi automatiquement par revealBeat(), donc le defilement ne demande
+   rien au lecteur. */
+
+/* Les zones cliquables, une par temps. Transparentes : la planche se suffit,
+   elles n'ajoutent qu'une cible. Elles restent atteignables au clavier, et le
+   focus les revele — sinon un utilisateur au clavier tabule dans le vide. */
+.beatsync__spot {
+  position: absolute; margin: 0; padding: 0;
+  background: none; border: 0; border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.beatsync__spot:hover { background: rgba(32,120,240,.10); }
+.beatsync__spot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Le cadre du temps courant. `pointer-events: none` est indispensable : pose
+   par-dessus les cases, il intercepterait sinon le clic destine a la case
+   qu'il recouvre — c'est-a-dire precisement celle sur laquelle on est. */
+.beatsync__marker {
+  position: absolute; pointer-events: none;
+  border: 2px solid var(--accent); border-radius: var(--radius-sm);
+  background: rgba(32,120,240,.08);
+  /* Le cadre DEBORDE sa case d'environ 8%. Colle a la case, il mordait sur le
+     numero du temps et sur les annotations qui depassent de la grille (celles
+     de "L creates tension...", par exemple), et le contenu encadre devenait
+     moins lisible que ses voisins — l'inverse du but. La mise a l'echelle part
+     du centre, donc la case reste centree dans son cadre sans recalculer
+     aucune coordonnee.
+     `scale` et non width/height : ceux-ci sont copies depuis la case active
+     (marker.style.cssText dans setupBeatSync), et les gonfler ici obligerait a
+     recalculer aussi left/top pour rester centre. */
+  transform: scale(1.08);
+  transition: left .18s ease, top .18s ease, width .18s ease, height .18s ease;
+}
+@media (prefers-reduced-motion: reduce) { .beatsync__marker { transition: none; } }
+
+.beatsync__read {
+  margin: var(--s3) 0 0; font-size: var(--fs-small);
+  color: var(--ink); font-weight: var(--w-semibold);
+  /* Reserve la ligne : sans hauteur minimale, le premier temps affiche fait
+     sauter la planche et la legende de 20px. */
+  min-height: 1.4em;
+}
+.beatsync__caption {
+  margin: var(--s2) 0 0; font-size: var(--fs-small); color: var(--ink-faint);
+}
 
 /* Les paragraphes entre crochets sont des consignes de redaction. Le lime les
    rend impossibles a publier par distraction. */
@@ -4380,7 +4800,7 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
   html, body { background: #fff !important; color: #000 !important; font-size: 11pt; }
   /* La fiche redevient une page ordinaire sur le papier. */
   #page { margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
-  .cs-sec p, .editorial__block p, .stat__l, .cs__tagline { color: #000 !important; }
+  .cs-sec p, .editorial__block p, .article__block p, .stat__l, .cs__tagline { color: #000 !important; }
   .stat__n { color: #000 !important; }
   .tag { border: 1px solid #000; color: #000 !important; background: none !important; }
   .figure__frame { border: 1px solid #ccc; }
