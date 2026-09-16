@@ -896,53 +896,133 @@ export const PROJECTS = [
   {
     slug: 'fit-plans', kind: 'work', accent: 'd', year: '2020',
     poster: { label: '6 → 3', figure: 'flow' },
-    title: 'Fit-Plans',
+    heroMedia: { type: 'image', src: 'assets/img/fitplans-hero.webp' },
+    title: 'Fit-plans redesign',
     client: 'Fit-Plans, Montréal',
-    tagline: 'An ordering flow cut from **6 steps to 3**, for customers who preferred to phone in.',
+    hideClient: true,
+    tagline: 'Cutting the ordering flow from **6 steps to 3**.',
     tags: ['Redesign', 'Research', 'UI'],
     gist: { role: 'UX, UI, strategy', duration: 'March – August 2020', team: '1 designer, 2 developers', tools: 'Figma, Google Analytics' },
-    problem: 'Fit-Plans prepares and delivers calorie-accurate meals for sports enthusiasts in Montréal. The site had been built by the CEO in his spare time and had never been a priority. The result: 84% of customers found ordering too complicated and simply called instead — a drain on an already small team.',
-    outcome: 'The ordering flow went from six steps to three. Products are reachable straight from the homepage, and meal customisation happens on the plan detail page. Desktop and mobile.',
+    problem: 'Fit-Plans is a company specializing in the preparation and delivery of daily plans and calorie-accurate meals for sports enthusiasts. Based in Montreal for the past 4 years, the team consists of the CEO who is also the CTO, an operations manager, and a chef coordinating a team of 10 cooks.',
+    outcome: 'The ordering flow went from six steps to three. Products are reachable straight from the homepage, and meal customisation happens on the plan detail page.',
     stats: [
-      { n: '84%', l: 'of customers found ordering too long' },
-      { n: '6 → 3', l: 'steps to order' },
-      { n: '92%', l: 'rate the concept and CTA as essential' }
+      { n: '6 → 3', l: 'steps to order' }
     ],
     sections: [
       {
-        id: 'discovery', label: 'Discovery', title: 'Discovery',
+        id: 'process', label: 'Process', title: 'Process',
+        headline: 'The current website',
         body: [
-          'Analytics, heuristic evaluation, survey. The old site already gave plenty of clues, but we needed to hear from customers to understand why they reached for the phone.',
-          'To get answers at volume, I set up a loyalty scheme: a completed survey in exchange for a promo code. It was the most effective lever available to a small company. The survey covered three themes — habits and motivations, opinion of the service, opinion of the website.',
-          'The number that framed the whole project: 84% of respondents found the meals too hard to order and the process too long. They preferred to call.'
-        ]
-      },
-      {
-        id: 'definition', label: 'Definition', title: 'Definition',
-        body: [
-          'Personas, user flow, prioritisation matrix. The old path required six steps before confirming a plan. Starting again from the actual need — pick a plan, adjust it, pay — halved the number of steps.',
-          'The structural change: products reachable directly from the homepage, and adding or removing specific meals moved onto the plan detail page, where the user has the context to decide.'
-        ]
+          'To understand why the users were ordering by phone instead of online, I first audited the website. I realized that:',
+          'I also observed the analytics and proceeded to an exploratory survey to understand their opinion about the website. It made me understand that:'
+        ],
+        bulletsAfter: [
+          { after: 0, items: [
+            'The pages were dense with text and visually cluttered',
+            'The difference between the offers was not clear',
+            'Navigation was confusing, as some links didn’t look clickable'
+          ] },
+          { after: 1, items: [
+            'The homepage had a drop-off rate of 59.2%',
+            '84% of customers found ordering too long'
+          ] }
+        ],
+        media: {
+          0: [
+            { type: 'image', src: 'assets/img/fitplans-old-website-1.webp', zoomable: 'mobile', caption: 'The old homepage.' },
+            { type: 'image', src: 'assets/img/fitplans-old-website-2.webp', zoomable: 'mobile', caption: 'The old plan detail, meal selection and customisation pages.' }
+          ],
+          1: [
+            { type: 'image', src: 'assets/img/fitplans-survey-q11.webp', maxWidth: 500, zoomable: 'mobile', caption: 'Exploratory survey’s results.' }
+          ]
+        }
       },
       {
         id: 'design', label: 'Design', title: 'Design',
+        headline: 'Implementing a shorter ordering process',
         body: [
-          'Wireframes, then UI. The homepage opens on a sentence stating the value proposition, followed by the ordering steps and direct access to the offers.',
-          'On the product page, a filter narrows results and a calorie calculator steers undecided users towards a suitable plan — that was the main source of hesitation the survey identified. The system also checks the address is served before letting someone order, rather than after payment.',
-          'The detail page shows plan information with no surprises at checkout, and that is where meals are selected. The site was designed in desktop and mobile versions.'
+          'I started by analyzing the ordering flow to see which steps could be cut:',
+          'These changes reduced the flow steps from 6 to 3.'
+        ],
+        bulletsAfter: [
+          { after: 0, items: [
+            'I made plan selection and pre-ordering accessible directly from the homepage',
+            'I merged the detail and meal selection page into one'
+          ] }
+        ],
+        carousel: [
+          { src: 'assets/img/fitplans-old-userflow.webp', zoomable: 'mobile', caption: 'The old flow — 6 steps.' },
+          { src: 'assets/img/fitplans-new-userflow.webp', zoomable: 'mobile', caption: 'The new flow — 3 steps.' }
+        ],
+        after: [
+          {
+            headline: 'The new structure',
+            body: ['I redesigned the website with the following elements in mind:'],
+            timeline: [
+              {
+                body: [], noLine: true,
+                image: 'fitplans-design-1-3', imageZoomable: 'mobile',
+                constraintsDark: true,
+                constraints: [
+                  { n: 1, text: '**A clear concept**: the first visible sentence states the service’s value proposition clearly.' },
+                  { n: 2, text: '**Ordering steps**: this section walks the user through the steps of ordering.' },
+                  { n: 3, text: '**Offers**: users are led directly to the products.' }
+                ]
+              },
+              {
+                body: [], noLine: true,
+                image: 'fitplans-design-4-6', imageZoomable: 'mobile',
+                constraintsDark: true,
+                constraints: [
+                  { n: 4, text: '**Filter**: lets users narrow results to match their needs.' },
+                  { n: 5, text: '**Calorie calculator**: steers undecided users towards a suitable plan.' },
+                  { n: 6, text: '**Location**: checks that the user’s address is served before letting them order.' }
+                ]
+              },
+              {
+                body: [], noLine: true,
+                image: 'fitplans-design-7-8', imageZoomable: 'mobile',
+                constraintsDark: true,
+                constraints: [
+                  { n: 7, text: '**Plan information**: plan details are shown upfront, so there are no surprises at checkout.' },
+                  { n: 8, text: '**Meal selection**: users choose their meals directly in this section.' }
+                ]
+              }
+            ]
+          },
+          {
+            body: ['The website was also designed for mobile.'],
+            timeline: [
+              { body: [], noLine: true, image: 'fitplans-mobile-ui', imageZoomable: 'mobile' }
+            ]
+          }
         ]
       },
       {
         id: 'test', label: 'Testing', title: 'Testing',
+        headline: 'Ensuring the new website is easy to navigate',
         body: [
-          'Usability testing and a five-second test, run remotely on a prototype. 92% of participants rate the concept and the call-to-action leading to the order as important elements — which validated the homepage hierarchy.',
-          'We measured the SUS score to have a numerical before-and-after benchmark for the redesign.'
+          'I conducted two tests remotely with a prototype in order to ensure that the interface was usable.',
+          'The following insights were mainly collected from 15 users.'
+        ],
+        media: {
+          1: [
+            { type: 'image', src: 'assets/img/fitplans-sus-scale.webp', maxWidth: 650, zoomable: 'mobile', caption: 'SUS score — desktop version (59.84) vs. mobile version (75.71).' }
+          ]
+        }
+      },
+      {
+        id: 'takeaways', label: 'Takeaways', title: 'Takeaways',
+        headline: 'One against all',
+        body: [
+          'Being the sole designer in the company made this project a real challenge. It taught me that I can make a change without asking for permission or approval.',
+          'I’ve also learned that evangelizing UX isn’t easy, as I had to actively convince my superiors of the value of a user-centered approach.',
+          'Looking back, I’d also tighten the methodology by testing the solution directly to shorten the feedback loop, applying more rigor overall, and measuring the SUS score before and after the redesign to quantify the impact.'
         ]
       }
     ],
     extLinks: [
-      { label: 'Full case study (Notion)', href: 'https://www.notion.so/mar20/Fit-Plans-website-redesign-210f02dc16d445d5bcab2895fd1c89e9' },
-      { label: 'Beta website', href: 'https://beta.fit-plans.com/en' }
+      { label: 'Full case study (Notion)', href: 'https://www.notion.so/mar20/Fit-Plans-website-redesign-210f02dc16d445d5bcab2895fd1c89e9' }
     ]
   },
 
@@ -1413,39 +1493,131 @@ export const PROJECTS = [
   {
     slug: 'hoot', kind: 'side', accent: 'f', year: '2019',
     poster: { label: '2ᵉ / hackathon', figure: 'owl' },
+    heroMedia: { type: 'image', src: 'assets/img/hoot-hero.gif' },
     title: 'Hoot',
     client: 'La Poste × ECV Digital hackathon',
-    tagline: '**One week** to design a concierge service for night workers. **2nd place**.',
+    tagline: 'One week to design a concierge service for night workers.',
     tags: ['Hackathon', 'Concept', 'UI'],
     gist: { role: 'Ideation, survey, wireframing', duration: '1 week', team: '2 UI, 1 UX, 1 dev, 1 PM', tools: 'Figma, Google Forms, ProtoPie' },
-    problem: 'La Poste asked us to imagine the concierge service of tomorrow. Most players on the market offer cleaning, cooking or delivery at varying price points — but none of them address night work. We picked that angle to stand apart.',
-    outcome: 'Hoot, an app that takes night workers’ wellbeing seriously: location-aware meal ordering, relaxation and wake-up programmes, events between colleagues, and collective voting on equipment to order. Second place in the hackathon.',
+    problem: 'La Poste asked us to imagine the concierge service of the future. Most players on the market offer cleaning, cooking or delivery at varying price points, but none of them address night work, so we picked that angle.',
+    outcome: 'We created Hoot, an app that offers features such as location-aware meal ordering, relaxation and wake-up programmes, events between colleagues, and collective voting on equipment to order.',
     stats: [
-      { n: '90%', l: 'say night work has affected their health' },
-      { n: '10 / 10', l: 'recognise an impact on their relationships' },
-      { n: '7 / 10', l: 'name meal delivery as a major issue' }
+      { n: '2nd', l: 'place at the hackathon' }
     ],
     sections: [
       {
         id: 'explore', label: 'Exploration', title: 'Exploration',
+        headline: 'Analysing the competition',
         body: [
-          'Benchmark first: Glovo, Please, John Paul, Premium. The finding came quickly — the night slot was empty. That wasn’t an oversight on our part, it was an opening.',
-          'Then a survey across around fifty qualified respondents. The answers were sharper than expected. 90% say night work has had a significant impact on their health. Every single person interviewed recognises an effect on family and friendships. And 7 out of 10 name meal delivery as a major problem: at night, nothing is open.'
+          'Most of the concierge services on the market offer local services mainly related to cleaning, cooking, or delivery, with more or less affordable prices.\nHowever, none of them seem to address the problem of night concierge services.\nWe benchmarked companies such as:'
+        ],
+        brandsAfter: [
+          { after: 0, items: [
+            { name: 'glovo', gray: true },
+            { name: 'please', gray: true },
+            { name: 'john-paul' },
+            { name: 'premium' }
+          ] }
+        ],
+        after: [
+          {
+            headline: 'Gathering of the user needs',
+            body: ['In order to better target the needs of our potential targets, we gave a survey to our panel of around 50 qualified individuals.'],
+            postits: [
+              { title: 'Health', body: '90% of respondents agree that night work has had a significant impact on their health.' },
+              { title: 'Social', body: 'All of the interviewees recognize that working at night has an influence on their relationships with family and friends.' },
+              { title: 'Nutrition', body: 'Working at night leads to poor eating habits. 7 out of 10 participants identify meal delivery as a major issue.' }
+            ]
+          }
         ]
       },
       {
         id: 'analysis', label: 'Analysis', title: 'Analysis',
+        headline: 'From research to app organization',
         body: [
-          'The responses described two distinct profiles, which we formalised as personas. For the first group, night work is physically hard and disrupts sleep. The second is more bothered by the social and dietary impact.',
-          'We then listed possible features across four axes: delivery, workplace wellness, social, and services. Plenty of ideas, only some of which we kept — it’s a hackathon, and the demo has to stand up.'
+          'Based on the difficulties experienced by our targets, and also inspired by the features offered by our main competitors, we proposed a list of functionalities responding to their problems.',
+          '## Putting a face to our users',
+          'At the end of our research phase, the responses we received described two distinct profiles, which we formalised as personas:',
+          '## Defining the features',
+          'Keeping in mind our discoveries about the users, we proceeded to a brainstorming session to organize the application and create the first functionalities.\nWe then listed possible features across four axes: delivery, workplace wellness, social, and services.'
+        ],
+        media: {
+          2: [
+            { type: 'image', src: 'assets/img/hoot-persona-louise.webp', zoomable: 'mobile' },
+            { type: 'image', src: 'assets/img/hoot-persona-mickael.webp', zoomable: 'mobile' }
+          ]
+        },
+        bulletsAfter: [
+          { after: 2, items: [
+            'For the first group, night work is physically hard and disrupts sleep.',
+            'The second is more bothered by the impact night work can have on social life and eating habits.'
+          ] }
+        ],
+        after: [
+          {
+            postitBoard: {
+              columns: [
+                { title: 'Delivery', color: '#4aa2fa', items: [
+                  'Food trays delivery only in the evening',
+                  'Overnight parcel service',
+                  'Books delivery to avoid boredom'
+                ] },
+                { title: 'Workplace wellness', color: '#fe76a7', items: [
+                  'Guide on how to simplify your day after a night of work',
+                  'Chatbot giving tips on how to make the most of the night job',
+                  'Relaxation program like Headspace',
+                  'Coaching and guides for a better night work',
+                  'Realtime digital health control recording'
+                ] },
+                { title: 'Social', color: '#b368e2', items: [
+                  'Social relations: establishing a common break among colleagues',
+                  'Afterwork parties with day workers in unoccupied rooms',
+                  'Events calendar'
+                ] },
+                { title: 'Services', color: '#fff2ab', items: [
+                  'Request to company with voting system for any item delivery',
+                  '“Craiglist-like” system but within the company',
+                  'Services like sports / yoga classes, pet sitting, childcare, etc'
+                ] }
+              ]
+            }
+          }
         ]
       },
       {
         id: 'design', label: 'Design', title: 'Design',
+        headline: 'Visual design',
         body: [
-          'Wireframes to structure, then UI. We chose a dark theme, since the app is used at night, with brighter colours reserved for important content. The owl, a nocturnal animal, gave the app a personality you read instantly.',
-          'Four features were pushed all the way to screens: meal ordering, with the nearest open restaurants on a map, filterable, and nutritional information shown; personalised relaxation or wake-up programmes depending on what the moment calls for; mini-events between colleagues during breaks; and voting on equipment to order to make the night easier.',
-          'The main flow, from onboarding to selecting a wake-up programme, was prototyped so the jury could handle the solution instead of imagining it.'
+          'We chose a dark theme, since the app is used at night, with brighter colours reserved for important content. The owl, a nocturnal animal, gave the app a personality you read instantly.'
+        ],
+        media: {
+          0: [
+            { type: 'image', src: 'assets/img/hoot-ui-kit.webp', zoomable: 'mobile' }
+          ]
+        },
+        carouselOpts: { theme: 'hoot' },
+        carousel: [
+          { src: 'assets/img/hoot-slider-events.webp', zoomable: 'mobile', label: 'Events', text: 'Employees can organize mini-events during their breaks.' },
+          { src: 'assets/img/hoot-slider-voting.webp', zoomable: 'mobile', label: 'Item voting', text: 'Workers can order the items that would make their night’s work easier.', wide: true }
+        ],
+        after: [
+          { media: [{ type: 'image', src: 'assets/img/hoot-userflow.webp', caption: 'Hoot userflow', hideCaption: true, zoomable: 'mobile' }] },
+          { note: {
+            label: 'Meal Ordering',
+            text: 'Employees can locate the closest open restaurants on the map and filter them according to their preferences. Nutritional information such as weight or calories are also displayed.'
+          } },
+          { panel: {
+            src: 'assets/img/hoot-programme.webp', zoomable: 'mobile',
+            label: 'Activities',
+            text: 'Personalized relaxation or awakening programs are available, following user’s needs at the moment.'
+          } },
+          { media: [{ type: 'image', src: 'assets/img/hoot-app-mockup.webp', caption: 'Hoot app', zoomable: 'mobile' }] },
+          { cta: {
+            statement: '🥳🎉 Thanks to this project, we finished in 2nd position of the hackathon organized by La Poste.',
+            text: 'To go further, you can check the project file (unfortunately available in French only).',
+            label: 'Check the project file',
+            href: 'https://docs.google.com/presentation/d/19j9bNYiIAdAf2K3WXpHOBWLFEReeOjdBYpPc9h0cgXQ/embed?size=l&slide=id.p'
+          } }
         ]
       }
     ],

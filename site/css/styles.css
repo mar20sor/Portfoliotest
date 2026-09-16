@@ -1159,6 +1159,15 @@ body:not(.is-overlay):has(.home) {
    plus bas, releve sur son poster. */
 .card[data-slug="soundcloud"] .card__media { background: #f3591c; }
 
+/* Hoot : meme GIF que la couverture (hoot-hero.gif) sur la vignette
+   d'accueil — trop petit/anime pour object-fit: cover comme les autres
+   vignettes, donc contain et reduit, sur le meme fond #2d254b qu'en
+   couverture (voir .cs__hero-media[data-slug="hoot"] plus bas). */
+.card[data-slug="hoot"] .card__media { background: #2d254b; }
+.card[data-slug="hoot"] .card__media img {
+  width: 55%; height: 55%; object-fit: contain;
+}
+
 .card__body { display: flex; flex-direction: column; gap: var(--s4); }
 .card__title-block { display: flex; flex-direction: column; gap: var(--s2); }
 
@@ -1470,7 +1479,7 @@ body:not(.is-overlay):has(.home) {
 .stats--sec .stat__n { font-size: clamp(1.6rem, 2.6vw, 2rem); margin-bottom: 0; }
 .stats--sec .stat__l { margin-top: 2px; }
 
-.cs__cta { display: flex; flex-wrap: wrap; gap: var(--s3); }
+.cs__cta { display: flex; flex-wrap: wrap; gap: var(--s3); margin-bottom: var(--s7); }
 
 /* ---- 8b. Le corps : nav laterale collante + sections ---- */
 .cs__body {
@@ -1633,6 +1642,10 @@ body:not(.is-overlay):has(.home) {
 .cs-sec__title:has(+ .cs-sec__headline) { margin-bottom: var(--s2); }
 .cs-sec p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-faint); }
 .cs-sec p:last-child { margin-bottom: 0; }
+/* Hoot/Analysis : le paragraphe qui annonce les deux profils doit coller a
+   la liste qui les enumere juste en dessous, plutot que de garder l'espace
+   normal d'un paragraphe suivi d'un autre paragraphe. */
+#sec-analysis p:has(+ .cs-sec__list) { margin-bottom: 0; }
 /* s.numbered (voir app.js) : pastille numerotee violette accolee a un
    paragraphe, meme style que .cs-timeline__constraint-num — pour faire echo
    a un numero deja present dans une figure au-dessus (ex. Admin model). */
@@ -1654,6 +1667,129 @@ body:not(.is-overlay):has(.home) {
   list-style: disc;
 }
 .cs-sec__list li { margin-bottom: 0; }
+
+/* Rangee de logos (voir s.brandsAfter dans content.js, ex. Hoot/Exploration,
+   les concurrents benchmarkes) — couleurs, fond et rayon copies a l'identique
+   de .brands sur la page source (marvinsrd.com/en/hoot-project /
+   portfolio-46df44.webflow.css) : fond gris clair, coins arrondis, logos
+   attenues, deux d'entre eux (Glovo, Please — voir `gray` dans content.js)
+   aussi passes en niveaux de gris comme sur l'original. */
+/* width: fit-content : la boite epouse les logos (equivalent du "Hug
+   contents" d'un auto-layout Figma) plutot que de s'etirer sur toute la
+   largeur de la colonne comme un bloc normal. flex-wrap: nowrap + le
+   flex:1 1 0/min-width:0 des logos ci-dessous font le reste : sous 700px,
+   au lieu de retomber sur deux lignes, les quatre logos se compressent
+   ensemble pour tenir sur une seule. */
+.cs-brands {
+  display: flex; flex-wrap: nowrap; justify-content: center; align-items: center;
+  gap: var(--s4);
+  padding: 10px 14px;
+  border-radius: 10px;
+  background-color: #f0f0f0;
+  margin: var(--s2) 0 var(--s6);
+  width: fit-content; max-width: 100%;
+}
+.cs-brands img { flex: 1 1 0; min-width: 0; max-width: 90px; height: auto; opacity: .5; }
+.cs-brands img.cs-brands__gray { filter: grayscale(100%); }
+/* Espace supplementaire avant un titre qui suit directement la rangee de
+   logos (ex. Hoot/Exploration, "Gathering of the user needs") — la marge
+   normale d'un cs-sec__headline suppose un paragraphe juste au-dessus, pas
+   un encart avec son propre fond. */
+.cs-brands + .cs-sec__headline { margin-top: var(--s6); }
+
+/* Post-its mauves (voir b.postits dans content.js, ex. Hoot/Exploration, les
+   3 constats du sondage) — meme fond, ombre et rotation par index que
+   .post-it/._1/._2/._3 sur la page source. Classe dediee et non
+   .cs-sec__card : cette palette (mauve, pivotee) n'a pas vocation a
+   deteindre sur les cartes neutres utilisees ailleurs (ex. Constraints/
+   design, les 4 principes). */
+.cs-postits {
+  display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center;
+  gap: var(--s6);
+  margin: var(--s5) 0 var(--s6);
+}
+.cs-postit {
+  flex: 1 1 180px; max-width: 220px; min-height: 200px;
+  padding: 28px 18px 18px;
+  background-color: #b368e2;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, .25);
+}
+.cs-postit:nth-child(1) { transform: rotate(4deg); }
+.cs-postit:nth-child(2) { transform: rotate(-1deg); }
+.cs-postit:nth-child(3) { transform: rotate(9deg); }
+.cs-postits .cs-postit__title { margin-bottom: 8px; font-size: 19px; line-height: 1.1; font-weight: var(--w-semibold); color: #333; }
+.cs-postits .cs-postit__body { font-size: 14px; line-height: 1.3; color: #333; }
+
+/* Tableau de post-its par categorie (voir postitBoardMarkup() dans app.js,
+   b.postitBoard dans content.js, ex. Hoot/Analysis) — 4 colonnes egales,
+   memes couleurs et texte que .postit-board sur la page source. Une seule
+   colonne sous 700px (meme repli que .cs-sec__cards plus bas), pas 4
+   colonnes ecrasees a l'illisible. */
+.cs-postit-board {
+  /* minmax(0, 1fr), pas 1fr nu : voir la note sur .cs__body (§8b) — un
+     texte de post-it un peu long forcerait sinon toute la piste (et la
+     grille) a deborder plutot que de s'enrouler sur ses propres lignes. */
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s5);
+  margin: var(--s5) 0 var(--s6); max-width: var(--measure);
+}
+.cs-postit-col__title {
+  margin-bottom: 10px; font-size: var(--fs-small); font-weight: var(--w-semibold);
+}
+/* Fond blanc, aucun rayon/ombre au repos : c'est litteralement l'etat mesure
+   sur la page source (voir la note "strict identical" de la conversation) —
+   l'ombre n'apparait que sous 480px la-bas, reprise ici a la meme largeur. */
+.cs-mini-postit {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 90px; padding: 10px; margin-bottom: var(--s3);
+  font-size: 14px; line-height: 1.2; text-align: center;
+  /* Etat de depart de l'apparition : --fly-x/--fly-y/--fly-r sont tirees au
+     hasard par post-it (voir postitBoardMarkup() dans app.js), pour que
+     chacun arrive d'une direction differente — l'esprit du vol aleatoire de
+     Webflow, sans chercher a copier des valeurs figees qui n'auraient plus
+     de sens hors de son moteur d'interactions. transition-delay, pose la
+     aussi en inline, echelonne l'arrivee au lieu de tout poser d'un bloc. */
+  opacity: 0; transform: translate(var(--fly-x, 0), var(--fly-y, 0)) rotate(var(--fly-r, 0deg));
+  transition: opacity .5s var(--ease), transform .5s var(--ease);
+}
+.cs-mini-postit.is-visible { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+.cs-postit-board .cs-mini-postit p { max-width: none; margin-bottom: 0; color: #333; }
+@media (prefers-reduced-motion: reduce) {
+  .cs-mini-postit { transition: none; }
+}
+@media (max-width: 700px) {
+  /* Meme mise en page qu'au bureau (4 colonnes cote a cote, jamais 1 seule) :
+     sur marvinsrd.com/en/hoot-project, .postit-board devient un simple flex
+     row + overflow: auto sous 991px — les colonnes gardent leur largeur, et
+     c'est la piste entiere qui defile horizontalement. Ici, memes colonnes
+     grid mais en largeur fixe (les 1fr du bureau n'ont plus de conteneur
+     assez large pour se repartir, donc elles deborderaient) : c'est ce
+     debordement, combine a overflow-x, qui cree le defilement. */
+  .cs-postit-board {
+    grid-template-columns: repeat(4, 176px);
+    gap: var(--s3);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--s2);
+  }
+  /* width: 100% explicite (pas juste laisser width:auto) : .cs-mini-postit
+     est display:flex, et un conteneur flex EN FLUX NORMAL ne se cale pas
+     forcement sur la largeur disponible de son parent comme un bloc classique
+     — mesure : sans cette regle il debordait sa propre colonne de ~20px
+     (le min-content de son texte). width:100% force le cadrage exact sur la
+     colonne (176px), sans quoi son overflow visuel recreait le meme "vide"
+     entre deux post-its que max-width en creait par defaut (voir plus bas).
+     Pas de max-width sur .cs-mini-postit ici : un post-it plus etroit que sa
+     colonne (ex. max-width: 88%) laisse un vide DANS la colonne (le post-it
+     est en flux normal, cale a gauche) qui s'ajoute au gap entre colonnes —
+     l'ecart visible entre deux post-its devient alors bien plus grand que le
+     gap lui-meme. Le post-it "reduit" est donc la colonne elle-meme (176px
+     au lieu de 200px) : il remplit exactement sa colonne, et le seul espace
+     entre deux post-its reste le gap ci-dessus. */
+  .cs-mini-postit { width: 100%; box-sizing: border-box; }
+}
+@media (max-width: 480px) {
+  .cs-mini-postit.is-visible { box-shadow: 0 2px 4px rgba(0, 0, 0, .25); }
+}
 
 /* Cartes des principes de conception (voir s.list dans content.js,
    Constraints/design) : une grille de 4 plutot qu'une liste a puces —
@@ -1689,6 +1825,20 @@ body:not(.is-overlay):has(.home) {
   display: flex; flex-direction: column; gap: var(--s4);
 }
 .cs-sec__aside p { margin: 0; color: var(--ink); font-size: var(--fs-small); }
+/* .cs-sec__row-media : meme colonne que .cs-sec__aside (flex:1), mais pour
+   un media plutot qu'un encart teinte (voir s.rowMedia dans content.js) —
+   pas de fond/padding, et le margin-block de .media-single/.media-grid est
+   remis a zero (meme raison que .cs-sec__media-pair) pour que la figure ne
+   se decale pas verticalement par rapport au texte a cote. */
+.cs-sec__row-media { flex: 1 1 0; min-width: 0; }
+.cs-sec__row-media .media-single,
+.cs-sec__row-media .media-grid { margin-block: 0; }
+/* --media-left : variante de .cs-sec__row pour s.rowMedia (image posee
+   avant le texte dans le markup, donc deja a gauche) — seul le centrage
+   vertical a besoin d'une regle, .cs-sec__row restant flex-start pour
+   s.aside. Selecteur compose pour battre .cs-sec__row a specificite egale
+   quel que soit l'ordre des regles. */
+.cs-sec__row.cs-sec__row--media-left { align-items: center; }
 @media (max-width: 700px) {
   .cs-sec__row { flex-direction: column; }
 }
@@ -1953,6 +2103,20 @@ body:not(.is-overlay):has(.home) {
    roles), plutot que le padding-bottom standard entre deux entrees. */
 .cs-timeline__row--tight .cs-timeline__content,
 .cs-timeline__row--tight .cs-timeline__line-col { padding-bottom: var(--s3); }
+/* item.noLine (voir app.js/content.js) : timeline reutilisee comme simple
+   groupe figure + liste numerotee (Fit-Plans/Design, une image annotee par
+   entree plutot qu'un recit etape-par-etape) — pas de trait ni de puce de
+   depart, l'image et sa legende occupent seules la largeur de la colonne. */
+.cs-timeline__row--no-line .cs-timeline__line-col { display: none; }
+@media (min-width: 701px) {
+  .cs-timeline__row--no-line { grid-template-columns: 1fr; }
+  .cs-timeline__row--no-line .cs-timeline__content { grid-column: 1; }
+}
+/* item.constraintsDark (voir app.js/content.js) : pastilles noires plutot que
+   le violet #7F5DDD habituel, pour reprendre la couleur des numeros deja
+   incrustes dans la capture au-dessus (Fit-Plans/Design) plutot que d'en
+   introduire une seconde. */
+.cs-timeline__constraints--dark .cs-timeline__constraint-num { background: #000; }
 /* item.constraintsLoose (voir app.js/content.js) : agrandit l'espace apres le
    dernier constraint d'un item, quand ce qui suit (ex. imagesAfter) merite
    plus de respiration que le var(--s4) par defaut. */
@@ -2084,6 +2248,20 @@ body:not(.is-overlay):has(.home) {
 .cs__hero-media[data-slug="soundcloud"] .figure__frame { background: #f3591c; }
 .cs__hero-media[data-slug="soundcloud"] .figure--remote video {
   aspect-ratio: 1 / 1;
+}
+/* Hoot : la couverture est le GIF du logo (assets/img/hoot-hero.gif, 640x360)
+   plutot qu'une capture — l'afficher a sa taille naturelle en pleine largeur
+   le ferait paraitre etire et grossier. On le garde donc petit et centre
+   dans une bande 21:9, le fond du cadre reprenant #2d254b (releve sur le GIF
+   lui-meme) pour qu'il semble flotter sur son propre fond plutot que d'etre
+   pose sur un cadre etranger. */
+.cs__hero-media[data-slug="hoot"] .figure__frame {
+  background: #2d254b;
+  aspect-ratio: 21 / 9;
+  display: flex; align-items: center; justify-content: center;
+}
+.cs__hero-media[data-slug="hoot"] img {
+  width: clamp(160px, 40%, 320px); border-radius: 0;
 }
 /* Hero passe en Lottie (assets/media/constraint-limit.json, meme 524x600
    que l'ancienne video) : dotlottie-wc ne supporte pas object-fit comme
@@ -2316,6 +2494,178 @@ body:not(.is-overlay):has(.home) {
 @media (max-width: 700px) {
   .cs-carousel__arrow { display: none; }
 }
+
+/* ---- Variante du carrousel pour Hoot/Design (slider "Events"/"Item
+   voting") : chaque panneau porte son image ET son texte sur fond violet,
+   comme le slider_container/commande_repas2 de marvinsrd.com/en/hoot-project
+   — equivalent maison (flex + tokens du site) plutot qu'une copie du hack
+   Webflow, qui laissait deborder des images tres larges du conteneur.
+   Fleches recolorees pour matcher le rond mauve clair de la page source. */
+.cs-carousel--hoot .cs-carousel__stage { background: #2d254b; }
+.cs-carousel--hoot .cs-carousel__panel {
+  display: flex; align-items: stretch; aspect-ratio: 16 / 9;
+}
+.cs-carousel--hoot .cs-carousel__panel img,
+.cs-carousel--hoot .cs-carousel__panel video {
+  flex: 0 0 55%; width: 55%; height: 100%; object-fit: contain;
+}
+.cs-carousel--hoot .cs-carousel__content {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  gap: var(--s2); padding: var(--s5) calc(52px + var(--s6)) var(--s5) var(--s6);
+}
+.cs-carousel--hoot .cs-carousel__label {
+  margin: 0; font-size: var(--fs-tiny); text-transform: uppercase;
+  letter-spacing: .08em; font-weight: var(--w-semibold); color: rgba(255, 255, 255, .5);
+}
+.cs-carousel--hoot .cs-carousel__text {
+  margin: 0; font-size: var(--fs-h2); font-weight: 700; line-height: 1.3;
+  color: rgba(255, 255, 255, .9);
+}
+/* item.wide (ex. "Item voting", capture large deux-ecrans) : l'image gagne
+   de la place au detriment du seul padding de .cs-carousel__content, pas de
+   la colonne de texte elle-meme (padding-left reduit, tout le reste egal). */
+.cs-carousel--hoot .cs-carousel__panel--wide img,
+.cs-carousel--hoot .cs-carousel__panel--wide video {
+  flex-basis: 65%; width: 65%;
+}
+.cs-carousel--hoot .cs-carousel__panel--wide .cs-carousel__content {
+  padding-left: var(--s4);
+}
+.cs-carousel--hoot .cs-carousel__arrow {
+  background: #f0e1f9; color: #2d254b; box-shadow: none;
+  width: 52px; height: 52px;
+}
+.cs-carousel--hoot .cs-carousel__arrow:hover { background: #e0b7f8; }
+/* Chaine UI Kit -> carrousel -> 2 images -> texte collee sans espace, comme
+   sur marvinsrd.com/en/hoot-project — voir b.note/b.panel dans app.js.
+   L'image UI Kit (s.media[0], sans maxWidth desormais : meme largeur pleine
+   colonne que le carrousel) est reperee par :has(+ .cs-carousel--hoot),
+   seul media-single directement suivi du carrousel dans cette section. */
+.media-single:has(+ .cs-carousel--hoot),
+.media-single:has(+ .cs-carousel--hoot) .figure {
+  margin-bottom: 0;
+}
+.media-single:has(+ .cs-carousel--hoot) .figure__frame {
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0; border: none; background: none;
+}
+.media-single:has(+ .cs-carousel--hoot) .figure--remote img {
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.cs-carousel--hoot .cs-carousel__stage { border-radius: 0; }
+.cs-carousel--hoot { margin-top: 0; margin-bottom: 0; }
+.cs-carousel--hoot + .media-single,
+.cs-carousel--hoot + .media-single .figure {
+  margin-block: 0;
+}
+/* Le cadre standard de .figure--remote (fond bleute, liseré, coins arrondis)
+   casserait le fondu violet continu avec le bloc "Meal Ordering" qui suit —
+   la capture porte deja son propre fond #2d254b. Coins carres aussi sur
+   l'image elle-meme : .figure--remote img (styles.css plus haut) porte son
+   propre border-radius, distinct de celui de .figure__frame. */
+.cs-carousel--hoot + .media-single .figure__frame {
+  border-radius: 0; border: none; background: none;
+}
+.cs-carousel--hoot + .media-single .figure--remote img {
+  border-radius: 0;
+}
+@media (max-width: 700px) {
+  .cs-carousel--hoot .cs-carousel__panel { flex-direction: column; aspect-ratio: auto; }
+  .cs-carousel--hoot .cs-carousel__panel img,
+  .cs-carousel--hoot .cs-carousel__panel video {
+    width: 100%; height: 220px; flex: 0 0 auto; object-fit: contain;
+  }
+  .cs-carousel--hoot .cs-carousel__content { padding: var(--s4) var(--s5); }
+  .cs-carousel--hoot .cs-carousel__text { font-size: var(--fs-lead); }
+}
+
+/* ---- Note et panneau violets pour Hoot/Design, equivalents de
+   slider_subcontent / img-container ui programmes sur
+   marvinsrd.com/en/hoot-project — meme habillage texte que le carrousel
+   ci-dessus mais hors carrousel (pas de fleches/puces). Voir b.note/b.panel
+   dans app.js (pageCase, bloc s.after). */
+.cs-hoot-note {
+  background: #2d254b;
+  padding: var(--s5) var(--s6); margin-block: 0;
+  display: flex; flex-direction: column; gap: var(--s2);
+}
+/* Compound selectors : .cs-sec p (0,1,1) bat un simple .cs-hoot-note__text
+   (0,1,0) — voir "The .cs-sec p specificity trap" dans CLAUDE.md. */
+.cs-hoot-note .cs-hoot-note__label,
+.cs-hoot-panel__content .cs-hoot-panel__label {
+  margin: 0; font-size: var(--fs-tiny); text-transform: uppercase;
+  letter-spacing: .08em; font-weight: var(--w-semibold); color: rgba(255, 255, 255, .5);
+}
+.cs-hoot-note .cs-hoot-note__text,
+.cs-hoot-panel__content .cs-hoot-panel__text {
+  margin: 0; max-width: none; font-size: var(--fs-h2); font-weight: 700; line-height: 1.3;
+  color: rgba(255, 255, 255, .9);
+}
+.cs-hoot-panel {
+  margin: 0; background: #2d254b; border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  overflow: hidden; display: flex; align-items: stretch; aspect-ratio: 16 / 9;
+}
+.cs-hoot-panel__media {
+  flex: 0 0 55%; width: 55%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
+/* Au zoom, cale a gauche plutot que centre : justify-content: center
+   centrait l'image agrandie dans son cadre devenu scrollable, et le
+   navigateur ouvre alors ce scroll a mi-chemin (moitie du debordement de
+   chaque cote) — le bord GAUCHE de l'image restait donc hors champ tant
+   qu'on n'avait pas pense a scroller vers la gauche. flex-start ancre le
+   bord gauche au bord du cadre : rien a scroller pour le voir, seul le
+   reste de l'image (a droite) demande de faire defiler. */
+.cs-hoot-panel__media.is-zoomed { justify-content: flex-start; }
+/* flex-shrink: 0 est necessaire : .cs-hoot-panel__media est display:flex, et
+   .zoomable-media.is-zoomed { overflow: auto } (plus bas dans ce fichier)
+   annule le min-width:auto par defaut d'un enfant flex — sans ce
+   flex-shrink, le flex-shrink:1 implicite reduisait l'image zoomee
+   (width:230% pose par .zoomable-media.is-zoomed img) jusqu'a la faire
+   retenir dans le cadre, annulant tout l'effet de zoom au clic. */
+.cs-hoot-panel__media img { width: 100%; height: 100%; object-fit: contain; flex-shrink: 0; }
+/* height: auto au zoom, meme principe que .cs-sec__media-pair plus bas dans
+   ce fichier : height: 100% (regle de base ci-dessus) plafonne l'image a la
+   hauteur du cadre, et object-fit: contain se cale alors sur CETTE hauteur
+   (l'image est deja plus large que haute) — elargir seulement la largeur
+   (width: 230%, .zoomable-media.is-zoomed img plus bas) ne faisait donc que
+   rajouter du vide violet a droite, l'image affichee restant a l'identique.
+   height: auto laisse la hauteur suivre le ratio de l'image une fois la
+   largeur agrandie, et c'est bien elle qui grandit visuellement. */
+.cs-hoot-panel__media.is-zoomed img { height: auto; }
+.cs-hoot-panel__content {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  gap: var(--s2); padding: var(--s5) var(--s6);
+}
+@media (max-width: 700px) {
+  .cs-hoot-note { padding: var(--s4) var(--s5); }
+  /* border-radius deja pose sur .cs-hoot-panel (regle de base ci-dessus) :
+     sur mobile .cs-hoot-panel__content (colonne) devient visuellement le
+     dernier bloc empile, mais le radius reste sur .cs-hoot-panel lui-meme
+     (fond + overflow: hidden partages par media/content, qui n'ont pas de
+     fond propre) — rien a repeter ici, juste la mise en colonne. */
+  .cs-hoot-panel { flex-direction: column; aspect-ratio: auto; }
+  .cs-hoot-panel__media { width: 100%; height: 220px; flex: 0 0 auto; }
+  /* Au zoom, le cadre suit la hauteur de l'image plutot que de rester a
+     220px : sans ca l'image grandissait (height: auto sur l'img ci-dessus)
+     mais restait coincee dans un cadre fixe, seulement consultable via un
+     scroll interne — .cs-hoot-panel__content, plus bas dans le flux colonne
+     (aspect-ratio: auto ci-dessus), est repousse d'autant. */
+  .cs-hoot-panel__media.is-zoomed { height: auto; }
+  .cs-hoot-panel__content { padding: var(--s4) var(--s5); }
+  .cs-hoot-panel__text { font-size: var(--fs-lead); }
+}
+
+/* ---- Bloc de cloture Hoot ("morehoot" sur marvinsrd.com/en/hoot-project) :
+   statement + texte + lien vers le fichier de presentation, hors de la
+   chaine violette flush ci-dessus (dernier bloc de la derniere section,
+   donc "fin de l'etude" au sens litteral). Voir b.cta dans app.js. */
+.cs-hoot-cta { margin-top: var(--s7); }
+.cs-hoot-cta .cs-hoot-cta__statement {
+  margin: 0 0 var(--s3); font-size: var(--fs-h2); font-weight: 700; line-height: 1.3;
+}
+.cs-hoot-cta .cs-hoot-cta__text { margin: 0 0 var(--s5); }
 
 /* ---- Le meme carrousel dans l'article (voir le media `type: 'carousel'` de
    "Lines and lanes" dans content.js). Les deux schemas Figma des deux slides
@@ -4145,7 +4495,15 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
 
 /* --- Sous 1000px : la nav laterale de case study passe au-dessus ------- */
 @media (max-width: 1000px) {
-  .cs__body { grid-template-columns: 1fr; }
+  /* minmax(0, 1fr), pas 1fr nu : une piste 1fr a un minimum automatique base
+     sur le contenu (comme min-width:auto en flexbox). Un enfant qui refuse de
+     retrecir sous sa taille "naturelle" (ex. .cs-brands, width: fit-content)
+     forcait alors TOUTE la colonne — donc la page entiere — a deborder du
+     viewport mobile au lieu de se contenter de wrap/retrecir localement.
+     minmax(0, 1fr) autorise la piste a descendre a 0, ce qui laisse le debordement
+     se resoudre au bon endroit (wrap ou retrecissement) plutot que de se
+     propager jusqu'a la grille elle-meme. */
+  .cs__body { grid-template-columns: minmax(0, 1fr); }
 
   /* Le bouton "Retour" repasse dans le flux normal. En reste fixe, il
      recouvrirait la barre de sections qui vient se coller sous l'en-tete.

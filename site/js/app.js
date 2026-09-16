@@ -452,7 +452,10 @@ function cardMedia(p) {
 function emphasize(str) {
   return escapeAttr(str)
     .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-    .replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    .replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    // '\n' a l'interieur d'un seul paragraphe (voir Hoot/Exploration) : garde
+    // plusieurs phrases visuellement distinctes sans en faire des <p> separes.
+    .replace(/\n/g, '<br>');
 }
 
 /* ---- 5c. La page d'accueil ----
@@ -525,6 +528,35 @@ function pageHome() {
   return page;
 }
 
+/* Le tableau de post-its par categorie (voir b.postitBoard dans content.js,
+   ex. Hoot/Analysis, le brainstorming des fonctionnalites) — reprend les
+   couleurs et le texte de .postit-board sur la page source (marvinsrd.com/
+   en/hoot-project), une colonne par axe. L'entree y "volait" litteralement
+   en place au defilement (Webflow IX2, un point de depart different et
+   fige par post-it) : les valeurs exactes ne sont pas reproductibles sans
+   son moteur d'interactions, donc chaque post-it tire ICI son propre angle/
+   distance/rotation au hasard (voir --fly-x/--fly-y/--fly-r, consommees par
+   .cs-mini-postit dans styles.css) — un point de depart different a chaque
+   chargement plutot qu'une poignee de decalages copies sans en comprendre
+   la logique. */
+function postitBoardMarkup(board) {
+  return `<div class="cs-postit-board">${board.columns.map(col => `
+    <div class="cs-postit-col">
+      <p class="cs-postit-col__title">${escapeAttr(col.title)}</p>
+      ${col.items.map((item, i) => {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 90 + Math.random() * 140;
+        const flyX = Math.round(Math.cos(angle) * dist);
+        const flyY = Math.round(Math.sin(angle) * dist);
+        const flyR = Math.round((Math.random() - 0.5) * 40);
+        return `
+        <div class="cs-mini-postit" style="background:${escapeAttr(col.color)}; transition-delay:${i * 60}ms; --fly-x:${flyX}px; --fly-y:${flyY}px; --fly-r:${flyR}deg">
+          <p>${escapeAttr(item)}</p>
+        </div>`;
+      }).join('')}
+    </div>`).join('')}</div>`;
+}
+
 /* Une ligne de temps : suite d'etapes reliees par un trait continu (ex.
    Licence management/Solution) — voir .cs-timeline dans styles.css.
    `thumb: false` sur une entree permet d'omettre son placeholder gris.
@@ -536,7 +568,7 @@ function pageHome() {
    simple reste rendue telle quelle, sans zoom. */
 function timelineMarkup(items) {
   return `<div class="cs-timeline">${items.map(item => `
-    <div class="cs-timeline__row${item.image ? ' cs-timeline__row--figure' : ''}${item.tight ? ' cs-timeline__row--tight' : ''}">
+    <div class="cs-timeline__row${item.image ? ' cs-timeline__row--figure' : ''}${item.tight ? ' cs-timeline__row--tight' : ''}${item.noLine ? ' cs-timeline__row--no-line' : ''}">
       <div class="cs-timeline__line-col"><div class="cs-timeline__line"></div></div>
       <div class="cs-timeline__content">
         ${item.thumb === false ? '' : item.image
@@ -554,7 +586,7 @@ function timelineMarkup(items) {
                  <img src="assets/img/${item.imageAfter}.png" alt="" loading="lazy" decoding="async">
                </picture>` : ''}
           ${item.constraints
-            ? `<ul class="cs-timeline__constraints${item.constraintsLoose ? ' cs-timeline__constraints--loose' : ''}">${item.constraints.map(c => `
+            ? `<ul class="cs-timeline__constraints${item.constraintsLoose ? ' cs-timeline__constraints--loose' : ''}${item.constraintsDark ? ' cs-timeline__constraints--dark' : ''}">${item.constraints.map(c => `
                 <li class="cs-timeline__constraint${c.n ? '' : ' cs-timeline__constraint--unnumbered'}">
                   <span class="cs-timeline__constraint-num" aria-hidden="true">${c.n || ''}</span>
                   <div class="cs-timeline__constraint-body">
@@ -603,7 +635,7 @@ function pageCase(project) {
 
   hw.insertAdjacentHTML('beforeend', `
     ${c.isDraft ? `<p style="margin-bottom:var(--s4)"><span class="draft-badge">${escapeAttr(d.draftBadge)}</span></p>` : ''}
-    ${c.gist.company ? '' : `<p class="cs__client">${escapeAttr(c.client)}</p>`}
+    ${c.gist.company || c.hideClient ? '' : `<p class="cs__client">${escapeAttr(c.client)}</p>`}
     <h1 class="cs__title">${escapeAttr(c.title)}</h1>
     <p class="cs__tagline">${emphasize(c.tagline)}</p>
 
@@ -766,11 +798,35 @@ function pageCase(project) {
       const figuresAfterList = s.figureAfter
         ? (Array.isArray(s.figureAfter) ? s.figureAfter : [s.figureAfter]) : [];
 
+      // s.bulletsAfter : meme principe que s.figureAfter, mais pour une
+      // liste a puces plutot qu'une figure (ex. Fit-Plans/Process, les
+      // constats d'audit puis les chiffres du sondage, chacun apres son
+      // propre paragraphe d'intro). s.bullets reste la liste unique en tete
+      // de section ; celle-ci s'intercale au fil du corps.
+      const bulletsAfterList = s.bulletsAfter
+        ? (Array.isArray(s.bulletsAfter) ? s.bulletsAfter : [s.bulletsAfter]) : [];
+
+      // s.brandsAfter : meme principe que s.bulletsAfter, mais pour une
+      // rangee de logos plutot qu'une liste a puces (ex. Hoot/Exploration,
+      // les logos des concurrents benchmarkes juste apres le paragraphe qui
+      // les annonce). `items` est une liste de noms de fichier, sans
+      // extension, sous assets/img/brand-<name>.webp.
+      const brandsAfterList = s.brandsAfter
+        ? (Array.isArray(s.brandsAfter) ? s.brandsAfter : [s.brandsAfter]) : [];
+
       /* Les paragraphes, avec les medias intercales aux positions indiquees
          par `s.media`. La cle de cet objet est l'index du paragraphe apres
          lequel le groupe doit s'afficher — c'est ce qui permet de reproduire
          l'ordre exact d'une page source sans decouper la section. */
       const parts = s.body.map((p, i) => {
+        const bulletsAfter = bulletsAfterList.filter(b => b.after === i)
+          .map(b => `<ul class="cs-sec__list">${b.items.map(item => `<li>${emphasize(item)}</li>`).join('')}</ul>`).join('');
+        const brands = brandsAfterList.filter(b => b.after === i)
+          .map(b => `<div class="cs-brands">${b.items.map(item => {
+            const name = typeof item === 'string' ? item : item.name;
+            const gray = typeof item === 'object' && item.gray ? ' cs-brands__gray' : '';
+            return `<img class="${gray.trim()}" src="assets/img/brand-${name}.webp" alt="${escapeAttr(name)}" loading="lazy" decoding="async">`;
+          }).join('')}</div>`).join('');
         const after = s.media && s.media[i] ? mediaGroup(s.media[i]) : '';
         const terms = s.terms && s.terms.after === i ? termsBlock : '';
         const figure = figuresAfterList.filter(f => f.after === i).map(figureFor).join('');
@@ -798,7 +854,21 @@ function pageCase(project) {
           : num
             ? `<div class="cs-sec__num-row"><span class="cs-sec__num" aria-hidden="true">${num}</span><p>${emphasize(p)}</p></div>`
             : `<p>${emphasize(p)}</p>`;
-        return `${paragraph}${after}${terms}${figure}`;
+        // s.rowMedia : { [paragraphIndex]: true } — au lieu d'empiler le
+        // media sous son paragraphe (defaut), les deux se rangent cote a
+        // cote, media a gauche, texte a droite cale au milieu de sa hauteur
+        // (ex. Fit-Plans/Process, le resultat du sondage a cote du
+        // paragraphe qui l'introduit). Reutilise .cs-sec__row, deja la pour
+        // s.aside, avec une colonne media plutot qu'un encart teinte —
+        // --media-left en modificateur pour l'ordre et le centrage vertical,
+        // propres a ce cas (s.aside reste flex-start, texte en haut).
+        if (s.rowMedia && s.rowMedia[i]) {
+          return `<div class="cs-sec__row cs-sec__row--media-left">
+              <div class="cs-sec__row-media">${after}</div>
+              <div class="cs-sec__row-text">${paragraph}${bulletsAfter}</div>
+            </div>${terms}${figure}`;
+        }
+        return `${paragraph}${bulletsAfter}${brands}${after}${terms}${figure}`;
       }).join('');
 
       const intro = s.intro ? `<p>${s.intro.map(escapeAttr).join('<br>')}</p>` : '';
@@ -850,9 +920,45 @@ function pageCase(project) {
          Un bloc et non des paragraphes ajoutes a s.body : le corps se rend
          AVANT la ligne de temps de la section, un texte qui doit la suivre n'y
          a donc pas sa place. */
+      // b.postits : cartes "post-it" mauves et pivotees (ex. Hoot/Exploration,
+      // les 3 constats du sondage) — reprend telle quelle la palette et la
+      // rotation de la page source (marvinsrd.com/en/hoot-project), donc sa
+      // propre classe plutot que .cs-sec__card (generique, utilisee ailleurs
+      // pour des cartes neutres — ex. les 4 principes de Constraints/design).
+      // b.note : bloc de texte seul sur fond violet (ex. Hoot/Design,
+      // "Meal Ordering" — equivalent du slider_subcontent de la page source,
+      // meme habillage que le texte des panneaux du carrousel juste au-dessus
+      // — voir .cs-hoot-note dans styles.css) ; b.panel : la meme chose mais
+      // avec une image a cote (ex. "Activities"/Programme.png, equivalent de
+      // img-container ui programmes — voir .cs-hoot-panel).
       const after = (s.after || []).map(b => `
         ${b.headline ? `<h3 class="cs-sec__headline">${escapeAttr(b.headline)}</h3>` : ''}
         ${(b.body || []).map(p => `<p>${emphasize(p)}</p>`).join('')}
+        ${b.media ? mediaGroup(b.media) : ''}
+        ${b.postits ? `<div class="cs-postits">${b.postits.map(card => `
+            <div class="cs-postit">
+              <p class="cs-postit__title">${escapeAttr(card.title)}</p>
+              <p class="cs-postit__body">${escapeAttr(card.body)}</p>
+            </div>`).join('')}</div>` : ''}
+        ${b.postitBoard ? postitBoardMarkup(b.postitBoard) : ''}
+        ${b.note ? `<div class="cs-hoot-note">
+            <p class="cs-hoot-note__label">${escapeAttr(b.note.label || '')}</p>
+            <p class="cs-hoot-note__text">${escapeAttr(b.note.text || '')}</p>
+          </div>` : ''}
+        ${b.panel ? `<figure class="cs-hoot-panel">
+            <div class="cs-hoot-panel__media${zoomableClass(b.panel.zoomable)}">
+              <img src="${escapeAttr(b.panel.src)}" alt="${escapeAttr(b.panel.label || '')}" loading="lazy" decoding="async">
+            </div>
+            <div class="cs-hoot-panel__content">
+              <p class="cs-hoot-panel__label">${escapeAttr(b.panel.label || '')}</p>
+              <p class="cs-hoot-panel__text">${escapeAttr(b.panel.text || '')}</p>
+            </div>
+          </figure>` : ''}
+        ${b.cta ? `<div class="cs-hoot-cta">
+            <p class="cs-hoot-cta__statement">${escapeAttr(b.cta.statement)}</p>
+            <p class="cs-hoot-cta__text">${escapeAttr(b.cta.text)}</p>
+            <a class="btn btn--ghost" href="${escapeAttr(b.cta.href)}" target="_blank" rel="noopener noreferrer">${escapeAttr(b.cta.label)} ↗</a>
+          </div>` : ''}
         ${b.timeline ? timelineMarkup(b.timeline) : ''}`).join('');
       // Chiffres cites dans le texte, sortis en cartes (voir s.stats dans
       // content.js) — meme balisage que les .stat d'en-tete, en plus petit.
@@ -898,8 +1004,8 @@ function pageCase(project) {
       // .cs-sec__media-pair dans styles.css. Sinon, chacun garde son rendu
       // normal en pleine largeur.
       const mediaBlock = (s.image && s.carousel)
-        ? `<div class="cs-sec__media-pair">${figureFor(s)}${carouselMarkup(s.carousel)}</div>`
-        : `${s.image ? figureFor(s) : ''}${s.carousel ? carouselMarkup(s.carousel) : ''}`;
+        ? `<div class="cs-sec__media-pair">${figureFor(s)}${carouselMarkup(s.carousel, s.carouselOpts)}</div>`
+        : `${s.image ? figureFor(s) : ''}${s.carousel ? carouselMarkup(s.carousel, s.carouselOpts) : ''}`;
 
       // s.headline : une seconde ligne de titre, en grosse typo, sous le
       // .cs-sec__title devenu sur-titre (ex. Services exclusion/Context).
@@ -1845,6 +1951,15 @@ function setupLottieCarousel() {
    setupImageCarousel()). Fleches prev/next + puces incrustees en bas de la
    scene plutot que des onglets textuels. */
 function carouselMarkup(items, opts) {
+  // opts.theme : variante d'habillage optionnelle (ex. 'hoot' — voir
+  // carouselOpts dans content.js). Seule difference avec le carrousel
+  // generique : chaque panneau porte son propre texte (item.label/item.text)
+  // sur fond violet plutot qu'une legende partagee sous la figure — meme
+  // esprit que le slider_container/commande_repas2 de la page de reference
+  // (marvinsrd.com/en/hoot-project), rebati avec flex/CSS custo plutot que
+  // copie a l'identique du hack Webflow (qui reposait sur la largeur
+  // intrinseque des images pour deborder du conteneur).
+  const theme = opts && opts.theme;
   // item.zoomable (voir zoomableClass() plus haut) : posee sur le <picture>
   // du panneau, pas sur .cs-carousel__panel lui-meme — c'est le panneau qui
   // glisse via transform pour changer de slide, le zoom ne doit toucher que
@@ -1876,10 +1991,22 @@ function carouselMarkup(items, opts) {
         <source srcset="assets/img/${item.image}.webp" type="image/webp">
         <img src="assets/img/${item.image}.png" alt="${alt}" loading="lazy" decoding="async">
       </picture>`;
+    const slideContent = theme === 'hoot'
+      ? `<div class="cs-carousel__content">
+          <p class="cs-carousel__label">${escapeAttr(item.label || '')}</p>
+          <p class="cs-carousel__text">${escapeAttr(item.text || '')}</p>
+        </div>`
+      : '';
+    // item.wide (theme 'hoot' only) : l'image est un format large (ex. la
+    // capture "Item voting", deux ecrans cote a cote) — lui laisser un peu
+    // plus de place que les 55% par defaut, compense par moins de padding
+    // sur .cs-carousel__content plutot que par une colonne de texte plus
+    // etroite (voir .cs-carousel__panel--wide dans styles.css).
+    const wideClass = (theme === 'hoot' && item.wide) ? ' cs-carousel__panel--wide' : '';
     return `
-    <div class="cs-carousel__panel" data-role="carousel-panel"
+    <div class="cs-carousel__panel${wideClass}" data-role="carousel-panel"
          data-index="${i}" data-caption="${escapeAttr(item.caption || '')}">
-      ${img}
+      ${img}${slideContent}
     </div>`;
   }).join('');
   // Meme borne que mediaMarkup() : cadre la figure a sa taille reelle plutot
@@ -1889,8 +2016,10 @@ function carouselMarkup(items, opts) {
     <button type="button" class="cs-carousel__dot${i === 0 ? ' is-active' : ''}" data-role="carousel-dot"
             data-index="${i}" aria-label="${escapeAttr(t().csCarouselGoTo)} ${i + 1}"
             aria-current="${i === 0 ? 'true' : 'false'}"></button>`).join('');
+  // theme 'hoot' : le texte vit dans chaque panneau (slideContent ci-dessus),
+  // pas de legende partagee sous la figure.
   return `
-    <figure class="cs-carousel" data-role="carousel"${bound}>
+    <figure class="cs-carousel${theme ? ` cs-carousel--${theme}` : ''}" data-role="carousel"${bound}>
       <div class="cs-carousel__stage">
         <div class="cs-carousel__track" data-role="carousel-track">${panels}</div>
         <button type="button" class="cs-carousel__arrow cs-carousel__arrow--prev" data-role="carousel-prev"
@@ -1899,7 +2028,7 @@ function carouselMarkup(items, opts) {
                 aria-label="${escapeAttr(t().csCarouselNext)}">${chevronIcon('cs-carousel__arrow-icon')}</button>
         <div class="cs-carousel__dots" role="tablist" aria-label="${escapeAttr(t().csCarouselDots)}">${dots}</div>
       </div>
-      <figcaption data-role="carousel-caption">${escapeAttr(items[0].caption || '')}</figcaption>
+      ${theme === 'hoot' ? '' : `<figcaption data-role="carousel-caption">${escapeAttr(items[0].caption || '')}</figcaption>`}
     </figure>`;
 }
 
@@ -3994,6 +4123,13 @@ function paint(hash, route, mode) {
     if (route.name === 'case' && route.project.slug === 'constraints') setupComponentsShowcase();
     if (route.name === 'case' && route.project.slug === 'constraints') setupLottieCarousel();
     if (route.name === 'case' && route.project.slug === 'services-exclusion') setupImageCarousel();
+    // Fit-Plans/Design a lui aussi un carrousel (l'ancien parcours vs le
+    // nouveau, voir s.carousel dans content.js) — meme raison d'etre que la
+    // ligne au-dessus.
+    if (route.name === 'case' && route.project.slug === 'fit-plans') setupImageCarousel();
+    // Hoot/Design a lui aussi un carrousel (evenements/vote, voir s.carousel
+    // dans content.js) — meme raison d'etre que les deux lignes au-dessus.
+    if (route.name === 'case' && route.project.slug === 'hoot') setupImageCarousel();
     // L'article salsa a lui aussi un carrousel (voir le media `type:
     // 'carousel'` de "Lines and lanes" dans content.js). setupImageCarousel()
     // ne fait rien s'il n'y a pas de [data-role="carousel"] dans la page, mais
@@ -4009,6 +4145,9 @@ function paint(hash, route, mode) {
     // Sans condition de route : la fonction sort d'elle-meme s'il n'y a pas
     // de .beatsync dans la page (c'est-a-dire partout sauf l'article salsa).
     setupBeatSync();
+    // Sans condition de route non plus : sort d'elle-meme s'il n'y a pas de
+    // .cs-postit-board (c'est-a-dire partout sauf Hoot/Analysis).
+    setupPostitBoard();
   };
 
   // Transition de page. startViewTransition est l'API moderne : le navigateur
@@ -4446,6 +4585,60 @@ function setupVideos() {
 
   videos.forEach(v => io.observe(v));
   addCleanup(() => io.disconnect());   // sinon l'observateur survit au changement de page
+}
+
+/* Animation d'apparition des post-its (voir postitBoardMarkup() plus haut) :
+   pas le vol aleatoire exact de Webflow (impossible a reproduire sans son
+   moteur IX2 — voir la note sur postitBoardMarkup()), mais un equivalent qui
+   en garde l'esprit : chaque post-it se pose (fondu + leger deplacement) au
+   defilement, avec son propre delai (voir le style inline transition-delay
+   pose par postitBoardMarkup()) pour qu'ils n'apparaissent pas tous d'un
+   bloc. Un IntersectionObserver PAR POST-IT (pas un seul sur la colonne) :
+   chacun doit apparaitre a son propre passage dans le viewport. */
+function setupPostitBoard() {
+  const notes = $$('.cs-mini-postit');
+  if (!notes.length) return;
+
+  if (prefersReducedMotion()) {
+    notes.forEach(n => n.classList.add('is-visible'));
+    return;
+  }
+
+  // Sous 700px la piste devient horizontalement scrollable (voir
+  // .cs-postit-board dans styles.css) : les post-its des colonnes 2 a 4
+  // vivent alors hors du scrollport visible, et un IntersectionObserver PAR
+  // POST-IT (root implicite = viewport) les clippe comme "non intersectants"
+  // tant qu'on n'a pas fait defiler la piste jusque-la — certains restaient
+  // donc a opacity:0 pour de bon si on ne pensait pas a glisser. Ici on
+  // observe la piste ELLE-MEME : des qu'elle apparait a l'ecran
+  // (verticalement, ce qui ne depend pas du defilement horizontal), tous ses
+  // post-its passent d'un coup a l'etat final.
+  if (window.matchMedia('(max-width: 700px)').matches) {
+    const boards = $$('.cs-postit-board');
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          $$('.cs-mini-postit', e.target).forEach(n => n.classList.add('is-visible'));
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.2 });
+    boards.forEach(b => io.observe(b));
+    addCleanup(() => io.disconnect());
+    return;
+  }
+
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('is-visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.2 });
+
+  notes.forEach(n => io.observe(n));
+  addCleanup(() => io.disconnect());
 }
 
 /* Les lecteurs video autonomes (voir videoPlayerMarkup()). Le pendant de
