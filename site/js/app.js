@@ -519,7 +519,7 @@ function pageHome() {
         <h2>${escapeAttr(kind === 'work' ? d.workTitle : d.sideTitle)}</h2>
         <p>${escapeAttr(kind === 'work' ? d.workIntro : d.sideIntro)}</p>
       </div>`);
-    const grid = el('div', { class: 'cards' });
+    const grid = el('div', { class: kind === 'side' ? 'cards cards--side' : 'cards' });
     list.forEach(p => grid.append(projectCard(p)));
     w.append(grid);
     sec.append(w);
@@ -633,21 +633,35 @@ function pageCase(project) {
 
   const hasProcess = (c.sections || []).length > 0;
 
+  // `hideOverviewHeadings` (voir bible-app dans content.js) : pour un projet
+  // qui n'a qu'un paragraphe de contexte, pas un vrai probleme/resultat, les
+  // etiquettes "Overview"/"Problem" et la grille a deux colonnes de .pair
+  // n'ont rien a annoncer — un paragraphe simple suffit.
+  // white-space: pre-line laisse un \n dans le texte source (content.js)
+  // devenir un saut de ligne visuel sans casser le <p> en deux paragraphes.
+  const overview = !(c.problem || c.outcome) ? '' : c.hideOverviewHeadings
+    ? `<p class="cs__overview-intro" style="white-space:pre-line">${emphasize(c.problem || c.outcome)}</p>`
+    : `<h2 class="cs-sec__title">${escapeAttr(d.csOverview)}</h2>
+    <div class="pair">
+      ${c.problem ? `<div><h2 class="cs-sec__headline">${escapeAttr(d.csProblem)}</h2><p>${escapeAttr(c.problem)}</p></div>` : ''}
+      ${c.outcome ? `<div class="pair__out"><h2 class="cs-sec__headline">${escapeAttr(d.csOutcome)}</h2><p>${escapeAttr(c.outcome)}</p></div>` : ''}
+    </div>`;
+
   hw.insertAdjacentHTML('beforeend', `
     ${c.isDraft ? `<p style="margin-bottom:var(--s4)"><span class="draft-badge">${escapeAttr(d.draftBadge)}</span></p>` : ''}
-    ${c.gist.company || c.hideClient ? '' : `<p class="cs__client">${escapeAttr(c.client)}</p>`}
+    ${(c.gist && c.gist.company) || c.hideClient ? '' : `<p class="cs__client">${escapeAttr(c.client)}</p>`}
     <h1 class="cs__title">${escapeAttr(c.title)}</h1>
     <p class="cs__tagline">${emphasize(c.tagline)}</p>
 
     ${c.heroMedia ? `<div class="cs__hero-media" data-slug="${escapeAttr(c.slug)}">${mediaMarkup(c.heroMedia)}</div>` : ''}
 
-    <dl class="gist">
+    ${c.gist ? `<dl class="gist">
       ${c.gist.company && c.gist.company.href ? `<div><dt>${escapeAttr(d.csCompany)}</dt><dd><a href="${escapeAttr(c.gist.company.href)}" target="_blank" rel="noopener">${escapeAttr(c.gist.company.label)}</a></dd></div>` : ''}
       <div><dt>${escapeAttr(d.csRole)}</dt><dd>${escapeAttr(c.gist.role)}</dd></div>
       <div><dt>${escapeAttr(d.csDuration)}</dt><dd>${escapeAttr(c.gist.duration)}</dd></div>
-      <div><dt>${escapeAttr(d.csTeam)}</dt><dd>${escapeAttr(c.gist.team)}</dd></div>
+      <div><dt>${escapeAttr(d.csTeam)}</dt><dd>${emphasize(c.gist.team)}</dd></div>
       ${c.gist.tools ? `<div><dt>${escapeAttr(d.csTools)}</dt><dd>${escapeAttr(c.gist.tools)}</dd></div>` : ''}
-    </dl>
+    </dl>` : ''}
 
     <!-- L'etiquette de l'apercu, posee ICI et non tout en haut de l'en-tete :
          ce qui la precede (client, titre, accroche, media, fiche d'identite)
@@ -655,12 +669,7 @@ function pageCase(project) {
          section. L'apercu proprement dit commence a Probleme / Resultat /
          Impacts, et c'est ce groupe-la que l'etiquette annonce, exactement
          comme "Process" annonce la section suivante. -->
-    <h2 class="cs-sec__title">${escapeAttr(d.csOverview)}</h2>
-
-    <div class="pair">
-      <div><h2 class="cs-sec__headline">${escapeAttr(d.csProblem)}</h2><p>${escapeAttr(c.problem)}</p></div>
-      <div class="pair__out"><h2 class="cs-sec__headline">${escapeAttr(d.csOutcome)}</h2><p>${escapeAttr(c.outcome)}</p></div>
-    </div>
+    ${overview}
 
     ${stats ? `<h2 class="stats__title cs-sec__headline">${escapeAttr(d.csImpacts)}</h2><div class="stats">${stats}</div>` : ''}
 
@@ -829,7 +838,13 @@ function pageCase(project) {
           }).join('')}</div>`).join('');
         const after = s.media && s.media[i] ? mediaGroup(s.media[i]) : '';
         const terms = s.terms && s.terms.after === i ? termsBlock : '';
-        const figure = figuresAfterList.filter(f => f.after === i).map(figureFor).join('');
+        // Plusieurs figureAfter partageant le meme `after` : cote a cote via
+        // .media-grid (meme classe que mediaGroup() ci-dessus), au lieu de
+        // s'empiler comme des <figure> independantes.
+        const figuresHere = figuresAfterList.filter(f => f.after === i);
+        const figure = figuresHere.length > 1
+          ? `<div class="media-grid">${figuresHere.map(figureFor).join('')}</div>`
+          : figuresHere.map(figureFor).join('');
         // s.numbered : { [paragraphIndex]: n } — accole une pastille
         // numerotee violette (meme style que .cs-timeline__constraint-num)
         // au paragraphe, pour faire echo a un numero deja present dans une
@@ -1013,8 +1028,11 @@ function pageCase(project) {
       const headline = s.headline
         ? `<p class="cs-sec__headline">${escapeAttr(s.headline)}</p>` : '';
 
+      const title = s.title
+        ? `<h2 class="cs-sec__title">${escapeAttr(s.title)}</h2>` : '';
+
       sec.innerHTML = `
-        <h2 class="cs-sec__title">${escapeAttr(s.title)}</h2>
+        ${title}
         ${headline}
         ${intro}
         ${list}
@@ -1454,6 +1472,86 @@ function zoomableClass(flag, ripple) {
    lecture continue du texte. Natif = clavier et lecteurs d'ecran gratuits,
    aucun JS de plus a ecrire. */
 function figureFor(s) {
+  // `type: 'scrollFrame'` : image locale bien plus haute que large (une page
+  // entiere capturee), presentee dans une fenetre a hauteur fixee (aspect-ratio)
+  // (ex. Yabara/Landing page, la home recruteur ; Yabara/Recruiter et
+  // Candidate sections, meme fenetre appliquee a toutes les captures pour
+  // garder leur largeur de colonne actuelle et juste plafonner leur hauteur).
+  // `s.ratio` = "largeur / hauteur" de la portion qu'on veut voir au repos
+  // (voir yabara-landing-recruiter dans content.js pour le calcul des pixels
+  // source) — posee en variable CSS plutot qu'en aspect-ratio direct :
+  // desktop uniquement (voir .cs-scroll-frame dans styles.css), mobile
+  // l'ignore et affiche l'image en entier, sans fenetre ni scroll interne.
+  // `s.zoomable` : au repos la fenetre est figee (overflow: hidden, aucun
+  // scroll passif) — reutilise zoomableClass()/setupZoomableMedia() tel
+  // quel (meme classe .zoomable-media que .figure__frame), donc c'est le
+  // clic qui zoome l'image ET debloque le glisser-deplacer dans les 4
+  // directions, sans jamais faire bouger le cadre lui-meme (aspect-ratio le
+  // rend deja insensible a la taille de son contenu).
+  if (s.type === 'scrollFrame') {
+    const captionHTML = escapeAttr(s.caption || '');
+    return `
+      <figure class="figure figure--scroll-frame">
+        <div class="cs-scroll-frame${zoomableClass(s.zoomable)}" style="--frame-ratio:${escapeAttr(String(s.ratio))}">
+          <picture>
+            <source srcset="assets/img/${s.image}.webp" type="image/webp">
+            <img src="assets/img/${s.image}.png" alt="${captionHTML}" loading="lazy" decoding="async">
+          </picture>
+        </div>
+        ${captionHTML ? `<figcaption>${captionHTML}</figcaption>` : ''}
+      </figure>`;
+  }
+  // `type: 'dashFrame'` (ex. Yabara/Recruiter section, home dashboard) :
+  // variante de scrollFrame a DEUX images independantes plutot qu'une —
+  // `side` (la sidebar, jamais scrollee) et `main` (le reste de la page,
+  // bien plus haute que sa colonne, scrollee seule) — voir s.side/s.main
+  // dans content.js et la note au-dessus de .cs-dash-frame dans styles.css
+  // pour pourquoi deux exports separes plutot qu'un seul + calque de
+  // masquage (ancienne approche, voir l'historique de ce fichier). Jamais
+  // zoomable : contrairement a scrollFrame, un simple scroll suffit deja a
+  // tout parcourir.
+  // `s.mobileImage` (optionnel) : sous 701px, le split side/main (pense pour
+  // une large colonne desktop) cede la place a CETTE image unique, pleine
+  // largeur, sans la sidebar collante — demande utilisateur explicite plutot
+  // que le side+main empile par defaut (peu lisible : sidebar ecrasee en
+  // pleine largeur au-dessus d'un contenu deux fois plus long). Les deux
+  // blocs sont dans le DOM en permanence, la media query (.cs-dash-frame vs
+  // .cs-dash-frame__mobile, voir styles.css) choisit lequel s'affiche —
+  // `display:none` retire l'inactif de l'arbre d'accessibilite, pas besoin
+  // d'aria-hidden manuel. `s.zoomable` (reutilise ici, jamais applique a
+  // .cs-dash-frame lui-meme — un simple scroll suffit deja au split
+  // desktop) : ne sert donc qu'a cette image mobile, generalement
+  // zoomable:'mobile' — demande utilisateur, l'image mobile unique est
+  // souvent trop dense pour se lire a la largeur d'un telephone.
+  if (s.type === 'dashFrame') {
+    const captionHTML = escapeAttr(s.caption || '');
+    const mobileHTML = s.mobileImage ? `
+        <div class="cs-dash-frame__mobile${zoomableClass(s.zoomable)}">
+          <picture>
+            <source srcset="assets/img/${s.mobileImage}.webp" type="image/webp">
+            <img src="assets/img/${s.mobileImage}.png" alt="${captionHTML}" loading="lazy" decoding="async">
+          </picture>
+        </div>` : '';
+    const figureHTML = `
+      <figure class="figure figure--scroll-frame">
+        <div class="cs-dash-frame" style="--frame-ratio:${escapeAttr(String(s.ratio))}">
+          <div class="cs-dash-frame__side">
+            <picture>
+              <source srcset="assets/img/${s.side.image}.webp" type="image/webp">
+              <img src="assets/img/${s.side.image}.png" alt="" loading="lazy" decoding="async">
+            </picture>
+          </div>
+          <div class="cs-dash-frame__main">
+            <picture>
+              <source srcset="assets/img/${s.main.image}.webp" type="image/webp">
+              <img src="assets/img/${s.main.image}.png" alt="${captionHTML}" loading="lazy" decoding="async">
+            </picture>
+          </div>
+        </div>${mobileHTML}
+        ${captionHTML ? `<figcaption>${captionHTML}</figcaption>` : ''}
+      </figure>`;
+    return s.below ? `<div class="cs-sec__stack">${figureHTML}${belowMarkup(s.below)}</div>` : figureHTML;
+  }
   const note = s.frOnly
     ? `<span class="figure__note">${escapeAttr(t().csFigureFR)}</span>` : '';
   // `caption` accepte soit une chaine (cas courant), soit {title, body}
@@ -1479,9 +1577,83 @@ function figureFor(s) {
       <div class="figure__frame${zoomableClass(s.zoomable)}">${media}</div>
       ${captionHTML || note ? `<figcaption>${captionHTML}${note}</figcaption>` : ''}
     </figure>`;
-  return s.figureDrawer
+  const drawered = s.figureDrawer
     ? `<details class="figure-drawer"><summary>${escapeAttr(t().figureSeeMore)}${chevronIcon('figure-drawer__chevron')}</summary>${figure}</details>`
     : figure;
+  // `s.below` (voir content.js, Yabara/Recruiter section) : empile un widget
+  // interactif SOUS cette figure, dans un wrapper commun — necessaire pour
+  // que les deux restent une seule cellule de .media-grid (sinon ils
+  // deviendraient chacun leur propre item de grille, cote a cote plutot
+  // qu'empiles). Voir .cs-sec__stack dans styles.css et belowMarkup()
+  // juste en dessous pour le choix du widget.
+  return s.below ? `<div class="cs-sec__stack">${drawered}${belowMarkup(s.below)}</div>` : drawered;
+}
+
+/* Choix du widget empile par `s.below` (voir figureFor() ci-dessus) : la
+   forme du config distingue les deux — `candidateId` pour la demo carte +
+   modale candidat (candidateCardMarkup(), node Figma 387:1493/387:1327),
+   `criteria` pour le tooltip de score de matching (anonScoreMarkup(), node
+   377:26729) qui vient s'empiler sous l'image d'anonymisation. */
+function belowMarkup(cfg) {
+  if (cfg.criteria) return anonScoreMarkup(cfg);
+  if (cfg.candidateId) return candidateCardMarkup(cfg);
+  // Ni l'un ni l'autre widget : cfg est une figure ordinaire (image/caption/
+  // bare/zoomable, ex. Candidate section, node Figma 392:3288 empile sous
+  // "Application status and timeline") — figureFor() la rend telle quelle,
+  // meme chemin que n'importe quel autre item de figureAfter.
+  return figureFor(cfg);
+}
+
+/* Yabara, Recruiter section : tooltip du score de matching (node Figma
+   377:26729), empile sous l'image d'anonymisation (node 391:2234) via
+   s.below. L'image est un export plat (le badge de score y est deja "cuit"
+   dans les pixels) — seuls un bouton invisible positionne par-dessus
+   (cfg.hotspot, en %, mesure sur le node 391:2224 "7/10" a l'interieur du
+   canevas 969x345 du node 391:2234) et le tooltip lui-meme sont construits
+   en HTML/CSS. Positions en % (pas px) : suivent le badge quelle que soit
+   la largeur de rendu de l'image, puisque .cs-anon fixe son propre
+   aspect-ratio (voir styles.css) — un pourcentage vertical/horizontal reste
+   donc exact a n'importe quelle taille de colonne.
+   Icones : locationPinIcon/checkIcon/candModalCloseIcon deja definies plus
+   haut (memes traits que le node Figma), seules grad/building/salary sont
+   nouvelles (voir juste au-dessus de candModalSearchIcon). */
+function anonScoreMarkup(cfg) {
+  const captionHTML = escapeAttr(cfg.caption || '');
+  const iconFor = {
+    location: locationPinIcon, grad: gradCapIcon, building: buildingIcon,
+    calendar: calendarIcon, salary: salaryIcon
+  };
+  const rows = [];
+  for (let i = 0; i < cfg.criteria.length; i += 2) rows.push(cfg.criteria.slice(i, i + 2));
+  const critHTML = rows.map(pair => `
+        <div class="cs-anon__crit-row${pair.length === 1 ? ' cs-anon__crit-row--single' : ''}">
+          ${pair.map(c => `
+          <div class="cs-anon__crit">
+            <div class="cs-anon__crit-label">${iconFor[c.icon]('cs-anon__crit-icon')}<span>${escapeAttr(c.label)}</span></div>
+            <div class="cs-anon__crit-pill cs-anon__crit-pill--${c.pass ? 'pass' : 'fail'}">
+              <span>${escapeAttr(c.value)}</span>${(c.pass ? checkIcon : candModalCloseIcon)('cs-anon__crit-pill-icon')}
+            </div>
+          </div>`).join('')}
+        </div>`).join('');
+  const hs = cfg.hotspot;
+  return `
+    <figure class="figure figure--bare">
+      <div class="cs-anon" style="--anon-ratio:${escapeAttr(String(cfg.ratio))}">
+        <picture>
+          <source srcset="assets/img/${cfg.image}.webp" type="image/webp">
+          <img src="assets/img/${cfg.image}.png" alt="${captionHTML}" loading="lazy" decoding="async">
+        </picture>
+        <button type="button" class="cs-anon__hot" aria-describedby="cs-anon-tip"
+          style="left:${hs.left}%; top:${hs.top}%; width:${hs.width}%; height:${hs.height}%;"
+          aria-label="View match score details"></button>
+        <div class="cs-anon__tooltip" id="cs-anon-tip" role="tooltip"
+          style="left:${hs.left + hs.width / 2}%; top:${hs.top + hs.height}%;">
+          <p class="cs-anon__tooltip-title"><strong>${cfg.score} critères</strong> sur ${cfg.total}</p>
+          <div class="cs-anon__crit-list">${critHTML}</div>
+        </div>
+      </div>
+      ${captionHTML ? `<figcaption>${captionHTML}</figcaption>` : ''}
+    </figure>`;
 }
 
 /* Canevas Figma en direct (iframe officielle "Partager > Integrer"), pour un
@@ -1681,6 +1853,58 @@ function checkIcon(cls) {
   return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
       aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`;
+}
+
+/* Icones pour candidateCardMarkup() (voir plus bas) : chemins exacts export
+   Figma (node 387:1493 pour bookmark/localisation, 387:1327 pour la croix de
+   fermeture et la loupe de la modale) — stroke="currentColor" plutot que la
+   couleur figee du fichier source, pour suivre la couleur CSS du bouton qui
+   les porte comme checkIcon()/alertCircleIcon() plus haut. */
+function bookmarkIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 20 20" fill="none"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="M15.8333 17.5L10 14.1667L4.16667 17.5V4.16667C4.16667 3.72464 4.34226 3.30072 4.65482 2.98816C4.96738 2.67559 5.39131 2.5 5.83333 2.5H14.1667C14.6087 2.5 15.0326 2.67559 15.3452 2.98816C15.6577 3.30072 15.8333 3.72464 15.8333 4.16667V17.5Z"/></svg>`;
+}
+function locationPinIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 20 20" fill="none"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="M16.6667 8.33333C16.6667 12.4942 12.0508 16.8275 10.5008 18.1658C10.3564 18.2744 10.1807 18.3331 10 18.3331C9.81933 18.3331 9.64356 18.2744 9.49917 18.1658C7.94917 16.8275 3.33333 12.4942 3.33333 8.33333C3.33333 6.56522 4.03571 4.86953 5.28595 3.61929C6.5362 2.36905 8.23189 1.66667 10 1.66667C11.7681 1.66667 13.4638 2.36905 14.714 3.61929C15.9643 4.86953 16.6667 6.56522 16.6667 8.33333Z"/><path d="M10 10.8333C11.3807 10.8333 12.5 9.71405 12.5 8.33333C12.5 6.95262 11.3807 5.83333 10 5.83333C8.61929 5.83333 7.5 6.95262 7.5 8.33333C7.5 9.71405 8.61929 10.8333 10 10.8333Z"/></svg>`;
+}
+function candModalCloseIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>`;
+}
+function candModalSearchIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="M21 21l-4.34-4.34"/><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/></svg>`;
+}
+
+/* Icones pour anonScoreMarkup() (voir plus bas) : chemins exacts export
+   Figma (node 377:26729, tooltip du score de matching) — locationPinIcon(),
+   checkIcon() et candModalCloseIcon() (reutilise comme croix d'echec ici,
+   meme trait exact) couvrent deja 3 des 6 icones du tooltip, seules
+   grad/building/salary manquaient. */
+function gradCapIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 20 20" fill="none"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="M17.85 9.10167C17.9992 9.03585 18.1258 8.92772 18.2141 8.79067C18.3024 8.65362 18.3486 8.49366 18.3469 8.33061C18.3453 8.16757 18.2958 8.0086 18.2046 7.8734C18.1135 7.7382 17.9847 7.63271 17.8342 7.57L10.6917 4.31667C10.4745 4.21762 10.2387 4.16637 10 4.16637C9.76134 4.16637 9.52547 4.21762 9.30833 4.31667L2.16667 7.56667C2.01831 7.63164 1.8921 7.73845 1.80347 7.87401C1.71485 8.00958 1.66765 8.16803 1.66765 8.33C1.66765 8.49197 1.71485 8.65042 1.80347 8.78599C1.8921 8.92155 2.01831 9.02836 2.16667 9.09333L9.30833 12.35C9.52547 12.449 9.76134 12.5003 10 12.5003C10.2387 12.5003 10.4745 12.449 10.6917 12.35L17.85 9.10167Z"/><path d="M18.3333 8.33333V13.3333"/><path d="M5 10.4167V13.3333C5 13.9964 5.52678 14.6323 6.46447 15.1011C7.40215 15.5699 8.67392 15.8333 10 15.8333C11.3261 15.8333 12.5979 15.5699 13.5355 15.1011C14.4732 14.6323 15 13.9964 15 13.3333V10.4167"/></svg>`;
+}
+function buildingIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 20 20" fill="none"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="M8.33333 10H11.6667"/><path d="M8.33333 6.66667H11.6667"/><path d="M11.6667 17.5V15C11.6667 14.558 11.4911 14.1341 11.1785 13.8215C10.866 13.5089 10.442 13.3333 10 13.3333C9.55797 13.3333 9.13405 13.5089 8.82149 13.8215C8.50893 14.1341 8.33333 14.558 8.33333 15V17.5"/><path d="M5 8.33333H3.33333C2.89131 8.33333 2.46738 8.50893 2.15482 8.82149C1.84226 9.13405 1.66667 9.55797 1.66667 10V15.8333C1.66667 16.2754 1.84226 16.6993 2.15482 17.0118C2.46738 17.3244 2.89131 17.5 3.33333 17.5H16.6667C17.1087 17.5 17.5326 17.3244 17.8452 17.0118C18.1577 16.6993 18.3333 16.2754 18.3333 15.8333V7.5C18.3333 7.05797 18.1577 6.63405 17.8452 6.32149C17.5326 6.00893 17.1087 5.83333 16.6667 5.83333H15"/><path d="M5 17.5V4.16667C5 3.72464 5.17559 3.30072 5.48816 2.98816C5.80072 2.67559 6.22464 2.5 6.66667 2.5H13.3333C13.7754 2.5 14.1993 2.67559 14.5118 2.98816C14.8244 3.30072 15 3.72464 15 4.16667V17.5"/></svg>`;
+}
+function calendarIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 20 20" fill="none"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="M6.66667 1.66667V5"/><path d="M13.3333 1.66667V5"/><path d="M15.8333 3.33333H4.16667C3.24619 3.33333 2.5 4.07953 2.5 5V16.6667C2.5 17.5871 3.24619 18.3333 4.16667 18.3333H15.8333C16.7538 18.3333 17.5 17.5871 17.5 16.6667V5C17.5 4.07953 16.7538 3.33333 15.8333 3.33333Z"/><path d="M2.5 8.33333H17.5"/></svg>`;
+}
+function salaryIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 20 20" fill="none"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="M9.16667 12.5H10.8333C11.2754 12.5 11.6993 12.3244 12.0118 12.0118C12.3244 11.6993 12.5 11.2754 12.5 10.8333C12.5 10.3913 12.3244 9.96738 12.0118 9.65482C11.6993 9.34226 11.2754 9.16667 10.8333 9.16667H8.33333C7.83333 9.16667 7.41667 9.33333 7.16667 9.66667L2.5 14.1667"/><path d="M5.83333 17.5L7.16667 16.3333C7.41667 16 7.83333 15.8333 8.33333 15.8333H11.6667C12.5833 15.8333 13.4167 15.5 14 14.8333L17.8333 11.1667C18.1549 10.8628 18.3426 10.4436 18.3551 10.0013C18.3676 9.55903 18.2039 9.12991 17.9 8.80833C17.5961 8.48676 17.1769 8.29908 16.7346 8.28657C16.2924 8.27407 15.8632 8.43777 15.5417 8.74167L12.0417 11.9917"/><path d="M1.66667 13.3333L6.66667 18.3333"/><path d="M13.3333 9.91667C14.668 9.91667 15.75 8.83469 15.75 7.5C15.75 6.16531 14.668 5.08333 13.3333 5.08333C11.9986 5.08333 10.9167 6.16531 10.9167 7.5C10.9167 8.83469 11.9986 9.91667 13.3333 9.91667Z"/><path d="M5 6.66667C6.38071 6.66667 7.5 5.54738 7.5 4.16667C7.5 2.78595 6.38071 1.66667 5 1.66667C3.61929 1.66667 2.5 2.78595 2.5 4.16667C2.5 5.54738 3.61929 6.66667 5 6.66667Z"/></svg>`;
 }
 
 /* Distance (px) a franchir pour qu'un glissement compte comme un swipe
@@ -2239,6 +2463,104 @@ function setupExclModal() {
 
     update();
   });
+}
+
+/* ==========================================================================
+   5e ter (bis). LA CARTE CANDIDAT + MODALE "AJOUTER A UNE OFFRE"
+   --------------------------------------------------------------------------
+   Un seul cas d'usage (section "recruiter-section" de l'etude de cas Yabara,
+   empilee sous le visuel "Sommaire des candidatures" via s.below, voir
+   figureFor() dans ce fichier) : voir content.js pour la config. Reproduit le node Figma
+   387:1493 (la carte, bouton "bookmark" en haut a droite) et le comportement
+   detaille sur 387:1326 : au clic sur le bookmark, une modale (387:1327)
+   propose d'ajouter le candidat a une ou plusieurs offres via des cases a
+   cocher ; les 3 boutons (croix, Annuler, Sauvegarder) referment tous la
+   modale sans rien persister ("//All buttons lead to exit", aucune des
+   maquettes sources ne cable de sauvegarde reelle). Memes conventions que
+   exclModalMarkup()/setupExclModal() juste au-dessus : data-role plutot que
+   des classes pour le ciblage JS, cases a cocher natives masquees + span
+   visuel (voir .cand-modal__check-input dans styles.css). */
+function candidateCardMarkup(cfg) {
+  const checks = cfg.offers.map((o, i) => `
+    <label class="cand-modal__check">
+      <input type="checkbox" class="cand-modal__check-input" id="cand-offer-${i}" value="${escapeAttr(o.value)}">
+      <span class="cand-modal__check-box" aria-hidden="true">${checkIcon('cand-modal__check-icon')}</span>
+      <span class="cand-modal__check-label">${escapeAttr(o.label)}</span>
+    </label>`).join('');
+  return `
+    <div class="cand-demo">
+      <div class="cand-demo__stage">
+        <article class="cand-card">
+          <div class="cand-card__top">
+            <picture class="cand-card__avatar">
+              <source srcset="assets/img/${cfg.avatar}.webp" type="image/webp">
+              <img src="assets/img/${cfg.avatar}.png" alt="" loading="lazy" decoding="async">
+            </picture>
+            <button type="button" class="cand-card__bookmark" data-role="cand-bookmark" aria-haspopup="dialog" aria-label="Add ${escapeAttr(cfg.candidateId)} to an offer">
+              ${bookmarkIcon('cand-card__bookmark-icon')}
+            </button>
+          </div>
+          <div class="cand-card__text">
+            <p class="cand-card__id">${escapeAttr(cfg.candidateId)}</p>
+            <p class="cand-card__role">${escapeAttr(cfg.role)}</p>
+            <p class="cand-card__loc">${locationPinIcon('cand-card__loc-icon')}${escapeAttr(cfg.location)}</p>
+          </div>
+          <button type="button" class="cand-card__cta">Voir le profil</button>
+        </article>
+        <div class="cand-modal" data-role="cand-modal" hidden>
+          <div class="cand-modal__panel" role="dialog" aria-modal="true" aria-label="Ajouter un talent à une offre">
+            <button type="button" class="cand-modal__close" data-role="cand-modal-dismiss" aria-label="Close">${candModalCloseIcon('cand-modal__close-icon')}</button>
+            <h3 class="cand-modal__title">Ajouter un talent à une offre</h3>
+            <p class="cand-modal__desc">Veuillez sélectionner les offres auxquelles vous aimeriez ajouter le talent</p>
+            <div class="cand-modal__search" aria-hidden="true">
+              ${candModalSearchIcon('cand-modal__search-icon')}<span>Rechercher une offre</span>
+            </div>
+            <div class="cand-modal__checks">${checks}</div>
+            <div class="cand-modal__actions">
+              <button type="button" class="cand-modal__cancel" data-role="cand-modal-dismiss">Annuler</button>
+              <button type="button" class="cand-modal__save" data-role="cand-modal-dismiss">Sauvegarder</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* setupCandidateCard() : ouvre/ferme la modale — voir la note au-dessus de
+   candidateCardMarkup() pour le detail du comportement source. Echap referme
+   aussi la modale (meme convention que le reste du site, voir plus bas dans
+   ce fichier la gestion Echap des autres fiches/modales). */
+function setupCandidateCard() {
+  const root = $('.cand-demo');
+  if (!root) return;
+
+  const bookmark = $('[data-role="cand-bookmark"]', root);
+  const modal = $('[data-role="cand-modal"]', root);
+  if (!bookmark || !modal) return;
+
+  const open = () => {
+    modal.hidden = false;
+    requestAnimationFrame(() => modal.classList.add('is-open'));
+  };
+  const close = () => {
+    modal.classList.remove('is-open');
+    bookmark.focus();
+    setTimeout(() => { modal.hidden = true; }, 300);
+  };
+
+  bookmark.addEventListener('click', open);
+  addCleanup(() => bookmark.removeEventListener('click', open));
+
+  $$('[data-role="cand-modal-dismiss"]', modal).forEach(btn => {
+    btn.addEventListener('click', close);
+    addCleanup(() => btn.removeEventListener('click', close));
+  });
+
+  const onKeydown = (e) => {
+    if (e.key === 'Escape' && !modal.hidden) close();
+  };
+  document.addEventListener('keydown', onKeydown);
+  addCleanup(() => document.removeEventListener('keydown', onKeydown));
 }
 
 /* ==========================================================================
@@ -4136,6 +4458,11 @@ function paint(hash, route, mode) {
     // on garde la condition de route par symetrie avec la ligne au-dessus.
     if (route.name === 'case' && route.project.format === 'article') setupImageCarousel();
     if (route.name === 'case' && route.project.slug === 'services-exclusion') setupExclModal();
+    if (route.name === 'case' && route.project.slug === 'yabara') setupCandidateCard();
+    // Yabara/Admin - Back-office a lui aussi un carrousel (les 4 captures du
+    // panneau admin, voir s.carousel dans content.js) — meme raison d'etre
+    // que les lignes services-exclusion/fit-plans/hoot ci-dessus.
+    if (route.name === 'case' && route.project.slug === 'yabara') setupImageCarousel();
     setupScrollProgress();
     setupVideos();
     // Sans condition de route, comme setupBeatSync() plus bas : la fonction
@@ -4885,11 +5212,11 @@ function setupZoomableMedia() {
     // fois au chargement) via matchMedia plutot que cote CSS — s'adapte tout
     // seul si la fenetre est redimensionnee.
     const mobileOnly = thumb.classList.contains('zoomable-media--mobile-only');
-    // Glisser-deplacer horizontal une fois zoomee (souris desktop — le
-    // tactile a deja le scroll natif d'overflow:auto). `dragged` distingue
-    // un vrai drag d'un simple clic : sans lui, le moindre glissement
-    // rebasculerait aussi le zoom via onClick ci-dessous.
-    let startX = 0, startScrollLeft = 0, dragging = false, dragged = false;
+    // Glisser-deplacer dans les 4 directions une fois zoomee (souris desktop
+    // — le tactile a deja le scroll natif d'overflow:auto dans les 2 axes).
+    // `dragged` distingue un vrai drag d'un simple clic : sans lui, le
+    // moindre glissement rebasculerait aussi le zoom via onClick ci-dessous.
+    let startX = 0, startY = 0, startScrollLeft = 0, startScrollTop = 0, dragging = false, dragged = false;
 
     const onPointerDown = e => {
       if (!thumb.classList.contains('is-zoomed')) return;
@@ -4904,14 +5231,18 @@ function setupZoomableMedia() {
       dragging = true;
       dragged = false;
       startX = e.clientX;
+      startY = e.clientY;
       startScrollLeft = thumb.scrollLeft;
+      startScrollTop = thumb.scrollTop;
       thumb.setPointerCapture(e.pointerId);
     };
     const onPointerMove = e => {
       if (!dragging) return;
       const dx = e.clientX - startX;
-      if (Math.abs(dx) > 4) dragged = true;
+      const dy = e.clientY - startY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) dragged = true;
       thumb.scrollLeft = startScrollLeft - dx;
+      thumb.scrollTop = startScrollTop - dy;
     };
     const onPointerUp = () => { dragging = false; };
     const onClick = () => {
@@ -4930,6 +5261,19 @@ function setupZoomableMedia() {
       // donc naturellement a 0 en fin d'anim, sans a-coup. Au zoom-IN,
       // scrollLeft est deja a 0 (rien a faire defiler avant que la largeur ne
       // depasse 100%), donc rien a reinitialiser de ce cote non plus.
+      //
+      // --zoom-h0 : hauteur au repos figee en px juste avant le zoom-in (voir
+      // .figure__frame.zoomable-media.is-zoomed dans styles.css, desktop
+      // uniquement — ex. Yabara/Coming soon page). Sans elle, le cadre est un
+      // bloc `height:auto` qui grandirait avec l'image agrandie (2.3x plus
+      // haute) et deplacerait tout le contenu sous lui — la figer garde le
+      // cadre a l'identique de son etat non-zoome, seul son CONTENU deborde
+      // et devient scrollable. En px plutot qu'en % : une base fixe pour le
+      // calc() du CSS, qui ne doit pas se recalculer sur le cadre lui-meme.
+      if (!thumb.classList.contains('is-zoomed')) {
+        const rect = thumb.getBoundingClientRect();
+        thumb.style.setProperty('--zoom-h0', `${rect.height}px`);
+      }
       thumb.classList.toggle('is-zoomed');
     };
 
