@@ -664,7 +664,8 @@ export const PROJECTS = [
     tagline: 'Refining access control to reflect the reality of clinicians.',
     tags: ['Access control', 'Component reuse', 'Healthcare SaaS'],
     gist: { company: true, role: 'Product Designer', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer' },
-    heroMedia: { type: 'image', src: 'assets/img/licence-hero.webp' },
+    heroMedia: { type: 'video', src: 'assets/media/licence-hero.mp4', poster: 'assets/img/licence-hero-poster.webp',
+      caption: 'Searching for a member by email to manage their licence', hideCaption: true },
     problem: 'Clinics and hospitals lacked control over the registration process, as it was taking place outside the platform, and the permissions system required more clarity and granularity.',
     processIntro: 'As a designer in this project, I translated the requirements into interfaces and assisted the PM in decision-making.',
     outcome: 'We redefined the permission system and implemented a new registration process so that managers, according to their authorization level, can add different types of member.',
@@ -1026,81 +1027,6 @@ export const PROJECTS = [
     ]
   },
 
-  /* ========================== SOUNDCLOUD ================================ */
-  {
-    slug: 'soundcloud', kind: 'work', accent: 'e', year: '2020',
-    poster: { label: 'SUS 69,57', figure: 'gauge' },
-    title: 'Soundcloud',
-    client: 'Study project',
-    tagline: '**815 responses** and 6 tests to work out why nobody finds the comment button.',
-    tags: ['Research', 'Usability testing', 'UI'],
-    gist: { role: 'Research, testing, UI', duration: 'Nov 2019 – Nov 2020', team: '3 designers', tools: 'Figma, Google Forms, Sheets' },
-    heroMedia: { type: 'video', src: 'assets/media/soundcloud-hero.mp4', poster: 'assets/img/soundcloud-hero-poster.webp', hideCaption: true },
-    problem: 'Soundcloud has a feature its competitors don’t: commenting on a track at a specific moment. You just have to find it first. We wanted to measure the platform’s actual usability, then make that feature reachable for someone opening the site for the first time.',
-    outcome: 'A SUS score of 69.57 measured across 815 respondents, six user tests isolating two specific problems, and a redesigned artist page that lifts the comment section up the right-hand side.',
-    stats: [
-      { n: '815', l: 'survey responses' },
-      { n: '69.57', l: 'platform SUS score' },
-      { n: '83%', l: 'test success rate, with 1 dropoff' }
-    ],
-    sections: [
-      {
-        id: 'research', label: 'Research', title: 'Quantitative research',
-        body: [
-          'We built a 30-question survey to understand users’ habits, profiles and favourite features, with the UMUX usability scale embedded in it. Distributed on Twitter and LinkedIn, it gathered 815 responses, mostly from 16-to-25-year-olds — which incidentally tells you something about the platform’s average user age.',
-          'Transposed onto the SUS scale, the result is 69.57. That is mediocre: it puts Soundcloud somewhere between the usability of Excel and an old GPS.',
-          'Three further numbers shaped what came next, isolating how people actually use the platform day to day.',
-          'Our conclusion: Soundcloud is seen as an alternative to Spotify, Deezer or Apple Music rather than a primary service, and the app is used far more than the site. So the priority was the web interface, and the comments feature in particular.'
-        ],
-        // Les trois chiffres de la phrase precedente, sortis en cartes plutot
-        // que laisses dans le paragraphe — reprend le "component boxes" de la
-        // page source (marvinsrd.com/en/soundcloud-project), rendu avec le
-        // composant .stats deja utilise pour les chiffres d'en-tete (voir
-        // s.stats dans app.js/pageCase(), modificateur .stats--sec).
-        stats: [
-          { n: '29.7%', l: 'use another platform because they think it’s better' },
-          { n: '70%', l: 'go through the search bar — they already know what they came to hear' },
-          { n: '43.9%', l: 'of weekly users listen 11 to 30 minutes per session' }
-        ],
-        // Les deux visuels du calcul SUS (diapositives "SUS_UX_Calcul" et
-        // "SUS_UX_Scale" de la page source) : le detail du calcul UMUX -> SUS,
-        // puis Soundcloud replace sur l'echelle d'acceptabilite. Legendes
-        // volontairement muettes sur le chiffre exact (69,27 sur la diapo
-        // source contre 69.57 dans le texte ci-dessus, un ecart d'arrondi du
-        // document d'origine) pour ne pas contredire le corps du texte.
-        mockups: [
-          { image: 'soundcloud-sus-calc', caption: 'The UMUX-to-SUS calculation, from the two averaged questionnaire scores.' },
-          { image: 'soundcloud-sus-scale', caption: 'Soundcloud plotted on the SUS acceptability scale — high-marginal, next to Excel and old GPS units.' }
-        ]
-      },
-      {
-        id: 'tests', label: 'Testing', title: 'User testing',
-        body: [
-          'We built a test scenario on the desktop version around three missions: find a specific artist and track, to assess where the search bar sits; start playback, the site’s primary function; and leave a comment at a specific moment in the track, the exclusive feature. Every tester got the same scenario, and was asked to narrate their actions out loud.',
-          'Across six testers, some of whom had never used the site, the results:',
-          'The positives were clear — finding a track is easy, and the play button is large enough to find without thinking. The negatives were just as clear: only people who already knew the platform managed to leave a comment, and there was recurring confusion between the artist page and search results.',
-          'The most useful insight: users expected to comment the way they do on YouTube. They looked for a field under the player, not an interaction on the waveform.'
-        ],
-        stats: [
-          { n: '83%', l: 'mission success rate' },
-          { n: '1', l: 'dropoff, across six testers' },
-          { n: '30s–1min', l: 'to complete each mission' }
-        ]
-      },
-      {
-        id: 'solution', label: 'Solution', title: 'Solution',
-        body: [
-          'We prototyped the fixes to make them manipulable rather than merely describable. Then I reworked the artist page, lifting the comment section up the right-hand side, level with the player, so it is visible without scrolling and reads like a conversation in progress.'
-        ],
-        image: 'soundcloud-solution-design',
-        caption: 'The redesigned artist page: comments move up the right-hand side, level with the player.'
-      }
-    ],
-    extLinks: [
-      { label: 'Full work document (Notion, French only)', href: 'https://www.notion.so/mar20/Usability-test-Soundcloud-518394b0bb404f1ebf467bc99f2bc064' }
-    ]
-  },
-
   /* ============ SIDE QUEST — DOCUMENTING SALSA DANCE ==================
      CE PROJET NE SUIT PAS LA STRUCTURE DES AUTRES ETUDES DE CAS.
 
@@ -1155,7 +1081,7 @@ export const PROJECTS = [
     poster: { label: '8 → 4', figure: 'clave' },
     title: 'Documenting Salsa Dance',
     client: 'Personal project',
-    tagline: 'An interest in salsa dance, then an attempt to **write it down**.',
+    tagline: 'Documenting Salsa Dance',
     tags: ['Systems design', 'Notation', 'Personal'],
     // Derniere frame de l'ancien cover video (salsa-cover.mp4), extraite et
     // exportee en WebP : deja recadree au centre sur le couple au ratio
@@ -1626,22 +1552,440 @@ export const PROJECTS = [
     ]
   },
 
-  /* ================= SIDE QUEST — MEMOIRE DE MASTER ==================== */
+  /* ================= SIDE QUEST — MEMOIRE DE MASTER ====================
+     Contenu copie tel quel depuis la page Notion publique (SITE.links.essay) :
+     memes intertitres, memes paragraphes, memes images (rehebergees en
+     local, voir assets/img/masters-essay-*.webp), a une exception pres — la
+     section "Research methodology" (les 3 etapes Discovery/Analysis/Writing)
+     a ete retiree a la demande explicite de l'utilisateur. Le lien de
+     telechargement du PDF, en toute fin de page sur Notion, reste en toute
+     fin de page ici (dernier paragraphe de la derniere section) : le fichier
+     n'etant pas rehebergeable (URL S3 signee, expirante), il pointe vers la
+     page Notion elle-meme plutot que vers un fichier local. */
   {
     slug: 'masters-essay', kind: 'side', accent: 'g', year: '2020',
     poster: { label: 'Mémoire', figure: 'book' },
-    external: SITE.links.essay,          // ce projet renvoie directement vers Notion
-    title: 'Master’s essay',
+    heroMedia: { type: 'image', src: 'assets/img/masters-essay-cover.webp' },
+    title: 'Affordances and intuitiveness in video games',
     client: 'ECV Digital',
-    tagline: 'A final-year dissertation, hosted on Notion.',
-    tags: ['Writing', 'Research'],
-    gist: { role: 'Research, writing', duration: 'Master’s year', team: 'Solo', tools: 'Notion' },
-    problem: 'My final-year dissertation. The full document lives on Notion rather than as a case study — it’s meant to be read, not summarised.',
-    outcome: 'The complete text is available online.',
+    hideClient: true,
+    tagline: 'My final-year dissertation',
+    tags: ['UX', 'Writing'],
+    gist: {
+      role: 'User research, technological watch, composition and layout',
+      duration: 'November 2017 → May 2019',
+      team: 'Pair, with [Dylan](https://www.linkedin.com/in/dylanjoaquim/)'
+    },
     stats: [],
-    sections: [],
+    sections: [
+      {
+        id: 'introduction', label: 'Introduction', title: 'Introduction',
+        body: [
+          'Affordance is defined by the ability, for an object, to evoke its use.',
+          'For example, we can’t ignore the way a hammer is commonly used because of its composition. It seems almost intuitive to hold it by the handle, and to use the head to hit or flatten an object because of its weight.',
+          'As final research project for our graduation, in the form of a white paper, we decided to study the subject in pairs, but this time applied to video games, in order to understand how players learn how to play.'
+        ],
+        media: {
+          2: [{ type: 'image', src: 'assets/img/masters-essay-mockup-1.webp', hideCaption: true }]
+        },
+        after: [
+          { media: [{ type: 'image', src: 'assets/img/masters-essay-mockup-2.webp', hideCaption: true }] }
+        ]
+      },
+      {
+        id: 'summary', label: 'Summary', title: 'Summary',
+        headline: 'What you could find in this book',
+        body: ['The content is divided into 3 parts :'],
+        bulletsAfter: {
+          after: 0,
+          items: [
+            'Definition of terms: it seemed important for us to define the terms used in this white paper, but also to come back to a few principles of cognitive psychology commonly used in the video games field.',
+            'Recommendations and methodologies: we went back over the essential design principles applied in the creation phase of video games',
+            'A few use cases: we applied the principles thus discovered to existing games',
+            'The 10 good practices: we tried to summarize our words into 10 commandments'
+          ]
+        },
+        media: {
+          0: [{ type: 'image', src: 'assets/img/masters-essay-mockup-3.webp', hideCaption: true }]
+        }
+      },
+      {
+        id: 'download', label: 'Download',
+        headline: 'You can download the white paper below',
+        body: [
+          `Unfortunately, the book is only available in French for the moment ... [Affordance_et_intuitivité_SORHAINDO_mini.pdf](${SITE.links.essay})`
+        ]
+      }
+    ]
+  },
+
+  /* ======================= SIDE QUEST — YABARA ==========================
+     Stub en attente du contenu (l'utilisateur l'envoie apres coup) : seul le
+     nom du projet est connu pour l'instant. isDraft + draftNote signalent ce
+     qui reste a remplir, meme motif que masters-essay avant son ecriture. */
+  {
+    slug: 'yabara', kind: 'side', accent: 'a', year: '2026',
+    poster: { label: 'Coming soon', figure: '' },
+    heroMedia: { type: 'image', src: 'assets/img/yabara-hero.webp' },
+    title: 'Yabara ATS',
+    client: 'Personal project',
+    tagline: 'Designing an ATS software',
+    tags: ['Product Design', 'Saas', '0 to 1'],
+    gist: { role: 'Product Designer', duration: '4 months', team: '1 designer, 1 dev, and the client' },
+    stats: [],
+    hideOverviewHeadings: true,
+    problem: 'A friend launched an ATS platform for HR professionals in Ivory Coast, and I came in as product designer. I had the chance to dig into and reflect on small parts of the platform, such as the launch and the product identity. It gave me something to work on again.\n\nIt was a simple ATS (Applicant Tracking System) Saas with a twist: **candidates have to be anonymized.**',
+    sections: [
+      {
+        id: 'coming-soon', label: 'Coming soon', title: 'Coming soon',
+        body: [
+          'The first challenge was to conceive a coming soon page. A counter indicates the number of already registered members to make visitors want to sign up.',
+          'I also reflected on what was the best way to encourage recruiters to use the app at the first connection, and I stated that giving the opportunity to post a first job offer for free would be a good incentive.'
+        ],
+        figureAfter: [
+          { after: 1, image: 'yabara-coming-soon', bare: true, zoomable: true,
+            caption: 'The coming soon landing page.' },
+          { after: 1, image: 'yabara-coming-soon-confirm', bare: true, zoomable: true,
+            caption: 'Confirmation screen after signing up.' }
+        ]
+      },
+      {
+        id: 'landing-page', label: 'Landing page', title: 'Landing page',
+        body: [
+          'The second challenge was to choose the right content for the landing page as it was addressed to both recruiters and candidates. I chose to let users select the right page according to their role as we had no way to automatically detect from the natural search.',
+          'The landing page emphasizes the value proposition of the product, which is for both recruiter and candidates to have a fair recruiting process by anonymization.'
+        ],
+        figureAfter: [
+          // Ratio calcule sur les pixels sources : la section bleue "Faites
+          // confiance a Yabara" va de y=0 a y=980 dans le PNG de 1400px de
+          // large (voir la note de figureFor() dans app.js) — la fenetre
+          // s'ouvre donc sur cette section, le reste de la page se decouvrant
+          // au scroll interne, comme si le site etait consulte en vrai.
+          { after: 1, type: 'scrollFrame', image: 'yabara-landing-recruiter', ratio: '1400 / 980', zoomable: true,
+            caption: 'The landing page, recruiter view — click to zoom.' },
+          { after: 1, type: 'scrollFrame', image: 'yabara-landing-candidate', ratio: '1400 / 980', zoomable: true,
+            caption: 'The landing page, candidate view — anonymized profiles.' }
+        ]
+      },
+      {
+        id: 'recruiter-section', label: 'Recruiter', title: 'Recruiter',
+        body: [
+          'The product is divided in 3 parts: a recruiter section (dashboard, offers, talent search, etc), a candidate section (offer search, application, etc), and the admin section for the entire website management.'
+        ],
+        figureAfter: [
+          // `type: 'dashFrame'` (voir figureFor() dans app.js) : la sidebar
+          // (image a part, node Figma 387:1154) et le reste du dashboard
+          // (image a part, node 389:1644, une page entiere bien plus haute
+          // que large) sont deux exports INDEPENDANTS plutot qu'un seul
+          // recadrage + calque de masquage — `side` ne defile jamais,
+          // `main` defile seul (scroll passif, scrollbar cachee). ratio
+          // = proportions du cadre entier (sidebar + colonne visible du
+          // contenu), pas d'une des deux images seules.
+          // `mobileImage` (node Figma 376:24387, le contenu SANS la sidebar
+          // 376:24296) : demande utilisateur explicite — sous 701px le split
+          // side/main cede la place a cette image pleine largeur plutot que
+          // de les empiler (sidebar ecrasee en pleine largeur au-dessus,
+          // peu lisible). Export different de `main` ci-dessus (node
+          // different, page legerement plus longue) : fourni tel quel par
+          // l'utilisateur plutot que reexporte depuis 389:1644.
+          { after: 0, type: 'dashFrame', ratio: '1400 / 973',
+            side: { image: 'yabara-recruiter-sidebar' },
+            main: { image: 'yabara-recruiter-content' },
+            mobileImage: 'yabara-recruiter-mobile',
+            // 'mobile' (pas true) : seule l'image mobile ci-dessus en
+            // profite (voir figureFor()) — demande utilisateur ("on mobile,
+            // make the images ... zoomable"), le split desktop reste non
+            // zoomable (son scroll suffit deja).
+            zoomable: 'mobile',
+            caption: 'Recruiter home dashboard.',
+            // `below` (voir belowMarkup()/anonScoreMarkup() dans app.js) :
+            // image d'anonymisation (node Figma 391:2234) empilee SOUS le
+            // dashboard, meme colonne — demande utilisateur. `criteria`
+            // distingue ce below de celui du cand-demo plus bas (voir
+            // belowMarkup()). hotspot en % : mesure sur le node 391:2224
+            // ("7/10", le badge de score deja "cuit" dans l'image) a
+            // l'interieur du canevas 969x345 du node 391:2234 —
+            // left=525/969, top=65/345, width/height=50/969 et 50/345.
+            // Contenu du tooltip = node Figma 377:26729 ("Tooltip score").
+            // ratio = dimensions REELLES du fichier exporte (1200x486), pas
+            // celles du node Figma (969x345) : l'export Figma d'une section
+            // inclut un leger debord/padding autour du contenu (deja vu sur
+            // ce meme node, voir l'historique), donc le fichier final n'a
+            // pas exactement les proportions du node. Un mauvais ratio ici
+            // ne recadre rien (aspect-ratio + object-fit: contain, voir
+            // .cs-anon dans styles.css) mais fait "flotter" l'image en
+            // lettrboxing au lieu de remplir toute la largeur de colonne —
+            // symptome reporte par l'utilisateur, corrige en alignant ratio
+            // sur le fichier reel plutot que sur le node source.
+            // Pas de zoomable ici (contrairement aux autres images de cette
+            // section/la candidate section) : le hotspot du score (cfg.
+            // hotspot) est positionne en % de .cs-anon, qui ne grossit pas
+            // avec l'image une fois zoomee (setupZoomableMedia() n'agrandit
+            // que l'<img>, pas son cadre) — zoomer desalignerait le bouton
+            // invisible du badge qu'il est cense couvrir.
+            below: {
+              image: 'yabara-anonymization', ratio: '1200 / 486',
+              caption: 'Anonymized candidate view — hover the score badge for match details.',
+              hotspot: { left: 54.18, top: 18.84, width: 5.16, height: 14.49 },
+              score: 3, total: 5,
+              criteria: [
+                { icon: 'location', label: 'Localisation', value: 'Abidjan', pass: true },
+                { icon: 'grad', label: 'Niveau d’étude', value: 'Bac+5', pass: true },
+                { icon: 'building', label: 'Experience', value: '3 ans', pass: false },
+                { icon: 'calendar', label: 'Date d’embauche', value: 'Disponible', pass: true },
+                { icon: 'salary', label: 'Salaire', value: '35K - 40K$', pass: false }
+              ]
+            } },
+          // `below` (voir figureFor() dans app.js) : empile la demo carte +
+          // modale SOUS cette figure, dans la MEME cellule de .media-grid
+          // (colonne de droite, sous le sommaire) plutot qu'en pleine
+          // largeur sous les deux colonnes — demande utilisateur : la carte
+          // doit "coller" sous le sommaire, cote du dashboard.
+          { after: 0, image: 'yabara-recruiter-summary', bare: true, zoomable: 'mobile',
+            caption: 'Applications summary — status breakdown.',
+            below: {
+              avatar: 'yabara-candidate-avatar',
+              candidateId: 'KHKJT21',
+              role: 'Développeur informatique',
+              location: 'Abidjan',
+              offers: [
+                { value: 'favorites', label: 'Favoris' },
+                { value: 'chef-restauration', label: 'Chef de restauration H/F' },
+                { value: 'jardinier', label: 'Jardinier H/F' },
+                { value: 'agent-comptable', label: 'Agent comptable H/F' }
+              ]
+            } }
+        ]
+      },
+      {
+        id: 'candidate-section', label: 'Candidate', title: 'Candidate',
+        body: [
+          'The candidate section covers browsing and applying to offers, tracking application status, and viewing company details.'
+        ],
+        figureAfter: [
+          // Remplace l'ancien groupe de 4 scrollFrame (home/apply/company/
+          // status, node Figma generique 1400x973) par 2 images fixes,
+          // pleine hauteur, sans fenetre ni scroll interne — demande
+          // utilisateur explicite ("no scrolling behavior and iframe").
+          // Pas de `type`/`ratio` : figure par defaut dans figureFor() (meme
+          // traitement que yabara-recruiter-summary plus haut), l'image
+          // entiere s'affiche a sa hauteur naturelle. zoomable:'mobile'
+          // (demande utilisateur separee, "on mobile make the images ...
+          // zoomable") : cette image est une page entiere, illisible telle
+          // quelle a la largeur d'un telephone sans zoomer.
+          { after: 0, image: 'yabara-candidate-home', bare: true, zoomable: 'mobile',
+            caption: 'Candidate home — job search, saved searches and applications.',
+            // `below` (node Figma 395:3415, "Recompenses") : la page de
+            // badges/recompenses du candidat, empilee SOUS la home — demande
+            // utilisateur. Bordure grise ajoutee sur l'image de la home
+            // (demande utilisateur separee) : voir img[src$="yabara-
+            // candidate-home.png"] dans styles.css — `bare: true` retire le
+            // cadre standard de .figure__frame (fond/liser/padding), donc la
+            // bordure est posee directement sur l'img plutot que via
+            // .figure__frame.
+            below: {
+              image: 'yabara-candidate-rewards', bare: true, zoomable: 'mobile',
+              caption: 'Rewards — badges unlocked for platform milestones.'
+            } },
+          // Node Figma 392:3096 ("Progression") : etat d'une candidature
+          // (envoyee/pre-selectionnee/entretien/reponse) — demande
+          // utilisateur : a cote de la home candidat (meme `after`, donc
+          // meme cellule de .media-grid, cote a cote — voir
+          // #sec-candidate-section .media-grid dans styles.css qui fixe
+          // exactement 2 colonnes). Hauteurs tres differentes (page entiere
+          // vs widget court) : sans consequence, .media-grid a deja
+          // align-items: start pour ne jamais etirer une figure courte a la
+          // hauteur de sa voisine.
+          { after: 0, image: 'yabara-candidate-progress', bare: true, zoomable: 'mobile',
+            caption: 'Application status and timeline.',
+            // `below` (voir belowMarkup() dans app.js, qui retombe sur
+            // figureFor() pour une figure ordinaire sans criteria/candidateId)
+            // : node Figma 392:3288 ("Entreprise - Description de
+            // l'entreprise"), la fiche entreprise/description de poste —
+            // demande utilisateur : empilee SOUS l'image de progression,
+            // meme colonne. ratio absent : pas de fenetre a hauteur fixe ici
+            // (pas de type scrollFrame), donc pas besoin de figer un rapport
+            // largeur/hauteur — seul .cs-anon (widget different) en a besoin
+            // pour positionner un hotspot en %.
+            below: {
+              image: 'yabara-candidate-company-profile', bare: true, zoomable: 'mobile',
+              caption: 'Company profile and job description.'
+            } }
+        ]
+      },
+      /* Nouvelle section "Admin - Back-office" (demande utilisateur) : le
+         panneau d'administration reserve au client (staff Yabara), separe
+         des sections Recruiter/Candidate qui couvrent les deux roles publics
+         de la plateforme. 4 captures (nodes Figma 378:27624 "Utilisateurs",
+         378:28073 "Historique de recherche", 378:28641 "Candidats d'une
+         offre", 378:27466 "Trouver un talent") en carrousel plutot qu'en
+         media-grid : demande utilisateur explicite ("Put ... below in a
+         caroussel"). Voir carouselMarkup()/setupImageCarousel() dans app.js
+         — meme mecanisme que Services exclusion/Fit plans/Hoot, il faut
+         etendre la liste de slugs qui appelle setupCaseBehaviours ->
+         setupImageCarousel() pour 'yabara'. */
+      {
+        id: 'admin-backoffice', label: 'Admin - Back-office', title: 'Admin - Back-office',
+        body: [
+          'The admin section allows the client to have control over the whole product (users, offers, and companies)'
+        ],
+        // Les 4 captures partagent la meme largeur de fenetre (2880px, export
+        // 2x) mais des hauteurs de page differentes (966/799/1384/673/1982/
+        // 963/1502/730 une fois redimensionnees a 1400px de large) — pas de
+        // ratio commun naturel. object-fit:contain + un --frame-ratio calque
+        // sur la plus haute (yabara-admin-candidates, node 378:28641) evite
+        // de rogner le contenu des captures plus courtes : voir
+        // #sec-admin-backoffice .cs-carousel__stage dans styles.css.
+        carousel: [
+          { image: 'yabara-admin-users', zoomable: 'mobile', caption: 'Users — accounts, roles and status across the platform.' },
+          { image: 'yabara-admin-search-history', zoomable: 'mobile', caption: 'User detail — search history.' },
+          { image: 'yabara-admin-candidates', zoomable: 'mobile', caption: 'Job offer — candidates pipeline.' },
+          { image: 'yabara-admin-find-talent', zoomable: 'mobile', caption: 'Finding a talent matching a given offer.' }
+        ],
+        // maxWidth (voir boundStyle() dans app.js) : demande utilisateur
+        // ("reduce a bit the size of the caroussel") — sans lui la figure
+        // remplit toute la colonne de texte comme n'importe quel autre
+        // media, ~1094px sur desktop.
+        carouselOpts: { maxWidth: 860 }
+      }
+    ],
     isDraft: true,
-    draftNote: 'This block is waiting on a two-or-three-sentence summary of the topic and argument. Just replace `problem` and `outcome` in js/content.js.'
+    draftNote: 'Waiting on more project content from the user — copy and structure may still need refining, images still needed for the challenges/landing/product sections.'
+  },
+
+  /* ======================= SIDE QUEST — BIBLE APP =======================
+     Stub en attente du contenu (l'utilisateur l'envoie apres coup) : seul le
+     nom du projet est connu pour l'instant. isDraft + draftNote signalent ce
+     qui reste a remplir, meme motif que yabara/masters-essay avant leur
+     ecriture. */
+  {
+    slug: 'bible-app', kind: 'side', accent: 'b', year: '2026',
+    poster: { label: 'Coming soon', figure: '' },
+    title: 'Designing a Bible app',
+    client: 'Personal project',
+    tagline: 'Experimenting with interactions',
+    tags: ['UI', 'Interaction', 'Animation'],
+    heroMedia: { type: 'lottie', src: 'assets/media/bible-app-hero.json',
+      caption: 'Bible app preview', hideCaption: true },
+    problem: 'In 2024, a friend contacted me to build a custom Bible app.\nI worked on the UI and had some fun experimenting with the verse-search interaction.',
+    hideOverviewHeadings: true,
+    stats: [],
+    /* Les 4 planches viennent du fichier Figma "Claude portfolio image
+       generation" (fileKey itn1kZeKMMFva4PUSX9hlS), noeuds 369:22736,
+       369:22375, 369:21691 et 369:22102 — memes conventions que les schemas
+       de Salsa plus haut : export PNG 2x, recadre sur le contenu (le noir
+       autour est le canevas Figma, pas un fond voulu), converti en .webp
+       (largeur bridee a 1400px) avec repli .png (figureFor() sert les deux
+       en <picture>, contrairement a mediaMarkup() pour un article). Chaque
+       planche porte deja ses propres annotations (deja traduites en anglais
+       dans Figma), d'ou des legendes courtes ici. `zoomable: true` (et pas
+       seulement 'mobile') : plusieurs ecrans de telephone cote a cote,
+       le texte reste petit meme dans la colonne desktop. */
+    sections: [
+      {
+        id: 'screens', label: 'Screens', title: 'Screens',
+        body: [
+          'A few screens explored along the way.'
+        ],
+        figureAfter: [
+          { after: 0, image: 'bible-app-home-theme', bare: true, zoomable: true,
+            caption: 'Home, theme list, and theme detail.' },
+          { after: 0, image: 'bible-app-media', bare: true, zoomable: true,
+            caption: 'Media library and video player variants.' },
+          { after: 0, image: 'bible-app-reading', bare: true, zoomable: true,
+            caption: 'Books, chapters and verse selection.' },
+          { after: 0, image: 'bible-app-version', bare: true, zoomable: true,
+            caption: 'Switching version, lexicon and concordances.' }
+        ]
+      }
+    ]
+  }
+];
+
+/* --------------------------------------------------------------------------
+   4 bis) PROJETS ARCHIVES — retires du site (demande utilisateur : "Remove
+   the soundcloud project, keep it somewhere hidden so I can bring it back").
+   PAS dans PROJECTS : la carte, la home, la liste "Work", le routeur
+   (#/work/<slug>) et le pied "next projects" itèrent tous exclusivement sur
+   PROJECTS, donc un objet absent de ce tableau est invisible PARTOUT sans
+   qu'aucun autre fichier n'ait besoin d'un filtre `hidden`/`archived` a
+   maintenir. Pour le restaurer : reinserer l'objet ci-dessous dans PROJECTS
+   (a sa place d'origine, entre fit-plans et salsa, pour garder l'ordre
+   chronologique) et supprimer ce bloc. Champs et contenu inchanges depuis le
+   retrait — rien a reecrire au retour. */
+export const ARCHIVED_PROJECTS = [
+  {
+    slug: 'soundcloud', kind: 'work', accent: 'e', year: '2020',
+    poster: { label: 'SUS 69,57', figure: 'gauge' },
+    title: 'Soundcloud',
+    client: 'Study project',
+    tagline: '**815 responses** and 6 tests to work out why nobody finds the comment button.',
+    tags: ['Research', 'Usability testing', 'UI'],
+    gist: { role: 'Research, testing, UI', duration: 'Nov 2019 – Nov 2020', team: '3 designers', tools: 'Figma, Google Forms, Sheets' },
+    heroMedia: { type: 'video', src: 'assets/media/soundcloud-hero.mp4', poster: 'assets/img/soundcloud-hero-poster.webp', hideCaption: true },
+    problem: 'Soundcloud has a feature its competitors don’t: commenting on a track at a specific moment. You just have to find it first. We wanted to measure the platform’s actual usability, then make that feature reachable for someone opening the site for the first time.',
+    outcome: 'A SUS score of 69.57 measured across 815 respondents, six user tests isolating two specific problems, and a redesigned artist page that lifts the comment section up the right-hand side.',
+    stats: [
+      { n: '815', l: 'survey responses' },
+      { n: '69.57', l: 'platform SUS score' },
+      { n: '83%', l: 'test success rate, with 1 dropoff' }
+    ],
+    sections: [
+      {
+        id: 'research', label: 'Research', title: 'Quantitative research',
+        body: [
+          'We built a 30-question survey to understand users’ habits, profiles and favourite features, with the UMUX usability scale embedded in it. Distributed on Twitter and LinkedIn, it gathered 815 responses, mostly from 16-to-25-year-olds — which incidentally tells you something about the platform’s average user age.',
+          'Transposed onto the SUS scale, the result is 69.57. That is mediocre: it puts Soundcloud somewhere between the usability of Excel and an old GPS.',
+          'Three further numbers shaped what came next, isolating how people actually use the platform day to day.',
+          'Our conclusion: Soundcloud is seen as an alternative to Spotify, Deezer or Apple Music rather than a primary service, and the app is used far more than the site. So the priority was the web interface, and the comments feature in particular.'
+        ],
+        // Les trois chiffres de la phrase precedente, sortis en cartes plutot
+        // que laisses dans le paragraphe — reprend le "component boxes" de la
+        // page source (marvinsrd.com/en/soundcloud-project), rendu avec le
+        // composant .stats deja utilise pour les chiffres d'en-tete (voir
+        // s.stats dans app.js/pageCase(), modificateur .stats--sec).
+        stats: [
+          { n: '29.7%', l: 'use another platform because they think it’s better' },
+          { n: '70%', l: 'go through the search bar — they already know what they came to hear' },
+          { n: '43.9%', l: 'of weekly users listen 11 to 30 minutes per session' }
+        ],
+        // Les deux visuels du calcul SUS (diapositives "SUS_UX_Calcul" et
+        // "SUS_UX_Scale" de la page source) : le detail du calcul UMUX -> SUS,
+        // puis Soundcloud replace sur l'echelle d'acceptabilite. Legendes
+        // volontairement muettes sur le chiffre exact (69,27 sur la diapo
+        // source contre 69.57 dans le texte ci-dessus, un ecart d'arrondi du
+        // document d'origine) pour ne pas contredire le corps du texte.
+        mockups: [
+          { image: 'soundcloud-sus-calc', caption: 'The UMUX-to-SUS calculation, from the two averaged questionnaire scores.' },
+          { image: 'soundcloud-sus-scale', caption: 'Soundcloud plotted on the SUS acceptability scale — high-marginal, next to Excel and old GPS units.' }
+        ]
+      },
+      {
+        id: 'tests', label: 'Testing', title: 'User testing',
+        body: [
+          'We built a test scenario on the desktop version around three missions: find a specific artist and track, to assess where the search bar sits; start playback, the site’s primary function; and leave a comment at a specific moment in the track, the exclusive feature. Every tester got the same scenario, and was asked to narrate their actions out loud.',
+          'Across six testers, some of whom had never used the site, the results:',
+          'The positives were clear — finding a track is easy, and the play button is large enough to find without thinking. The negatives were just as clear: only people who already knew the platform managed to leave a comment, and there was recurring confusion between the artist page and search results.',
+          'The most useful insight: users expected to comment the way they do on YouTube. They looked for a field under the player, not an interaction on the waveform.'
+        ],
+        stats: [
+          { n: '83%', l: 'mission success rate' },
+          { n: '1', l: 'dropoff, across six testers' },
+          { n: '30s–1min', l: 'to complete each mission' }
+        ]
+      },
+      {
+        id: 'solution', label: 'Solution', title: 'Solution',
+        body: [
+          'We prototyped the fixes to make them manipulable rather than merely describable. Then I reworked the artist page, lifting the comment section up the right-hand side, level with the player, so it is visible without scrolling and reads like a conversation in progress.'
+        ],
+        image: 'soundcloud-solution-design',
+        caption: 'The redesigned artist page: comments move up the right-hand side, level with the player.'
+      }
+    ],
+    extLinks: [
+      { label: 'Full work document (Notion, French only)', href: 'https://www.notion.so/mar20/Usability-test-Soundcloud-518394b0bb404f1ebf467bc99f2bc064' }
+    ]
   }
 ];
 

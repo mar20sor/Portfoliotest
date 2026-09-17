@@ -874,38 +874,47 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
    inset negatif d'une cellule : la translation ne doit jamais decouvrir de
    bord vide, et une cellule est plus large qu'une periode.
 
-   position: fixed — la grille ne defile plus avec la page, elle reste posee
-   sur la fenetre. C'est ce qui evite d'animer un calque de plusieurs milliers
-   de pixels de haut, et ce qui rend --hero-min/min-height inutiles ici.
+   position: absolute (et non fixed) — la grille defile avec la page au lieu
+   de rester posee sur la fenetre. Le calque est ANCRE SUR #page ET NON SUR
+   <body> : #page est deja `position: relative`, et surtout <body> ne peut
+   pas porter `overflow: clip` sans consequence — c'est le meme element que
+   `body.is-locked { overflow: hidden }` (section 2) utilise pour bloquer le
+   defilement de TOUTE la fenetre pendant le loader/portail, via la
+   propagation CSS du overflow de <body> vers la racine <html>. Poser un
+   overflow non-visible sur <body> de façon permanente aurait donc bloque le
+   defilement du site entier, pas seulement le debord de la grille. #page,
+   lui, est un conteneur de decoupage ordinaire : lui donner `overflow: clip`
+   ne declenche aucune propagation, et sa hauteur suit deja celle du contenu
+   en flux normal (il contient tout, jusqu'au pied de page), ce qui couvre
+   toute la page sans --hero-min/min-height explicite ici.
 
-   z-index: 0 — pas plus bas : sous 0 on passerait derriere le fond de
-   <body>, et la grille disparaitrait.
-
-   #page RECOIT UN z-index PROPRE JUSTE APRES, ET C'EST OBLIGATOIRE. #page ne
-   porte position/z-index QUE dans body.is-overlay (125, pour recouvrir
-   .site-head a 120 — voir plus bas). Hors fiche, sur la page d'accueil
-   elle-meme, #page restait donc statique (z-index: auto) : dans l'ordre de
-   peinture d'un contexte d'empilement, le contenu en flux normal non
-   positionne (etape 3 de CSS2 Appendix E) passe AVANT les descendants
-   positionnes a z-index 0 (etape 6) — et ::before/::after, `position: fixed`,
-   en sont. Resultat : la grille se peignait AU-DESSUS de toutes les cartes de
-   la page d'accueil, pas dessous, quel que soit son ordre dans le DOM. #page
-   a donc besoin de son propre z-index (peu importe lequel, tant qu'il est
-   positif) pour rejoindre l'etape 7 et passer devant les deux pseudo-
-   elements. */
+   z-index: -1 — et non 0. La grille est maintenant un enfant de #page, au
+   meme titre que le contenu de la page (hero, cartes...). Dans l'ordre de
+   peinture d'un contexte d'empilement (CSS2 Appendix E), le contenu en flux
+   normal non positionne (etape 3) passe AVANT les descendants positionnes a
+   z-index 0 (etape 6) : a z-index 0, la grille se peindrait donc AU-DESSUS
+   des cartes, pas dessous. A z-index -1 (etape 2), elle passe avant l'etape
+   3 et reste bien derriere tout le contenu. #page a besoin de son propre
+   z-index (ici 1, deja pose ci-dessous) pour former son propre contexte
+   d'empilement — sinon -1 la ferait passer derriere le fond de <body> au
+   lieu de derriere son propre contenu. */
 #page { position: relative; z-index: 1; }
 
-body:not(.is-overlay):has(.home)::before,
-body:not(.is-overlay):has(.home)::after {
+body:not(.is-overlay):has(.home) #page {
+  overflow: clip; /* contient le debord de --grid-cell des pseudo-elements ci-dessous (inset negatif) : sans lui, ce debord agrandirait la zone de defilement du document, horizontalement et verticalement */
+}
+
+body:not(.is-overlay):has(.home) #page::before,
+body:not(.is-overlay):has(.home) #page::after {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: calc(-1 * var(--grid-cell));
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
 }
 
 /* Les horizontales : un filet de 1px tous les --grid-cell, pointille en x. */
-body:not(.is-overlay):has(.home)::before {
+body:not(.is-overlay):has(.home) #page::before {
   background-image: linear-gradient(var(--grid-line) 1px, transparent 1px);
   background-size: 100% var(--grid-cell);
   -webkit-mask-image: var(--grid-dash-x);
@@ -914,7 +923,7 @@ body:not(.is-overlay):has(.home)::before {
 }
 
 /* Les verticales : meme chose d'un quart de tour, pointille en y. */
-body:not(.is-overlay):has(.home)::after {
+body:not(.is-overlay):has(.home) #page::after {
   background-image: linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: var(--grid-cell) 100%;
   -webkit-mask-image: var(--grid-dash-y);
@@ -1144,6 +1153,17 @@ body:not(.is-overlay):has(.home) {
    voir le commentaire complet sur .cs__hero-media .figure__frame. */
 .card[data-slug="constraints"] .card__media { background: #e9e1f9; }
 
+/* Meme raison, pour la vignette "Licence management" (licence-hero.mp4) :
+   video cadree en portrait comme constraints ci-dessus, meme traitement
+   (contain, reduite a 92% pour laisser respirer le fond autour). #eeeaf5 est
+   la couleur de fond de la video elle-meme (voir .cs__hero-media plus bas). */
+.card[data-slug="licence-management"] .card__media { background: #eeeaf5; }
+
+/* Bible app : le Lottie (ecran de telephone) n'a pas de fond propre a
+   reprendre — #f0f0f0, le meme gris clair que .cs-brands, sert de fond a la
+   vignette. */
+.card[data-slug="bible-app"] .card__media { background: #f0f0f0; }
+
 /* Meme raison que le lilas de "Scheduling constraints" ci-dessus : la video
    n'a de quoi peindre qu'une fois decodee (preload="metadata" ne charge que
    l'entete), et .card__media n'est que 12% opaque (rgba(0,0,0,.12), pensee
@@ -1165,6 +1185,14 @@ body:not(.is-overlay):has(.home) {
    couverture (voir .cs__hero-media[data-slug="hoot"] plus bas). */
 .card[data-slug="hoot"] .card__media { background: #2d254b; }
 .card[data-slug="hoot"] .card__media img {
+  width: 55%; height: 55%; object-fit: contain;
+}
+
+/* Yabara : meme traitement que Hoot ci-dessus — logo sur fond uni
+   (yabara-hero.webp), reduit et centre sur son propre bleu (#314466)
+   plutot qu'etire en pleine vignette. */
+.card[data-slug="yabara"] .card__media { background: #314466; }
+.card[data-slug="yabara"] .card__media img {
   width: 55%; height: 55%; object-fit: contain;
 }
 
@@ -1444,6 +1472,11 @@ body:not(.is-overlay):has(.home) {
 .pair { display: grid; gap: var(--s6); grid-template-columns: 1fr 1fr; margin-bottom: var(--s7); }
 .pair h2 { font-size: var(--fs-h3); margin-bottom: var(--s3); font-weight: var(--w-semibold); }
 .pair p { color: var(--ink-soft); }
+/* .cs__overview-intro (voir hideOverviewHeadings dans pageCase(), app.js) :
+   le paragraphe d'intro bare accepte lui aussi **gras** via emphasize(), mais
+   en SemiBold plutot que le <b> navigateur par defaut (700) — meme reglage
+   que .hero__hello b / .card__title b. */
+.cs__overview-intro b { font-weight: var(--w-semibold); }
 /* Le resultat est mis en avant par un voile sombre et un filet lime. */
 .pair__out {
   background: var(--veil-strong);
@@ -2040,6 +2073,30 @@ body:not(.is-overlay):has(.home) {
    Scope a .is-zoomed comme la regle de base : au repos, hidden ne pose
    aucun probleme (rien ne deborde). */
 .figure__frame.zoomable-media.is-zoomed { overflow: auto; }
+/* Desktop uniquement : le cadre garde EXACTEMENT sa taille au repos une fois
+   zoome — sur desktop, un cadre qui grandit (en largeur) ou dont la hauteur
+   suit celle, bien plus grande, de l'image zoomee deplace tout le contenu en
+   dessous (la mise en page "bouge"). --zoom-h0 (voir setupZoomableMedia()
+   dans app.js) : hauteur au repos figee en px juste avant le zoom, pour que
+   le cadre ne suive plus l'auto-height de son image agrandie. La largeur
+   n'a besoin d'aucune regle ici : elle ne bougeait deja pas (c'est l'image a
+   l'interieur qui grandit, voir .zoomable-media.is-zoomed img plus bas), le
+   probleme etait uniquement la hauteur. Scrollable dans les 4 directions —
+   glisser-deplacer voir setupZoomableMedia() — puisque l'image agrandie
+   (230%) deborde desormais le cadre aussi bien en largeur qu'en hauteur.
+   Scrollbar cachee : au repos le cadre n'a pas de scrollbar (rien ne
+   deborde), donc pas besoin de scoper plus large que .is-zoomed. Mobile
+   (hors de ce media query) garde le comportement d'origine : le cadre suit
+   l'image et grandit avec elle — pas de mise en page a proteger la, le
+   visiteur scrolle deja toute la page verticalement au doigt. */
+@media (min-width: 701px) {
+  .figure__frame.zoomable-media.is-zoomed {
+    height: var(--zoom-h0, auto);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .figure__frame.zoomable-media.is-zoomed::-webkit-scrollbar { display: none; }
+}
 /* .zoomable-media--mobile-only (voir zoomableClass() dans app.js, flag
    'mobile') : juste un curseur "pas cliquable" hors mobile — le gel du clic
    lui-meme vit cote JS, dans setupZoomableMedia(). Meme seuil que
@@ -2151,6 +2208,186 @@ body:not(.is-overlay):has(.home) {
    suppression de cadre que .cs-mockups/.cs-more, mais utilisable sur une
    figure isolee (pas forcement dans un regroupement .cs-mockups). */
 .figure--bare .figure__frame { padding: 0; border: none; border-radius: 0; background: none; }
+/* .cs-scroll-frame (voir s.type === 'scrollFrame' dans figureFor(), app.js) :
+   une image locale bien plus haute que large, montree a travers une fenetre
+   dont la hauteur est fixee par `aspect-ratio` (--frame-ratio, calcule depuis
+   les pixels source de l'image, pas une valeur ronde) — pour montrer une
+   capture de page entiere sans l'etaler pleine hauteur dans la colonne de
+   lecture. Desktop uniquement : sous 701px la fenetre disparait (aspect-
+   ratio: auto, overflow: visible) et l'image s'affiche en entier comme une
+   figure normale — sur mobile, tout se scrolle deja verticalement au doigt,
+   une seconde fenetre scrollable imbriquee dans la page n'apporte rien et ne
+   ferait que capturer le geste.
+
+   `overflow: auto` des le repos (pas seulement une fois zoomee) : la fenetre
+   est deja scrollable au chargement — molette/trackpad/tactile — pour
+   parcourir le reste de la page source sans avoir a cliquer d'abord.
+   Scrollbar cachee (mais le scroll fonctionne bien, voir scrollbar-width/
+   -webkit-scrollbar ci-dessous) : visible, elle aurait double le rendu fige
+   d'une vraie capture d'ecran. `zoomableClass()` pose EN PLUS .zoomable-media
+   sur ce meme div quand s.zoomable est vrai (ex. Landing page, pas Recruiter
+   section/yabara-recruiter-home qui n'a plus cette option) — memes regles
+   .zoomable-media/.is-zoomed que .figure__frame plus haut (curseur zoom-in,
+   image a 230% une fois zoomee, glisser-deplacer souris en plus du scroll
+   natif), le clic vient alors s'AJOUTER au scroll passif deja actif plutot
+   que le debloquer. Le cadre lui-meme ne bouge pas d'un pixel dans un cas
+   comme dans l'autre : `aspect-ratio` le rend insensible a la taille de son
+   contenu, contrairement au `height: auto` de .figure__frame (qui a besoin
+   de --zoom-h0 en JS pour la meme garantie). */
+.cs-scroll-frame {
+  aspect-ratio: auto;
+  overflow: visible;
+  border: 1px solid var(--frame-line);
+  border-radius: var(--radius);
+}
+.cs-scroll-frame picture,
+.cs-scroll-frame img { display: block; width: 100%; height: auto; }
+@media (min-width: 701px) {
+  .cs-scroll-frame {
+    aspect-ratio: var(--frame-ratio);
+    overflow: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .cs-scroll-frame::-webkit-scrollbar { display: none; }
+}
+/* .cs-dash-frame (voir s.type === 'dashFrame' dans figureFor(), app.js,
+   Yabara/Recruiter section) : variante de .cs-scroll-frame a DEUX images
+   independantes — la sidebar (node Figma 387:1154) et le reste du dashboard
+   (node 389:1644, une page entiere) — plutot qu'un seul export recadre +
+   calque de masquage (approche precedente, remplacee car elle demandait de
+   recalculer une echelle a chaque zoom). Un simple flex row suffit : `side`
+   ne scrolle jamais (flex-basis fixe, image en object-fit: cover pour
+   absorber le leger ecart entre son propre ratio et celui de la colonne),
+   `main` prend le reste de la largeur et scrolle seul (memes regles
+   overflow/scrollbar cachee que .cs-scroll-frame ci-dessus). Pas de ratio
+   propre a .cs-dash-frame__side : sa hauteur vient du stretch flex normal
+   (cross-axis d'une flex row, meme hauteur que --frame-ratio sur le parent)
+   et son image en object-fit: cover absorbe l'ecart avec son propre ratio
+   source.
+   Sous 701px, .cs-dash-frame__mobile (s.mobileImage dans figureFor()) prend
+   sa place : une image unique, pleine largeur, sans la sidebar - demande
+   utilisateur explicite plutot que le side+main empile par defaut (sidebar
+   ecrasee en pleine largeur au-dessus d'un contenu deux fois plus long, peu
+   lisible). Les deux blocs restent dans le DOM en permanence des deux
+   cotes du breakpoint ; display:none retire l'inactif de l'arbre
+   d'accessibilite (pas besoin d'aria-hidden manuel). */
+.cs-dash-frame {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--frame-line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.cs-dash-frame picture,
+.cs-dash-frame img { display: block; width: 100%; height: auto; }
+.cs-dash-frame__mobile {
+  border: 1px solid var(--frame-line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.cs-dash-frame__mobile picture,
+.cs-dash-frame__mobile img { display: block; width: 100%; height: auto; }
+@media (min-width: 701px) {
+  .cs-dash-frame {
+    flex-direction: row;
+    aspect-ratio: var(--frame-ratio);
+  }
+  .cs-dash-frame__side {
+    flex: 0 0 24%;
+    overflow: hidden;
+  }
+  .cs-dash-frame__side picture,
+  .cs-dash-frame__side img { height: 100%; object-fit: cover; object-position: top; }
+  .cs-dash-frame__main {
+    flex: 1 1 auto;
+    overflow-y: auto; overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .cs-dash-frame__main::-webkit-scrollbar { display: none; }
+  .cs-dash-frame__mobile { display: none; }
+}
+@media (max-width: 700px) {
+  .cs-dash-frame { display: none; }
+}
+
+/* Yabara, Recruiter section : image d'anonymisation (node Figma 391:2234)
+   empilee sous le dashboard via s.below (voir belowMarkup()/anonScoreMarkup()
+   dans app.js), avec un tooltip (node 377:26729) au survol/focus du badge de
+   score deja "cuit" dans l'image (pas de calque HTML par-dessus, juste un
+   bouton invisible positionne dessus). aspect-ratio (pas de hauteur fixe) :
+   le bouton et le tooltip sont positionnes en % (cfg.hotspot, voir
+   content.js), donc doivent suivre EXACTEMENT le ratio source de l'image
+   quelle que soit la largeur de colonne — un img en display:block width:100%
+   sans aspect-ratio explicite sur le parent laisserait un ecart d'arrondi
+   pendant le chargement. */
+.cs-anon {
+  position: relative;
+  aspect-ratio: var(--anon-ratio);
+}
+.cs-anon picture,
+.cs-anon img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.cs-anon__hot {
+  position: absolute;
+  margin: 0; padding: 0;
+  background: none; border: none; border-radius: 50%;
+  cursor: pointer;
+}
+.cs-anon__hot:focus-visible { outline: 2px solid #2F2F2F; outline-offset: 2px; }
+/* Tooltip positionne en absolute (pas au-dessus de .cs-anon__hot en flow) :
+   left/top en % (voir anonScoreMarkup()) placent son BORD superieur gauche,
+   translateX(-50%) recentre sur l'axe horizontal du badge — inutile sur Y,
+   le tooltip doit descendre SOUS le badge, pas se centrer dessus. */
+.cs-anon__tooltip {
+  position: absolute;
+  transform: translateX(-50%);
+  width: min(320px, 85vw);
+  background: #FFFFFF;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 12px 32px rgba(12, 12, 13, .18), 0 2px 8px rgba(12, 12, 13, .08);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s var(--ease);
+  z-index: 5;
+}
+.cs-anon__hot:hover + .cs-anon__tooltip,
+.cs-anon__hot:focus-visible + .cs-anon__tooltip {
+  opacity: 1;
+  pointer-events: auto;
+}
+.cs-anon__tooltip-title {
+  margin: 0 0 14px;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 16px; color: #303030;
+}
+.cs-anon__tooltip-title strong { font-weight: 600; }
+.cs-anon__crit-list { display: flex; flex-direction: column; gap: 12px; }
+.cs-anon__crit-row { display: flex; gap: 20px; }
+.cs-anon__crit-row--single .cs-anon__crit { flex: 0 0 auto; }
+.cs-anon__crit {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.cs-anon__crit-label {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 12px; color: #5A5A5A;
+  white-space: nowrap;
+}
+.cs-anon__crit-icon { width: 14px; height: 14px; flex-shrink: 0; }
+.cs-anon__crit-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 15px;
+}
+.cs-anon__crit-pill--pass { background: #EBFFEE; color: #02542D; }
+.cs-anon__crit-pill--fail { background: #FEE9E7; color: #900B09; }
+.cs-anon__crit-pill-icon { width: 14px; height: 14px; flex-shrink: 0; }
+
 .figure figcaption {
   margin-top: var(--s3);
   font-size: var(--fs-small); color: var(--ink-faint);
@@ -2208,6 +2445,60 @@ body:not(.is-overlay):has(.home) {
 .media-grid .figure { margin-block: 0; }
 .media-single { margin-block: var(--s6); }
 
+/* Yabara, section "Candidate section" : 4 captures (home/apply/company/status)
+   en grille 2x2 fixe plutot que l'auto-fit generique de .media-grid ci-dessus
+   (qui passerait a 3+ colonnes sur un ecran large) — demande utilisateur.
+   Scope par id de section (#sec-candidate-section, voir pageCase() dans
+   app.js : id="sec-${s.id}") plutot qu'une modif de .media-grid lui-meme,
+   qui est partagee par toutes les autres sections/case studies. */
+#sec-candidate-section .media-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (max-width: 700px) {
+  #sec-candidate-section .media-grid { grid-template-columns: 1fr; }
+}
+
+/* Liseret gris (demande utilisateur) sur la home candidat et son image
+   "below" (recompenses) — pas les autres figures de la section. `bare: true`
+   (voir content.js) retire deja le cadre standard de .figure__frame
+   (fond/liser/padding), donc la bordure est posee directement sur l'<img>
+   plutot que sur .figure__frame. Cible par attribut src (pas de classe
+   dediee par item de figureAfter) : la source webp de la <picture> ne
+   change pas l'attribut src du <img>. */
+#sec-candidate-section img[src$="yabara-candidate-home.png"],
+#sec-candidate-section img[src$="yabara-candidate-rewards.png"] {
+  border: 1px solid var(--frame-line);
+}
+
+/* Bible app, section "Screens" : 4 planches zoomables, chacune pleine
+   largeur plutot qu'en grille auto-fit (qui les compressait a 4 par ligne,
+   ~349px, illisibles sans zoomer) — demande utilisateur. Meme pattern de
+   scope par id que #sec-candidate-section ci-dessus. */
+#sec-screens .media-grid {
+  grid-template-columns: 1fr;
+}
+
+/* Yabara, section "Admin - Back-office" : les 4 captures du carrousel
+   partagent la meme largeur de fenetre mais des hauteurs de page tres
+   differentes (voir content.js). Sans ratio commun, .cs-carousel__panel
+   img { height:100% } (regle generique, styles.css plus bas) etirerait
+   chaque image a la hauteur du panneau le plus haut — object-fit:contain
+   + un --frame-ratio calque sur la plus haute capture (yabara-admin-
+   candidates, 1400x963) evite de deformer ou rogner les 3 autres. Le fond
+   blanc de .cs-carousel__stage (--frame-bg) se fond avec le fond des
+   captures elles-memes, donc le letterboxing latéral reste quasi invisible. */
+#sec-admin-backoffice .cs-carousel__stage { aspect-ratio: 1400 / 963; }
+/* border (demande utilisateur, liseret gris discret) : meme couleur que
+   .figure__frame ailleurs dans le fichier (--frame-line), posee sur
+   l'image plutot que sur .cs-carousel__stage — le stage est deja plus
+   grand que l'image la ou une capture plus courte laisse du letterboxing
+   (voir commentaire ci-dessus), un bord sur le stage encadrerait donc du
+   vide blanc en plus de l'image sur ces captures-la. */
+#sec-admin-backoffice .cs-carousel__panel img {
+  width: 100%; height: 100%; object-fit: contain;
+  border: 1px solid var(--frame-line);
+}
+
 /* Maquettes du rule-builder (constraints, section design) : pleine largeur,
    empilees, sans cadre — ce sont deja des captures d'ecran nettes qui n'ont
    pas besoin du fond/liser/marge des .figure standard. */
@@ -2249,6 +2540,12 @@ body:not(.is-overlay):has(.home) {
 .cs__hero-media[data-slug="soundcloud"] .figure--remote video {
   aspect-ratio: 1 / 1;
 }
+/* Licence management : meme principe que le lilas de "Scheduling constraints"
+   plus haut (video cadree en portrait, 758x776, contenue dans la boite 16:9
+   par defaut ci-dessus). #eeeaf5 est la couleur de fond de licence-hero.mp4
+   elle-meme (relevee sur sa premiere image) : les bandes de part et d'autre
+   se fondent avec la video plutot que de trancher avec. */
+.cs__hero-media[data-slug="licence-management"] .figure__frame { background: #eeeaf5; }
 /* Hoot : la couverture est le GIF du logo (assets/img/hoot-hero.gif, 640x360)
    plutot qu'une capture — l'afficher a sa taille naturelle en pleine largeur
    le ferait paraitre etire et grossier. On le garde donc petit et centre
@@ -2261,6 +2558,17 @@ body:not(.is-overlay):has(.home) {
   display: flex; align-items: center; justify-content: center;
 }
 .cs__hero-media[data-slug="hoot"] img {
+  width: clamp(160px, 40%, 320px); border-radius: 0;
+}
+/* Yabara : meme traitement que Hoot ci-dessus (voir .card[data-slug="yabara"]
+   plus haut) — le logo (yabara-hero.webp) flotte, petit, sur son propre bleu
+   #314466 plutot que d'etre etire en pleine largeur. */
+.cs__hero-media[data-slug="yabara"] .figure__frame {
+  background: #314466;
+  aspect-ratio: 21 / 9;
+  display: flex; align-items: center; justify-content: center;
+}
+.cs__hero-media[data-slug="yabara"] img {
   width: clamp(160px, 40%, 320px); border-radius: 0;
 }
 /* Hero passe en Lottie (assets/media/constraint-limit.json, meme 524x600
@@ -2281,11 +2589,25 @@ body:not(.is-overlay):has(.home) {
 .cs__hero-media .figure--lottie dotlottie-wc {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
+  width: auto; max-width: 100%;
+}
+.cs__hero-media[data-slug="constraints"] .figure--lottie dotlottie-wc {
   aspect-ratio: 524 / 600;
-  width: auto; height: 100%; max-width: 100%;
+  height: 100%;
   /* meme liser sombre au bord inferieur que sur l'ancienne video (voir
      .card__media dotlottie-wc plus bas) : le fichier source le porte aussi. */
   clip-path: inset(0 0 4% 0);
+}
+/* Bible app : Lottie d'un ecran de telephone (bible-app-hero.json, 375x812,
+   ratio 0.46) plutot que la video 524x600 de Constraints ci-dessus. Pas de
+   fond propre a reprendre (ecran expose sur fond transparent) : #f0f0f0, le
+   meme gris clair que .cs-brands plus haut, sert de fond au cadre. Reduit a
+   80% (au lieu des 100% de Constraints) pour rester entoure de gris plutot
+   que de remplir la hauteur du cadre 16:9. */
+.cs__hero-media[data-slug="bible-app"] .figure__frame { background: #f0f0f0; }
+.cs__hero-media[data-slug="bible-app"] .figure--lottie dotlottie-wc {
+  aspect-ratio: 375 / 812;
+  height: 80%;
 }
 
 
@@ -2950,6 +3272,237 @@ body:not(.is-overlay):has(.home) {
   .excl-modal__row, .excl-modal__row * { font-size: 10px; }
   .excl-modal__row-tag-break { display: block; }
   .excl-modal__step-sep { display: none; }
+}
+
+/* ---- Yabara, section "Recruiter section" : carte candidat + modale --------
+   Widget autonome (voir candidateCardMarkup()/setupCandidateCard() dans
+   app.js), empile SOUS la figure "Sommaire des candidatures" via s.below
+   (content.js) + .cs-sec__stack (voir juste en dessous) plutot qu'en pleine
+   largeur sous tout le .media-grid — demande utilisateur : la carte doit
+   "coller" sous le sommaire, du meme cote que le dashboard. Couleurs/tailles
+   reprises telles quelles des nodes Figma 387:1493 (carte) et 387:1327
+   (modale), memes valeurs figees que .excl-modal plus haut plutot que les
+   tokens sitewide (--radius, --ink...) : ce sont des maquettes d'ecran
+   produit, pas des composants du site lui-meme.
+   .cand-demo reprend le fond #FBFBFB + le cadrage centre de
+   .excl-modal-frame ; .cand-demo__stage est le seul ancetre positionne
+   (position: relative) de .cand-card ET .cand-modal. max-width/padding
+   reduits pour tenir dans la colonne plus etroite qu'avant plutot que la
+   pleine largeur du .media-grid.
+   min-height/zoom : revu suite a une demande separee ("make the modal stick
+   inside .cand-demo entirely, without increasing .cand-demo's size") — la
+   modale (panneau + son propre padding de 16px) mesure ~555px de haut en
+   unites locales (avant zoom) une fois posee sur toute la largeur de
+   .cand-demo__stage (max-width local 460px), largement plus que les ~290px
+   de la carte au repos qui dictaient min-height avant. Comme .cand-modal
+   couvre exactement .cand-demo__stage (inset: 0) et PAS .cand-demo, c'est
+   min-height qui doit couvrir la modale (avec un peu de marge, 570px) pour
+   qu'elle ne deborde plus jamais de son cadre. Pour ne pas agrandir
+   .cand-demo pour autant (min-height*zoom = hauteur reelle de la scene),
+   zoom descend a 0.41 : min-height*zoom (570*0.41 ~= 234px) reste sous la
+   hauteur actuelle de .cand-demo (~240px) — la carte au repos parait donc
+   plus petite qu'avant, consequence assumee de "reduce the component". */
+.cs-sec__stack { display: flex; flex-direction: column; gap: var(--s5); }
+.cand-demo {
+  background: #FBFBFB;
+  border-radius: var(--radius);
+  padding: 0;
+  display: flex; justify-content: center;
+  /* padding: 0 (pas le clamp(12px,3vw,24px) d'avant) — demande utilisateur :
+     rendre a la modale/carte l'espace qu'occupait le padding plutot que de le
+     garder comme marge morte, .cand-demo restant globalement a la meme
+     taille (voir zoom sur .cand-demo__stage ci-dessous, augmente d'autant). */
+}
+.cand-demo__stage {
+  position: relative;
+  width: 100%; max-width: 460px;
+  min-height: 570px;
+  display: flex; align-items: center; justify-content: center;
+  /* zoom plutot que transform: scale() : meme choix que .excl-modal (voir
+     plus haut) — zoom participe a la mise en page (.cand-demo, en display:
+     flex sans hauteur propre, retrecit avec lui) alors que transform
+     laisserait un vide reserve a la taille pre-reduction tout autour. Toutes
+     les tailles de .cand-card/.cand-modal restent celles du node Figma
+     (memes proportions, voir plus bas) — c'est ce seul zoom qui reduit
+     l'ensemble en gardant le ratio, inchange par la reduction de
+     .cand-demo/.cand-demo__stage ci-dessus (min-height/max-width bornent
+     l'espace reserve, pas la taille des enfants).
+     0.75 (pas 0.49) : demande utilisateur — aligner le bas de .cand-demo
+     (colonne de droite, sous "Applications summary") sur le bas de l'image
+     d'anonymisation (colonne de gauche, sous le dashboard), en grossissant
+     le composant plutot qu'en ajoutant un espace mort sous la carte.
+     min-height reste a 570px (deja assez grand pour la modale, ~555px de
+     haut en unites locales, voir plus haut — le rapport modale/min-height
+     ne depend pas du zoom, augmenter zoom ne fait donc jamais deborder la
+     modale hors de .cand-demo__stage) ; seul zoom change, mesure a la
+     largeur de colonne courante (~470px) pour que min-height*zoom (570*0.75
+     ~= 428px) egale la hauteur totale de la colonne de gauche (dashboard +
+     image d'anonymisation empiles, 632.9 mesures navigateur) moins la
+     figure "Applications summary" et l'ecart entre les deux figures
+     empilees (632.9 - 180.9 - 24). Comme le dashboard et l'image
+     d'anonymisation sont en aspect-ratio (donc fluides avec la largeur de
+     colonne) alors que min-height/zoom ici sont des px fixes, cet
+     alignement n'est exact qu'a la largeur de bureau testee — pas une
+     grille totalement fluide, mais coherent avec le reste des reglages de
+     .cand-demo (deja tous en px fixes, jamais recalcules en fonction de la
+     largeur de colonne). */
+  zoom: 0.75;
+}
+.cand-card {
+  width: 231px;
+  background: #FFFFFF;
+  border: 1px solid rgba(178, 178, 178, .5);
+  border-radius: 5px;
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 24px;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  transition: box-shadow .2s var(--ease);
+}
+/* Etat hover du node Figma 387:1493 ("Component 2", type="hover") : memes
+   bordure/fond, seule une ombre portee a deux couches s'ajoute (aucune
+   ombre au repos) — valeurs reprises telles quelles (voir les Effect
+   "Drop Shadow" du node), pas les tokens --shadow/--shadow-lg sitewide. */
+.cand-card:hover {
+  box-shadow: 0 16px 32px rgba(12, 12, 13, .1), 0 4px 4px rgba(12, 12, 13, .05);
+}
+.cand-card__top { display: flex; align-items: flex-start; justify-content: space-between; }
+.cand-card__avatar { display: block; width: 64px; height: 64px; border-radius: 50%; overflow: hidden; }
+.cand-card__avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cand-card__bookmark {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; padding: 0;
+  background: rgba(239, 239, 239, .6);
+  border: none; border-radius: 60px;
+  color: #303030;
+  cursor: pointer;
+}
+.cand-card__bookmark:hover { background: #DCDCDC; }
+.cand-card__bookmark-icon { width: 20px; height: 20px; }
+.cand-card__text { display: flex; flex-direction: column; gap: 8px; }
+/* Compound selectors (.cand-card .cand-card__id, etc.) : .cs-sec p (0,1,1)
+   bat sinon un simple .cand-card__id (0,1,0) — voir "The .cs-sec p
+   specificity trap" dans CLAUDE.md — et lui impose color: var(--ink-faint)
+   et surtout margin-bottom: var(--s4), un espace qui n'a rien a voir avec le
+   gap:8px de .cand-card__text voulu ici. */
+.cand-card .cand-card__id { margin: 0; font-size: 20px; font-weight: 500; color: #303030; }
+.cand-card .cand-card__role { margin: 0; font-size: 16px; font-weight: 500; color: #303030; }
+.cand-card .cand-card__loc { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 16px; color: #303030; }
+.cand-card__loc-icon { width: 20px; height: 20px; flex-shrink: 0; }
+.cand-card__cta {
+  width: 100%; padding: 8px;
+  display: flex; align-items: center; justify-content: center;
+  background: #FFFFFF;
+  border: 1px solid #D9D9D9;
+  border-radius: 4px;
+  font-family: inherit; font-size: 16px; color: #303030;
+  cursor: pointer;
+}
+.cand-card__cta:hover { background: #FAFAFA; }
+
+/* .cand-modal : couvre toute .cand-demo__stage (jamais tout le viewport —
+   la modale reste a l'interieur du cadre de demo, voir la note plus haut).
+   Pas de fond assombri : la maquette source n'a pas de calque backdrop, la
+   modale flotte directement sur #FBFBFB — c'est le centrage de .cand-card
+   ET .cand-modal sur le MEME point (voir .cand-demo__stage) qui masque la
+   carte, le panneau (506px) etant plus grand qu'elle (231px) dans les deux
+   directions. [hidden] coupe le rendu tant qu'elle n'a jamais ete ouverte,
+   .is-open pilote l'apparition (opacity + leger scale du panneau), classe
+   ajoutee une frame apres avoir leve [hidden] pour que la transition rejoue
+   a chaque ouverture (meme technique que .cs-timeline__constraint plus haut
+   dans ce fichier). 300ms/ease-out : duree et easing donnes tels quels par
+   l'annotation Figma du node 387:1326 ("Animation de l'interaction"). */
+.cand-modal {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease-out;
+}
+.cand-modal.is-open { pointer-events: auto; }
+.cand-modal[hidden] { display: none; }
+.cand-modal.is-open { opacity: 1; }
+.cand-modal__panel {
+  position: relative;
+  width: 100%; max-width: 506px;
+  background: #FFFFFF;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 4px 2px rgba(0, 0, 0, .25);
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  transform: scale(.96);
+  transition: transform .3s ease-out;
+}
+.cand-modal.is-open .cand-modal__panel { transform: scale(1); }
+.cand-modal__close {
+  position: absolute; top: 16px; right: 16px;
+  width: 40px; height: 40px; padding: 8px;
+  background: none; border: none; border-radius: 50%;
+  color: #2F2F2F;
+  cursor: pointer;
+  transition: background .15s var(--ease);
+}
+.cand-modal__close:hover { background: #F0F0F0; }
+.cand-modal__close-icon { width: 24px; height: 24px; }
+.cand-modal__title { margin: 0 0 8px; font-size: 32px; font-weight: 400; color: #000000; }
+/* .cand-modal .cand-modal__desc (pas juste .cand-modal__desc) : meme piege
+   de specificite que .cand-card__id plus haut — .cs-sec p (0,1,1) imposerait
+   sinon color: var(--ink-faint) et margin-bottom: var(--s4) a la place du
+   gris et des 24px voulus ici. */
+.cand-modal .cand-modal__desc { margin: 0 0 24px; font-size: 20px; line-height: 1.5; color: #5A5A5A; }
+.cand-modal__search {
+  display: flex; align-items: center; gap: 12px;
+  height: 54px; padding: 0 16px; margin-bottom: 24px;
+  background: #F4F4F4;
+  border: 1px solid rgba(178, 178, 178, .5);
+  border-radius: 8px;
+  color: #757575; font-size: 16px;
+  transition: background .15s var(--ease);
+}
+/* "Search has hover, but doesnt work" (annotation Figma du node 387:1326) :
+   visuel seulement, la barre reste decorative (aria-hidden, voir
+   candidateCardMarkup() dans app.js) — le hover confirme juste qu'il y a
+   quelque chose la sans laisser croire qu'on peut y taper. */
+.cand-modal__search:hover { background: #EFEFEF; }
+.cand-modal__search-icon { width: 24px; height: 24px; flex-shrink: 0; }
+.cand-modal__checks { display: flex; flex-direction: column; gap: 16px; padding-left: 16px; margin-bottom: 24px; }
+/* "All checkboxes clickable" (meme annotation) : hover sur toute la ligne
+   (pas seulement la case) — padding/margin negatif pour etendre la zone de
+   fond sans decaler le contenu ni la colonne de cases. */
+.cand-modal__check {
+  display: flex; align-items: center; gap: 16px; cursor: pointer;
+  padding: 6px 8px; margin: -6px -8px;
+  border-radius: 6px;
+  transition: background .15s var(--ease);
+}
+.cand-modal__check:hover { background: #F4F4F4; }
+.cand-modal__check-input { position: absolute; opacity: 0; width: 24px; height: 24px; margin: 0; cursor: pointer; }
+.cand-modal__check-box {
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; flex-shrink: 0;
+  background: #FFFFFF;
+  border: 1px solid #757575;
+  border-radius: 4px;
+}
+.cand-modal__check-icon { width: 14px; height: 14px; color: #FFFFFF; opacity: 0; }
+.cand-modal__check-input:checked + .cand-modal__check-box { background: #2F2F2F; border-color: #2F2F2F; }
+.cand-modal__check-input:checked + .cand-modal__check-box .cand-modal__check-icon { opacity: 1; }
+.cand-modal__check-input:focus-visible + .cand-modal__check-box { outline: 2px solid #2F2F2F; outline-offset: 2px; }
+.cand-modal__check-label { font-size: 16px; color: #303030; }
+.cand-modal__actions { display: flex; gap: 8px; }
+.cand-modal__cancel, .cand-modal__save {
+  flex: 1; height: 54px; padding: 16px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; font-family: inherit; font-size: 16px;
+  cursor: pointer;
+}
+.cand-modal__cancel { background: #FFFFFF; border: 1px solid rgba(178, 178, 178, .5); color: #303030; font-weight: 500; }
+.cand-modal__cancel:hover { background: #FAFAFA; }
+.cand-modal__save { background: #2F2F2F; border: none; color: #FFFFFF; font-weight: 600; }
+.cand-modal__save:hover { background: #1A1A1A; }
+@media (max-width: 700px) {
+  .cand-modal__title { font-size: 24px; }
+  .cand-modal__desc { font-size: 16px; }
 }
 
 /* ---- Contraintes, section "Design" : demo interactif "sentence builder" --
@@ -3710,18 +4263,34 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   object-fit: contain;
   clip-path: inset(0 0 4% 0);
 }
+/* Licence management : meme reduction que constraints ci-dessus, mais sans
+   clip-path — licence-hero.mp4 n'a pas de liseré au bord inferieur. */
+.card[data-slug="licence-management"] .card__media video {
+  width: 92%; height: 92%;
+  object-fit: contain;
+}
 
 /* Meme vignette, en Lottie (voir cardMedia() dans app.js) : dotlottie-wc ne
    supporte pas object-fit, donc on lui donne directement son propre ratio
    natif (524/600, comme .cs__hero-media plus bas) plutot que d'etirer la
    boite flex — .card__media centre deja son contenu (display:flex). */
 .card__media dotlottie-wc {
-  aspect-ratio: 524 / 600;
-  width: auto; height: 92%;
-  clip-path: inset(0 0 4% 0);
+  width: auto;
   transition: transform .5s var(--ease);
 }
 .card:hover .card__media dotlottie-wc { transform: scale(1.03); }
+.card[data-slug="constraints"] .card__media dotlottie-wc {
+  aspect-ratio: 524 / 600;
+  height: 92%;
+  clip-path: inset(0 0 4% 0);
+}
+/* Bible app : meme raison qu'en couverture (voir .cs__hero-media[data-slug=
+   "bible-app"] plus haut) — ratio propre de l'ecran (375/812) et reduite a
+   80% pour rester entouree du gris clair de la vignette ci-dessous. */
+.card[data-slug="bible-app"] .card__media dotlottie-wc {
+  aspect-ratio: 375 / 812;
+  height: 80%;
+}
 
 /* ---- 8d. Le pied d'etude de cas : les autres projets ----
    Trois cartes plutot qu'un seul lien : arrive au bout d'une lecture longue,
@@ -3738,6 +4307,18 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 .cards--next .card__title { font-size: var(--fs-h3); }
 .cards--next .card__client,
 .cards--next .tag { font-size: var(--fs-small); }
+
+/* Side quests : 3 par ligne au lieu de 2 (comme .cards--next ci-dessus, mais
+   min(320px, 100%) plutot que 240 : a la largeur max de .wrap (1120px de
+   contenu), 4 colonnes de 320px ne tiennent plus (1352px requis), donc
+   auto-fit se rabat toujours sur 3 tant que l'ecran ne depasse pas
+   --wrap-max. Cartes plus grandes qu'avant (4 par ligne) : titre/tags
+   reprennent leur taille par defaut (celle de Work) plutot que fs-h3/
+   fs-small, sinon ils paraitraient perdus dans la carte agrandie. */
+.cards--side {
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: var(--s7) var(--s6);
+}
 
 
 /* ==========================================================================
@@ -4087,7 +4668,7 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    10. PIED DE PAGE
    ========================================================================== */
 
-.site-foot { border-top: 1px solid var(--line-soft); padding-block: var(--s8) var(--s6); }
+.site-foot { border-top: 1px solid var(--line-soft); padding-block: var(--s8) var(--s6); background: var(--veil); }
 .foot__grid {
   display: grid; gap: var(--s6);
   grid-template-columns: 1.5fr 1fr 1fr;
