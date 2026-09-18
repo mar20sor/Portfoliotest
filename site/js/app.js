@@ -613,15 +613,28 @@ function timelineMarkup(items) {
 /* ---- 5e. Une etude de cas ----
    Structure : en-tete "30 secondes", puis grille [nav laterale | sections],
    puis lien vers le projet suivant. */
-function pageCase(project) {
-  const d = t(), c = project;
+function pageCase(project, caseId) {
+  const d = t();
+  // Projet fusionne (branche petal-merged-projects, voir content.js) : `c`
+  // devient le cas actif plutot que le projet lui-meme ; tout le reste de
+  // cette fonction continue de ne lire que `c` et ne voit donc aucune
+  // difference. Pour un projet ordinaire (sans `cases`), `c` reste `project`
+  // exactement comme avant.
+  const c = project.cases
+    ? (project.cases.find(x => x.slug === caseId)
+        || project.cases.find(x => x.slug === project.defaultCase)
+        || project.cases[0])
+    : project;
   const page = el('article', { class: 'cs' });
 
   // La route de cette page. Les liens vers les sections s'ecrivent
   // `base + '#' + id` : ce sont donc de VRAIS liens, qui fonctionnent aussi
   // en ouverture dans un nouvel onglet ou en copier-coller. Le JS ne fait
   // qu'ameliorer le comportement (defilement doux) — il n'est pas requis.
-  const base = `#/${project.kind}/${project.slug}`;
+  // Pour un projet fusionne, le cas actif s'ajoute en 3e segment.
+  const base = project.cases
+    ? `#/${project.kind}/${project.slug}/${c.slug}`
+    : `#/${project.kind}/${project.slug}`;
 
   /* --- En-tete : l'essentiel, lisible sans scroller --- */
   const head = el('header', { class: 'cs__head' });
@@ -632,6 +645,22 @@ function pageCase(project) {
      <div class="stat__l">${escapeAttr(s.l)}</div></div>`).join('');
 
   const hasProcess = (c.sections || []).length > 0;
+
+  // Intro + selecteur d'un projet fusionne (project.cases, content.js).
+  // Sortis dans des variables : quand hasProcess, ils quittent .cs__head
+  // pour devenir des enfants directs de .cs__content (voir plus bas) — leur
+  // bloc englobant y couvre alors TOUTE la hauteur de la page (en-tete +
+  // sections), ce qui laisse .cs__case-switch (position:sticky) rester
+  // colle en haut sur tout le defilement, pas seulement le long de l'en-tete.
+  const casesIntroHTML = project.casesIntro
+    ? `<p class="cs__cases-intro">${emphasize(project.casesIntro)}</p>` : '';
+  const caseSwitchHTML = project.cases
+    ? `<nav class="cs__case-switch" aria-label="${escapeAttr(d.csCaseSwitch)}">
+        ${project.cases.map(cs => `
+          <a class="cs__case-tab${cs.slug === c.slug ? ' is-active' : ''}"
+             href="#/${escapeAttr(project.kind)}/${escapeAttr(project.slug)}/${escapeAttr(cs.slug)}"
+             ${cs.slug === c.slug ? 'aria-current="page"' : ''}>${escapeAttr(cs.navLabel)}</a>`).join('')}
+      </nav>` : '';
 
   // `hideOverviewHeadings` (voir bible-app dans content.js) : pour un projet
   // qui n'a qu'un paragraphe de contexte, pas un vrai probleme/resultat, les
@@ -648,6 +677,8 @@ function pageCase(project) {
     </div>`;
 
   hw.insertAdjacentHTML('beforeend', `
+    ${!hasProcess ? casesIntroHTML : ''}
+    ${!hasProcess ? caseSwitchHTML : ''}
     ${c.isDraft ? `<p style="margin-bottom:var(--s4)"><span class="draft-badge">${escapeAttr(d.draftBadge)}</span></p>` : ''}
     ${(c.gist && c.gist.company) || c.hideClient ? '' : `<p class="cs__client">${escapeAttr(c.client)}</p>`}
     <h1 class="cs__title">${escapeAttr(c.title)}</h1>
@@ -777,6 +808,31 @@ function pageCase(project) {
     // processus, l'une sous l'autre — la nav reste seule a gauche sur toute
     // la hauteur de la page, plutot que de ne longer que les sections.
     const content = el('div', { class: 'cs__content' });
+
+    // Intro + selecteur d'un projet fusionne (project.cases) : ENFANTS
+    // DIRECTS de `body` (.wrap wrap--wide), places AVANT `grid` — donc
+    // au-dessus des DEUX colonnes (nav laterale + contenu), pas seulement
+    // de la colonne de contenu. Deux raisons :
+    //   1. Largeur : .cs__case-switch doit couvrir toute la largeur de la
+    //      fiche (demande explicite, "images derriere" visibles au bord sinon)
+    //      — .wrap--wide annule le max-width, `body` est donc aussi large
+    //      que `grid` (nav + contenu ensemble), la ou .cs__content seul
+    //      n'est que la colonne de droite.
+    //   2. Collant sur toute la hauteur : le bloc englobant d'un element
+    //      position:sticky est la boite de son PARENT DIRECT. `body` ne
+    //      contient que [intro, switch, grid] : sa hauteur = celle de
+    //      `grid` (qui s'etire pour egaler .cs__content, en-tete + sections)
+    //      + celle, negligeable, de l'intro/switch — donc encore assez haute
+    //      pour que .cs__case-switch reste colle sur tout le defilement.
+    // .cs__head garde son padding-top normal (var(--s6)) plutot que le
+    // supplement "degager la croix" (var(--s7), styles.css) — ce role
+    // revient a `body`, seul a etre au sommet de la page.
+    if (project.cases) {
+      if (casesIntroHTML) body.insertAdjacentHTML('beforeend', casesIntroHTML);
+      body.insertAdjacentHTML('beforeend', caseSwitchHTML);
+      body.style.paddingTop = 'var(--s7)';
+      head.style.paddingTop = 'var(--s6)';
+    }
     content.append(head);
 
     // c.processIntro : phrase d'introduction au processus (ex. Licence
@@ -1053,6 +1109,13 @@ function pageCase(project) {
       secs.append(sec);
     });
     content.append(secs);
+
+    // Bouton "Retour en haut" : a la fin du processus, plutot que de forcer
+    // un long defilement remonte (ou de compter sur la nav laterale, hors
+    // champ sur mobile a ce stade). Vrai lien vers l'ancre #overview (voir
+    // head.id = 'sec-overview' plus haut) : le defilement doux vient du
+    // scroll-behavior global (styles.css), pas de JS dedie.
+    content.append(el('a', { class: 'cs-back-to-top', href: `${base}#overview` }, `↑ ${d.backToTop}`));
 
     grid.append(nav, content);
     body.append(grid);
@@ -4133,7 +4196,14 @@ function parseRoute(hash) {
   if (parts[0] === 'gap')                       return { name: 'gap' };
   if (parts[0] === 'work' || parts[0] === 'side') {
     const p = PROJECTS.find(x => x.slug === parts[1] && x.kind === parts[0]);
-    return p ? { name: 'case', project: p } : { name: '404' };
+    if (!p) return { name: '404' };
+    // Projet fusionne (voir content.js) : le 3e segment choisit le cas
+    // affiche ; inconnu ou absent retombe sur `defaultCase` plutot que 404,
+    // pour tolerer un lien perime ou une URL de base partagee.
+    const caseId = p.cases
+      ? (p.cases.some(cs => cs.slug === parts[2]) ? parts[2] : p.defaultCase)
+      : undefined;
+    return { name: 'case', project: p, caseId };
   }
   return { name: '404' };
 }
@@ -4240,7 +4310,7 @@ function paint(hash, route, mode) {
        route, fiche, croix, lien retour) ne sait rien de ce format. */
     case 'case':  node = route.project.format === 'article'
                     ? pageArticle(route.project)
-                    : pageCase(route.project);
+                    : pageCase(route.project, route.caseId);
                   title = `${route.project.title} — ${SITE.name}`; break;
     case 'about': node = pageEditorial('about');
                   title = `${t().navAbout} — ${SITE.name}`; break;
@@ -4444,7 +4514,7 @@ function paint(hash, route, mode) {
     if (route.name === 'case' && route.project.slug === 'constraints') setupConstraintBuilder();
     if (route.name === 'case' && route.project.slug === 'constraints') setupComponentsShowcase();
     if (route.name === 'case' && route.project.slug === 'constraints') setupLottieCarousel();
-    if (route.name === 'case' && route.project.slug === 'services-exclusion') setupImageCarousel();
+    if (route.name === 'case' && route.project.slug === 'petal-controls' && route.caseId === 'services-exclusion') setupImageCarousel();
     // Fit-Plans/Design a lui aussi un carrousel (l'ancien parcours vs le
     // nouveau, voir s.carousel dans content.js) — meme raison d'etre que la
     // ligne au-dessus.
@@ -4457,7 +4527,7 @@ function paint(hash, route, mode) {
     // ne fait rien s'il n'y a pas de [data-role="carousel"] dans la page, mais
     // on garde la condition de route par symetrie avec la ligne au-dessus.
     if (route.name === 'case' && route.project.format === 'article') setupImageCarousel();
-    if (route.name === 'case' && route.project.slug === 'services-exclusion') setupExclModal();
+    if (route.name === 'case' && route.project.slug === 'petal-controls' && route.caseId === 'services-exclusion') setupExclModal();
     if (route.name === 'case' && route.project.slug === 'yabara') setupCandidateCard();
     // Yabara/Admin - Back-office a lui aussi un carrousel (les 4 captures du
     // panneau admin, voir s.carousel dans content.js) — meme raison d'etre
