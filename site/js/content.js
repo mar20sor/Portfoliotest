@@ -125,6 +125,8 @@ export const UI = {
   csBack: 'Back',
   csProgress: 'Progress through the page',
   csSections: 'Sections on this page',
+  csCaseSwitch: 'Switch case study',
+  backToTop: 'Back to top',
   csFigureFR: 'Figure annotated in French',
   figureSeeMore: 'See more',
   csCarouselPrev: 'Previous slide', csCarouselNext: 'Next slide',
@@ -264,7 +266,7 @@ export const PROJECTS = [
     title: 'Scheduling constraints',
     client: 'Petal',
     tagline: 'Redesigning a rule engine: from 24 rules to 9',
-    tags: ['Systems design', 'Research', 'Healthcare SaaS'],
+    tags: ['System thinking', 'Interaction', 'Healthcare SaaS'],
     gist: { role: 'UX / UI, research', duration: '4 months', team: '1 designer, 1 PM',
       company: { label: 'Petal', href: 'https://www.petal-health.com/en/' } },
     // The opening visual. It doubles as the card thumbnail on the homepage.
@@ -527,9 +529,36 @@ export const PROJECTS = [
     ]
   },
 
-  /* ================== PETAL — EXCLUSION DES SERVICES ==================== */
+  /* ============ PETAL — EXCLUSION + LICENCES (etude fusionnee) =========== */
+  // Experience de fusion (branche petal-merged-projects) : les deux etudes de
+  // cas Petal ci-dessous restent intactes, repliees dans `cases`. pageCase()
+  // (app.js) resout laquelle afficher via l'URL (3e segment) ou
+  // `defaultCase`, et affiche un petit selecteur (.cs__case-switch) pour
+  // passer de l'une a l'autre sans quitter la fiche. Si l'experience ne
+  // convainc pas : `git checkout main && git branch -D petal-merged-projects`
+  // annule tout, `main` n'est jamais touche.
   {
+    slug: 'petal-controls', kind: 'work', accent: 'b', year: '2024',
+    poster: { label: 'Ship. Watch. Fix.', figure: 'wizard' },
+    title: 'Access & exclusion controls',
+    client: 'Petal',
+    // Ce tagline n'alimente QUE projectCard() (carte d'accueil) : pageCase()
+    // lit celui du cas actif (c.tagline, resolu plus bas dans `cases`), donc
+    // ce champ ne fuit jamais vers la fiche elle-meme (demande explicite :
+    // "sur la page d'accueil uniquement").
+    tagline: 'Improving access-control and service synchronization',
+    tags: ['Access control', 'Wizard', 'Iteration'],
+    heroMedia: { type: 'image', src: 'assets/img/exclusion-hero.webp' },
+    // \n devient un saut de ligne visuel sans casser le <p> en deux
+    // paragraphes (white-space: pre-line, voir .cs__cases-intro dans
+    // styles.css — meme mecanique que cs__overview-intro plus haut).
+    casesIntro: 'Over 3 years at Petal, I worked across multiple products on several projects.\nThe case studies below cover two of them.',
+    defaultCase: 'services-exclusion',
+    cases: [
+    /* ---- Cas 1 : exclusion des services (objet original, inchange) ---- */
+    {
     slug: 'services-exclusion', kind: 'work', accent: 'b', year: '2024',
+    navLabel: 'Service exclusion',
     poster: { label: 'Ship. Watch. Fix.', figure: 'wizard' },
     title: 'Services exclusion',
     client: 'Petal',
@@ -653,11 +682,12 @@ export const PROJECTS = [
         ]
       }
     ]
-  },
+    },
 
-  /* ===================== PETAL — GESTION DES LICENCES =================== */
-  {
+    /* ---- Cas 2 : gestion des licences (objet original, inchange) ---- */
+    {
     slug: 'licence-management', kind: 'work', accent: 'c', year: '2024',
+    navLabel: 'Licence management',
     poster: { label: 'Role → right', figure: 'steps' },
     title: 'Licence management',
     client: 'Petal',
@@ -891,6 +921,8 @@ export const PROJECTS = [
         ]
       }
     ]
+    }
+    ]
   },
 
   /* ========================== FIT-PLANS ================================= */
@@ -899,7 +931,7 @@ export const PROJECTS = [
     poster: { label: '6 → 3', figure: 'flow' },
     heroMedia: { type: 'image', src: 'assets/img/fitplans-hero.webp' },
     title: 'Fit-plans redesign',
-    client: 'Fit-Plans, Montréal',
+    client: 'Fit-plans',
     hideClient: true,
     tagline: 'Cutting the ordering flow from **6 steps to 3**.',
     tags: ['Redesign', 'Research', 'UI'],
@@ -1082,7 +1114,7 @@ export const PROJECTS = [
     title: 'Documenting Salsa Dance',
     client: 'Personal project',
     tagline: 'Documenting Salsa Dance',
-    tags: ['Systems design', 'Notation', 'Personal'],
+    tags: ['System thinking', 'Personal'],
     // Derniere frame de l'ancien cover video (salsa-cover.mp4), extraite et
     // exportee en WebP : deja recadree au centre sur le couple au ratio
     // 1280/1072 de .card__media (1024x858). N'alimente plus que la vignette
@@ -1422,7 +1454,7 @@ export const PROJECTS = [
     heroMedia: { type: 'image', src: 'assets/img/hoot-hero.gif' },
     title: 'Hoot',
     client: 'La Poste × ECV Digital hackathon',
-    tagline: 'One week to design a concierge service for night workers.',
+    tagline: 'A concierge service for night workers.',
     tags: ['Hackathon', 'Concept', 'UI'],
     gist: { role: 'Ideation, survey, wireframing', duration: '1 week', team: '2 UI, 1 UX, 1 dev, 1 PM', tools: 'Figma, Google Forms, ProtoPie' },
     problem: 'La Poste asked us to imagine the concierge service of the future. Most players on the market offer cleaning, cooking or delivery at varying price points, but none of them address night work, so we picked that angle.',
@@ -1619,16 +1651,17 @@ export const PROJECTS = [
     ]
   },
 
-  /* ======================= SIDE QUEST — YABARA ==========================
-     Stub en attente du contenu (l'utilisateur l'envoie apres coup) : seul le
-     nom du projet est connu pour l'instant. isDraft + draftNote signalent ce
-     qui reste a remplir, meme motif que masters-essay avant son ecriture. */
+  /* =========================== WORK — YABARA =============================
+     Deplace de "side" a "work" (demande explicite). N'est plus un draft :
+     isDraft/draftNote retires, label du poster mis a jour (demande
+     explicite) — poster reste toutefois inerte tant que heroMedia est
+     present (voir cardMedia()/posterSVG() dans app.js). */
   {
-    slug: 'yabara', kind: 'side', accent: 'a', year: '2026',
-    poster: { label: 'Coming soon', figure: '' },
+    slug: 'yabara', kind: 'work', accent: 'a', year: '2026',
+    poster: { label: 'Anonymous → Hired', figure: '' },
     heroMedia: { type: 'image', src: 'assets/img/yabara-hero.webp' },
     title: 'Yabara ATS',
-    client: 'Personal project',
+    client: 'Private project',
     tagline: 'Designing an ATS software',
     tags: ['Product Design', 'Saas', '0 to 1'],
     gist: { role: 'Product Designer', duration: '4 months', team: '1 designer, 1 dev, and the client' },
@@ -1848,9 +1881,7 @@ export const PROJECTS = [
         // media, ~1094px sur desktop.
         carouselOpts: { maxWidth: 860 }
       }
-    ],
-    isDraft: true,
-    draftNote: 'Waiting on more project content from the user — copy and structure may still need refining, images still needed for the challenges/landing/product sections.'
+    ]
   },
 
   /* ======================= SIDE QUEST — BIBLE APP =======================

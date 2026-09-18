@@ -1156,7 +1156,11 @@ body:not(.is-overlay):has(.home) {
 /* Meme raison, pour la vignette "Licence management" (licence-hero.mp4) :
    video cadree en portrait comme constraints ci-dessus, meme traitement
    (contain, reduite a 92% pour laisser respirer le fond autour). #eeeaf5 est
-   la couleur de fond de la video elle-meme (voir .cs__hero-media plus bas). */
+   la couleur de fond de la video elle-meme (voir .cs__hero-media plus bas).
+   MORTE depuis la fusion (branche petal-merged-projects) : la carte d'accueil
+   du projet fusionne porte data-slug="petal-controls" et une image statique,
+   plus la video licence-hero.mp4. Laissee en place (facile a retirer si la
+   branche est abandonnee) plutot que supprimee. */
 .card[data-slug="licence-management"] .card__media { background: #eeeaf5; }
 
 /* Bible app : le Lottie (ecran de telephone) n'a pas de fond propre a
@@ -1189,9 +1193,10 @@ body:not(.is-overlay):has(.home) {
 }
 
 /* Yabara : meme traitement que Hoot ci-dessus — logo sur fond uni
-   (yabara-hero.webp), reduit et centre sur son propre bleu (#314466)
-   plutot qu'etire en pleine vignette. */
-.card[data-slug="yabara"] .card__media { background: #314466; }
+   (yabara-hero.webp), reduit et centre sur son propre gris fonce (#2F2F2F,
+   nouvelle version du logo — demande explicite, remplace l'ancien bleu
+   #314466) plutot qu'etire en pleine vignette. */
+.card[data-slug="yabara"] .card__media { background: #2F2F2F; }
 .card[data-slug="yabara"] .card__media img {
   width: 55%; height: 55%; object-fit: contain;
 }
@@ -1426,7 +1431,15 @@ body:not(.is-overlay):has(.home) {
    8. PAGES D'ETUDE DE CAS
    ========================================================================== */
 
-.cs { padding-bottom: var(--s9); }
+/* --cs-nav-inset : largeur de la colonne de nav laterale + son ecart (voir
+   .cs__body plus bas, 190px + gap) — reprise par l'intro/le selecteur d'un
+   projet fusionne (.cs__cases-intro/.cs__case-switch) pour aligner leur
+   TEXTE sur la colonne de contenu (celle du titre/tagline en dessous) tout
+   en gardant leur boite (donc leur fond) pleine largeur — le padding ne
+   retire rien au fond, seul le contenu se decale. Repassee a 0 sous 1000px
+   (section 12) : la nav laterale y quitte la grille, la colonne de contenu
+   commence donc au bord gauche comme tout le reste. */
+.cs { padding-bottom: var(--s9); --cs-nav-inset: calc(190px + clamp(var(--s6), 5vw, var(--s8))); }
 
 /* ---- 8a. L'en-tete : la partie "30 secondes" ----
    Tout ce qu'un recruteur presse doit lire tient ici, avant le premier scroll.
@@ -1450,6 +1463,99 @@ body:not(.is-overlay):has(.home) {
   max-width: var(--measure); margin-bottom: var(--s6);
   font-weight: var(--w-light);
 }
+
+/* Intro + selecteur d'un projet fusionne (project.cases, content.js) sont
+   des enfants DIRECTS de `body` (.wrap wrap--wide dans pageCase()), places
+   AVANT `grid` (.cs__body, qui porte la nav laterale + .cs__content) —
+   au-dessus des DEUX colonnes, pas seulement de la colonne de contenu :
+     1. Largeur : .wrap--wide annule le max-width, donc `body` est aussi
+        large que nav+contenu ensemble — c'est ce qui permet a
+        .cs__cases-intro de couvrir toute la largeur de la fiche plutot que
+        de s'arreter au bord de la seule colonne de contenu (demande
+        explicite : sans ca, le fond de la barre laissait voir les images
+        des sections qui defilent dessous, sur les deux bords). .cs__case-switch
+        recule ensuite son bord gauche jusqu'a la colonne de contenu (voir
+        plus bas) : sa boite reste donc pleine largeur a DROITE seulement.
+     2. Collant sur toute la hauteur : le bloc englobant d'un element
+        position:sticky est la boite de son PARENT DIRECT. `body` ne
+        contient que [intro, switch, grid] : sa hauteur = celle de `grid`
+        (qui s'etire pour egaler .cs__content, en-tete + sections) — assez
+        haute pour que .cs__case-switch (plus bas) reste colle en haut sur
+        TOUT le defilement.
+   `body` porte donc en ligne (pageCase()) le padding-top "degager la croix"
+   que .cs__head porte d'habitude (var(--s7) — voir body.is-overlay
+   .cs__head plus bas) ; .cs__head lui-meme repasse a son padding-top normal
+   (var(--s6), aussi pose en ligne) puisqu'il n'est plus le premier element
+   de la page.
+
+   white-space: pre-line (meme mecanique que .cs__overview-intro) : le \n du
+   texte source devient un saut de ligne visuel sans faire deux <p>. */
+.cs__cases-intro {
+  /* + --cs-nav-inset : box-sizing:border-box (section 1) compte le padding
+     dans max-width — sans ce supplement, le texte lisible retrecirait de
+     l'inset au lieu de garder sa mesure de lecture habituelle. */
+  max-width: calc(var(--measure) + var(--cs-nav-inset)); margin-bottom: var(--s5);
+  white-space: pre-line;
+  padding-left: var(--cs-nav-inset);
+}
+
+/* Selecteur de cas pour un projet fusionne (branche petal-merged-projects,
+   voir content.js/pageCase() dans app.js) : bascule entre les deux etudes de
+   cas repliees dans une seule fiche. Forme plate et sticky inspiree de
+   data-framer-name="Project Nav" sur diana.lu/hyper#app (demande explicite,
+   sans pilule ni filet, collee pile au sommet — top: 0, pas d'ecart — des
+   qu'elle l'atteint en defilant), mais habillage typographique repris de
+   .cs-nav a juste en dessous plutot que du site de reference : meme famille
+   de composant (choisir/reperer une entree dans une etude de cas), donc
+   memes regles de couleur/etat plutot qu'un vocabulaire visuel importe.
+   Fond opaque (var(--bg), le blanc du theme clair de la fiche) pour qu'un
+   titre de section ne vienne pas "flotter" dans la barre une fois figee
+   au-dessus du contenu qui defile dessous.
+   margin-left: var(--cs-nav-inset) (au lieu d'un padding) + width en
+   consequence : la boite elle-meme commence a la colonne de contenu plutot
+   que de la couvrir avec juste du padding. Sinon, une fois collee en haut
+   (top:0, .cs-nav en dessous colle lui aussi mais plus bas — voir .cs-nav
+   plus haut), elle passait par-dessus le lien "Back" de la nav laterale
+   (z-index 20) et le rendait inclable — demande explicite : ne pas aller
+   jusqu'au bord gauche sur bureau. width: calc(100% - inset) compense la
+   marge pour que le bord DROIT reste, lui, sur le bord de `body` (pas de
+   perte de la largeur pleine a droite). En dessous de 1000px --cs-nav-inset
+   vaut 0 (voir media query plus bas) : marge et largeur retombent a leurs
+   valeurs pleine largeur normales, la nav laterale n'existant plus.
+   overflow-x:auto + les onglets en nowrap (ci-dessous) : filet de securite
+   sur tres petit ecran plutot qu'un retour a la ligne qui doublerait la
+   hauteur de la barre collante. Barre de defilement masquee (scrollbar-width/
+   ::-webkit-scrollbar) : le glissement tactile reste possible, seule
+   l'indication visuelle — inutile ici, la barre est courte et evidente —
+   disparait. */
+.cs__case-switch {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; gap: var(--s5);
+  margin-left: var(--cs-nav-inset); width: calc(100% - var(--cs-nav-inset));
+  overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+  background: var(--bg);
+  padding-block: var(--s4);
+  margin-bottom: var(--s5);
+}
+.cs__case-switch::-webkit-scrollbar { display: none; }
+/* Ni pilule de fond ni trait au survol : avec la boite calee sur la colonne
+   de contenu (ci-dessus), le moindre padding/bordure horizontal sur un
+   onglet decale son texte du meme cran par rapport au titre juste en
+   dessous (ex. "Service exclusion" ne serait plus aligne avec "Services
+   exclusion") — demande explicite. Couleur seule, memes regles que
+   .cs-nav a : le texte reste au ras du bord de la boite, donc du titre,
+   dans tous les etats. gap: var(--s5) sur .cs__case-switch (ci-dessus) fait
+   tout le travail d'espacement entre onglets a la place du padding.
+   white-space:nowrap : le libelle d'un cas ("Licence management") reste sur
+   une ligne plutot que de doubler la hauteur de la barre sur mobile. */
+.cs__case-tab {
+  padding-block: var(--s2);
+  text-decoration: none; color: var(--ink-faint);
+  font-size: var(--fs-small); white-space: nowrap;
+  transition: color .2s var(--ease);
+}
+.cs__case-tab:hover { color: var(--ink); }
+.cs__case-tab.is-active { color: var(--accent); font-weight: var(--w-semibold); }
 
 /* La fiche d'identite : role, duree, equipe, outils. */
 /* Sans filets au-dessus et en dessous : le padding et la marge suffisent a
@@ -1543,6 +1649,15 @@ body:not(.is-overlay):has(.home) {
   grid-template-columns: 2px minmax(0, 1fr);
   column-gap: var(--s3);
 }
+/* Projet fusionne (project.cases, .cs__case-switch plus haut) : la nav
+   laterale et la barre d'onglets sont deux boites collantes cote a cote
+   (colonnes differentes, donc jamais l'une sur l'autre — voir .cs__case-switch),
+   mais avec l'offset "degager l'en-tete" ci-dessus le lien "Back" restait plus
+   bas que le texte des onglets une fois toutes deux figees. Un offset plus
+   petit, cale sur le retrait interne de la barre d'onglets (padding-block de
+   .cs__case-switch + de .cs__case-tab), aligne les deux textes sur la meme
+   ligne — demande explicite. */
+.cs:has(.cs__case-switch) .cs-nav { top: var(--s4); }
 /* Le lien retour, en premiere position dans la nav laterale — meme famille
    visuelle que .back-link (le bouton flottant utilise ailleurs sur le site)
    mais en flux normal, pas fixe : il defile et colle avec le reste de
@@ -2561,10 +2676,11 @@ body:not(.is-overlay):has(.home) {
   width: clamp(160px, 40%, 320px); border-radius: 0;
 }
 /* Yabara : meme traitement que Hoot ci-dessus (voir .card[data-slug="yabara"]
-   plus haut) — le logo (yabara-hero.webp) flotte, petit, sur son propre bleu
-   #314466 plutot que d'etre etire en pleine largeur. */
+   plus haut) — le logo (yabara-hero.webp) flotte, petit, sur son propre gris
+   fonce #2F2F2F (nouvelle version du logo — demande explicite, remplace
+   l'ancien bleu #314466) plutot que d'etre etire en pleine largeur. */
 .cs__hero-media[data-slug="yabara"] .figure__frame {
-  background: #314466;
+  background: #2F2F2F;
   aspect-ratio: 21 / 9;
   display: flex; align-items: center; justify-content: center;
 }
@@ -4264,7 +4380,9 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   clip-path: inset(0 0 4% 0);
 }
 /* Licence management : meme reduction que constraints ci-dessus, mais sans
-   clip-path — licence-hero.mp4 n'a pas de liseré au bord inferieur. */
+   clip-path — licence-hero.mp4 n'a pas de liseré au bord inferieur.
+   MORTE depuis la fusion (branche petal-merged-projects) : voir la note
+   jumelle plus haut sur .card[data-slug="licence-management"] .card__media. */
 .card[data-slug="licence-management"] .card__media video {
   width: 92%; height: 92%;
   object-fit: contain;
@@ -4292,6 +4410,19 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   height: 80%;
 }
 
+/* Bouton "Retour en haut" (pageCase() dans app.js), apres la derniere
+   section d'un processus : un vrai lien vers #overview, pas un bouton JS —
+   meme principe que le reste de la navigation de la fiche. Centre et
+   discret : ce n'est pas une action a mettre en avant, juste un raccourci
+   pour qui vient de finir la lecture. */
+.cs-back-to-top {
+  display: block; text-align: center; margin-top: var(--s8);
+  color: var(--ink-soft); text-decoration: none;
+  font-size: var(--fs-small); font-weight: var(--w-medium);
+  transition: color .18s var(--ease);
+}
+.cs-back-to-top:hover { color: var(--accent); }
+
 /* ---- 8d. Le pied d'etude de cas : les autres projets ----
    Trois cartes plutot qu'un seul lien : arrive au bout d'une lecture longue,
    le visiteur doit avoir un choix, pas un couloir. */
@@ -4308,15 +4439,14 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 .cards--next .card__client,
 .cards--next .tag { font-size: var(--fs-small); }
 
-/* Side quests : 3 par ligne au lieu de 2 (comme .cards--next ci-dessus, mais
-   min(320px, 100%) plutot que 240 : a la largeur max de .wrap (1120px de
-   contenu), 4 colonnes de 320px ne tiennent plus (1352px requis), donc
-   auto-fit se rabat toujours sur 3 tant que l'ecran ne depasse pas
-   --wrap-max. Cartes plus grandes qu'avant (4 par ligne) : titre/tags
-   reprennent leur taille par defaut (celle de Work) plutot que fs-h3/
-   fs-small, sinon ils paraitraient perdus dans la carte agrandie. */
+/* Side quests : 4 par ligne (Yabara deplace vers Work, il n'en reste que 4).
+   min(250px, 100%) plutot que 320 : a la largeur max de .wrap (1120px de
+   contenu) et un column-gap de --s6 (32px), 4 colonnes de 320px ne
+   tiendraient pas (1352px requis) mais 4 de 250px tiennent (1096px) — donc
+   auto-fit les tient sur une seule ligne tant que l'ecran ne redescend pas
+   sous --wrap-max, et repasse a 3/2/1 en dessous, comme avant. */
 .cards--side {
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
   gap: var(--s7) var(--s6);
 }
 
@@ -4668,7 +4798,7 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    10. PIED DE PAGE
    ========================================================================== */
 
-.site-foot { border-top: 1px solid var(--line-soft); padding-block: var(--s8) var(--s6); background: var(--veil); }
+.site-foot { padding-block: var(--s8) var(--s6); background: var(--veil); }
 .foot__grid {
   display: grid; gap: var(--s6);
   grid-template-columns: 1.5fr 1fr 1fr;
@@ -4685,7 +4815,7 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 .foot a:hover { color: var(--accent); text-decoration: underline; }
 .foot__bottom {
   display: flex; flex-wrap: wrap; gap: var(--s4); justify-content: space-between;
-  padding-top: var(--s5); border-top: 1px solid var(--line-soft);
+  padding-top: var(--s5);
   font-size: var(--fs-tiny); color: var(--ink-faint);
 }
 
@@ -5085,6 +5215,12 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
      se resoudre au bon endroit (wrap ou retrecissement) plutot que de se
      propager jusqu'a la grille elle-meme. */
   .cs__body { grid-template-columns: minmax(0, 1fr); }
+
+  /* --cs-nav-inset a 0 (voir .cs plus haut) : la nav laterale quitte la
+     grille ci-dessus, la colonne de contenu commence donc au bord gauche —
+     .cs__cases-intro/.cs__case-switch n'ont plus besoin de decaler leur
+     texte pour s'aligner sur elle. */
+  .cs { --cs-nav-inset: 0px; }
 
   /* Le bouton "Retour" repasse dans le flux normal. En reste fixe, il
      recouvrirait la barre de sections qui vient se coller sous l'en-tete.
