@@ -103,7 +103,7 @@
      CE 96 APPARTIENT AU POINTILLE. L'ancienne trame en traits pleins est
      conservee, desactivee, en fin de section 6 : si on la rallume, il faut
      REMETTRE 32px ici — sa note explique pourquoi. */
-  --grid-cell:   96px;
+  --grid-cell:   32px;
   /* Le pointille lui-meme. --grid-period est la distance d'un cycle complet,
      donc AUSSI la distance dont on translate pour boucler (voir gridMarchX /
      gridMarchY, section 6) : les deux ne peuvent pas diverger puisqu'il n'y a
@@ -900,8 +900,9 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
    lieu de derriere son propre contenu. */
 #page { position: relative; z-index: 1; }
 
+/*
 body:not(.is-overlay):has(.home) #page {
-  overflow: clip; /* contient le debord de --grid-cell des pseudo-elements ci-dessous (inset negatif) : sans lui, ce debord agrandirait la zone de defilement du document, horizontalement et verticalement */
+  overflow: clip;
 }
 
 body:not(.is-overlay):has(.home) #page::before,
@@ -913,7 +914,6 @@ body:not(.is-overlay):has(.home) #page::after {
   pointer-events: none;
 }
 
-/* Les horizontales : un filet de 1px tous les --grid-cell, pointille en x. */
 body:not(.is-overlay):has(.home) #page::before {
   background-image: linear-gradient(var(--grid-line) 1px, transparent 1px);
   background-size: 100% var(--grid-cell);
@@ -922,7 +922,6 @@ body:not(.is-overlay):has(.home) #page::before {
   animation: gridMarchX var(--grid-march) linear infinite;
 }
 
-/* Les verticales : meme chose d'un quart de tour, pointille en y. */
 body:not(.is-overlay):has(.home) #page::after {
   background-image: linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: var(--grid-cell) 100%;
@@ -933,6 +932,7 @@ body:not(.is-overlay):has(.home) #page::after {
 
 @keyframes gridMarchX { to { translate: var(--grid-period) 0; } }
 @keyframes gridMarchY { to { translate: 0 var(--grid-period); } }
+*/
 
 
 /* ---- L'ANCIENNE GRILLE, CONSERVEE ET DESACTIVEE ----------------------
@@ -965,7 +965,6 @@ body:not(.is-overlay):has(.home) #page::after {
    PREMIERE ligne tombe sur le bord de la page ; sans lui, le haut et la
    gauche montrent une cellule tronquee.
    En echange, c'est une seule regle, sans masque ni animation. */
-/*
 body:not(.is-overlay):has(.home) {
   background-image:
     linear-gradient(var(--grid-line) 1px, transparent 1px),
@@ -974,7 +973,6 @@ body:not(.is-overlay):has(.home) {
   background-position: -1px -1px;
   min-height: 100vh;
 }
-*/
 
 /* --hero-min est un jeton et non 400px ecrits ici : le media 860px doit
    l'augmenter d'autant qu'il augmente le retrait haut (voir section 12), et
@@ -1470,12 +1468,9 @@ body:not(.is-overlay):has(.home) {
    au-dessus des DEUX colonnes, pas seulement de la colonne de contenu :
      1. Largeur : .wrap--wide annule le max-width, donc `body` est aussi
         large que nav+contenu ensemble — c'est ce qui permet a
-        .cs__cases-intro de couvrir toute la largeur de la fiche plutot que
-        de s'arreter au bord de la seule colonne de contenu (demande
-        explicite : sans ca, le fond de la barre laissait voir les images
-        des sections qui defilent dessous, sur les deux bords). .cs__case-switch
-        recule ensuite son bord gauche jusqu'a la colonne de contenu (voir
-        plus bas) : sa boite reste donc pleine largeur a DROITE seulement.
+        .cs__cases-intro et .cs__case-switch de reculer leur bord gauche
+        jusqu'a la colonne de contenu (margin-left: --cs-nav-inset, voir les
+        deux regles plus bas) tout en gardant un bord DROIT pleine largeur.
      2. Collant sur toute la hauteur : le bloc englobant d'un element
         position:sticky est la boite de son PARENT DIRECT. `body` ne
         contient que [intro, switch, grid] : sa hauteur = celle de `grid`
@@ -1489,14 +1484,25 @@ body:not(.is-overlay):has(.home) {
    de la page.
 
    white-space: pre-line (meme mecanique que .cs__overview-intro) : le \n du
-   texte source devient un saut de ligne visuel sans faire deux <p>. */
+   texte source devient un saut de ligne visuel sans faire deux <p>. Fond
+   teinte #E9F2FE (demande utilisateur : "put it in a blue block, a bit like
+   the outcome block or .cs-sec__term") — meme couleur dediee que
+   .cs-sec__aside/.cs-sec__term ci-dessous plutot que --veil-strong (reserve
+   au bloc "mis en avant" .pair__out/.todo), pour rester dans la meme famille
+   visuelle qu'un encart de contexte plutot qu'un resultat chiffre.
+   margin-left (pas padding-left comme avant) + width en consequence : EXACT
+   MEME TECHNIQUE que .cs__case-switch juste en dessous, et pour la meme
+   raison — une boite maintenant VISIBLE (fond colore) doit commencer a la
+   colonne de contenu, pas juste inset son texte avec un fond qui continuerait
+   de deborder sur la colonne de nav laterale. En dessous de 1000px
+   --cs-nav-inset vaut 0 (section 12, la nav laterale n'existant plus) :
+   marge et largeur retombent seules a leurs valeurs pleine largeur. */
 .cs__cases-intro {
-  /* + --cs-nav-inset : box-sizing:border-box (section 1) compte le padding
-     dans max-width — sans ce supplement, le texte lisible retrecirait de
-     l'inset au lieu de garder sa mesure de lecture habituelle. */
-  max-width: calc(var(--measure) + var(--cs-nav-inset)); margin-bottom: var(--s5);
+  margin-left: var(--cs-nav-inset); width: calc(100% - var(--cs-nav-inset));
+  margin-bottom: var(--s5);
   white-space: pre-line;
-  padding-left: var(--cs-nav-inset);
+  background: #E9F2FE; border-radius: var(--radius-sm); padding: var(--s5);
+  color: var(--ink);
 }
 
 /* Selecteur de cas pour un projet fusionne (branche petal-merged-projects,
@@ -1586,11 +1592,10 @@ body:not(.is-overlay):has(.home) {
 /* Le resultat est mis en avant par un voile sombre et un filet lime. */
 .pair__out {
   background: var(--veil-strong);
-  border-left: 3px solid var(--accent);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border-radius: var(--radius-sm);
   padding: var(--s5);
 }
-.pair__out p { color: var(--ink); }
+.pair__out p { color: var(--ink); white-space: pre-line; }
 
 /* Les chiffres marquants : ce que le recruteur retiendra. */
 .stats__title { font-size: var(--fs-h3); font-weight: var(--w-semibold); margin-bottom: var(--s4); }
@@ -2003,12 +2008,39 @@ body:not(.is-overlay):has(.home) {
   background: #E9F2FE; border-radius: var(--radius-sm); padding: var(--s5);
 }
 .cs-sec__term dt { font-weight: var(--w-semibold); color: var(--ink); }
+/* white-space: pre-line : un \n dans t.body (app.js) devient un saut de
+   ligne visuel sans avoir a decouper la definition en plusieurs <dd> — meme
+   mecanique que .cs__overview-intro/.cs__cases-intro. */
 .cs-sec__term dd {
   margin: var(--s2) 0 0; color: var(--ink); font-size: var(--fs-small);
+  white-space: pre-line;
 }
+/* .cs-sec__list imbriquee dans une definition (t.body = {intro, list, outro},
+   voir termBody() dans app.js) : la liste generique vise le corps de section
+   (--ink-faint, mesure de lecture pleine largeur) — a l'interieur de l'encart
+   teinte et etroit d'un .cs-sec__term, elle doit reprendre la couleur/taille
+   deja posees sur dd (specificite (0,2,0), bat le (0,1,0) de .cs-sec__list). */
+.cs-sec__term .cs-sec__list { color: inherit; max-width: none; margin: var(--s2) 0; }
 @media (max-width: 700px) {
   .cs-sec__terms { flex-direction: column; }
 }
+
+/* Encart "Result" isole en fin de section (voir s.result dans content.js,
+   Licence management/Context) — meme teinte #E9F2FE que .cs-sec__term
+   ci-dessus (meme famille visuelle : un constat court mis en avant), mais un
+   champ dedie {title, text} plutot qu'une rangee de definitions.
+   Titre et texte colles, margin:0 des deux cotes (demande explicite : pas
+   d'espace entre le titre et le texte) — a la difference de .cs-sec__title,
+   qui se rapproche de la ligne qu'il annonce mais garde tout de meme --s2. */
+.cs-result {
+  background: #E9F2FE; border-radius: var(--radius-sm); padding: var(--s5);
+  margin-bottom: var(--s4);
+}
+.cs-result__title {
+  font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: .1em;
+  font-weight: var(--w-semibold); color: var(--ink-faint); margin: 0;
+}
+.cs-result__text { color: var(--ink); margin: 0; }
 
 /* Encart d'avertissement (voir s.callout dans content.js, Services
    exclusion/Release) : icone + texte sur fond teinte. */
@@ -2456,10 +2488,10 @@ body:not(.is-overlay):has(.home) {
 .cs-anon__tooltip {
   position: absolute;
   transform: translateX(-50%);
-  width: min(320px, 85vw);
+  width: min(256px, 85vw);
   background: #FFFFFF;
-  border-radius: 8px;
-  padding: 20px;
+  border-radius: 6px;
+  padding: 16px;
   box-shadow: 0 12px 32px rgba(12, 12, 13, .18), 0 2px 8px rgba(12, 12, 13, .08);
   opacity: 0;
   pointer-events: none;
@@ -2472,36 +2504,36 @@ body:not(.is-overlay):has(.home) {
   pointer-events: auto;
 }
 .cs-anon__tooltip-title {
-  margin: 0 0 14px;
+  margin: 0 0 11px;
   font-family: 'Inter', 'Segoe UI', sans-serif;
-  font-size: 16px; color: #303030;
+  font-size: 13px; color: #303030;
 }
 .cs-anon__tooltip-title strong { font-weight: 600; }
-.cs-anon__crit-list { display: flex; flex-direction: column; gap: 12px; }
-.cs-anon__crit-row { display: flex; gap: 20px; }
+.cs-anon__crit-list { display: flex; flex-direction: column; gap: 10px; }
+.cs-anon__crit-row { display: flex; gap: 16px; }
 .cs-anon__crit-row--single .cs-anon__crit { flex: 0 0 auto; }
 .cs-anon__crit {
   flex: 1; min-width: 0;
-  display: flex; flex-direction: column; gap: 6px;
+  display: flex; flex-direction: column; gap: 5px;
 }
 .cs-anon__crit-label {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 5px;
   font-family: 'Inter', 'Segoe UI', sans-serif;
-  font-size: 12px; color: #5A5A5A;
+  font-size: 10px; color: #5A5A5A;
   white-space: nowrap;
 }
-.cs-anon__crit-icon { width: 14px; height: 14px; flex-shrink: 0; }
+.cs-anon__crit-icon { width: 11px; height: 11px; flex-shrink: 0; }
 .cs-anon__crit-pill {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 5px;
   width: fit-content;
-  padding: 3px 8px;
-  border-radius: 8px;
+  padding: 2px 6px;
+  border-radius: 6px;
   font-family: 'Inter', 'Segoe UI', sans-serif;
-  font-size: 15px;
+  font-size: 12px;
 }
 .cs-anon__crit-pill--pass { background: #EBFFEE; color: #02542D; }
 .cs-anon__crit-pill--fail { background: #FEE9E7; color: #900B09; }
-.cs-anon__crit-pill-icon { width: 14px; height: 14px; flex-shrink: 0; }
+.cs-anon__crit-pill-icon { width: 11px; height: 11px; flex-shrink: 0; }
 
 .figure figcaption {
   margin-top: var(--s3);
@@ -2612,6 +2644,22 @@ body:not(.is-overlay):has(.home) {
 #sec-admin-backoffice .cs-carousel__panel img {
   width: 100%; height: 100%; object-fit: contain;
   border: 1px solid var(--frame-line);
+}
+/* zoomable: 'mobile' (content.js) sur ces 4 panneaux (meme mecanisme que
+   Services exclusion/Concept, voir .cs-sec__media-pair .cs-carousel__panel
+   .zoomable-media.is-zoomed img plus haut) — mais ici la regle ci-dessus
+   utilise un ID, donc (1,1,1), qui l'emporte sur .zoomable-media.is-zoomed
+   img (0,2,1) A TOUTE largeur d'ecran : cliquer pour zoomer posait bien
+   .is-zoomed, mais l'image restait figee a width/height:100%, zoom inerte.
+   Compound selector sous le meme ID pour retrouver assez de classes (1,3,1)
+   et regagner la course. height:auto (pas 100%), comme .cs-sec__media-pair
+   : laisse l'image grandir uniformement au lieu de l'etirer dans le
+   --frame-ratio fixe du stage. */
+#sec-admin-backoffice .cs-carousel__panel .zoomable-media.is-zoomed img {
+  width: 230%; height: auto;
+}
+@media (max-width: 700px) {
+  #sec-admin-backoffice .cs-carousel__panel .zoomable-media.is-zoomed img { width: var(--zoom-scale-mobile, 230%); }
 }
 
 /* Maquettes du rule-builder (constraints, section design) : pleine largeur,
@@ -2943,9 +2991,19 @@ body:not(.is-overlay):has(.home) {
 .cs-carousel--hoot .cs-carousel__panel {
   display: flex; align-items: stretch; aspect-ratio: 16 / 9;
 }
+/* picture, pas img : l'<img> vit desormais TOUJOURS dans un <picture>
+   (carouselMarkup() dans app.js — item.src comme item.image), lui-meme deja
+   a width:100% de son cadre (regle generique .cs-carousel__panel img plus
+   haut). Mettre aussi img ici appliquerait 55%/65% par-dessus les 55%/65%
+   deja poses sur picture (55% de 55% ≈ 30% du panneau) — c'est ce qui
+   causait l'ecart visible entre l'image et le texte. */
+.cs-carousel--hoot .cs-carousel__panel picture,
+.cs-carousel--hoot .cs-carousel__panel video {
+  flex: 0 0 55%; width: 55%; height: 100%;
+}
 .cs-carousel--hoot .cs-carousel__panel img,
 .cs-carousel--hoot .cs-carousel__panel video {
-  flex: 0 0 55%; width: 55%; height: 100%; object-fit: contain;
+  object-fit: contain;
 }
 .cs-carousel--hoot .cs-carousel__content {
   flex: 1 1 auto; min-width: 0;
@@ -2963,7 +3021,7 @@ body:not(.is-overlay):has(.home) {
 /* item.wide (ex. "Item voting", capture large deux-ecrans) : l'image gagne
    de la place au detriment du seul padding de .cs-carousel__content, pas de
    la colonne de texte elle-meme (padding-left reduit, tout le reste egal). */
-.cs-carousel--hoot .cs-carousel__panel--wide img,
+.cs-carousel--hoot .cs-carousel__panel--wide picture,
 .cs-carousel--hoot .cs-carousel__panel--wide video {
   flex-basis: 65%; width: 65%;
 }
@@ -3009,9 +3067,13 @@ body:not(.is-overlay):has(.home) {
 }
 @media (max-width: 700px) {
   .cs-carousel--hoot .cs-carousel__panel { flex-direction: column; aspect-ratio: auto; }
+  .cs-carousel--hoot .cs-carousel__panel picture,
+  .cs-carousel--hoot .cs-carousel__panel video {
+    width: 100%; height: 220px; flex: 0 0 auto;
+  }
   .cs-carousel--hoot .cs-carousel__panel img,
   .cs-carousel--hoot .cs-carousel__panel video {
-    width: 100%; height: 220px; flex: 0 0 auto; object-fit: contain;
+    object-fit: contain;
   }
   .cs-carousel--hoot .cs-carousel__content { padding: var(--s4) var(--s5); }
   .cs-carousel--hoot .cs-carousel__text { font-size: var(--fs-lead); }
@@ -4494,6 +4556,12 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 .article__block h2 { font-size: var(--fs-h2); margin-bottom: var(--s4); font-weight: var(--w-medium); }
 .article__block p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }
 .article__block p:last-child { margin-bottom: 0; }
+/* .article__p : meme mesure/couleur/marge que .article__block p, pour un
+   paragraphe qui embarque une liste a puces (voir pageArticle() dans app.js
+   et termBody plus haut) — un div, pas un p, car <ul> n'y est pas valide. */
+.article__block .article__p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }
+.article__block .article__p:last-child { margin-bottom: 0; }
+.article__block .article__p .cs-sec__list { color: inherit; max-width: none; margin: var(--s2) 0; }
 
 /* Le glossaire d'un bloc (articleTerms(), app.js). Un <dl> vertical au filet
    gauche, et NON les cartes teintees horizontales de .cs-sec__terms : voir la
@@ -5219,7 +5287,7 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
   /* --cs-nav-inset a 0 (voir .cs plus haut) : la nav laterale quitte la
      grille ci-dessus, la colonne de contenu commence donc au bord gauche —
      .cs__cases-intro/.cs__case-switch n'ont plus besoin de decaler leur
-     texte pour s'aligner sur elle. */
+     boite pour s'aligner sur elle. */
   .cs { --cs-nav-inset: 0px; }
 
   /* Le bouton "Retour" repasse dans le flux normal. En reste fixe, il
@@ -5279,6 +5347,15 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
     top: auto; max-height: none; overflow: visible;
     padding: 0;
   }
+  /* Un projet fusionne (.cs__case-switch) pose `.cs:has(.cs__case-switch)
+     .cs-nav { top: var(--s4) }` plus haut (section 8b), pour aligner "Back"
+     sur les onglets une fois les deux figes en haut sur bureau. Meme
+     specificite (0,3,0) que cette regle-ci : sans ce reset, elle l'emportait
+     encore sous 1000px et etirait la boite fixed de la barre flottante entre
+     --s4 (haut) et bottom (bas) au lieu de la laisser compacte a --cs-bar-h
+     — une boite quasi plein ecran, transparente mais toujours cliquable, qui
+     bloquait toute la page. */
+  .cs:has(.cs__case-switch) .cs-nav { top: auto; }
 
   /* LES DEUX FONDUS AUX EXTREMITES DE LA LISTE : voir .cs-nav ol plus bas.
      Ce sont deux masques poses sur la liste elle-meme, plus deux voiles poses

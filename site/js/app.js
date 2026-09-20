@@ -448,11 +448,17 @@ function cardMedia(p) {
 /* Met en gras ce qui est encadre par des doubles asterisques, comme en
    Markdown : "de **24 a 9**" -> "de <b>24 a 9</b>".
    L'echappement a lieu AVANT le remplacement : le texte est donc neutralise,
-   et seules les balises <b> que nous fabriquons nous-memes subsistent. */
+   et seules les balises <b>/<a> que nous fabriquons nous-memes subsistent.
+   Le lien markdown accepte soit une URL externe (http/https, ouverte dans un
+   nouvel onglet), soit une route interne du site (#/..., ex. Yabara/Overview
+   vers l'article `gap`) — celle-ci navigue dans le meme onglet, comme
+   n'importe quel <a href="#/..."> : le routeur ecoute `hashchange`
+   globalement, aucun handler dedie n'est necessaire ici. */
 function emphasize(str) {
   return escapeAttr(str)
     .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
     .replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/\[(.+?)\]\((#\/[^\s)]*)\)/g, '<a href="$2">$1</a>')
     // '\n' a l'interieur d'un seul paragraphe (voir Hoot/Exploration) : garde
     // plusieurs phrases visuellement distinctes sans en faire des <p> separes.
     .replace(/\n/g, '<br>');
@@ -850,9 +856,18 @@ function pageCase(project, caseId) {
       // Definitions, les 3 personas) — <dl> plutot que .cs-sec__aside car le
       // contenu est dans le flux normal de lecture, pas en marge du texte.
       // Voir .cs-sec__terms/.cs-sec__term dans styles.css.
+      // t.body est soit une chaine simple (rendue telle quelle dans <dd>,
+      // \n devient un saut de ligne visuel via white-space:pre-line — meme
+      // mecanique que .cs__overview-intro), soit un objet { intro, list,
+      // outro } quand la definition a besoin d'une sous-liste a puces (ex.
+      // Licence management/Administrators) — meme convention que
+      // drawerBodyParagraph() plus bas, mais les trois morceaux restent DANS
+      // le meme <dd> (une seule definition) plutot que des <p> separes.
+      const termBody = b => typeof b === 'string' ? escapeAttr(b)
+        : `${escapeAttr(b.intro)}${b.list ? `<ul class="cs-sec__list">${b.list.map(li => `<li>${escapeAttr(li)}</li>`).join('')}</ul>` : ''}${b.outro ? escapeAttr(b.outro) : ''}`;
       const termsBlock = s.terms
         ? `<div class="cs-sec__terms">${s.terms.items.map(t =>
-            `<dl class="cs-sec__term"><dt>${escapeAttr(t.term)}</dt><dd>${escapeAttr(t.body)}</dd></dl>`).join('')}</div>`
+            `<dl class="cs-sec__term"><dt>${escapeAttr(t.term)}</dt><dd>${termBody(t.body)}</dd></dl>`).join('')}</div>`
         : '';
       // s.figureAfter : une figure locale (webp/png ou svg, via figureFor())
       // inseree apres le paragraphe d'index `after` — comme s.terms mais
@@ -1063,6 +1078,15 @@ function pageCase(project, caseId) {
       const callout = s.callout
         ? `<div class="cs-callout">${alertCircleIcon('cs-callout__icon')}<p>${escapeAttr(s.callout.text)}</p></div>` : '';
 
+      // s.result : encart teinte {title, text} isolant un constat court en
+      // fin de section (ex. Licence management/Context) — meme famille
+      // visuelle que .cs-sec__term/.cs-sec__aside, mais un champ dedie
+      // plutot qu'une rangee. `text` passe par emphasize() : demande
+      // explicite, tel mot precis en gras (**role**/**right**) plutot que la
+      // phrase entiere. Voir .cs-result dans styles.css.
+      const result = s.result
+        ? `<div class="cs-result"><p class="cs-result__title">${escapeAttr(s.result.title)}</p><p class="cs-result__text">${emphasize(s.result.text)}</p></div>` : '';
+
       // s.afterFigure : paragraphe(s) apres la figure de section (ex.
       // Services exclusion/Scoping) — cas normalement couvert par
       // s.media (indexe par paragraphe) mais celui-ci vise une figure
@@ -1094,6 +1118,7 @@ function pageCase(project, caseId) {
         ${list}
         ${bullets}
         ${partsBlock}
+        ${result}
         ${callout}
         ${secStats}
         ${mockups}
@@ -1226,6 +1251,14 @@ function pageArticle(project) {
         /* Meme convention que pageEditorial() : un paragraphe entierement
            entre crochets est une consigne de redaction, pas du contenu. Il
            s'affiche en jaune pour qu'on ne le publie pas par distraction. */
+        if (typeof par === 'object') {
+          // { intro, list, outro? } : une liste a puces au milieu d'un
+          // paragraphe (voir termBody plus haut) — un div plutot qu'un <p>
+          // car <ul> n'est pas un contenu valide dans <p>.
+          return `<div class="article__p">${escapeAttr(par.intro)}${
+            par.list ? `<ul class="cs-sec__list">${par.list.map(li => `<li>${escapeAttr(li)}</li>`).join('')}</ul>` : ''
+          }${par.outro ? escapeAttr(par.outro) : ''}</div>`;
+        }
         const isTodo = /^\[.*\]$/s.test(par.trim());
         return isTodo
           ? `<p class="todo">${escapeAttr(par)}</p>`
@@ -2273,7 +2306,14 @@ function carouselMarkup(items, opts) {
                 preload="metadata" data-autoplay aria-label="${alt}"
                 disablepictureinpicture></video>`
       : item.src
-      ? `<img class="${zoom}" src="${escapeAttr(item.src)}" alt="${alt}" loading="lazy" decoding="async">`
+      // .zoomable-media doit vivre sur un CADRE dont <img> est l'enfant (voir
+      // .zoomable-media img plus haut dans styles.css, qui cible ce fils pour
+      // l'agrandir a 230% au zoom) : un <picture> a un seul <img>, sans
+      // <source>, sert de cadre ici tout en restant du HTML valide — poser
+      // la classe directement sur l'<img> (comme avant) laissait ".zoomable-
+      // media img" sans rien a selectionner, donc aucun agrandissement au
+      // clic (bug constate sur le carrousel userflow de Fit-plans).
+      ? `<picture class="${zoom}"><img src="${escapeAttr(item.src)}" alt="${alt}" loading="lazy" decoding="async"></picture>`
       : `<picture class="${zoom}">
         <source srcset="assets/img/${item.image}.webp" type="image/webp">
         <img src="assets/img/${item.image}.png" alt="${alt}" loading="lazy" decoding="async">
