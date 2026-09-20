@@ -267,7 +267,7 @@ export const PROJECTS = [
     client: 'Petal',
     tagline: 'Redesigning a rule engine: from 24 rules to 9',
     tags: ['System thinking', 'Interaction', 'Healthcare SaaS'],
-    gist: { role: 'UX / UI, research', duration: '4 months', team: '1 designer, 1 PM',
+    gist: { role: 'Product Designer', duration: '4 months', team: '1 designer, 1 PM',
       company: { label: 'Petal', href: 'https://www.petal-health.com/en/' } },
     // The opening visual. It doubles as the card thumbnail on the homepage.
     // Local file rather than the Contra CDN id: no external dependency, and
@@ -522,7 +522,7 @@ export const PROJECTS = [
         id: 'takeaways', label: 'Takeaways', title: 'Takeaways',
         intro: [
           'Working across 24 rules (more data points than I usually get) was a chance to exercise thematic analysis and systems thinking on a bigger scale.',
-          'If I did it again, I would flip the order : start from usage frequency and scope by impact first, even though I don\'t regret the path I took, but that\'s the lesson.'
+          'If I did it again, I would flip the order : start from usage frequency and scope by impact first, even though I don\'t regret the path I took.'
         ],
         body: []
       }
@@ -564,15 +564,15 @@ export const PROJECTS = [
     client: 'Petal',
     tagline: 'Designing, then fixing a **4-step** wizard to bring clarity to hospital managers.',
     tags: ['Wizard', 'User testing', 'Iteration'],
-    gist: { role: 'UX / UI', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer',
+    gist: { role: 'Product designer', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer',
       company: { label: 'Petal', href: 'https://www.petal-health.com/en/' } },
     // Cover statique d'origine. Plusieurs essais de fond anime (degrade CSS,
     // video fournie par l'utilisateur avec boucle corrigee en boomerang,
     // <canvas> en JS) sont restes dans l'historique de conversation sans
     // convaincre — revenu ici a l'image fixe de depart.
     heroMedia: { type: 'image', src: 'assets/img/exclusion-hero.webp' },
-    problem: 'In the HUB, some services are no longer used, or only temporarily (like a seasonal flu clinic). They skew a clinic’s statistics, but can only be deleted in the EMR, which is a heavy procedure for medical staff. So they needed to be excluded from synchronization setup without being deleted, inside a modal already carrying many steps.',
-    outcome: 'A clearer four-step wizard that makes exclusion explicit. After release surfaced a usage error we hadn’t anticipated. So we inverted the selection logic and added a warning to make sure it was well used.',
+    problem: 'In the HUB, some services are no longer used, or only temporarily (e.g. a seasonal flu service). They skew clinics’ statistics, but can only be deleted in the EMR, which is a heavy procedure for medical staff. So they needed to be excluded from the synchronization setup without being deleted, which happens inside a modal already carrying many steps.',
+    outcome: 'A clearer four-step wizard that makes exclusion explicit.\nAfter release, we realized a usage error that we hadn’t anticipated. So we inverted the selection logic and added a warning to make sure it was well used.',
     sections: [
       {
         id: 'kickoff', label: 'Context', title: 'Context',
@@ -581,7 +581,7 @@ export const PROJECTS = [
         // typo, le titre au-dessus n'etant plus qu'un sur-titre.
         headline: 'The current synchronization flow',
         body: [
-          'Synchronization is the process of importing hospitals data (appointments, patients, services and suppliers) through their EMR, at Québec’s scale. It’s only during this process that staff members can edit their services through a modal.'
+          'Synchronization is the process of importing hospitals data (appointments, patients, services and suppliers) through their EMR, at Québec’s scale. It’s only during this process that staff members can edit their services in a modal.'
         ],
         // Export SVG direct de Figma (node 114:10812, meme fichier que la
         // maquette) : le schema du flux de synchronisation.
@@ -693,10 +693,11 @@ export const PROJECTS = [
     client: 'Petal',
     tagline: 'Refining access control to reflect the reality of clinicians.',
     tags: ['Access control', 'Component reuse', 'Healthcare SaaS'],
-    gist: { company: true, role: 'Product Designer', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer' },
+    gist: { role: 'Product Designer', duration: '3 months', team: '1 dev, 1 designer, 1 PM, 1 technical writer',
+      company: { label: 'Petal', href: 'https://www.petal-health.com/en/' } },
     heroMedia: { type: 'video', src: 'assets/media/licence-hero.mp4', poster: 'assets/img/licence-hero-poster.webp',
       caption: 'Searching for a member by email to manage their licence', hideCaption: true },
-    problem: 'Clinics and hospitals lacked control over the registration process, as it was taking place outside the platform, and the permissions system required more clarity and granularity.',
+    problem: 'Clinics and hospitals lacked control over the registration process, as it was taking place outside the platform. Also, the permissions system required more clarity and granularity.',
     processIntro: 'As a designer in this project, I translated the requirements into interfaces and assisted the PM in decision-making.',
     outcome: 'We redefined the permission system and implemented a new registration process so that managers, according to their authorization level, can add different types of member.',
     sections: [
@@ -706,16 +707,31 @@ export const PROJECTS = [
           '## Different types of users and possibilities',
           'Before, 3 roles existed, which identified permissions and the type of people they can invite:',
           '## The format wasn’t reflecting reality',
-          'Only the Administrator role had add-rights, when in reality, clinicians HR, cost-management staffer, whose job is provisioning access for clinicians, could also need it.',
-          'The process wasn’t reflecting that reality, as the role managing interface was rigid, only allowing to select a role, not to set a right.',
-          '**Result:** Administrator as role → adding members as a right.'
+          'Only the Administrator role had the right to add new members, when in reality, clinicians HR or cost-management staffer could also need it because part of their job includes provisioning access for clinicians.',
+          'The process wasn’t reflecting that reality as the role managing interface was rigid, only allowing to select a role, not to set a right.'
         ],
+        result: { title: 'Result', text: 'We switched from Administrator as **role** to adding members being a **right**.' },
         terms: {
           after: 1,
           items: [
-            { term: 'Administrators', body: 'had full licence managing rights: they can add any member (new or existing, in or outside the hospital), edit or delete members, grant licence managing rights to others, and set access permissions. They are typically managers responsible for onboarding staff and provisioning tool access.' },
-            { term: 'Planners', body: 'had partial rights, as they are responsible for staff scheduling, sometimes at a service level, and could add already active members elsewhere in the hospital to their schedule.' },
-            { term: 'Regular staff', body: '(clinicians, and non-admin operational staff) had no licence-management rights at all.' }
+            { term: 'Administrators', body: {
+              intro: 'Have full licence managing rights.\nThey can:',
+              list: [
+                'add any member (new or existing, in or outside the hospital)',
+                'edit or delete members',
+                'grant licence managing rights to others',
+                'set access permissions'
+              ],
+              outro: 'They are typically managers responsible for onboarding staff and provisioning tool access.'
+            } },
+            { term: 'Planners', body: {
+              intro: 'Have partial rights.',
+              list: [
+                'They are responsible for staff scheduling, sometimes at a service level.',
+                'They can add already active members elsewhere in the hospital to their schedule.'
+              ]
+            } },
+            { term: 'Regular staff', body: 'Mostly clinicians and non-admin operational staff.\nThey have no licence-management rights at all.' }
           ]
         },
         // zoomable: 'mobile' (voir figureFor() dans app.js) : sur mobile la
@@ -727,10 +743,10 @@ export const PROJECTS = [
       },
       {
         id: 'before', label: 'Before', title: 'Before',
-        headline: 'A modification page, not a registration flow',
+        headline: 'There was no registration flow',
         body: [
           'Before this project, registration was operated through an external software with Petal deployment team.',
-          'Planners could only go to the detail page of an already-existing member to edit their access, in a multi-page setup.',
+          'Planners could only go to the detail page of an already-existing member to edit their access, in a multi-page setup, but admins couldn’t.',
           '**The problem was:** the page is not a registration page, but a modification page.'
         ],
         // Capture ecran de l'ancienne page (fournie par l'utilisateur,
@@ -743,13 +759,13 @@ export const PROJECTS = [
       },
       {
         id: 'design', label: 'Solution', title: 'Solution',
-        headline: 'The registration flow',
+        headline: 'Adding a new registration flow',
         body: [
           'The registration flow needed one component that could serve both planners and admins with minimum differences to facilitate implementation, while the possible actions weren’t the same for both.'
         ],
         timeline: [
           {
-            title: 'Isolate the identifier: the mail',
+            title: 'Isolate the identifier: the mail input',
             // Capture Figma (node 216:7373, "Ajouter un membre" - le champ
             // Courriel isole en recherche), texte francais original traduit
             // en anglais avant export. Voir .cs-timeline__row--figure dans
@@ -933,9 +949,9 @@ export const PROJECTS = [
     title: 'Fit-plans redesign',
     client: 'Fit-plans',
     hideClient: true,
-    tagline: 'Cutting the ordering flow from **6 steps to 3**.',
-    tags: ['Redesign', 'Research', 'UI'],
-    gist: { role: 'UX, UI, strategy', duration: 'March – August 2020', team: '1 designer, 2 developers', tools: 'Figma, Google Analytics' },
+    tagline: 'Cutting the ordering flow from 6 steps to 3',
+    tags: ['Redesign', 'Research'],
+    gist: { role: 'UX/UI Designer', duration: 'March – August 2020', team: '1 designer, 2 developers', tools: 'Figma, Google Analytics' },
     problem: 'Fit-Plans is a company specializing in the preparation and delivery of daily plans and calorie-accurate meals for sports enthusiasts. Based in Montreal for the past 4 years, the team consists of the CEO who is also the CTO, an operations manager, and a chef coordinating a team of 10 cooks.',
     outcome: 'The ordering flow went from six steps to three. Products are reachable straight from the homepage, and meal customisation happens on the plan detail page.',
     stats: [
@@ -1137,9 +1153,12 @@ export const PROJECTS = [
     blocks: [
       {
         p: [
-          'During those two years I wasn’t working, I developed an interest for salsa dance.',
-          'After a few months of practice, I ran into a problem: I felt far less creative than the dancers I was watching online. The moves taught in my school were way different from the ones I was seeing on YouTube.',
-          'Watching videos wasn’t practical in itself, as they varied in length. Imitating a move meant pausing, replaying, slowing it down, and still understanding only half of what the dancers were doing.'
+          'During those [two years I wasn’t working](#/gap), I developed an interest for salsa dance.',
+          { intro: 'After a few months of practice, I ran into a problem:', list: [
+            'I felt far less creative than the dancers I was watching online.',
+            'The moves taught in my school were way different from the ones I was seeing on YouTube.'
+          ] },
+          'Watching videos wasn’t practical:\nI had to pause, replay, and slow them down, and still only understood half of what the dancers were doing.'
         ]
       },
       {
@@ -1454,8 +1473,8 @@ export const PROJECTS = [
     heroMedia: { type: 'image', src: 'assets/img/hoot-hero.gif' },
     title: 'Hoot',
     client: 'La Poste × ECV Digital hackathon',
-    tagline: 'A concierge service for night workers.',
-    tags: ['Hackathon', 'Concept', 'UI'],
+    tagline: 'A concierge service for night workers',
+    tags: ['Hackathon', 'Concept'],
     gist: { role: 'Ideation, survey, wireframing', duration: '1 week', team: '2 UI, 1 UX, 1 dev, 1 PM', tools: 'Figma, Google Forms, ProtoPie' },
     problem: 'La Poste asked us to imagine the concierge service of the future. Most players on the market offer cleaning, cooking or delivery at varying price points, but none of them address night work, so we picked that angle.',
     outcome: 'We created Hoot, an app that offers features such as location-aware meal ordering, relaxation and wake-up programmes, events between colleagues, and collective voting on equipment to order.',
@@ -1667,12 +1686,12 @@ export const PROJECTS = [
     gist: { role: 'Product Designer', duration: '4 months', team: '1 designer, 1 dev, and the client' },
     stats: [],
     hideOverviewHeadings: true,
-    problem: 'A friend launched an ATS platform for HR professionals in Ivory Coast, and I came in as product designer. I had the chance to dig into and reflect on small parts of the platform, such as the launch and the product identity. It gave me something to work on again.\n\nIt was a simple ATS (Applicant Tracking System) Saas with a twist: **candidates have to be anonymized.**',
+    problem: 'A friend launched an ATS platform for HR professionals in Ivory Coast, and I came in as product designer. I had the chance to dig into and reflect on small parts of the platform, such as the launch and the product identity. It gave me something to work on again [during these two last years.](#/gap)\n\nIt was a simple ATS (Applicant Tracking System) Saas with a twist: **candidates have to be anonymized.**',
     sections: [
       {
         id: 'coming-soon', label: 'Coming soon', title: 'Coming soon',
         body: [
-          'The first challenge was to conceive a coming soon page. A counter indicates the number of already registered members to make visitors want to sign up.',
+          'The first challenge was to conceive a coming soon page.\nA counter indicates the number of already registered members to make visitors want to sign up.',
           'I also reflected on what was the best way to encourage recruiters to use the app at the first connection, and I stated that giving the opportunity to post a first job offer for free would be a good incentive.'
         ],
         figureAfter: [
@@ -1685,8 +1704,8 @@ export const PROJECTS = [
       {
         id: 'landing-page', label: 'Landing page', title: 'Landing page',
         body: [
-          'The second challenge was to choose the right content for the landing page as it was addressed to both recruiters and candidates. I chose to let users select the right page according to their role as we had no way to automatically detect from the natural search.',
-          'The landing page emphasizes the value proposition of the product, which is for both recruiter and candidates to have a fair recruiting process by anonymization.'
+          'The second challenge was to choose the right content for the landing page as it was addressed to both recruiters and candidates. I chose to let users select the right page according to their role, as we had no way to automatically detect it from organic search traffic.',
+          'The landing page emphasizes the value proposition of the product, which is for both recruiter and candidates to have a fair recruiting process through anonymization.'
         ],
         figureAfter: [
           // Ratio calcule sur les pixels sources : la section bleue "Faites
@@ -1695,16 +1714,21 @@ export const PROJECTS = [
           // s'ouvre donc sur cette section, le reste de la page se decouvrant
           // au scroll interne, comme si le site etait consulte en vrai.
           { after: 1, type: 'scrollFrame', image: 'yabara-landing-recruiter', ratio: '1400 / 980', zoomable: true,
-            caption: 'The landing page, recruiter view — click to zoom.' },
+            caption: 'The landing page, recruiter view.' },
           { after: 1, type: 'scrollFrame', image: 'yabara-landing-candidate', ratio: '1400 / 980', zoomable: true,
-            caption: 'The landing page, candidate view — anonymized profiles.' }
+            caption: 'The landing page, candidate view.' }
         ]
       },
       {
         id: 'recruiter-section', label: 'Recruiter', title: 'Recruiter',
         body: [
-          'The product is divided in 3 parts: a recruiter section (dashboard, offers, talent search, etc), a candidate section (offer search, application, etc), and the admin section for the entire website management.'
+          'The product is divided in 3 parts:'
         ],
+        bulletsAfter: { after: 0, items: [
+          'a recruiter section (dashboard, offers, talent search, etc)',
+          'a candidate section (offer search, application, etc)',
+          'an admin section for the entire website management.'
+        ] },
         figureAfter: [
           // `type: 'dashFrame'` (voir figureFor() dans app.js) : la sidebar
           // (image a part, node Figma 387:1154) et le reste du dashboard
@@ -1714,13 +1738,13 @@ export const PROJECTS = [
           // `main` defile seul (scroll passif, scrollbar cachee). ratio
           // = proportions du cadre entier (sidebar + colonne visible du
           // contenu), pas d'une des deux images seules.
-          // `mobileImage` (node Figma 376:24387, le contenu SANS la sidebar
-          // 376:24296) : demande utilisateur explicite — sous 701px le split
-          // side/main cede la place a cette image pleine largeur plutot que
-          // de les empiler (sidebar ecrasee en pleine largeur au-dessus,
-          // peu lisible). Export different de `main` ci-dessus (node
-          // different, page legerement plus longue) : fourni tel quel par
-          // l'utilisateur plutot que reexporte depuis 389:1644.
+          // `mobileImage` (node Figma 389:1644, le contenu SANS la sidebar) :
+          // demande utilisateur explicite — sous 701px le split side/main
+          // cede la place a cette image pleine largeur plutot que de les
+          // empiler (sidebar ecrasee en pleine largeur au-dessus, peu
+          // lisible). Export PNG 2x recadre a la largeur `main` ci-dessus
+          // (900px) — remplace un ancien export fourni tel quel (node
+          // 376:24387, desormais obsolete).
           { after: 0, type: 'dashFrame', ratio: '1400 / 973',
             side: { image: 'yabara-recruiter-sidebar' },
             main: { image: 'yabara-recruiter-content' },
@@ -1818,7 +1842,7 @@ export const PROJECTS = [
             // .figure__frame.
             below: {
               image: 'yabara-candidate-rewards', bare: true, zoomable: 'mobile',
-              caption: 'Rewards — badges unlocked for platform milestones.'
+              caption: 'Rewards — badges unlocked.'
             } },
           // Node Figma 392:3096 ("Progression") : etat d'une candidature
           // (envoyee/pre-selectionnee/entretien/reponse) — demande
@@ -1895,7 +1919,7 @@ export const PROJECTS = [
     title: 'Designing a Bible app',
     client: 'Personal project',
     tagline: 'Experimenting with interactions',
-    tags: ['UI', 'Interaction', 'Animation'],
+    tags: ['Interaction', 'Animation'],
     heroMedia: { type: 'lottie', src: 'assets/media/bible-app-hero.json',
       caption: 'Bible app preview', hideCaption: true },
     problem: 'In 2024, a friend contacted me to build a custom Bible app.\nI worked on the UI and had some fun experimenting with the verse-search interaction.',
@@ -1951,7 +1975,7 @@ export const ARCHIVED_PROJECTS = [
     title: 'Soundcloud',
     client: 'Study project',
     tagline: '**815 responses** and 6 tests to work out why nobody finds the comment button.',
-    tags: ['Research', 'Usability testing', 'UI'],
+    tags: ['Research', 'Usability testing'],
     gist: { role: 'Research, testing, UI', duration: 'Nov 2019 – Nov 2020', team: '3 designers', tools: 'Figma, Google Forms, Sheets' },
     heroMedia: { type: 'video', src: 'assets/media/soundcloud-hero.mp4', poster: 'assets/img/soundcloud-hero-poster.webp', hideCaption: true },
     problem: 'Soundcloud has a feature its competitors don’t: commenting on a track at a specific moment. You just have to find it first. We wanted to measure the platform’s actual usability, then make that feature reachable for someone opening the site for the first time.',
