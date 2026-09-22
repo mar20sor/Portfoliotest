@@ -70,26 +70,23 @@ export const UI = {
   skipToContent: 'Skip to main content',
 
   gateHi: 'Hey there!',
-  gateQuestion: 'I’m Marvin.\nWhat’s your name?',
+  gateQuestion: 'What’s your name?',
   gateLabel: 'My name is',
   gatePlaceholder: 'Your first name',
-  gateSubmit: 'Nice to meet you',
-  gateSkip: 'Skip this',
+  gateSubmit: 'Submit',
+  gateSkip: 'Skip',
   gateError: 'Two characters minimum, letters and hyphens only.',
-  gateHint: 'Your name stays in your browser. No database, nothing sent anywhere.',
+  gateHint: 'Stored in browser only, no database or tracking.',
 
-  navWork: 'Work', navSide: 'Side quests', navAbout: 'About', navContact: 'Contact',
+  navWork: 'Work', navSide: 'Side quests', navAbout: 'About', navContact: 'Email',
   navHome: 'Home', navMenu: 'Menu', navClose: 'Close',
-  /* Court, contrairement a footerResume ("Download my resume") : dans la
-     barre il est a cote de Contact, et deux verbes cote a cote allongent la
-     ligne sans rien ajouter. Meme fichier au bout des deux. */
   navResume: 'Resume',
 
-  helloBefore: 'Hey',
-  helloAfter: ', nice to meet you!',
-  helloAnon: 'Hey, nice to meet you!',
+  helloBefore: 'Nice to meet you',
+  helloAfter: '!',
+  helloAnon: 'Nice to meet you!',
   workTitle: 'Work',
-  workIntro: 'Three years of healthcare SaaS, plus a few playgrounds. Every case study reads in 30 seconds; the detail is there if you want to dig.',
+  workIntro: 'Three years of healthcare SaaS, plus a few side quests.',
   sideTitle: 'Side quests',
   sideIntro: 'The things that don’t fit under “work experience” but still count.',
   aboutTitle: 'About',
@@ -152,9 +149,14 @@ export const UI = {
 
   footerSitemap: 'Sitemap',
   footerContact: 'Get in touch',
-  footerResume: 'Download my resume',
-  footerNote: 'Hand-coded. No database, no tracker.',
+  footerResume: 'Resume',
+  footerNote: 'Vibe-coded with ♥\nNo database, no tracker',
   footerRights: 'All rights reserved.',
+  // Lien mail du pied de page : etats successifs du texte, voir setupFootMailCopy()
+  // dans app.js. footerMailHint au survol/focus, footerMailCopied apres un clic
+  // (copie l'adresse dans le presse-papiers), puis retour a SITE.email.
+  footerMailHint: 'Click to copy',
+  footerMailCopied: 'Copied',
 
   loading: 'Loading',
   notFoundTitle: 'This page doesn’t exist',
@@ -174,7 +176,8 @@ export const UI = {
      { t: '...' }                  texte simple
      { t: '...', accent: true }    mot mis en avant, en vert lime
      { t: '...', to: '#/work/x' }  lien interne vers une étude de cas
-     { t: '...', u: true }         simplement souligné, sans lien
+     { t: '...', href: 'https://...' } lien externe (nouvel onglet)
+     { t: '...', to/href: ..., class: 'x' } classe(s) CSS ajoutee(s) au <a>
 
    Pourquoi ce détour ? Parce qu'app.js peut alors construire chaque morceau
    avec createElement et textContent. Aucune chaîne de contenu ne traverse
@@ -182,7 +185,7 @@ export const UI = {
    page — et une éventuelle balise se retrouverait affichée telle quelle
    plutôt qu'interprétée. Ajouter une ligne = ajouter un tableau ici. */
 export const HERO = {
-  name: 'I’m Marvin',
+  name: 'I’m Marvin,',
   statement: [
     [
       { t: 'I like to “decipher” ' },
@@ -195,11 +198,13 @@ export const HERO = {
     ],
     [
       { t: 'I previously worked at ' },
-      { t: 'Petal', to: '#/work/constraints' },
+      { t: 'Petal', to: '#/work/constraints', class: 'petal-experiment' },
       { t: ', ' },
-      { t: 'Fit-Plans', to: '#/work/fit-plans' },
-      { t: ', and ' },
-      { t: 'Gekko', u: true },
+      { t: 'Fit-Plans', to: '#/work/fit-plans', class: 'fitplans-experiment' },
+      // Espace insecable avant Gekko : essaie de garder "and Gekko↗" ensemble
+      // au lieu de laisser le mot seul retomber sur la ligne suivante.
+      { t: ', and ' },
+      { t: 'Gekko', href: 'https://gekko-group.com/en/gekko-2-2/', class: 'gekko-experiment' },
       { t: '.' }
     ]
   ],
@@ -546,7 +551,7 @@ export const PROJECTS = [
     // lit celui du cas actif (c.tagline, resolu plus bas dans `cases`), donc
     // ce champ ne fuit jamais vers la fiche elle-meme (demande explicite :
     // "sur la page d'accueil uniquement").
-    tagline: 'Improving access-control and service synchronization',
+    tagline: 'Improving access-control and service sync',
     tags: ['Access control', 'Wizard', 'Iteration'],
     heroMedia: { type: 'image', src: 'assets/img/exclusion-hero.webp' },
     // \n devient un saut de ligne visuel sans casser le <p> en deux
@@ -951,7 +956,8 @@ export const PROJECTS = [
     hideClient: true,
     tagline: 'Cutting the ordering flow from 6 steps to 3',
     tags: ['Redesign', 'Research'],
-    gist: { role: 'UX/UI Designer', duration: 'March – August 2020', team: '1 designer, 2 developers', tools: 'Figma, Google Analytics' },
+    gist: { role: 'UX/UI Designer', duration: 'March – August 2020', team: '1 designer, 2 developers', tools: 'Figma, Google Analytics',
+      company: { label: 'Fit-Plans', href: 'https://www.fit-plans.com/fr' } },
     problem: 'Fit-Plans is a company specializing in the preparation and delivery of daily plans and calorie-accurate meals for sports enthusiasts. Based in Montreal for the past 4 years, the team consists of the CEO who is also the CTO, an operations manager, and a chef coordinating a team of 10 cooks.',
     outcome: 'The ordering flow went from six steps to three. Products are reachable straight from the homepage, and meal customisation happens on the plan detail page.',
     stats: [
@@ -1608,11 +1614,12 @@ export const PROJECTS = [
      memes intertitres, memes paragraphes, memes images (rehebergees en
      local, voir assets/img/masters-essay-*.webp), a une exception pres — la
      section "Research methodology" (les 3 etapes Discovery/Analysis/Writing)
-     a ete retiree a la demande explicite de l'utilisateur. Le lien de
-     telechargement du PDF, en toute fin de page sur Notion, reste en toute
-     fin de page ici (dernier paragraphe de la derniere section) : le fichier
-     n'etant pas rehebergeable (URL S3 signee, expirante), il pointe vers la
-     page Notion elle-meme plutot que vers un fichier local. */
+     a ete retiree a la demande explicite de l'utilisateur. Le PDF (URL S3
+     signee via Notion, expirante — expirationTimestamp dans l'URL) est
+     fourni en bouton (`s.cta` sur la section Download, meme composant .btn
+     que Fit-Plans/Hoot) plutot qu'en lien au fil du texte — demande
+     explicite : juste apres le paragraphe qui l'annonce, pas dans le CTA
+     d'en-tete. */
   {
     slug: 'masters-essay', kind: 'side', accent: 'g', year: '2020',
     poster: { label: 'Mémoire', figure: 'book' },
@@ -1662,10 +1669,11 @@ export const PROJECTS = [
       },
       {
         id: 'download', label: 'Download',
-        headline: 'You can download the white paper below',
+        headline: 'You can read the white paper',
         body: [
-          `Unfortunately, the book is only available in French for the moment ... [Affordance_et_intuitivité_SORHAINDO_mini.pdf](${SITE.links.essay})`
-        ]
+          'Unfortunately, the book is only available in French for the moment.'
+        ],
+        cta: { label: 'Read the essay', href: 'https://file.notion.so/f/f/3e2361f2-6db2-4852-94d9-ba89c20b4dfe/9f6e8cb3-295b-4c8f-af8a-5edf2bef0571/Affordance_et_intuitivit_SORHAINDO_mini.pdf?table=block&id=091b2776-6c82-42b9-8769-f23b8d339206&spaceId=3e2361f2-6db2-4852-94d9-ba89c20b4dfe&expirationTimestamp=1790028000000&signature=EIuxuKibBtazLDPSki5lHeH491_o9sfZhn90nYd70og&downloadName=Affordance_et_intuitivité_SORHAINDO_mini.pdf' }
       }
     ]
   },
@@ -1680,7 +1688,7 @@ export const PROJECTS = [
     poster: { label: 'Anonymous → Hired', figure: '' },
     heroMedia: { type: 'image', src: 'assets/img/yabara-hero.webp' },
     title: 'Yabara ATS',
-    client: 'Private project',
+    client: 'Yabara - Private project',
     tagline: 'Designing an ATS software',
     tags: ['Product Design', 'Saas', '0 to 1'],
     gist: { role: 'Product Designer', duration: '4 months', team: '1 designer, 1 dev, and the client' },

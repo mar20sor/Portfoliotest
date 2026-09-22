@@ -160,7 +160,7 @@
   <div id="gate" class="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title" hidden>
     <form class="gate__card" id="gate-form" novalidate autocomplete="off">
       <p class="gate__hi" data-i18n="gateHi">Hey there!</p>
-      <h1 class="gate__q" id="gate-title" data-i18n="gateQuestion">I’m Marvin. What’s your name?</h1>
+      <h1 class="gate__q" id="gate-title" data-i18n="gateQuestion">What’s your name?</h1>
 
       <label class="gate__label" for="gate-input" data-i18n="gateLabel">My name is</label>
       <input class="gate__input"
@@ -177,14 +177,14 @@
            un attribut HTML se contourne, une verification JS aussi, donc on
            fait les deux ET on n'insere jamais le texte en tant que HTML. -->
 
+      <p class="gate__hint" id="gate-hint" data-i18n="gateHint"></p>
+
       <p class="gate__error" id="gate-error" role="alert" hidden data-i18n="gateError"></p>
 
       <div class="gate__actions">
-        <button class="btn btn--primary" type="submit" data-i18n="gateSubmit">Nice to meet you</button>
-        <button class="btn btn--ghost" type="button" id="gate-skip" data-i18n="gateSkip">Skip this</button>
+        <button class="btn btn--primary" type="submit"><span class="btn__label" data-i18n="gateSubmit">Submit</span></button>
+        <button class="btn btn--ghost" type="button" id="gate-skip"><span class="btn__label" data-i18n="gateSkip">Skip</span></button>
       </div>
-
-      <p class="gate__hint" id="gate-hint" data-i18n="gateHint"></p>
     </form>
   </div>
 
@@ -282,8 +282,16 @@
            fichier vivent dans SITE (content.js), comme pour les liens du pied
            de page, et non recopies ici ou ils divergeraient. -->
       <div class="site-nav__end">
-        <a id="nav-resume" href="#" target="_blank" rel="noopener noreferrer" data-i18n="navResume">Resume</a>
-        <a id="nav-contact" href="mailto:" data-i18n="navContact">Contact</a>
+        <a id="nav-resume" class="u-arrow-link" href="#" target="_blank" rel="noopener noreferrer">
+          <span data-i18n="navResume">Resume</span><span class="u-arrow-link__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              aria-hidden="true"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span>
+        </a>
+        <a id="nav-contact" class="u-arrow-link" href="mailto:">
+          <span data-i18n="navContact">Email</span><span class="u-arrow-link__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg></span>
+        </a>
       </div>
     </nav>
   </header>

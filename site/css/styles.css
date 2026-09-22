@@ -71,6 +71,13 @@
   --line-soft:   rgba(255,255,255,.14);
   --veil:        rgba(0,0,0,.05);        /* fond de la pilule de navigation */
   --veil-strong: rgba(0,0,0,.12);        /* blocs mis en avant */
+  /* #0555C0 : bleu du pied de page sur https://marvinsrd.com/index (demande
+     utilisateur, "aussi sombre que sur..."), pas une derivation de --bg — ses
+     canaux ne s'assombrissent pas dans les memes proportions, donc color-mix
+     ne le reproduirait pas. Jeton distinct de --bg (et non un remplacement)
+     pour que le theme clair, ci-dessous, puisse garder son pied de page
+     blanc sans le redefinir explicitement a chaque fois. */
+  --foot-bg:     #0555C0;
 
   /* ---- LA GRILLE DE FOND DE L'ACCUEIL ----------------------------------
      Le quadrillage pose sous la page d'accueil (dessine section 6). Deux
@@ -275,6 +282,7 @@ html[data-theme="light"],
   --line-soft:   rgba(16,35,63,.09);
   --veil:        rgba(16,35,63,.04);
   --veil-strong: rgba(32,120,240,.07);
+  --foot-bg:     var(--bg);        /* etudes de cas : pied de page blanc, inchange */
   --warning-tint: rgba(218,30,40,.08);
 
   --accent:      #2078F0;
@@ -443,7 +451,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
   display: inline-flex; align-items: center; justify-content: center;
   gap: var(--s2);
   padding: var(--s3) var(--s5);
-  border-radius: 999px; border: 1px solid transparent;
+  /* Pilule (999px) remplacee par le rayon "squircle" du bouton submit de
+     meganyap.me/onboarding (14px, demande utilisateur) — --radius portait
+     deja cette meme valeur ailleurs sur le site (cartes, etc.), on la
+     reutilise plutot que de redefinir 14px en dur ici. */
+  border-radius: var(--radius); border: 1px solid transparent;
   font-size: var(--fs-small); font-weight: var(--w-semibold);
   text-decoration: none; white-space: nowrap;
   transition: background .18s var(--ease), color .18s var(--ease),
@@ -455,6 +467,75 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .btn--primary:hover { background: var(--accent); color: var(--accent-ink); transform: translateY(-1px); }
 .btn--ghost { background: transparent; color: var(--ink); border-color: var(--line); }
 .btn--ghost:hover { border-color: var(--ink); background: var(--veil); }
+/* Fleche des CTA externes (arrowUpRightIcon) : .btn est deja inline-flex
+   avec un `gap`, donc le texte et l'icone s'espacent tout seuls. Meme petit
+   saut au survol que .u-arrow-link plus bas (coherence de langage visuel),
+   sans le fondu d'opacite : un bouton n'a pas de soulignement a estomper,
+   son icone est deja pleinement visible au repos. Saut court (1px) : assez
+   pour se voir, pas assez pour distraire. */
+.btn__icon { width: 14px; height: 14px; flex: none; transition: transform .2s var(--ease); }
+.btn:hover .btn__icon, .btn:focus-visible .btn__icon { transform: translate(1px, -1px); }
+
+/* ---- Liens soulignes reutilisables --------------------------------------
+   Deux composants partages par tout le site (heros, gists, notes de bas de
+   page, corps des etudes de cas) : le soulignement part estompe et rejoint
+   la pleine opacite au survol — repris de jakub.kr (.article-underline),
+   l'effet tient tout entier dans l'animation de `text-decoration-color`, la
+   couleur du texte ne bouge pas. `color-mix` derive le ton estompe de
+   `currentColor` plutot que d'une couleur figee, donc ca marche pareil en
+   texte blanc (heros, pied de page) qu'en texte sombre (etudes de cas).
+
+   .u-underline   : l'ancre ne contient QUE du texte -> le soulignement peut
+                    vivre directement dessus.
+   .u-arrow-link  : l'ancre contient un <span> de texte PUIS, en option, un
+                    <span class="u-arrow-link__icon"> avec une fleche SVG a
+                    l'interieur. Le soulignement doit alors vivre sur le
+                    span de texte, jamais sur l'ancre : un <a> a un
+                    soulignement par defaut du navigateur qui, pose sur
+                    l'ancre, continuerait de se dessiner a travers la
+                    fleche (un `text-decoration: none` local sur la fleche
+                    ne supprime jamais le trait d'un ancetre). La fleche
+                    suit le meme rythme, estompee -> pleine opacite, PLUS un
+                    petit saut court (1px) vers le coin superieur droit. Sa
+                    taille suit le texte (1em) : elle grandit et retrecit
+                    avec lui. Utilisable meme sans fleche (le span d'icone
+                    est optionnel) : Petal/Fit-Plans dans le heros partagent
+                    ce composant avec Gekko sans en avoir une.
+                    `display: inline-flex; align-items: center` sur l'ancre
+                    (pas `vertical-align` sur l'icone) : un <svg> inline a un
+                    espace de descendance implicite sous sa ligne de base qui
+                    le decale et l'eloigne du texte quand on le cale a l'œil
+                    plutot qu'en centrant les deux boites l'une contre
+                    l'autre. Ca reste "en ligne" dans la phrase : le
+                    conteneur flex est lui-meme un bloc en ligne, donc il se
+                    comporte comme un seul mot insecable au fil du texte. */
+.u-underline {
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  transition: text-decoration-color .2s ease-out;
+}
+.u-underline:hover, .u-underline:focus-visible { text-decoration-color: currentColor; }
+
+.u-arrow-link { display: inline-flex; align-items: center; text-decoration: none; }
+.u-arrow-link > span:first-child {
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  transition: text-decoration-color .2s ease-out;
+}
+.u-arrow-link:hover > span:first-child,
+.u-arrow-link:focus-visible > span:first-child { text-decoration-color: currentColor; }
+.u-arrow-link__icon {
+  display: inline-flex; align-items: center; margin-left: 3px;
+  opacity: .35;
+  transition: opacity .2s ease-out, transform .2s var(--ease);
+}
+.u-arrow-link__icon svg { display: block; width: 1em; height: 1em; }
+.u-arrow-link:hover .u-arrow-link__icon,
+.u-arrow-link:focus-visible .u-arrow-link__icon { opacity: 1; transform: translate(1px, -1px); }
 
 
 /* ==========================================================================
@@ -474,16 +555,40 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .loader__mark {
   width: 168px; height: 2px;
   background: rgba(255,255,255,.22);
-  border-radius: 2px; overflow: hidden;
+  border-radius: 2px;
+  /* Plus d'overflow:hidden ici (retire pour la lueur ci-dessous, voir sa
+     note) : sans lui, la piste ne rogne plus rien — a 2px de haut et 2px de
+     rayon, elle n'avait de toute facon presque rien a rogner (la barre est un
+     simple rectangle, jamais plus large que la piste puisque sa largeur est
+     un pourcentage de celle-ci). */
 }
 .loader__bar {
+  position: relative;
   display: block; height: 100%; width: 0%;
-  background: var(--lime);
+  /* Blanc plutot que lime (demande utilisateur). */
+  background: var(--ink);
   /* Loader et portail restent sur le bleu de marque : ils s'affichent
      avant toute page, donc avant qu'un theme soit choisi.
      La largeur est pilotee en JS (pourcentage reel d'images chargees), donc
      pas d'animation infinie qui mentirait sur la progression. */
   transition: width .3s var(--ease);
+}
+/* Lueur inspiree de https://dribbble.com/shots/27639250-Loading-State-Animation
+   (demande utilisateur) : la reference fait courir un point lumineux flou le
+   long d'un contour, plutot qu'illuminer toute la forme d'un coup — transpose
+   ici en un halo colle a la pointe d'avancement de la barre (right:0), et non
+   sur la barre entiere (cette derniere approche avait deja ete essayee puis
+   retiree, demande utilisateur). Le flou d'un box-shadow deborde dans toutes
+   les directions ; sur une piste de 2px de haut, un overflow:hidden l'aurait
+   quasi entierement rogne verticalement — d'ou sa suppression sur
+   .loader__mark ci-dessus. */
+.loader__bar::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 14px; height: 100%;
+  background: var(--ink);
+  box-shadow: 0 0 8px 1px rgba(255,255,255,.55), 0 0 20px 4px rgba(255,255,255,.3);
 }
 
 .gate {
@@ -506,7 +611,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* Le portail reprend la typographie du heros : meme accueil, meme voix. */
 .gate__hi {
   font-size: var(--fs-h2); font-weight: var(--w-regular);
-  margin-bottom: var(--s4);
+  margin-bottom: var(--s2);
 }
 .gate__q {
   font-size: var(--fs-hero); font-weight: var(--w-light);
@@ -515,20 +620,31 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .gate__label {
   display: block; color: var(--ink-soft);
-  font-size: var(--fs-small); margin-bottom: var(--s2);
+  font-size: var(--fs-h3); margin-bottom: var(--s2);
 }
 .gate__input {
   width: 100%; padding: var(--s4);
+  /* Fond assombri a nouveau (REVERT, demande utilisateur) : le fond blanc a
+     faible alpha essaye juste avant est retire, on revient au noir a
+     faible alpha d'origine. */
   background: rgba(0,0,0,.08);
-  border: 1px solid var(--line);
+  /* Pas de filet au repos (demande utilisateur) : `transparent` plutot que
+     `none`, pour que la largeur de la boite ne bouge pas quand :hover/:focus
+     lui redonnent une couleur. */
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   color: #FFFFFF; font: inherit; font-size: 1.25rem;
   transition: border-color .18s var(--ease), background .18s var(--ease);
 }
 .gate__input::placeholder { color: rgba(255,255,255,.45); }
+/* Le survol garde son fond legerement plus clair, mais plus de filet
+   (REVERT, demande utilisateur) : seul le focus (au clic/clavier) en pose
+   un desormais. */
+.gate__input:hover { background: rgba(0,0,0,.12); }
 .gate__input:focus {
   outline: none;
-  border-color: var(--lime);
+  /* Blanc legerement transparent plutot que lime (demande utilisateur). */
+  border-color: rgba(255,255,255,.5);
   background: rgba(0,0,0,.14);
 }
 /* .is-invalid est posee par app.js quand le prenom ne passe pas le filtre. */
@@ -536,11 +652,121 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .gate__error { color: #FFD9D9; font-size: var(--fs-small); margin-top: var(--s2); }
 .gate__actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
-.gate__actions .btn--primary { background: var(--lime); color: #16220A; }
-.gate__actions .btn--primary:hover { background: #FFFFFF; color: var(--blue); }
+/* Remplissage expansif inspire de components.janustiu.com ("Expanding fill
+   button"), simplifie (demande utilisateur) : la reference suit le curseur
+   (pointerenter/pointerleave, coordonnees en custom properties) — retire ici,
+   l'origine est toujours le bas du bouton (demande utilisateur — pas le
+   centre), souris comme clavier, ce qui evite tout JS. overflow: hidden
+   decoupe le cercle aux coins arrondis du bouton ; position: relative
+   l'ancre. Applique aux deux boutons du portail — Submit et Skip (demande
+   utilisateur) — chacun avec la couleur de son propre survol d'origine. */
+.gate__actions .btn--primary,
+.gate__actions .btn--ghost {
+  position: relative;
+  overflow: hidden;
+}
+/* Le texte doit peindre au-dessus du cercle : un z-index explicite (pas
+   l'ordre du DOM ni un ::before/::after) pour que ca reste vrai quel que soit
+   lequel des deux vient en premier dans la feuille. */
+.gate__actions .btn--primary .btn__label,
+.gate__actions .btn--ghost .btn__label { position: relative; z-index: 1; }
+/* Le cercle : ancre au centre horizontalement mais 20px sous le bord bas du
+   bouton (demande utilisateur — pas colle a ce bord, ni au centre). Carre
+   force par aspect-ratio (jamais une ellipse quel que soit le ratio
+   largeur/hauteur du bouton), assez grand (300% de la largeur) pour depasser
+   tres largement la distance jusqu'aux coins hauts, les plus eloignes de
+   cette ancre, une fois deplie. */
+.gate__actions .btn--primary::before,
+.gate__actions .btn--ghost::before {
+  content: '';
+  position: absolute;
+  top: calc(100% + 20px); left: 50%;
+  width: 300%; aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform .5s var(--ease);
+  z-index: 0;
+  pointer-events: none;
+}
+/* Couleur = l'ancien fond au survol de chacun (demande utilisateur) : Submit
+   reste lime du debut a la fin, seule la teinte s'assombrit legerement en se
+   deployant ; Skip reprend le voile translucide qu'il prenait deja au
+   survol (voir plus bas : son fond instantane d'origine est neutralise, le
+   cercle en est desormais la seule version, animee). */
+.gate__actions .btn--primary::before { background: color-mix(in srgb, var(--lime) 85%, black); }
+.gate__actions .btn--ghost::before { background: var(--veil); }
+.gate__actions .btn--primary { background: var(--lime); color: #16220A; border: 1px solid rgba(255,255,255,.5); }
+.gate__actions .btn--primary:hover,
+.gate__actions .btn--primary:focus-visible {
+  transform: translateY(-1px);
+}
+.gate__actions .btn--primary:hover::before,
+.gate__actions .btn--primary:focus-visible::before,
+.gate__actions .btn--ghost:hover::before,
+.gate__actions .btn--ghost:focus-visible::before {
+  transform: translate(-50%, -50%) scale(1);
+}
+/* Pas de filet sur "Skip" (demande utilisateur), y compris au survol — sinon
+   .btn--ghost:hover lui en redonnerait un (border-color: var(--ink)). Fond
+   transparent au survol aussi : le cercle ci-dessus remplace desormais le
+   voile plein instantane de .btn--ghost:hover. */
+.gate__actions .btn--ghost,
+.gate__actions .btn--ghost:hover { border-color: transparent; background: transparent; }
+
+/* Meme principe que .hero__hello (section 6, keyframe helloWipe reutilise
+   ici), rejoue a l'arrivee sur le portail. Meme duree qu'--hello-wipe (.8s,
+   demande utilisateur — le passage a .5s a ete revert), mais les deux
+   balayages continuent de se chevaucher : --gate-wipe-delay est fixe a .3s
+   (demande utilisateur — pas 100%, ni un pourcentage de la duree), donc
+   gate__q demarre bien avant que celui de gate__hi soit fini.
+   Barre en bleu de fond eclairci ici (demande utilisateur), ni blanc ni lime
+   comme sur l'accueil — --gate-wipe eclaircit var(--blue), la meme constante
+   que le fond du portail (pas var(--bg), qui changerait de theme ailleurs).
+   width: fit-content ramene chaque boite a la largeur de son texte (tout en
+   restant des blocs empiles, contrairement a inline-block), comme
+   align-self: flex-start le fait pour .hero__hello — sinon la barre
+   balaierait toute la largeur de la carte au lieu du seul texte. */
+.gate__hi.is-revealing,
+.gate__q.is-revealing {
+  --gate-wipe: color-mix(in srgb, var(--blue) 75%, white);
+  --gate-wipe-dur: .8s;
+  --gate-wipe-delay: .3s;
+  width: fit-content;
+  position: relative;
+}
+.gate__hi.is-revealing { animation: gateReveal var(--gate-wipe-dur) both; }
+.gate__hi.is-revealing::after {
+  content: '';
+  position: absolute;
+  inset: -.14em -.3em;
+  border-radius: 2px;
+  background: var(--gate-wipe);
+  pointer-events: none;
+  animation: helloWipe var(--gate-wipe-dur) both;
+}
+.gate__q.is-revealing { animation: gateReveal var(--gate-wipe-dur) var(--gate-wipe-delay) both; }
+.gate__q.is-revealing::after {
+  content: '';
+  position: absolute;
+  inset: -.14em -.3em;
+  border-radius: 2px;
+  background: var(--gate-wipe);
+  pointer-events: none;
+  animation: helloWipe var(--gate-wipe-dur) var(--gate-wipe-delay) both;
+}
+/* Pas de teinte attenuee ici (contrairement a --hello-ink) : le texte du
+   portail est deja a pleine opacite au repos, `inherit` retombe donc
+   directement sur la bonne couleur. */
+@keyframes gateReveal {
+  0%, 49.9% { color: transparent; }
+  50%, 100% { color: inherit; }
+}
 
 .gate__hint {
-  margin-top: var(--s6);
+  /* Deplace juste sous le champ (demande utilisateur) : margin-top reduit a
+     --s2, comme .gate__error juste en dessous — c'est desormais une note de
+     champ, plus une mention de bas de formulaire. */
+  margin-top: var(--s2);
   color: var(--ink-faint);
   font-size: var(--fs-tiny); line-height: 1.5;
   max-width: 46ch;
@@ -771,6 +997,17 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
 .site-nav a[aria-current] { opacity: 1; }
 .site-nav a[aria-current]::after { transform: scaleX(1); }
 
+/* Resume et Email ne sont pas des pages : ils n'ont jamais aria-current, donc
+   jamais le soulignement ci-dessus — et le survol n'en revele plus non plus
+   (demande utilisateur : retire) : l'opacite (.site-nav a:hover) et l'effet
+   magnetique (setupMagneticNavLinks) suffisent desormais a les marquer. */
+/* Le soulignement blanc a 35% de .u-arrow-link (couleur estompee de
+   currentColor, blanc ici puisque --ink vaut #FFFFFF sur le theme brand) est
+   retire ici (demande utilisateur) : ces deux liens ne portent plus aucun
+   trait, ni a l'etat courant ni au survol, meme traitement que .foot
+   .u-arrow-link. */
+.site-nav__end .u-arrow-link > span:first-child { text-decoration: none; }
+
 /* HOME N'EXISTE QUE DANS LA BARRE DU BAS. Ici, dans l'en-tete, le nom a
    gauche ramene deja a l'accueil (meme ancre, #hello) : l'entree ferait la
    meme chose une seconde fois, a 40px de distance. Sous 860px le nom est
@@ -997,8 +1234,22 @@ body:not(.is-overlay):has(.home) {
      droite de la phrase. Le texte etant deja cale a gauche, rien ne bouge
      a l'ecran ; seule la boite change. */
   align-self: flex-start;
+  /* Meme opacite que .hero__statement (demande utilisateur) : "Hey" et
+     "nice to meet you!" restent dans le meme registre attenue, mais PAS le
+     prenom saisi au portail — voir .hero__hello b juste en dessous.
+     --hello-ink plutot qu'un `color` direct : @keyframes helloInk (juste en
+     dessous) doit pouvoir y retomber a la fin du balayage de presentation
+     sans passer par `color: inherit` (qui prendrait la couleur PLEINE de
+     l'ancetre, pas cette teinte attenuee). */
+  --hello-ink: color-mix(in srgb, var(--ink) 70%, transparent);
+  color: var(--hello-ink);
 }
-.hero__hello b { font-weight: var(--w-semibold); }
+.hero__hello b {
+  font-weight: var(--w-semibold);
+  /* Le prenom (pose dans un <b>, voir renderHello() dans app.js) reste
+     pleinement lumineux, contrairement au reste de la phrase ci-dessus. */
+  color: var(--ink);
+}
 
 /* ---- Le balayage qui presente le prenom -------------------------------
    Rejoue le geste de la maquette Lottie : un rectangle lime pousse depuis la
@@ -1017,6 +1268,15 @@ body:not(.is-overlay):has(.home) {
    couleur DERRIERE la barre, personne ne peut le voir arriver. */
 .hero__hello.is-revealing {
   animation: helloInk var(--hello-wipe) var(--hello-delay) both;
+}
+/* Le <b> du prenom a sa PROPRE couleur de repos depuis peu (var(--ink), plus
+   claire que --hello-ink du reste de la phrase — demande utilisateur) : il
+   n'herite donc plus automatiquement du `color: transparent` anime sur le
+   paragraphe. Meme balayage, meme duree/delai, mais vers var(--ink) plutot
+   que --hello-ink, pour que le prenom reste cache puis revele EN MEME TEMPS
+   que le reste — sinon il serait visible avant que la barre ne passe. */
+.hero__hello.is-revealing b {
+  animation: helloInkName var(--hello-wipe) var(--hello-delay) both;
 }
 .hero__hello.is-revealing::after {
   content: '';
@@ -1048,58 +1308,186 @@ body:not(.is-overlay):has(.home) {
    soit rien du tout, et elle se produit de toute facon sous la barre. */
 @keyframes helloInk {
   0%, 49.9% { color: transparent; }
-  50%, 100% { color: inherit; }
+  50%, 100% { color: var(--hello-ink); }
+}
+@keyframes helloInkName {
+  0%, 49.9% { color: transparent; }
+  50%, 100% { color: var(--ink); }
 }
 
 .hero__block { display: flex; flex-direction: column; gap: var(--s5); }
 .hero__lines { display: flex; flex-direction: column; gap: var(--s2); }
 
-/* "I'm Marvin" — 32px Light. */
+/* "I'm Marvin," — 32px Regular. */
 .hero__name {
   font-size: var(--fs-hero);
-  font-weight: var(--w-light);
+  font-weight: var(--w-regular);
   line-height: 1.25;
+  /* Pleine opacite (demande utilisateur) — contrairement a .hero__statement,
+     qui reste attenue en dessous. */
+  color: var(--ink);
 }
 
 /* La phrase principale — 32px Medium, largeur bloquee a 755px dans Figma. */
 .hero__statement {
   font-size: var(--fs-hero);
-  font-weight: var(--w-medium);
+  font-weight: var(--w-regular);
   line-height: 1.25;
   max-width: 755px;
+  /* Un vrai `opacity` sur .hero__statement estomperait aussi ses enfants
+     (l'opacite d'un parent plafonne celle des descendants, meme a opacity:1
+     dessus) — les mots en lime et les liens doivent rester pleinement
+     visibles. On dilue donc directement la couleur du texte courant, et on
+     rend aux enfants qui doivent y echapper leur propre couleur pleine
+     ci-dessous. */
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
 }
-/* Les mots accentues en lime. */
-.hero__statement .accent { color: var(--accent); }
-/* Les employeurs sont soulignes. Ceux qui pointent vers une etude de cas
-   sont des <a>, Gekko est un simple <span> : meme rendu, comportement
-   different au survol. */
-.hero__statement u,
-.hero__statement a { text-decoration: underline; text-underline-offset: 3px; }
-.hero__statement a { transition: color .18s var(--ease); }
-.hero__statement a:hover { color: var(--accent); }
+/* Desktop seulement (demande utilisateur) : a 755px, la 3e ligne ("I
+   previously worked at Petal, Fit-Plans, and Gekko↗.") depasse tout juste
+   (~764px de large avec les liens) et perd "Gekko" seul sur une 4e ligne.
+   Un peu plus de marge suffit a la faire tenir entiere, sans toucher aux
+   deux lignes du dessus (bien plus courtes). Inutile sur mobile : la
+   largeur de l'ecran y contraint deja tout, cette regle n'y changerait
+   rien. */
+@media (min-width: 861px) {
+  .hero__statement { max-width: 790px; }
+}
+/* Les mots accentues, en blanc plein (demande utilisateur — plus en lime) :
+   sans cela ils heriteraient du 70% attenue de .hero__statement ci-dessus. */
+.hero__statement .accent { color: var(--ink); }
+/* Les liens (Petal/Fit-Plans/Gekko) passent au lime (demande utilisateur —
+   plus blancs) avec une graisse Medium ; leur soulignement (qui suit
+   currentColor) suit la meme teinte. */
+.hero__statement .u-arrow-link { color: var(--accent); font-weight: var(--w-medium); }
+/* La fleche de Gekko, elle, reste blanche (REVERT demande utilisateur) :
+   sans cette regle, `stroke="currentColor"` suivrait le lime pose juste
+   au-dessus comme le soulignement. Inchangee sinon — opacite, transition et
+   saut au survol restent ceux de .u-arrow-link__icon. */
+.hero__statement .u-arrow-link .u-arrow-link__icon { color: var(--ink); }
+/* Les employeurs sont soulignes et pointent chacun vers une etude de cas ou
+   (Gekko) un site externe : voir .u-arrow-link (plus bas, section "liens
+   soulignes reutilisables") pour le soulignement estompe -> plein et la
+   fleche. Gekko seul a une fleche (seg.href dans renderStatement) : elle
+   signale qu'il quitte le site, contrairement a Petal/Fit-Plans qui restent
+   internes — mais TOUS passent par .u-arrow-link (Petal/Fit-Plans n'ont
+   simplement pas de span d'icone a l'interieur). */
+.hero__statement .u-arrow-link { white-space: nowrap; }
+/* Petal et Gekko seuls gardent un soulignement (Fit-Plans le retire plus bas
+   via .fitplans-experiment) : trait et decalage plus genereux qu'ailleurs sur
+   le site, demandes ici specifiquement. (0,3,1) : l'emporte sur le (0,2,1)
+   de la regle .u-arrow-link > span:first-child generique, peu importe l'ordre
+   dans la feuille. */
+.hero__statement .u-arrow-link > span:first-child {
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
 
-/* Le lien vers l'article sur les deux ans : souligne, suivi d'une fleche. */
+/* Le lien vers l'article sur les deux ans : meme composant .u-arrow-link,
+   avec ses propres taille/graisse de texte et son alignement dans la
+   colonne flex du heros. */
 .hero__gap {
-  display: inline-flex; align-items: center; gap: 3px;
   align-self: flex-start;
   font-size: var(--fs-body); font-weight: var(--w-medium);
-  text-decoration: underline; text-underline-offset: 4px;
-  transition: color .18s var(--ease);
+  /* Moins lumineux au repos (demande utilisateur) : meme opacite que le
+     texte courant de .hero__statement, pour rester dans le meme registre
+     visuel que le reste du heros. */
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
 }
-.hero__gap:hover { color: var(--accent); }
-.hero__gap .arrow {
-  display: inline-block; width: 16px; height: 16px;
-  font-size: 15px; line-height: 16px; text-align: center;
-  text-decoration: none;
-  transition: transform .2s var(--ease);
+/* Plus de soulignement (demande utilisateur) — le contraste plein/attenue
+   du libelle fait desormais lui-meme le signal de survol. Meme specificite
+   (0,2,1) que .u-arrow-link > span:first-child, mais plus bas dans la
+   feuille : l'emporte. */
+.hero__gap > span:first-child { text-decoration: none; }
+.hero__gap:hover,
+.hero__gap:focus-visible { color: var(--ink); }
+/* La fleche est passee avant le libelle (demande utilisateur) : seule la
+   marge change de cote pour garder le meme espacement visuel entre les deux
+   — opacite et saut au survol restent ceux de .u-arrow-link__icon,
+   inchanges. `margin-right` rejoint la liste `transition` (sinon cette regle,
+   plus specifique, ecraserait celle de .u-arrow-link__icon) pour que
+   l'espacement fleche/texte s'anime lui aussi au survol (demande
+   utilisateur) : quelques pixels de plus entre les deux. */
+.hero__gap .u-arrow-link__icon {
+  margin-left: 0; margin-right: 3px;
+  transition: opacity .2s ease-out, transform .2s var(--ease), margin-right .2s var(--ease);
 }
-.hero__gap:hover .arrow { transform: translate(2px, -2px); }
+.hero__gap:hover .u-arrow-link__icon,
+.hero__gap:focus-visible .u-arrow-link__icon { margin-right: 7px; }
+
+/* EXPERIMENT (demande utilisateur) : un surlignage clair et translucide au
+   survol seulement, inspire de alvinn.design/projects/kitchen-experiment —
+   assez sombre pour rester lisible derriere le texte blanc, assez leger pour
+   ne pas l'ecraser. Le padding est deja reserve au repos (fond transparent)
+   et compense par une marge negative egale : la surbrillance apparait sans
+   decaler le mot ni ses voisins ("Petal," ne bouge pas quand le fond
+   apparait). Le lien "deux ans" (.gap-experiment) porte desormais le meme
+   traitement que Petal/Fit-Plans/Gekko (demande utilisateur) — il l'avait eu
+   un temps puis perdu (REVERT), il est repris ici. Regles separees (plutot
+   qu'une seule classe partagee) pour garder chacune modifiable/revertible
+   independamment. */
+.petal-experiment,
+.fitplans-experiment,
+.gekko-experiment,
+.gap-experiment {
+  padding-inline: 4px;
+  margin-inline: -4px;
+  border-radius: 4px;
+  font-style: normal;
+  transition: background-color .2s ease-out;
+}
+.petal-experiment:hover,
+.fitplans-experiment:hover,
+.gekko-experiment:hover,
+.gap-experiment:hover { background-color: rgba(230, 230, 230, .3); }
+/* Soulignement retire en permanence sur les trois (pas seulement au survol),
+   pour que la boite au survol soit le seul signal. ANCIEN COMPORTEMENT DE
+   PETAL, GARDE EN MEMOIRE POUR REVENIR EN ARRIERE au besoin : le soulignement
+   estompe (herite de .u-arrow-link) restait visible au repos, et seul le
+   survol le retirait via `.petal-experiment:hover > span:first-child
+   { text-decoration: none; }`. Pour restaurer ce comportement sur Petal :
+   supprimer "petal-experiment" de la regle unconditionnelle juste en dessous
+   et decommenter la ligne suivante.
+   .petal-experiment:hover > span:first-child { text-decoration: none; } */
+.petal-experiment > span:first-child,
+.fitplans-experiment > span:first-child,
+.gekko-experiment > span:first-child { text-decoration: none; }
+
+/* EFFET MAGNETIQUE (Petal/Fit-Plans/Gekko + le lien "deux ans", tous les
+   quatre) : voir setupMagneticHeroLinks() dans app.js, qui pose `transform`
+   en ligne a chaque evenement pointeur. Cette regle-ci ne fait que lisser ce
+   changement — c'est elle qui donne le petit rebond ("damped spring" du
+   prompt d'origine) a l'aller comme au retour au centre.
+   Redeclare tout le raccourci `transition` (et pas juste
+   `transition-property: transform`) : sinon cette regle, plus
+   specifique/plus bas que la regle de base ci-dessus, ecraserait aussi sa
+   transition `background-color` — .gap-experiment en a desormais une aussi
+   (voir plus haut), il rejoint donc le groupe au lieu d'avoir sa propre
+   regle `transform` seul. */
+.petal-experiment,
+.fitplans-experiment,
+.gekko-experiment,
+.gap-experiment {
+  /* Rebond reduit (demande utilisateur) : le deuxieme point de controle
+     descend de 1.56 a 1.15, un depassement plus discret qu'avant plutot
+     qu'un aller-retour tres marque. */
+  transition: background-color .2s ease-out, transform .5s cubic-bezier(.34, 1.15, .64, 1);
+}
+/* Focus clavier : un leger soulevement fixe plutot qu'un suivi du pointeur
+   (qui n'existe pas au clavier) — le contour vient deja de la regle
+   :focus-visible globale (voir plus haut dans ce fichier). */
+.petal-experiment:focus-visible,
+.gap-experiment:focus-visible,
+.fitplans-experiment:focus-visible,
+.gekko-experiment:focus-visible { transform: translateY(-2px); }
 
 /* Les sections de la page d'accueil. 80px de respiration verticale. */
 .section { padding-block: var(--s8); }
 .section__head { margin-bottom: var(--s6); }
+/* "Work" / "Side quests" (les deux seuls .section__head du site, tous deux
+   des h2) : meme taille que la phrase du heros, --fs-hero plutot que
+   --fs-h1 (demande utilisateur). */
 .section__head h1,
-.section__head h2 { font-size: var(--fs-h1); margin-bottom: var(--s3); font-weight: var(--w-medium); }
+.section__head h2 { font-size: var(--fs-hero); margin-bottom: var(--s3); font-weight: var(--w-medium); }
 .section__head p { color: var(--ink-soft); max-width: var(--measure); }
 
 
@@ -1244,18 +1632,19 @@ body:not(.is-overlay):has(.home) {
 /* ==========================================================================
    7 bis. LE SURVOL "VITRINE" DES VIGNETTES D'ACCUEIL
    --------------------------------------------------------------------------
-   LES DEUX EFFETS DE CETTE SECTION SONT DESACTIVES. Le code est conserve
-   entier, avec ses explications, et chacun se rallume par UN SEUL geste :
-
-     - LE RECUL "VITRINE" : decommenter les deux regles marquees DESACTIVE
-       plus bas dans cette section (la transition, puis le :has() qui pose
-       --showcase-dim). Rien d'autre a toucher.
+   LE RECUL "VITRINE" EST ACTIF ; LA PASTILLE RESTE DESACTIVEE. Le code de
+   cette derniere est conserve entier, avec ses explications, et se rallume
+   par UN SEUL geste :
 
      - LA PASTILLE : decommenter l'appel `setupCursorPill();` dans paint()
        (app.js). Tout le CSS de la pastille ci-dessous est DEJA en place et
        n'a pas eu besoin d'etre commente : chacune de ses regles exige soit la
        classe has-card-cursor, soit un element .card-cursor, et le script est
        le seul a produire l'une et l'autre. Sans lui, elles ne designent rien.
+
+     - LE RECUL "VITRINE" peut au besoin etre re-desactive en recommentant les
+       deux regles ci-dessous (la transition, puis le :has() qui pose
+       --showcase-dim). Rien d'autre a toucher.
 
    Le reste de cette note decrit les deux effets tels qu'ils jouent une fois
    rallumes ; elle reste donc valable telle quelle.
@@ -1311,20 +1700,13 @@ body:not(.is-overlay):has(.home) {
   /* La transition est posee au REPOS, pas dans l'etat survole : declaree sur
      l'etat d'arrivee seulement, elle n'aurait rien a interpoler au retour et
      la page se rallumerait d'un coup. */
-  /* DESACTIVE — REVENIR EN ARRIERE : decommenter ce bloc ET le suivant.
-     Les deux vont ensemble : celui-ci ne fait que preparer le mouvement, seul
-     il ne change rien a l'ecran ; c'est le suivant qui eteint la page. */
-  /*
   #main .home .hero,
   #main .home .section__head,
   #main .home .card,
   .site-foot { transition: opacity var(--showcase-ms) var(--ease); }
-  */
   /* .site-nav a la sienne dans la section 5 : elle transitionne deja son
      fond, et une seconde declaration `transition` effacerait la premiere. */
 
-  /* DESACTIVE — REVENIR EN ARRIERE : decommenter ce bloc ET celui du dessus. */
-  /*
   body:has(#main .home .card__media:hover) :is(
     #main .home .hero,
     #main .home .section__head,
@@ -1332,7 +1714,6 @@ body:not(.is-overlay):has(.home) {
     .site-foot,
     .site-nav
   ) { opacity: var(--showcase-dim); }
-  */
 
   /* ---- LA PASTILLE QUI REMPLACE LE POINTEUR ---------------------------
      Le pointeur systeme s'efface sur la vignette et une pastille "View case
@@ -1497,12 +1878,32 @@ body:not(.is-overlay):has(.home) {
    de deborder sur la colonne de nav laterale. En dessous de 1000px
    --cs-nav-inset vaut 0 (section 12, la nav laterale n'existant plus) :
    marge et largeur retombent seules a leurs valeurs pleine largeur. */
+/* Icone d'info ajoutee devant le texte (demande utilisateur), sur le modele
+   du bandeau "info" de carbondesignsystem.com/components/select/usage —
+   meme fond bleu tres clair et meme esprit, mais SANS son filet gauche
+   colore (demande utilisateur : "no border left") et sans le contour ici
+   deja fourni par le fond plein. flex plutot que du texte seul : l'icone
+   doit rester calee sur la premiere ligne (align-items: flex-start) meme
+   quand le texte (white-space: pre-line, deux lignes chez Petal) en fait
+   deux. */
 .cs__cases-intro {
   margin-left: var(--cs-nav-inset); width: calc(100% - var(--cs-nav-inset));
   margin-bottom: var(--s5);
-  white-space: pre-line;
+  display: flex; align-items: flex-start; gap: var(--s3);
   background: #E9F2FE; border-radius: var(--radius-sm); padding: var(--s5);
   color: var(--ink);
+}
+.cs__cases-intro-text { white-space: pre-line; }
+/* Contour seul (l'icone Lucide fournie a deja fill="none"), jamais un disque
+   plein — et bleu (var(--accent), le bleu du theme clair des etudes de cas),
+   pas la couleur du texte courant. */
+.cs__cases-intro-icon {
+  flex: none;
+  width: 20px; height: 20px;
+  color: var(--accent);
+  /* Aligne le centre optique de l'icone sur la premiere ligne de texte,
+     plutot que son coin haut sur le sommet de la ligne. */
+  margin-top: .1em;
 }
 
 /* Selecteur de cas pour un projet fusionne (branche petal-merged-projects,
@@ -1555,6 +1956,7 @@ body:not(.is-overlay):has(.home) {
    white-space:nowrap : le libelle d'un cas ("Licence management") reste sur
    une ligne plutot que de doubler la hauteur de la barre sur mobile. */
 .cs__case-tab {
+  position: relative;
   padding-block: var(--s2);
   text-decoration: none; color: var(--ink-faint);
   font-size: var(--fs-small); white-space: nowrap;
@@ -1562,6 +1964,17 @@ body:not(.is-overlay):has(.home) {
 }
 .cs__case-tab:hover { color: var(--ink); }
 .cs__case-tab.is-active { color: var(--accent); font-weight: var(--w-semibold); }
+/* Trait de soulignement de l'onglet actif — meme mecanique que .site-nav
+   a::after (scaleX, GPU-friendly) : position:absolute ne touche a aucun
+   padding/bordure de la boite, donc l'alignement du texte avec le titre
+   juste en dessous (voir commentaire plus haut) reste intact. */
+.cs__case-tab::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -6px;
+  height: 2px; background: var(--accent);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .25s var(--ease);
+}
+.cs__case-tab.is-active::after { transform: scaleX(1); }
 
 /* La fiche d'identite : role, duree, equipe, outils. */
 /* Sans filets au-dessus et en dessous : le padding et la marge suffisent a
@@ -1579,6 +1992,16 @@ body:not(.is-overlay):has(.home) {
   color: var(--ink-faint); font-weight: var(--w-semibold); margin-bottom: var(--s1);
 }
 .gist dd { font-size: var(--fs-small); }
+/* Le lien "Company" (Petal, etc.) reprend la couleur des liens de la nav
+   principale : estompee au repos (meme .82 que .site-nav a), pleine (donc
+   plus foncee) au survol — au lieu du ink plein herite par defaut ici.
+   Le soulignement de .u-arrow-link est aussi affine : 1.5px convient a un
+   lien isole dans une phrase, trop epais colle au texte tres court d'un
+   simple nom d'entreprise dans la fiche d'identite. */
+.gist dd .u-arrow-link { color: color-mix(in srgb, var(--ink) 82%, transparent); }
+.gist dd .u-arrow-link:hover,
+.gist dd .u-arrow-link:focus-visible { color: var(--ink); }
+.gist dd .u-arrow-link > span:first-child { text-decoration-thickness: 1px; }
 
 /* Probleme / Resultat cote a cote : la structure narrative minimale. */
 .pair { display: grid; gap: var(--s6); grid-template-columns: 1fr 1fr; margin-bottom: var(--s7); }
@@ -1624,6 +2047,9 @@ body:not(.is-overlay):has(.home) {
 .stats--sec .stat__l { margin-top: 2px; }
 
 .cs__cta { display: flex; flex-wrap: wrap; gap: var(--s3); margin-bottom: var(--s7); }
+/* s.cta (voir app.js) : meme bouton, mais attache a un paragraphe au fil
+   d'une section plutot qu'a l'en-tete de la fiche. */
+.cs-sec__cta { margin-top: var(--s4); }
 
 /* ---- 8b. Le corps : nav laterale collante + sections ---- */
 .cs__body {
@@ -1676,14 +2102,47 @@ body:not(.is-overlay):has(.home) {
    zone cliquable deborde tres au-dela du libelle. C'est aussi sa marge basse
    qui espace les deux rangees, la grille n'ayant pas de row-gap. */
 .cs-nav__back {
-  grid-column: 1 / -1; justify-self: start;
-  display: inline-flex; align-items: center; gap: var(--s2);
+  /* grid-column: 1/-1 (demande utilisateur) : aligne le bloc sur la colonne
+     du rail (.cs-nav__prog, colonne 1) plutot que sur celle de la liste juste
+     en dessous. justify-self reste au defaut (stretch) : la zone de survol
+     doit rester aussi large que les entrees de la liste en dessous, pas
+     retrecie a la largeur du texte. display:flex (et non inline-flex) : un
+     inline-flex ignorerait align-items/gap sur ses propres enfants (icone +
+     libelle). */
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: var(--s2);
   margin-bottom: var(--s6);
+  /* Meme padding que .cs-nav a ci-dessous : les deux blocs de survol
+     partagent donc le meme bord gauche. */
+  padding: var(--s2) var(--s3);
+  border-radius: var(--radius-sm);
   text-decoration: none; color: var(--ink-soft);
-  font-size: var(--fs-small); font-weight: var(--w-semibold);
-  transition: transform .2s var(--ease), color .2s var(--ease);
+  font-size: var(--fs-small); font-weight: var(--w-regular);
+  transition: color .2s var(--ease), background .2s var(--ease);
 }
-.cs-nav__back:hover { transform: translateX(-3px); color: var(--ink); }
+.cs-nav__back:hover { color: var(--ink); background: var(--veil); }
+/* display:block sur le <svg> : un svg inline garde par defaut un espace de
+   descendance sous sa ligne de base (comme une image), qui le decale vers le
+   bas malgre l'align-items:center du conteneur flex ci-dessus. */
+.cs-nav__back-icon { display: block; width: 1em; height: 1em; }
+/* La fleche seule s'eloigne du libelle au survol (et non plus tout le lien) :
+   elle pointe vers la gauche, donc "s'eloigne" = translate vers la gauche. */
+.cs-nav__back > span:first-child { transition: transform .2s var(--ease); }
+.cs-nav__back:hover > span:first-child { transform: translateX(-3px); }
+
+/* DESACTIVE SUR BUREAU SEULEMENT (essai, retour possible) : la croix
+   (#overlay-close, toujours visible sur ce gabarit) suffit a quitter la
+   fiche, donc le lien "Back" de la nav laterale est masque. Scope au bureau
+   express : sous 1000px .cs-nav__back devient la pastille de fermeture
+   elle-meme (section 12, la vraie croix y est masquee) — on n'y touche pas,
+   c'est la SEULE sortie sur ce gabarit. */
+@media (min-width: 1001px) {
+  /* .cs-nav a.cs-nav__back (0,2,1) et non .cs-nav__back seul (0,1,0) :
+     .cs-nav a plus bas (0,1,1) est plus specifique que la classe nue et lui
+     rendrait son display:flex sinon (meme piege que la note sur
+     l'align-items un peu plus bas). */
+  .cs-nav a.cs-nav__back { display: none; }
+}
 
 /* .cs-nav__pill et .cs-nav__ring n'existent que pour la barre flottante du
    mobile (section 12). Ici, la colonne laterale n'en veut pas :
@@ -1707,6 +2166,10 @@ body:not(.is-overlay):has(.home) {
   transition: color .2s var(--ease), background .2s var(--ease);
 }
 .cs-nav a:hover { color: var(--ink); background: var(--veil); }
+/* .cs-nav a.cs-nav__back (0,1,1) plutot que .cs-nav__back seul (0,1,0) :
+   sinon l'align-items:baseline de .cs-nav a ci-dessus l'emporte et decale
+   l'icone sous le centrage vertical du libelle "Back". */
+.cs-nav a.cs-nav__back { align-items: center; }
 /* .is-active est posee par app.js via le scroll-spy : c'est elle qui suit la
    section actuellement lue.
    L'entree active ne porte QUE de la couleur et de la graisse : ni pilule de
@@ -4397,6 +4860,21 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    Meme <details> que .figure-drawer ci-dessus (styles de summary/chevron
    partages), mais son contenu est fait de plusieurs etapes completes
    (titre + paragraphes + figure) plutot que d'une seule figure. */
+/* Le declencheur du tiroir "See more..." reprend la couleur d'une entree de
+   nav plutot que l'accent : grise (ink-faint) au repos, foncee (ink) au
+   survol — .figure-drawer summary seul (utilise ailleurs pour une figure
+   isolee) garde l'accent, cette regle-ci ne cible que la variante cs-more. */
+.figure-drawer.cs-more summary { color: var(--ink-faint); transition: color .2s var(--ease); }
+.figure-drawer.cs-more summary:hover,
+.figure-drawer.cs-more summary:focus-visible { color: var(--ink); }
+/* Le chevron s'eloigne aussi un peu du libelle au survol (meme principe que
+   .cs-nav__back plus haut) — translateX seul pendant la lecture, combine au
+   pivot d'ouverture quand le tiroir est deja ouvert ET survole, puisque
+   `transform` ne peut porter qu'une seule valeur a la fois. */
+.figure-drawer.cs-more summary:hover .figure-drawer__chevron,
+.figure-drawer.cs-more summary:focus-visible .figure-drawer__chevron { transform: translateX(3px); }
+.figure-drawer.cs-more[open] summary:hover .figure-drawer__chevron,
+.figure-drawer.cs-more[open] summary:focus-visible .figure-drawer__chevron { transform: rotate(180deg) translateX(3px); }
 .cs-more__body { margin-top: var(--s5); }
 .cs-more__item + .cs-more__item { margin-top: var(--s7); }
 .cs-more__title { font-size: var(--fs-h3); font-weight: var(--w-medium); margin-bottom: var(--s3); }
@@ -4478,18 +4956,76 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    discret : ce n'est pas une action a mettre en avant, juste un raccourci
    pour qui vient de finir la lecture. */
 .cs-back-to-top {
-  display: block; text-align: center; margin-top: var(--s8);
-  color: var(--ink-soft); text-decoration: none;
+  /* Couleur claire au repos, comme une entree de nav — color-mix pour rester
+     coherent avec le meme calcul que .site-nav a (opacite .82 de l'ink
+     courant). width:fit-content + margin-inline:auto plutot que
+     justify-content:center sur une boite pleine largeur : le fond au survol
+     colle ainsi au libelle (icone puis texte, alignes a gauche l'un de
+     l'autre dans cette boite retrecie) au lieu de courir sur toute la
+     largeur du conteneur. */
+  display: flex; align-items: center; gap: 4px;
+  width: fit-content; margin: var(--s8) auto 0;
+  padding: var(--s2) var(--s3); border-radius: var(--radius-sm);
+  color: color-mix(in srgb, var(--ink) 82%, transparent); text-decoration: none;
   font-size: var(--fs-small); font-weight: var(--w-medium);
-  transition: color .18s var(--ease);
+  transition: color .18s var(--ease), background .18s var(--ease);
 }
-.cs-back-to-top:hover { color: var(--accent); }
+.cs-back-to-top:hover, .cs-back-to-top:focus-visible { color: var(--ink); background: var(--veil); }
+/* DESKTOP SEULEMENT (essai, retour possible) : fixe comme la croix
+   (#overlay-close, coin superieur droit) mais en bas a droite — visible en
+   permanence plutot que seulement apres la derniere section. Meme verre que
+   la croix et la pilule mobile (--glass, section 1) : les trois flottent
+   au-dessus de la meme fiche, ils ne peuvent pas etre en deux matieres.
+   Scope au bureau : sous 1000px la barre flottante (.cs-nav) occupe deja ce
+   coin, ajouter un second objet fixe par-dessus l'encombrerait. */
+@media (min-width: 1001px) {
+  .cs-back-to-top {
+    position: fixed; z-index: 150;
+    bottom: 26px; right: clamp(16px, 2.4vw, 30px);
+    margin: 0;
+    background: var(--glass);
+    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shadow);
+    /* Essai, retour possible : squircle de .btn (var(--radius), 14px, voir
+       section 1) plutot que la pilule — demande utilisateur, meme forme que
+       le bouton Submit du portail du prenom. */
+    border-radius: var(--radius);
+  }
+  /* MEME PIEGE QUE .cs-nav (section 12) : .cs-back-to-top vit DANS #page,
+     pas a cote comme la croix. Pendant sheetIn/sheetOut, #page porte un
+     transform qui devient son bloc conteneur — "26px au-dessus du bas de la
+     fenetre" se lirait alors "26px au-dessus du bas de la fiche", donc hors
+     ecran. On la masque simplement le temps de l'animation. */
+  body.is-overlay.is-opening .cs-back-to-top,
+  body.is-overlay.is-closing .cs-back-to-top { visibility: hidden; }
+}
+/* display:block sur le <svg>, meme raison que .cs-nav__back-icon plus haut :
+   sans ca l'espace de descendance implicite d'un svg inline l'eloigne du
+   texte et le decale sous le centrage de align-items. */
+.cs-back-to-top__icon { display: block; width: 1em; height: 1em; }
+/* Meme principe que .cs-nav__back : la fleche seule s'eloigne du libelle au
+   survol. Elle pointe vers le haut, donc "s'eloigne" = translate vers le
+   haut. */
+.cs-back-to-top > span:first-child { transition: transform .2s var(--ease); }
+.cs-back-to-top:hover > span:first-child { transform: translateY(-1.5px); }
 
 /* ---- 8d. Le pied d'etude de cas : les autres projets ----
    Trois cartes plutot qu'un seul lien : arrive au bout d'une lecture longue,
    le visiteur doit avoir un choix, pas un couloir. */
-.cs-next { margin-top: var(--s8); padding-top: var(--s7); border-top: 1px solid var(--line); }
+.cs-next { margin-top: var(--s8); padding-top: var(--s7); }
 .cs-next__kicker { margin-bottom: var(--s6); }
+/* Alignee sur .cs__content (essai, retour possible) plutot que sur les deux
+   colonnes ensemble (nav laterale + contenu) : meme mecanique que
+   .cs__cases-intro/.cs__case-switch plus haut (margin-left: --cs-nav-inset,
+   width en consequence pour garder le bord DROIT sur celui de .wrap--wide).
+   Ne joue que si l'ancetre porte .wrap--wide, ce qu'app.js n'ajoute QUE
+   lorsque hasProcess (voir pageCase()) : sans nav laterale, --cs-nav-inset
+   decalerait le bloc dans le vide. Sous 1000px --cs-nav-inset retombe a 0
+   (section 12) : marge et largeur reprennent seules leurs valeurs pleines. */
+.wrap--wide .cs-next {
+  margin-left: var(--cs-nav-inset);
+  width: calc(100% - var(--cs-nav-inset));
+}
 
 /* Trois colonnes serrees, au lieu des deux larges de la page d'accueil.
    Ce sont des suggestions, pas la vitrine principale. */
@@ -4498,8 +5034,11 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   gap: var(--s6) var(--s5);
 }
 .cards--next .card__title { font-size: var(--fs-h3); }
-.cards--next .card__client,
-.cards--next .tag { font-size: var(--fs-small); }
+.cards--next .card__client { font-size: var(--fs-small); }
+/* Etiquettes retirees des suggestions (essai, retour possible) : trois
+   cartes serrees, chacune deja avec client + titre, n'ont pas besoin des
+   tags pour donner envie de cliquer — ils faisaient surtout du bruit ici. */
+.cards--next .card__tags { display: none; }
 
 /* Side quests : 4 par ligne (Yabara deplace vers Work, il n'en reste que 4).
    min(250px, 100%) plutot que 320 : a la largeur max de .wrap (1120px de
@@ -4866,27 +5405,239 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    10. PIED DE PAGE
    ========================================================================== */
 
-.site-foot { padding-block: var(--s8) var(--s6); background: var(--veil); }
+/* Le voile translucide (var(--veil) seul) laissait la grille pointillee de
+   fond transparaitre a travers lui (demande utilisateur : la retirer du pied
+   de page). #page est pourtant au-dessus de cette grille (z-index 1 contre
+   -1, section 6) — le probleme n'est pas l'empilement mais l'opacite du
+   fond lui-meme. Rendu opaque par un calque var(--veil) peint par-dessus un
+   calque plein var(--foot-bg), au lieu du voile seul sur le fond transparent
+   de #page. --foot-bg (et non --bg) : demande utilisateur d'assombrir la
+   teinte de marque a celle du pied de page de marvinsrd.com, sans toucher au
+   fond blanc des etudes de cas (theme clair, ou --foot-bg vaut --bg). */
+.site-foot {
+  position: relative;
+  overflow: hidden;
+  padding-block: var(--s8);
+  background: linear-gradient(var(--veil), var(--veil)), var(--foot-bg);
+}
+/* Trame geometrique du pied de page de marvinsrd.com (demande utilisateur :
+   reprendre les memes classes) — traits et formes pointilles disperses,
+   copies un pour un depuis sa feuille de style (memes positions/tailles en
+   %, memes rotations, meme opacite .1). position:relative+overflow:hidden
+   ci-dessus reproduisent son .footer : les formes se calent sur .site-foot
+   entier (pas sur .wrap.foot) et sont rognees a ses bords, exactement comme
+   sur le site de reference. */
+.ligne-footer {
+  position: absolute; left: 0; bottom: 0;
+  width: 37%; height: 10px;
+  border-style: none none dashed;
+  border-width: 2px;
+  border-color: transparent transparent rgba(255, 255, 255, .1);
+  transform: rotate(-45deg); transform-origin: 0% 100%;
+  /* Purement decoratif, mais plusieurs variantes (._3/._4/._6, height:50-100%)
+     couvrent la colonne "Get in touch" a droite : sans ce pointer-events:none,
+     ces div interceptaient les clics/survols des liens en dessous (bug
+     remonte par l'utilisateur — elementFromPoint renvoyait .ligne-footer._4
+     au lieu du lien mailto). */
+  pointer-events: none;
+}
+.ligne-footer._2 {
+  inset: 0 auto auto 0;
+  width: 40%; height: 10px;
+  border-style: dashed none none;
+  border-color: rgba(255, 255, 255, .1) transparent transparent;
+  transform: rotate(45deg); transform-origin: 0% 0%;
+}
+.ligne-footer._3 {
+  /* Le bord bas dessine par .ligne-footer de base n'est pas retire ici (le
+     site de reference ne le fait pas non plus) : ._3 AJOUTE un bord haut,
+     ce qui dessine les deux traits horizontaux de la forme en "Z" repliee. */
+  left: auto; right: 0; bottom: 0;
+  width: 40%; height: 50%;
+  border-style: dashed none dashed none;
+  border-color: rgba(255, 255, 255, .1) transparent rgba(255, 255, 255, .1) transparent;
+  transform: none;
+}
+.ligne-footer._4 {
+  left: auto; right: 0; bottom: 0;
+  width: 40%; height: 100%;
+  border-style: none none none dashed;
+  border-color: transparent transparent transparent rgba(255, 255, 255, .1);
+  transform: none;
+}
+.ligne-footer._6 {
+  /* Meme remarque que ._3 : le bord bas de base reste actif, ._6 AJOUTE un
+     bord gauche — d'ou le coin (bas + gauche), contrairement a ._4 qui
+     eteint explicitement le bas pour ne garder que le gauche. */
+  left: auto; right: 0; bottom: 0;
+  width: 20%; height: 100%;
+  border-style: none none dashed dashed;
+  border-color: transparent transparent rgba(255, 255, 255, .1) rgba(255, 255, 255, .1);
+  transform: none;
+}
+.carre {
+  position: absolute; top: 36%; right: 37%;
+  width: 60px; height: 60px;
+  border: 2px dashed rgba(255, 255, 255, .1);
+  pointer-events: none;
+}
+.grand-cercle {
+  position: absolute; left: 0; bottom: 0;
+  width: 170px; height: 170px;
+  border: 2px dashed rgba(255, 255, 255, .1);
+  border-radius: 150px;
+  pointer-events: none;
+}
+/* Plus de margin-bottom ici (demande utilisateur) : .foot__bottom vivait
+   juste en dessous, pleine largeur — maintenant qu'il est retourne dans la
+   premiere colonne (son propre margin-top s'en charge), la grille est le
+   dernier element de .foot et n'a plus besoin d'air sous elle, deja fourni
+   par le padding-bottom de .site-foot. */
 .foot__grid {
   display: grid; gap: var(--s6);
   grid-template-columns: 1.5fr 1fr 1fr;
-  margin-bottom: var(--s7);
 }
+/* La premiere colonne passe en flex column pour que .foot__bottom (son
+   margin-top: auto plus bas) se colle au tout dernier pixel du bas de la
+   colonne — 0px d'ecart — sans que la colonne elle-meme grandisse : sa
+   hauteur reste celle que la grille lui donne deja (align-items: stretch sur
+   .foot__grid, calquee sur la plus haute des trois colonnes), le flex ne
+   fait que redistribuer l'espace qu'elle a deja.
+   align-items: flex-start ICI (axe transversal, donc horizontal en colonne) :
+   sans ca, le stretch par defaut etire le lien "Resume" (un <a> en
+   inline-flex — .u-arrow-link, donc pas naturellement pleine largeur) sur
+   toute la largeur de la colonne au lieu de le garder cale a gauche. */
+.foot__grid > div:first-child { display: flex; flex-direction: column; align-items: flex-start; }
 .foot__name { font-size: var(--fs-h2); margin-bottom: var(--s3); font-weight: var(--w-medium); }
-.foot__note { color: var(--ink-soft); font-size: var(--fs-small); max-width: 34ch; margin-bottom: var(--s4); }
+/* Vit dans .foot__bottom, sous la ligne de copyright, lui-meme revenu dans
+   la premiere colonne de .foot__grid (demande utilisateur) — plus en pied de
+   page pleine largeur. white-space: nowrap plutot que pre-line : le \n de
+   footerNote (content.js) doit se lire comme un simple espace, la note tient
+   sur une seule ligne. Meme taille que le copyright (--fs-tiny) : les deux
+   lignes de .foot__bottom lisent au meme poids. */
+.foot__note { color: var(--ink-soft); font-size: var(--fs-tiny); white-space: nowrap; }
 .foot h3 {
   font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: .1em;
   color: var(--ink-faint); margin-bottom: var(--s4); font-weight: var(--w-semibold);
 }
 .foot ul { display: grid; gap: var(--s3); }
-.foot a { color: var(--ink-soft); text-decoration: none; font-size: var(--fs-small); }
-.foot a:hover { color: var(--accent); text-decoration: underline; }
+/* Le soulignement venait de .u-underline / .u-arrow-link (portes par chaque
+   lien en JS) ; il est retire plus bas pour le pied de page, qui garde donc
+   ici sa propre transition couleur : var(--ink) plutot que blanc en dur,
+   pour rester juste si le pied de page passe un jour sur le theme clair. */
+.foot a { color: var(--ink-soft); font-size: var(--fs-small); transition: color .2s ease-out; }
+.foot a:hover, .foot a:focus-visible { color: var(--ink); }
+/* Le pied de page n'a pas besoin du soulignement des liens partages
+   (.u-underline / .u-arrow-link) : la colonne dediee et l'espacement suffisent
+   deja a signaler que ce sont des liens. (0,2,0)/(0,2,1) : juste assez de
+   specificite pour l'emporter sur les regles de base ci-dessus. */
+/* display:inline-block indispensable ici : les liens Sitemap n'ont que
+   .u-underline (une simple ancre, display:inline par defaut), et `transform`
+   — donc tout l'effet magnetique de setupMagneticFooterLinks() plus bas —
+   n'a AUCUN effet sur un inline non remplace (specification CSS Transforms).
+   Les liens Get in touch, eux, marchaient deja : .u-arrow-link pose
+   display:inline-flex de son cote. */
+.foot .u-underline { text-decoration: none; display: inline-block; }
+.foot .u-arrow-link > span:first-child { text-decoration: none; }
+/* Surlignage au survol (.petal-experiment et voisins plus haut) essaye sur
+   ces liens puis retire deux fois de suite (REVERT, demande utilisateur) :
+   les 8 liens Sitemap/Get in touch n'ont plus de boite du tout desormais,
+   seulement l'effet magnetique (setupMagneticFooterLinks() dans app.js,
+   meme selecteur .foot-magnetic) — meme traitement que .hero__gap plus haut
+   (pas de boite, pas de soulignement, juste le mouvement). Le soulignement
+   est deja retire plus haut (.foot .u-underline / .foot .u-arrow-link >
+   span:first-child) : cette regle-ci ne pose donc que la transition
+   `transform`, meme rebond reduit que .petal-experiment et voisins. */
+.foot .foot-magnetic { transition: color .2s ease-out, transform .5s cubic-bezier(.34, 1.15, .64, 1); }
+.foot .foot-magnetic:focus-visible { transform: translateY(-2px); }
+/* Un peu plus d'air entre l'adresse mail et l'icone "send" (demande
+   utilisateur) : le 3px de .u-arrow-link__icon (pense pour une fleche fine)
+   serrait un peu plus visiblement contre le point final d'une adresse mail. */
+.foot-mail .u-arrow-link__icon { margin-left: 6px; }
+/* Interaction "cliquer pour copier" du lien mail (demande utilisateur, cf.
+   .link-muted.cursor-pointer sur krystianzun.com) — voir setupFootMailCopy()
+   dans app.js pour la logique JS et buildFooter() pour le marquage HTML.
+
+   .foot-mail__sizer / .foot-mail__visible : le sizer (invisible, en flux
+   normal) rejoue l'etat par defaut (adresse + icone) et fixe la largeur de
+   TOUTE L'ANCRE ; .foot-mail__visible, superpose dessus en position
+   absolute, porte le contenu reel (seul le texte a l'interieur est modifie
+   par JS). Sans ce sizer, "Click to copy"/"Copied" (plus courts que
+   l'adresse) retreciraient la zone de survol a chaque changement d'etat —
+   la souris se retrouverait hors zone, ce qui referme l'etat, ce qui
+   elargit la zone, ce qui la fait rentrer dedans... un clignotement en
+   boucle a la frontiere, exactement le glitch reproductible sur le site de
+   reference. Largeur figee sur l'etat par defaut (le plus long des trois) :
+   quel que soit l'etat affiche, la zone de survol/clic reste toujours celle
+   de l'adresse mail.
+   .foot-mail__visible reste en flex (herite de .u-arrow-link, pas de
+   justify-content : les enfants se collent a gauche par defaut) : l'icone
+   colle donc toujours au texte actuellement affiche avec le meme ecart
+   qu'au repos (demande utilisateur) — seul l'espace inutilise quand le
+   texte est plus court que l'adresse atterrit APRES l'icone, jamais entre
+   elle et le texte. */
+.foot-mail { position: relative; }
+.foot-mail__sizer { visibility: hidden; display: inline-flex; align-items: center; white-space: nowrap; }
+.foot-mail__visible { position: absolute; inset: 0; display: inline-flex; align-items: center; white-space: nowrap; }
+/* sendIcon et copyIcon (dans .foot-mail__visible uniquement — le sizer ne
+   porte que sendIcon, les deux ayant la meme taille peu importe l'icone
+   choisie pour reserver la largeur) sont tous les deux dans le DOM en
+   permanence, empiles dans la meme cellule de grille : le CSS choisit
+   lequel est visible, jamais le JS — un simple fondu opacite, memes
+   proprietes que le survol/focus habituel de .u-arrow-link__icon (opacite
+   estompee -> pleine, meme transition). */
+.foot-mail__visible .u-arrow-link__icon { display: grid; }
+.foot-mail__icon-arrow, .foot-mail__icon-copy { grid-area: 1 / 1; transition: opacity .2s ease-out; }
+.foot-mail__icon-copy { opacity: 0; }
+@media (hover: hover) and (pointer: fine) {
+  .foot-mail:hover .foot-mail__icon-arrow,
+  .foot-mail:focus-visible .foot-mail__icon-arrow { opacity: 0; }
+  .foot-mail:hover .foot-mail__icon-copy,
+  .foot-mail:focus-visible .foot-mail__icon-copy { opacity: 1; }
+}
+/* Pas de survol sur mobile/tactile (demande utilisateur) : la fleche "send"
+   est carrement retiree, l'icone copie reste affichee en permanence — meme
+   opacite au repos que la fleche partout ailleurs (heritee du parent
+   .u-arrow-link__icon, inchangee ici).
+   Specificite (0,3,0) plutot que .foot-mail__icon-arrow seul (0,1,0) :
+   .u-arrow-link__icon svg { display: block } (regle generique, plus haut
+   dans ce fichier) est (0,1,1) et gagnerait sinon malgre l'ordre — la fleche
+   restait affichee, empilee sur l'icone copie (bug constate : "les deux
+   icones s'affichent l'une sur l'autre" sur mobile). */
+@media (hover: none), (pointer: coarse) {
+  .foot-mail__visible .u-arrow-link__icon .foot-mail__icon-arrow { display: none; }
+  .foot-mail__icon-copy { opacity: 1; }
+}
+/* Confirmation "Copied" (demande utilisateur) : sur desktop, .is-copied peut
+   rester affichee apres que la souris a quitte le lien (le delai de
+   setupFootMailCopy() dans app.js continue de tourner). Sans ces regles,
+   l'icone y retombait sur la fleche ET sur son opacite estompee au repos
+   (.35, .u-arrow-link__icon) des la sortie du survol — copyIcon reste
+   desormais pose en pleine opacite tant que "Copied" est affiche, souris
+   dessus ou non. Memes specificites ((0,3,0) pour les deux premieres,
+   (0,3,0) aussi pour la troisieme malgre l'ecart de longueur — deux classes
+   composees puis un descendant dans les trois cas) que les regles
+   .foot-mail:hover equivalentes, definies plus bas dans ce fichier : la
+   cascade les fait gagner sans avoir besoin de plus de poids. Rien a faire
+   cote mobile, deja permanent (regle au-dessus). */
+.foot-mail.is-copied .foot-mail__icon-arrow { opacity: 0; }
+.foot-mail.is-copied .foot-mail__icon-copy { opacity: 1; }
+.foot-mail.is-copied .u-arrow-link__icon { opacity: 1; }
+/* Revenu dans la premiere colonne de .foot__grid, sous le lien "Resume"
+   (demande utilisateur). margin-top: auto (et non une valeur fixe) :
+   dans le flex column de cette colonne (voir .foot__grid > div:first-child
+   ci-dessus), ca pousse .foot__bottom tout au fond de la colonne — 0px
+   d'ecart avec son bord bas — quelle que soit la hauteur que la grille lui
+   donne, plutot que de fixer arbitrairement l'air au-dessus de lui. */
 .foot__bottom {
-  display: flex; flex-wrap: wrap; gap: var(--s4); justify-content: space-between;
-  padding-top: var(--s5);
+  display: flex; flex-direction: column;
+  margin-top: auto;
   font-size: var(--fs-tiny); color: var(--ink-faint);
 }
-
+/* Plus de <br> entre "© 2026 Marvin S." et "All rights reserved." (demande
+   utilisateur) : les deux tiennent sur la meme ligne, separes par ce petit
+   espace plutot que par un saut de ligne. */
+.foot__rights { margin-left: var(--s2); }
 
 /* ==========================================================================
    11. TRANSITIONS DE PAGE
@@ -5103,7 +5854,17 @@ body.is-overlay #page {
      que la fiche remplit au moins la fenetre : sinon le fond sombre du
      calque apparaitrait sous le pied de page. */
   min-height: calc(100vh - 14px);
+  /* SUR UNE FICHE COURTE, min-height ETIRE #page AU-DELA DE #main + #site-foot
+     — sans ceci, le supplement restait un vide BLANC (le fond de #page,
+     ci-dessus) sous le pied de page plutot que la couleur du pied de page lui
+     -meme (essai, retour possible : demande utilisateur, "le gris du pied de
+     page doit arriver en bas de l'ecran comme le bleu sur l'accueil"). En
+     colonne flex, #main garde sa taille naturelle (aucun flex declare = 0 1
+     auto) et #site-foot (flex: 1 0 auto plus bas) absorbe seul tout le
+     supplement : le pied de page grandit, pas le vide au-dessus de lui. */
+  display: flex; flex-direction: column;
 }
+body.is-overlay #site-foot { flex: 1 0 auto; }
 
 /* ---- La croix ----
    position:fixed : elle reste accessible apres 4000px de defilement. */
@@ -5290,6 +6051,18 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
      boite pour s'aligner sur elle. */
   .cs { --cs-nav-inset: 0px; }
 
+  /* Essai, retour possible : le grand padding-bottom du bureau (var(--s9),
+     section 8) laissait un vide entre la fin de la fiche (.cs-next) et
+     #site-foot qui la suit toujours dans #page (index.html) — sur bureau il
+     compensait la barre laterale collante, mais ici la pilule/croix flotte
+     DEJA au-dessus du contenu sans lui reserver de place. On retombe donc sur
+     var(--s8) : le meme ecart que celui de l'accueil entre la derniere carte
+     et le pied de page (.section, padding-block: --s8, section 7), auquel
+     s'ajoute le padding-top propre de #site-foot (--s8 egalement, section 11)
+     — meme empilement de deux paddings des deux cotes de la frontiere, meme
+     rythme qu'a l'accueil. */
+  .cs { padding-bottom: var(--s8); }
+
   /* Le bouton "Retour" repasse dans le flux normal. En reste fixe, il
      recouvrirait la barre de sections qui vient se coller sous l'en-tete.
      Il defile donc avec la page sur petit ecran — compromis assume : mieux
@@ -5416,6 +6189,10 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
             mask: url('../assets/icons/cs-close.svg') center / contain no-repeat;
   }
   .cs-nav__back:hover { transform: none; }
+  /* La pastille mobile n'est plus une fleche mais une croix centree dans un
+     cercle (voir masque plus haut) : l'animation "la fleche s'eloigne du
+     libelle" du bureau n'a pas de sens ici, donc on l'annule. */
+  .cs-nav__back:hover > span:first-child { transform: none; }
 
   /* LA CROIX S'EFFACE DEVANT LA PASTILLE DE RETOUR — SUR MOBILE SEULEMENT.
      Ici, les deux font le meme travail : la pastille ci-dessus est le lien
@@ -5469,18 +6246,20 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
      l'etat naturel (aucun transform, opacite pleine), rien n'est perdu. */
   body.is-overlay:not(.is-opening) .cs-nav { animation: csBarIn .34s var(--ease) backwards; }
 
-  /* LA BARRE SE RETIRE SUR "PROJET SUIVANT". Passe la derniere section, on ne
-     parcourt plus l'etude de cas : on en sort. Un sommaire qui reste plaque
-     par-dessus les cartes du projet suivant les recouvre pour ne plus rien
-     dire. Posee par setupCaseBehaviours (app.js), qui surveille .cs-next au
-     meme titre que les sections, et retiree des qu'on remonte.
-     Elle glisse vers le bas plutot que de disparaitre : le mouvement dit
-     qu'elle est rangee, pas qu'elle a plante. */
-  .cs-nav.is-gone {
-    transform: translateY(calc(100% + 20px + env(safe-area-inset-bottom, 0px)));
-    opacity: 0; pointer-events: none;
+  /* LA PILULE SE RETIRE SUR "PROJET SUIVANT" — LA CROIX RESTE (essai, retour
+     possible). Passe la derniere section, on ne parcourt plus l'etude de cas :
+     le sommaire n'a plus rien a designer et un anneau/liste plaque par-dessus
+     les cartes du projet suivant ne dirait plus rien. Mais SEULE la pilule
+     (.cs-nav__pill : anneau + liste) se retire ; .cs-nav__back reste en place
+     jusqu'au bas de la page, glace comprise — sous ce gabarit c'est la SEULE
+     sortie de la fiche (.overlay-close y est masque, voir plus haut), la
+     perdre a ce point laisserait l'utilisateur sans moyen de fermer.
+     Posee par setupCaseBehaviours (app.js), qui surveille .cs-next au meme
+     titre que les sections, et retiree des qu'on remonte. */
+  .cs-nav.is-gone .cs-nav__pill {
+    opacity: 0; pointer-events: none; transform: translateX(-8px);
   }
-  .cs-nav { transition: transform .3s var(--ease), opacity .3s var(--ease); }
+  .cs-nav__pill { transition: opacity .3s var(--ease), transform .3s var(--ease); }
 
   /* La pilule. Blanche sur une fiche blanche : c'est l'ombre SEULE qui lui
      donne un bord, sans liser — un trait ferme la forme et la fait lire comme
@@ -5666,15 +6445,22 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
      fois. */
   .cs-nav__prog { display: none; }
 
-  /* La barre flottante recouvre le bas de la fiche : sans cette reserve, elle
-     masquerait la fin de "projet suivant" et le pied de page, qu'aucun
-     defilement ne pourrait alors degager.
-     La reserve va sur #page et non sur .cs : le pied de page est un frere de
-     <main>, donc pousser le contenu de l'article ne le degagerait pas.
+  /* La croix flottante (.cs-nav__back, jamais retiree — voir section 8d)
+     recouvre le bas de la fiche : sans cette reserve, elle masquerait en
+     permanence la fin du pied de page, qu'aucun defilement ne pourrait alors
+     degager.
+     ESSAI, RETOUR POSSIBLE : la reserve allait sur #page (padding-bottom),
+     ce qui laissait le vide BLANC releve par l'utilisateur — le fond de
+     #page, pas celui du pied de page, juste avant que #site-foot arrive.
+     Deplacee sur .site-foot (son propre padding-bottom, meme mecanique que
+     .site-foot sur l'accueil juste plus bas dans cette section) : la reserve
+     est maintenant DANS le pied de page, donc peinte avec son fond a lui.
      :has(.cs-nav) la limite aux etudes de cas qui ont un sommaire — partout
-     ailleurs il n'y a pas de barre, et 90px de blanc en bas seraient un
-     defaut. */
-  #page:has(.cs-nav) { padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+     ailleurs il n'y a pas de croix flottante, et 90px de reserve en trop
+     seraient un defaut. */
+  body.is-overlay:has(.cs-nav) .site-foot {
+    padding-bottom: calc(var(--s8) + 90px + env(safe-area-inset-bottom, 0px));
+  }
 
   /* Herite de l'epoque ou .cs-nav se collait en haut : elle visait --head-h
      (14px, le retrait de la fiche) et laissait donc une bande vide de 14px
@@ -5866,8 +6652,11 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
      barre recouvrirait la fin du pied de page, qu'aucun defilement ne
      pourrait alors degager. :not(.is-overlay) parce que la regle ci-dessus
      vient justement de retirer la barre dans ce cas — et que la fiche a deja
-     la sienne. */
-  body:not(.is-overlay) #page { padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+     la sienne.
+     Posee sur .site-foot (son propre padding-bottom) et non sur #page : le
+     pied de page est le dernier bloc visible avant cette reserve, c'est donc
+     a lui qu'elle appartient plutot qu'au conteneur qui l'enveloppe. */
+  body:not(.is-overlay) .site-foot { padding-bottom: calc(var(--s6) + 90px + env(safe-area-inset-bottom, 0px)); }
 
   .pair { grid-template-columns: 1fr; }
   .foot__grid { grid-template-columns: 1fr 1fr; }
@@ -5895,6 +6684,21 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
      celui de ce palier. */
   .hero { min-height: 0; padding-block: calc(var(--s6) + var(--head-was)) var(--s7); }
   .foot__grid { grid-template-columns: 1fr; }
+  /* Essai, retour possible : la premiere colonne (Marvin S., Download my
+     resume, copyright/note) passe en dernier, echangee avec "Get in touch" —
+     la grille reste en ordre DOM normal partout ailleurs (Sitemap intact au
+     milieu), seul l'empilement 1 colonne de ce palier est concerne. */
+  .foot__grid > div:first-child { order: 3; }
+  .foot__grid > div:nth-child(2) { order: 2; }
+  .foot__grid > div:nth-child(3) { order: 1; }
+  /* .foot__bottom (copyright + note) colle a .foot__name/"Resume" sans cet
+     ecart : son margin-top: auto (styles.css, section 11) compte sur
+     la colonne ETIREE par la grille (align-items: stretch, calquee sur la
+     plus haute des trois) pour avoir de la hauteur en trop a pousser dedans —
+     or en 1 colonne chaque bloc n'occupe plus que sa hauteur propre, il n'y a
+     donc plus rien a pousser et l'auto retombe a 0. Une valeur fixe reprend
+     le relais ici. */
+  .foot__bottom { margin-top: var(--s6); }
   .gist { grid-template-columns: 1fr 1fr; }
   .back-link { left: 50%; transform: translateX(-50%); bottom: var(--s4); }
   .back-link:hover { transform: translateX(-50%) translateY(-2px); }
