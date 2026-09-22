@@ -323,8 +323,8 @@ function escapeAttr(s) {
 
 /* ---- 5a. Le "Bonjour Prenom" -------------------------------------------
    La seule fonction du fichier qui manipule une donnee venue du visiteur.
-   La maquette place le prenom AU MILIEU de la phrase : "Hey [prenom], nice to
-   meet you!". On assemble donc trois morceaux, et le prenom est pose avec
+   La maquette place le prenom AU MILIEU de la phrase : "Nice to meet you
+   [prenom]!". On assemble donc trois morceaux, et le prenom est pose avec
    textContent. Meme si state.visitor contenait du HTML, il s'afficherait
    comme du texte brut. */
 function renderHello() {
@@ -359,12 +359,29 @@ function renderStatement(lines) {
   lines.forEach((segments, i) => {
     segments.forEach(seg => {
       let node;
-      if (seg.to)          node = el('a', { href: seg.to });
-      else if (seg.u)      node = el('u');
+      if (seg.to)          node = el('a', { href: seg.to, class: 'u-arrow-link' });
+      else if (seg.href)   node = el('a', { href: seg.href, target: '_blank', rel: 'noopener noreferrer', class: 'u-arrow-link' });
       else if (seg.accent) node = el('span', { class: 'accent' });
       else                 node = document.createTextNode(seg.t);
 
-      if (node.nodeType !== 3) node.textContent = seg.t;
+      if (node.tagName === 'A') {
+        // Le mot vit dans un span dedie : voir .u-arrow-link dans styles.css
+        // (soulignement estompe -> plein au survol, jamais pose sur l'ancre
+        // elle-meme).
+        node.append(el('span', { text: seg.t }));
+        // Lien externe (Gekko) : fleche apres le mot, signale qu'il quitte
+        // le site — meme icone que le reste du site (arrowUpRightIcon).
+        if (seg.href) {
+          const icon = el('span', { class: 'u-arrow-link__icon', 'aria-hidden': 'true' });
+          icon.innerHTML = arrowUpRightIcon('');
+          node.append(icon);
+        }
+        // Classe(s) supplementaire(s) propres a un segment (voir seg.class
+        // dans content.js — ex. l'experiment Petal ci-dessous).
+        if (seg.class) node.classList.add(...seg.class.split(' '));
+      } else if (node.nodeType !== 3) {
+        node.textContent = seg.t;
+      }
       box.append(node);
     });
     // Retour a la ligne entre chaque phrase, sauf apres la derniere.
@@ -455,13 +472,26 @@ function cardMedia(p) {
    n'importe quel <a href="#/..."> : le routeur ecoute `hashchange`
    globalement, aucun handler dedie n'est necessaire ici. */
 function emphasize(str) {
+  // Meme soulignement estompe -> plein au survol que le heros, partout ou un
+  // lien markdown apparait dans un corps de texte (gists, ledes, listes).
+  // Un lien EXTERNE recoit en plus la fleche animee (.u-arrow-link, deux
+  // spans) : il quitte le site. Un lien INTERNE (#/...) reste .u-underline
+  // seul, comme les entrees du plan du site.
+  // arrowUpRightIcon() (voir plus bas) renvoie un <svg> ecrit sur plusieurs
+  // lignes pour rester lisible dans le code — donc avec de vrais "\n"
+  // dedans. Le remplacement '\n' -> '<br>' doit tourner AVANT qu'on injecte
+  // cette icone, jamais apres : sinon il retombe aussi sur les "\n" internes
+  // au <svg> et le decoupe en <br> au milieu d'un attribut, cassant le
+  // balisage (vu en prod : "Dylan" affichait le code source de la fleche).
+  const icon = arrowUpRightIcon('');
   return escapeAttr(str)
     .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-    .replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-    .replace(/\[(.+?)\]\((#\/[^\s)]*)\)/g, '<a href="$2">$1</a>')
     // '\n' a l'interieur d'un seul paragraphe (voir Hoot/Exploration) : garde
     // plusieurs phrases visuellement distinctes sans en faire des <p> separes.
-    .replace(/\n/g, '<br>');
+    .replace(/\n/g, '<br>')
+    .replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, (m, label, href) =>
+      `<a class="u-arrow-link" href="${href}" target="_blank" rel="noopener"><span>${label}</span><span class="u-arrow-link__icon" aria-hidden="true">${icon}</span></a>`)
+    .replace(/\[(.+?)\]\((#\/[^\s)]*)\)/g, '<a class="u-underline" href="$2">$1</a>');
 }
 
 /* ---- 5c. La page d'accueil ----
@@ -499,15 +529,13 @@ function pageHome() {
   lines.append(el('p', { class: 'hero__name', text: h.name }));
   lines.append(renderStatement(h.statement));
 
-  // Le lien vers l'article sur les deux ans, avec sa fleche.
-  // La maquette utilise une icone SVG exportee ; elle n'etait pas
-  // telechargeable, on utilise donc le caractere fleche, masque aux lecteurs
-  // d'ecran puisqu'il n'apporte rien a l'oral.
-  const gap = el('a', { class: 'hero__gap', href: '#/gap' });
-  gap.append(
-    el('span', { text: h.gapLink }),
-    el('span', { class: 'arrow', 'aria-hidden': 'true', text: '↗' })
-  );
+  // Le lien vers l'article sur les deux ans, avec sa fleche — meme icone
+  // (arrowUpRightIcon) que les liens externes des etudes de cas, masquee
+  // aux lecteurs d'ecran puisqu'elle n'apporte rien a l'oral.
+  const gap = el('a', { class: 'hero__gap u-arrow-link gap-experiment', href: '#/gap' });
+  const gapArrow = el('span', { class: 'u-arrow-link__icon', 'aria-hidden': 'true' });
+  gapArrow.innerHTML = arrowRightIcon('');
+  gap.append(gapArrow, el('span', { text: h.gapLink }));
 
   block.append(lines, gap);
   text.append(renderHello(), block);
@@ -659,7 +687,7 @@ function pageCase(project, caseId) {
   // sections), ce qui laisse .cs__case-switch (position:sticky) rester
   // colle en haut sur tout le defilement, pas seulement le long de l'en-tete.
   const casesIntroHTML = project.casesIntro
-    ? `<p class="cs__cases-intro">${emphasize(project.casesIntro)}</p>` : '';
+    ? `<p class="cs__cases-intro">${infoIcon('cs__cases-intro-icon')}<span class="cs__cases-intro-text">${emphasize(project.casesIntro)}</span></p>` : '';
   const caseSwitchHTML = project.cases
     ? `<nav class="cs__case-switch" aria-label="${escapeAttr(d.csCaseSwitch)}">
         ${project.cases.map(cs => `
@@ -693,7 +721,7 @@ function pageCase(project, caseId) {
     ${c.heroMedia ? `<div class="cs__hero-media" data-slug="${escapeAttr(c.slug)}">${mediaMarkup(c.heroMedia)}</div>` : ''}
 
     ${c.gist ? `<dl class="gist">
-      ${c.gist.company && c.gist.company.href ? `<div><dt>${escapeAttr(d.csCompany)}</dt><dd><a href="${escapeAttr(c.gist.company.href)}" target="_blank" rel="noopener">${escapeAttr(c.gist.company.label)}</a></dd></div>` : ''}
+      ${c.gist.company && c.gist.company.href ? `<div><dt>${escapeAttr(d.csCompany)}</dt><dd>${extArrowLinkHTML(c.gist.company.label, c.gist.company.href)}</dd></div>` : ''}
       <div><dt>${escapeAttr(d.csRole)}</dt><dd>${escapeAttr(c.gist.role)}</dd></div>
       <div><dt>${escapeAttr(d.csDuration)}</dt><dd>${escapeAttr(c.gist.duration)}</dd></div>
       <div><dt>${escapeAttr(d.csTeam)}</dt><dd>${emphasize(c.gist.team)}</dd></div>
@@ -713,9 +741,9 @@ function pageCase(project, caseId) {
     <div class="cs__cta">
       ${(c.extLinks || []).map(l =>
         `<a class="btn btn--ghost" href="${escapeAttr(l.href)}" target="_blank" rel="noopener noreferrer">
-           ${escapeAttr(l.label)} ↗</a>`).join('')}
+           ${escapeAttr(l.label)} ${arrowUpRightIcon('btn__icon')}</a>`).join('')}
       ${project.external ? `<a class="btn btn--primary" href="${escapeAttr(project.external)}"
-           target="_blank" rel="noopener noreferrer">${escapeAttr(d.seeProject)} ↗</a>` : ''}
+           target="_blank" rel="noopener noreferrer">${escapeAttr(d.seeProject)} ${arrowUpRightIcon('btn__icon')}</a>` : ''}
     </div>
 
     ${c.draftNote ? `<p class="todo" style="margin-top:var(--s6)">${escapeAttr(c.draftNote)}</p>` : ''}
@@ -778,9 +806,7 @@ function pageCase(project, caseId) {
     //                ecrit "0.62 1" sans avoir a calculer 2*PI*r.
     const nav = el('nav', { class: 'cs-nav', 'aria-label': d.csSections });
     nav.innerHTML = `
-      <a class="cs-nav__back" href="#/#${escapeAttr(c.kind)}">
-        <span aria-hidden="true">←</span> ${escapeAttr(d.csBack)}
-      </a>
+      <a class="cs-nav__back" href="#/#${escapeAttr(c.kind)}"><span aria-hidden="true">${arrowLeftIcon('cs-nav__back-icon')}</span>${escapeAttr(d.csBack)}</a>
       <div class="cs-nav__pill">
         <span class="cs-nav__ring" role="progressbar" aria-valuemin="0" aria-valuemax="100"
               aria-valuenow="0" aria-label="${escapeAttr(d.csProgress)}">
@@ -1043,7 +1069,7 @@ function pageCase(project, caseId) {
         ${b.cta ? `<div class="cs-hoot-cta">
             <p class="cs-hoot-cta__statement">${escapeAttr(b.cta.statement)}</p>
             <p class="cs-hoot-cta__text">${escapeAttr(b.cta.text)}</p>
-            <a class="btn btn--ghost" href="${escapeAttr(b.cta.href)}" target="_blank" rel="noopener noreferrer">${escapeAttr(b.cta.label)} ↗</a>
+            <a class="btn btn--ghost" href="${escapeAttr(b.cta.href)}" target="_blank" rel="noopener noreferrer">${escapeAttr(b.cta.label)} ${arrowUpRightIcon('btn__icon')}</a>
           </div>` : ''}
         ${b.timeline ? timelineMarkup(b.timeline) : ''}`).join('');
       // Chiffres cites dans le texte, sortis en cartes (voir s.stats dans
@@ -1077,6 +1103,15 @@ function pageCase(project, caseId) {
       // plutot qu'une capture. Voir .cs-callout dans styles.css.
       const callout = s.callout
         ? `<div class="cs-callout">${alertCircleIcon('cs-callout__icon')}<p>${escapeAttr(s.callout.text)}</p></div>` : '';
+
+      // s.cta : bouton externe au fil du texte (ex. masters-essay/Download,
+      // "Read the essay" juste apres le paragraphe qui l'annonce) — a la
+      // difference de c.extLinks (rendu dans l'en-tete de la fiche), celui-ci
+      // reste attache a la section et au paragraphe qui le motive. Meme
+      // composant .btn que partout ailleurs (icone arrowUpRightIcon animee
+      // au survol via .btn__icon).
+      const cta = s.cta
+        ? `<div class="cs-sec__cta"><a class="btn btn--ghost" href="${escapeAttr(s.cta.href)}" target="_blank" rel="noopener noreferrer">${escapeAttr(s.cta.label)} ${arrowUpRightIcon('btn__icon')}</a></div>` : '';
 
       // s.result : encart teinte {title, text} isolant un constat court en
       // fin de section (ex. Licence management/Context) — meme famille
@@ -1118,6 +1153,7 @@ function pageCase(project, caseId) {
         ${list}
         ${bullets}
         ${partsBlock}
+        ${cta}
         ${result}
         ${callout}
         ${secStats}
@@ -1140,7 +1176,10 @@ function pageCase(project, caseId) {
     // champ sur mobile a ce stade). Vrai lien vers l'ancre #overview (voir
     // head.id = 'sec-overview' plus haut) : le defilement doux vient du
     // scroll-behavior global (styles.css), pas de JS dedie.
-    content.append(el('a', { class: 'cs-back-to-top', href: `${base}#overview` }, `↑ ${d.backToTop}`));
+    const topArrow = el('span', { 'aria-hidden': 'true' });
+    topArrow.innerHTML = arrowUpIcon('cs-back-to-top__icon');
+    content.append(el('a', { class: 'cs-back-to-top', href: `${base}#overview` },
+      [topArrow, document.createTextNode(d.backToTop)]));
 
     grid.append(nav, content);
     body.append(grid);
@@ -1150,6 +1189,13 @@ function pageCase(project, caseId) {
   }
 
   const foot = nextProjectsFooter(project);
+  // wrap--wide (essai, retour possible) : aligne .cs-next sur .cs__content
+  // au lieu des deux colonnes ensemble (nav laterale + contenu) — meme bord
+  // droit que .cs__content (gouttiere seule, sans le max-width de .wrap), et
+  // .cs-next se decale ensuite lui-meme via margin-left: --cs-nav-inset (voir
+  // styles.css, meme mecanique que .cs__cases-intro). Seulement si hasProcess
+  // : sans nav laterale, --cs-nav-inset decalerait le bloc dans le vide.
+  if (foot && hasProcess) foot.classList.add('wrap--wide');
   if (foot) page.append(foot);
 
   return page;
@@ -1189,6 +1235,15 @@ function nextProjectsFooter(project) {
   // theme de la page grace aux variables CSS.
   const grid = el('div', { class: 'cards cards--next' });
   others.forEach(p => grid.append(projectCard(p)));
+  // Essai, retour possible : meme effet magnetique que les cartes de
+  // l'accueil (setupMagneticCards()), memes valeurs (6/4/5). Attache ici et
+  // non via un appel du routeur : nextProjectsFooter() fabrique des <div>
+  // neufs a chaque rendu (jamais reutilisees), donc pas besoin de cleanup —
+  // les anciens noeuds et leurs ecouteurs partent simplement au ramasse-
+  // miettes avec eux, comme .foot-magnetic dans le pied de page.
+  if (!prefersReducedMotion()) {
+    grid.querySelectorAll('.card').forEach(a => attachMagneticTilt(a, { maxX: 6, maxY: 5 }));
+  }
   box.append(grid);
   foot.append(box);
   return foot;
@@ -1236,7 +1291,7 @@ function pageArticle(project) {
     <div class="cs__cta">
       ${(c.extLinks || []).map(l =>
         `<a class="btn btn--ghost" href="${escapeAttr(l.href)}" target="_blank" rel="noopener noreferrer">
-           ${escapeAttr(l.label)} ↗</a>`).join('')}
+           ${escapeAttr(l.label)} ${arrowUpRightIcon('btn__icon')}</a>`).join('')}
     </div>
     ${c.draftNote ? `<p class="todo" style="margin-top:var(--s6)">${escapeAttr(c.draftNote)}</p>` : ''}`);
   head.append(hw);
@@ -1835,6 +1890,80 @@ function chevronIcon(cls) {
   return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
       aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+}
+
+// Fleche Lucide ("arrow-up-right", licence MIT), meme parti pris que
+// chevronIcon ci-dessus. Remplace le caractere "↗" partout ou un lien quitte
+// le site : le lien vers l'article des deux ans et, dans les etudes de cas,
+// les CTA externes (extLinks, "voir le projet", CTA Hoot).
+function arrowUpRightIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>`;
+}
+
+// Fleche Lucide ("arrow-right", licence MIT), meme parti pris. Remplace
+// arrowUpRightIcon sur le lien vers l'article des deux ans (demande
+// utilisateur), qui la pose desormais AVANT le texte plutot qu'apres — voir
+// .hero__gap .u-arrow-link__icon dans styles.css pour l'inversion de marge
+// que cet ordre impose.
+function arrowRightIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`;
+}
+
+// Icone Lucide ("info", licence MIT), meme parti pris. Pose l'icone
+// d'information au debut de .cs__cases-intro (demande utilisateur, inspiree
+// du bandeau "info" de carbondesignsystem.com/components/select/usage) —
+// contour seul (fill="none"), jamais un disque plein.
+function infoIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`;
+}
+
+// Fleches Lucide ("arrow-left" / "arrow-up", licence MIT), meme parti pris.
+// Remplacent les caracteres "←"/"↑" : le bouton Back de .cs-nav et le lien
+// "Back to top" en fin de processus.
+function arrowLeftIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>`;
+}
+function arrowUpIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>`;
+}
+// Fleche Lucide ("send", licence MIT), meme parti pris que les fleches
+// ci-dessus : posee sur le lien mail du pied de page a la place de
+// arrowUpRightIcon (demande utilisateur), dans le meme span .u-arrow-link__icon
+// donc a la meme taille (1em) et avec la meme animation au survol.
+function sendIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>`;
+}
+// Icone Lucide ("copy", licence MIT), meme parti pris. Remplace sendIcon sur
+// le lien mail du pied de page au survol/focus (desktop) ou en permanence
+// (mobile, pas de survol) — voir setupFootMailCopy().
+function copyIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
+}
+
+// Lien externe complet (texte souligne + fleche), voir .u-arrow-link dans
+// styles.css. Reutilise par le pied de page (LinkedIn, Resume) : les deux
+// spans, pas juste le caractere "↗", pour beneficier de l'animation
+// soulignement/fleche partagee avec le heros. extraClass (optionnel) : hook
+// CSS supplementaire — ex. "foot-hover-box" pour le surlignage au survol,
+// applique a certains liens du pied de page seulement (voir buildFooter()).
+function extArrowLinkHTML(label, href, extraClass = '') {
+  return `<a class="u-arrow-link${extraClass ? ` ${extraClass}` : ''}" href="${escapeAttr(href)}" target="_blank" rel="noopener noreferrer">
+    <span>${escapeAttr(label)}</span><span class="u-arrow-link__icon" aria-hidden="true">${arrowUpRightIcon('')}</span>
+  </a>`;
 }
 
 /* Les icones du lecteur de .beatsync (Lucide, licence MIT — meme parti pris
@@ -4168,34 +4297,98 @@ function buildFooter() {
     <div class="wrap foot">
       <div class="foot__grid">
         <div>
-          <p class="foot__name">${escapeAttr(SITE.name)}</p>
-          <p class="foot__note">${escapeAttr(d.footerNote)}</p>
-          <a class="btn btn--ghost" href="${escapeAttr(SITE.links.resume)}"
-             target="_blank" rel="noopener noreferrer">${escapeAttr(d.footerResume)} ↗</a>
+          <!-- "Marvin S." en dur (comme .brand dans index.html), pas
+               SITE.name : le pied de page reste court, SITE.name garde le
+               nom complet pour <title> et les aria-label (voir plus bas dans
+               ce fichier). -->
+          <p class="foot__name">Marvin S.</p>
+          <!-- .u-arrow-link, pas .btn (demande utilisateur) : meme composant
+               et meme fleche estompee -> pleine au survol que les liens de
+               "Get in touch" a droite (voir .u-arrow-link__icon plus haut),
+               plutot qu'un bouton a part avec sa propre boite. -->
+          ${extArrowLinkHTML(d.footerResume, SITE.links.resume, 'foot-magnetic')}
+          <div class="foot__bottom">
+            <span>© ${new Date().getFullYear()} Marvin S. <span class="foot__rights">${escapeAttr(d.footerRights)}</span></span>
+            <p class="foot__note">${escapeAttr(d.footerNote)}</p>
+          </div>
         </div>
         <div>
           <h3>${escapeAttr(d.footerSitemap)}</h3>
           <ul>
-            <li><a href="#/">${escapeAttr(d.navHome)}</a></li>
-            <li><a href="#/#work">${escapeAttr(d.navWork)}</a></li>
-            <li><a href="#/#side">${escapeAttr(d.navSide)}</a></li>
-            <li><a href="#/about">${escapeAttr(d.navAbout)}</a></li>
-            <li><a href="#/gap">${escapeAttr(HERO.gapLink)}</a></li>
+            <!-- .foot-magnetic sur les 8 liens Sitemap+Get in touch (demande
+                 utilisateur) : meme effet que .hero__gap — magnetique, pas de
+                 boite au survol, pas de soulignement (voir setupMagneticFooterLinks()
+                 et la regle .foot-magnetic dans styles.css). -->
+            <li><a class="u-underline foot-magnetic" href="#/">${escapeAttr(d.navHome)}</a></li>
+            <li><a class="u-underline foot-magnetic" href="#/#work">${escapeAttr(d.navWork)}</a></li>
+            <li><a class="u-underline foot-magnetic" href="#/#side">${escapeAttr(d.navSide)}</a></li>
+            <li><a class="u-underline foot-magnetic" href="#/about">${escapeAttr(d.navAbout)}</a></li>
+            <li><a class="u-underline foot-magnetic" href="#/gap">${escapeAttr(HERO.gapLink)}</a></li>
           </ul>
         </div>
         <div>
           <h3>${escapeAttr(d.footerContact)}</h3>
           <ul>
-            <li><a href="mailto:${escapeAttr(SITE.email)}">${escapeAttr(SITE.email)}</a></li>
-            <li><a href="${escapeAttr(SITE.links.linkedin)}" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a></li>
-            <li><a href="${escapeAttr(SITE.links.dribbble)}" target="_blank" rel="noopener noreferrer">Dribbble ↗</a></li>
+            <!-- .u-arrow-link et non .u-underline : cette ancre porte desormais
+                 une icone (sendIcon), pas seulement du texte — voir la note sur
+                 .u-underline vs .u-arrow-link plus haut dans ce fichier.
+
+                 Interaction "cliquer pour copier" (demande utilisateur, cf.
+                 krystianzun.com) : voir setupFootMailCopy() plus bas dans ce
+                 fichier pour le detail. Deux couches ici, superposees
+                 (voir styles.css) :
+
+                 - .foot-mail__sizer (aria-hidden, visibility:hidden) rejoue
+                   l'etat par defaut (adresse + icone) EN FLUX NORMAL — c'est
+                   elle qui donne sa largeur figee a l'ancre entiere. Sans
+                   elle, un texte plus court ("Click to copy", "Copied")
+                   retrecirait la zone de survol/clic et ferait clignoter
+                   l'etat pile a la frontiere (glitch reproduit sur le site
+                   de reference).
+                 - .foot-mail__visible, superposee dessus en position
+                   absolute, est la seule que JS touche (survol -> "Click to
+                   copy", clic -> "Copied"). Toujours en flex hugging son
+                   propre contenu (justify-content par defaut) : l'icone
+                   colle au texte actuellement affiche avec le meme
+                   ecart qu'au repos, quel que soit l'etat — seul l'espace
+                   INUTILISE (si le texte est plus court que l'adresse) se
+                   retrouve a droite de l'icone, jamais entre le texte et
+                   elle.
+
+                 sendIcon + copyIcon (dans .foot-mail__visible uniquement)
+                 sont tous les deux presents en permanence, empiles en grille
+                 dans .u-arrow-link__icon (voir styles.css) : le CSS choisit
+                 lequel est visible (survol/focus sur desktop, copyIcon en
+                 permanence sur mobile) sans jamais toucher au DOM. -->
+            <li>
+              <a class="u-arrow-link foot-magnetic foot-mail" href="mailto:${escapeAttr(SITE.email)}" data-email="${escapeAttr(SITE.email)}">
+                <span class="foot-mail__sizer" aria-hidden="true">
+                  <span>${escapeAttr(SITE.email)}</span><span class="u-arrow-link__icon">${sendIcon('')}</span>
+                </span>
+                <span class="foot-mail__visible">
+                  <span class="foot-mail__text-visible">${escapeAttr(SITE.email)}</span>
+                  <span class="u-arrow-link__icon" aria-hidden="true">${sendIcon('foot-mail__icon-arrow')}${copyIcon('foot-mail__icon-copy')}</span>
+                </span>
+              </a>
+            </li>
+            <li>${extArrowLinkHTML('LinkedIn', SITE.links.linkedin, 'foot-magnetic')}</li>
           </ul>
         </div>
       </div>
-      <div class="foot__bottom">
-        <span>© ${new Date().getFullYear()} ${escapeAttr(SITE.name)}. ${escapeAttr(d.footerRights)}</span>
-      </div>
-    </div>`;
+    </div>
+    <!-- Trame geometrique du pied de page de marvinsrd.com (demande
+         utilisateur : "les memes classes"), reprise telle quelle — memes noms
+         de classe (ligne-footer/carre/grand-cercle), meme ordre, memes
+         suffixes numeriques. Hors de .wrap.foot, comme sur le site de
+         reference : ces div sont position:absolute et se calent directement
+         sur .site-foot (voir styles.css), pas sur la colonne de contenu. -->
+    <div class="ligne-footer _2"></div>
+    <div class="ligne-footer"></div>
+    <div class="ligne-footer _6"></div>
+    <div class="carre"></div>
+    <div class="ligne-footer _4"></div>
+    <div class="ligne-footer _3"></div>
+    <div class="grand-cercle"></div>`;
 }
 
 
@@ -4532,6 +4725,8 @@ function paint(hash, route, mode) {
 
     if (route.name === 'home') setupHomeNavSpy();
     if (route.name === 'home') setupNavContrast();
+    if (route.name === 'home') setupMagneticHeroLinks();
+    if (route.name === 'home') setupMagneticCards();
     /* Sans condition de route : la pastille sert l'accueil ET les etudes de
        cas, et setupCursorPill sort d'elle-meme quand la page n'a aucune cible
        (About, l'article, une 404). */
@@ -5777,6 +5972,175 @@ function setupHomeNavSpy() {
   update();
 }
 
+/* ---- Effet magnetique (demande utilisateur) --------------------------
+   Inspire du composant "Magnetic button" de components.janustiu.com : le
+   lien penche legerement vers le curseur en le survolant, puis revient au
+   centre au relachement. Le JS ici ne fait que poser `transform` en ligne a
+   chaque evenement pointeur — c'est la transition CSS (section 5 pour
+   .petal-experiment et voisins, section "pied de page" pour
+   .foot-hover-box) qui fait le lissage/le rebond ("damped spring" du prompt
+   d'origine), pas une boucle requestAnimationFrame : plus simple, et
+   coherent avec le reste du site qui laisse deja le CSS animer.
+   MAX_X/MAX_Y par defaut (4px/3px) : quart des valeurs du prompt d'origine
+   (16px/12px, pense pour un gros bouton pilule) — deux demandes
+   utilisateur successives pour alleger l'effet sur du texte de phrase, ou
+   un mouvement de cette ampleur se remarquait davantage.
+   PAS de parallax sur le libelle : le span ne bouge pas independamment, il
+   suit simplement le `transform` de l'ancre qui le contient.
+   Souris/stylet seulement pour le suivi continu : au clavier, un leger
+   soulevement fixe suffit (:focus-visible propre a chaque appelant, le
+   contour vient deja de la regle :focus-visible globale) ; au tactile, un
+   penchant fixe au contact plutot qu'un suivi du doigt (qui n'a pas de sens
+   sur un mot de quelques caracteres, et le prompt lui-meme demande juste un
+   "aperçu" fixe).
+   `cleanup: true` enregistre le detachement via addCleanup() — a reserver
+   aux liens qui vivent et meurent avec une route (le heros, reconstruit a
+   chaque visite de l'accueil). Le pied de page n'est lui construit qu'une
+   fois par session (voir start()) : ses liens n'ont donc pas besoin de
+   cleanup, l'attache initiale suffit pour toute la session. */
+function attachMagneticTilt(a, { maxX = 4, maxY = 3, cleanup = false } = {}) {
+  const setTilt = (nx, ny) => {
+    a.style.transform = `translate(${(nx * maxX).toFixed(2)}px, ${(ny * maxY).toFixed(2)}px)`;
+  };
+  const reset = () => { a.style.transform = ''; };
+
+  const onPointerMove = e => {
+    if (e.pointerType === 'touch') return;      // le tactile a son propre traitement ci-dessous
+    const rect = a.getBoundingClientRect();
+    const nx = Math.max(-1, Math.min(1, ((e.clientX - rect.left) / rect.width) * 2 - 1));
+    const ny = Math.max(-1, Math.min(1, ((e.clientY - rect.top) / rect.height) * 2 - 1));
+    setTilt(nx, ny);
+  };
+  const onPointerLeave = e => { if (e.pointerType !== 'touch') reset(); };
+  // Tactile : un penchant fixe au contact ("preview a small fixed lean"),
+  // pas un suivi de position — relache au retrait du doigt.
+  const onPointerDown = e => { if (e.pointerType === 'touch') setTilt(.5, .5); };
+  const onPointerUp = e => { if (e.pointerType === 'touch') reset(); };
+
+  a.addEventListener('pointermove', onPointerMove);
+  a.addEventListener('pointerleave', onPointerLeave);
+  a.addEventListener('pointerdown', onPointerDown);
+  a.addEventListener('pointerup', onPointerUp);
+  a.addEventListener('pointercancel', onPointerUp);
+  if (cleanup) addCleanup(() => {
+    a.removeEventListener('pointermove', onPointerMove);
+    a.removeEventListener('pointerleave', onPointerLeave);
+    a.removeEventListener('pointerdown', onPointerDown);
+    a.removeEventListener('pointerup', onPointerUp);
+    a.removeEventListener('pointercancel', onPointerUp);
+    reset();
+  });
+}
+
+// Petal/Fit-Plans/Gekko (dans la phrase) + le lien "deux ans" (hors phrase,
+// mais meme cycle de vie : reconstruit a chaque visite de l'accueil).
+function setupMagneticHeroLinks() {
+  if (prefersReducedMotion()) return;
+  const links = $$('.hero__statement .petal-experiment, .hero__statement .fitplans-experiment, .hero__statement .gekko-experiment, .hero__gap.gap-experiment');
+  links.forEach(a => attachMagneticTilt(a, { cleanup: true }));
+}
+
+// Toutes les entrees de la pilule (nom, Home/Work/Side quests/About,
+// Resume/Email) : meme traitement magnetique que le pied de page et le
+// heros. Pas de cleanup : contrairement au heros, .site-nav n'est jamais
+// reconstruite (elle vit dans index.html, hors du routeur) — un seul appel
+// au demarrage suffit pour toute la duree de la page.
+function setupMagneticNavLinks() {
+  if (prefersReducedMotion()) return;
+  const links = $$('#site-nav a');
+  links.forEach(a => attachMagneticTilt(a));
+}
+
+// Sitemap + Get in touch (8 liens) : tous portent .foot-magnetic (voir
+// buildFooter()), meme traitement que .hero__gap — magnetique, sans boite ni
+// soulignement (voir la regle .foot-magnetic dans styles.css).
+function setupMagneticFooterLinks() {
+  if (prefersReducedMotion()) return;
+  const links = $$('#site-foot .foot-magnetic');
+  links.forEach(a => attachMagneticTilt(a));
+}
+
+// Lien mail du pied de page : interaction "cliquer pour copier" (demande
+// utilisateur, cf. .link-muted.cursor-pointer sur krystianzun.com). Le texte
+// visible passe par trois etats — l'adresse (repos), le rappel d'action (au
+// survol/focus, desktop uniquement : pas de survol sur mobile) et la
+// confirmation (apres un clic, sur TOUS les appareils) — mais ne touche
+// jamais a .foot-mail__sizer, qui fixe la largeur de toute l'ancre sur
+// l'etat par defaut (voir le commentaire dans buildFooter()) : aucun de ces
+// trois textes n'est plus large que lui, donc la zone de survol/clic ne
+// bouge jamais et ne peut pas clignoter au bord (bug reproduit sur le site
+// de reference, ou un texte plus court que l'adresse retrecit la boite au
+// survol, ce qui fait sortir la souris de la zone et clignoter l'etat).
+function setupFootMailCopy() {
+  const a = $('.foot-mail');
+  if (!a) return;
+  const label = $('.foot-mail__text-visible', a);
+  const email = a.dataset.email;
+  const hoverCapable = () => window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+  let resetTimer = null;
+  const showHint  = () => { if (!a.classList.contains('is-copied')) label.textContent = t().footerMailHint; };
+  const showEmail = () => { if (!a.classList.contains('is-copied')) label.textContent = email; };
+
+  a.addEventListener('mouseenter', () => { if (hoverCapable()) showHint(); });
+  a.addEventListener('mouseleave', () => { if (hoverCapable()) showEmail(); });
+  a.addEventListener('focus', () => { if (hoverCapable()) showHint(); });
+  a.addEventListener('blur',  () => { if (hoverCapable()) showEmail(); });
+
+  a.addEventListener('click', (ev) => {
+    ev.preventDefault();               // pas de client mail : on copie, comme sur krystianzun.com
+    copyToClipboard(email);
+    clearTimeout(resetTimer);
+    a.classList.add('is-copied');
+    label.textContent = t().footerMailCopied;
+    resetTimer = setTimeout(() => {
+      a.classList.remove('is-copied');
+      // Toujours survole/focus a la fin du delai (souris restee dessus) :
+      // retour au rappel d'action, pas droit a l'adresse — coherent avec
+      // .foot-mail:hover qui, lui, n'a jamais quitte son etat CSS entre-temps.
+      const stillEngaged = a.matches(':hover') || a.matches(':focus-visible');
+      label.textContent = (hoverCapable() && stillEngaged) ? t().footerMailHint : email;
+    }, 1800);
+  });
+}
+
+// navigator.clipboard exige un contexte securise (https, ou localhost en dev) ;
+// execCommand('copy') sert de repli pour le reste (http:// avant mise en ligne,
+// vieux navigateurs). Aucune erreur remontee a l'utilisateur si les deux
+// echouent : la pire consequence est de devoir copier l'adresse a la main.
+function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopyToClipboard(text));
+  } else {
+    fallbackCopyToClipboard(text);
+  }
+}
+function fallbackCopyToClipboard(text) {
+  // .value, pas l'attribut (el()) : un <textarea> tire son contenu de son
+  // texte/valeur en JS, jamais d'un attribut "value" HTML.
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch { /* tant pis, voir copyToClipboard() */ }
+  document.body.removeChild(ta);
+}
+
+// Vignettes de projets (accueil) : la carte ENTIERE (pas seulement l'image)
+// penche vers le curseur — maxX/maxY plus genereux que les liens texte
+// (6/5 contre 4/3) car la carte est bien plus grande, sinon le mouvement se
+// perd. Le zoom CSS de .card__media (scale 1.03 au survol, section 7) reste
+// intact : il vit sur l'image, pas sur .card, donc les deux transforms ne se
+// marchent pas dessus. Reconstruite a chaque visite de l'accueil (pageHome())
+// : cleanup obligatoire, comme le heros.
+function setupMagneticCards() {
+  if (prefersReducedMotion()) return;
+  const cards = $$('.home .card');
+  cards.forEach(a => attachMagneticTilt(a, { maxX: 6, maxY: 5, cleanup: true }));
+}
+
 
 /* ---- 8 ter. LA PILULE SUR FOND CLAIR ----
    Alourdit la matiere de la barre de navigation, et elle seule, pendant
@@ -6053,6 +6417,8 @@ function setupGate() {
   const input = $('#gate-input');
   const error = $('#gate-error');
   const skip  = $('#gate-skip');
+  const gateHi = $('.gate__hi');
+  const gateQ  = $('.gate__q');
 
   const open = () => {
     // Prenom encore valide (< 1h) : on l'applique directement, sans
@@ -6066,6 +6432,11 @@ function setupGate() {
 
     gate.hidden = false;
     document.body.classList.add('is-locked');
+    // Meme balayage de presentation que .hero__hello (styles.css section 4) :
+    // gate__hi d'abord, puis gate__q. Uniquement ici, pas dans le branchement
+    // "prenom deja stocke" ci-dessus, qui saute le portail entierement.
+    gateHi.classList.add('is-revealing');
+    gateQ.classList.add('is-revealing');
     // Le focus part dans le champ : la personne peut taper immediatement,
     // sans avoir a cliquer. Et au clavier, c'est le seul comportement correct.
     requestAnimationFrame(() => input.focus());
@@ -6152,12 +6523,27 @@ function start() {
 
   applyStaticI18n();
   buildFooter();
+  setupMagneticFooterLinks();
+  setupMagneticNavLinks();
+  setupFootMailCopy();
 
   const gate = setupGate();
 
   syncHeadHeight();
 
   /* --- Ecouteurs globaux, installes une seule fois --- */
+
+  /* Les liens (et images) sont draggables par defaut dans le navigateur.
+     Cliquer-glisser un lien demarre alors un vrai glisser-deposer natif :
+     les evenements pointerdown/up ne se terminent plus normalement (le
+     navigateur les avale pendant le drag), ce qui laisse nos effets au
+     survol/pointer (tilt magnetique, etc.) dans un etat incoherent — et si
+     le lien est relache ailleurs sur la page, certains navigateurs tentent
+     une navigation/depot qui casse l'etat du routeur. On desactive donc ce
+     glisser-deposer natif partout, site entier, une bonne fois. */
+  document.addEventListener('dragstart', (ev) => {
+    if (ev.target.closest('a, img')) ev.preventDefault();
+  });
 
   /* hashchange se declenche a chaque changement de la partie apres le #.
      C'est le moteur de notre navigation — mais il ne doit PAS redessiner la
@@ -6195,10 +6581,15 @@ function start() {
      Tous les autres liens gardent leur comportement normal — le hash change,
      hashchange se declenche, la logique habituelle s'applique.
 
-     Delegue sur l'en-tete plutot que pose lien par lien : #site-head n'est
-     jamais remplace par le routeur, l'ecouteur survit donc a toutes les
-     navigations et n'a pas besoin d'etre nettoye. */
-  $('#site-head').addEventListener('click', (ev) => {
+     Delegue sur l'en-tete ET le pied de page plutot que pose lien par lien :
+     ni l'un ni l'autre n'est jamais remplace par le routeur (le pied de page
+     n'est reconstruit qu'au changement de langue, voir buildFooter()),
+     l'ecouteur survit donc a toutes les navigations et n'a pas besoin d'etre
+     nettoye. Meme bug constate sur "Home" dans le pied de page (demande
+     utilisateur, surtout visible sur mobile ou c'est la seule facon de
+     revenir en haut de l'accueil apres avoir tout defile) : rien ne le
+     distingue de "Marvin S." dans l'en-tete, meme traitement. */
+  const scrollToSameHashLink = (ev) => {
     /* On laisse passer tout clic qui n'est pas un simple clic gauche.
        Ctrl/Cmd + clic ouvre un onglet, Maj + clic une fenetre : ces clics
        emettent le meme evenement 'click', et un preventDefault les tuerait
@@ -6218,7 +6609,9 @@ function start() {
     const anchor = location.hash.split('#')[2];
     if (anchor) scrollToSection(anchor, behavior);
     else window.scrollTo({ top: 0, behavior });
-  });
+  };
+  $('#site-head').addEventListener('click', scrollToSameHashLink);
+  $('#site-foot').addEventListener('click', scrollToSameHashLink);
 
   /* Echap referme la fiche d'etude de cas. Un element qui se pose par-dessus
      le reste doit toujours se refermer a la touche Echap ; c'est la sortie
