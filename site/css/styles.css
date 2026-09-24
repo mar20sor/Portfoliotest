@@ -5505,7 +5505,7 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
    compose a 2 classes — d'ou un second compose a 3 classes juste apres,
    pour garder la colonne de lecture ici alors que /gap la laisse deborder
    ailleurs. */
-.editorial__block .exp__text { flex: 1 1 260px; min-width: 0; max-width: var(--measure); margin: 0; color: var(--ink-soft); font-size: var(--fs-small); }
+.editorial__block .exp__text { flex: 1 1 100px; min-width: 0; max-width: var(--measure); margin: 0; color: var(--ink-soft); font-size: var(--fs-small); }
 .editorial--gap .editorial__block .exp__text { max-width: var(--measure); }
 @media (max-width: 600px) {
   .exp-list { gap: var(--s3); }
@@ -5937,7 +5937,7 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
   background: var(--veil-strong);
   border-left: 3px solid var(--accent);
   padding: var(--s4) var(--s5);
-  border-radius: var(--radius-sm);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   color: var(--ink);
   font-size: var(--fs-small); font-style: italic;
 }
@@ -5955,14 +5955,23 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
 .editorial__links .about-cta-link.u-arrow-link > span:first-child,
 .exp__text .about-cta-link.u-arrow-link > span:first-child { text-decoration: none; }
 /* "See projects" (Petal) en semibold (demande utilisateur) — la taille reste
-   celle de .exp__text (aucune regle ici ne la touche, voir plus haut). */
-.exp__text .about-cta-link { font-weight: var(--w-semibold); }
+   celle de .exp__text (aucune regle ici ne la touche, voir plus haut).
+   Couleur blanc plein constante, repos et survol (demande utilisateur) :
+   pas de survol qui change de teinte, juste --ink (blanc sur ce theme). */
+.exp__text .about-cta-link { font-weight: var(--w-semibold); color: var(--ink); }
 /* "The full story" (career break, .hero__gap reutilise tel quel — voir
    gapCtaLinkHTML()) : demande utilisateur, meme taille que la phrase
    .exp__text qui le porte (inherit plutot que --fs-small en dur, au cas ou
    .exp__text change de taille un jour) et semibold plutot que le medium de
-   .hero__gap sur l'accueil. */
-.exp__text .hero__gap { font-size: inherit; font-weight: var(--w-semibold); }
+   .hero__gap sur l'accueil. Couleur blanc plein constante (ecrase le
+   color-mix estompe au repos de .hero__gap — la regle :hover d'origine reste
+   inoffensive, elle pose deja --ink). vertical-align: middle corrige le
+   desalignement vertical propre a ce lien : contrairement a extArrowLinkHTML
+   (texte PUIS icone), ici l'icone est le PREMIER enfant du conteneur
+   inline-flex (voir gapCtaLinkHTML()) — son baseline de premiere ligne suit
+   alors celui du <svg> (sans ligne de base de texte) plutot que celui du
+   texte, ce que .u-arrow-link seul (voir sa note plus haut) ne couvre pas. */
+.exp__text .hero__gap { font-size: inherit; font-weight: var(--w-semibold); color: var(--ink); vertical-align: middle; }
 /* Meme habillage que le declencheur "Experience" (.figure-drawer.cs-more
    summary plus haut) et le h2 "PS" (.editorial__block h2 plus haut) : pleine
    couleur ink et graisse medium plutot que le corps de texte estompe
