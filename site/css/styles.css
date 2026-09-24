@@ -1733,7 +1733,7 @@ body:not(.is-overlay):has(.home) {
   /* .site-nav a la sienne dans la section 5 : elle transitionne deja son
      fond, et une seconde declaration `transition` effacerait la premiere. */
 
-  body:has(#main .home .card__media:hover) :is(
+  body:has(#main .home .card:hover) :is(
     #main .home .hero,
     #main .home .section__head,
     #main .home .card:not(:hover),
@@ -2280,8 +2280,12 @@ body:not(.is-overlay):has(.home) {
   line-height: 1.2;
 }
 /* Le sur-titre se rapproche de la ligne qu'il annonce : les --s4 qui separent
-   un titre de son corps de texte feraient, ici, deux blocs sans rapport. */
-.cs-sec__title:has(+ .cs-sec__headline) { margin-bottom: var(--s2); }
+   un titre de son corps de texte feraient, ici, deux blocs sans rapport.
+   Le second selecteur couvre s.collapsed (voir pageCase(), app.js) : le
+   sur-titre y est suivi d'un <details class="text-drawer"> dont s.headline
+   est devenu le declencheur, plutot que de rester son voisin direct. */
+.cs-sec__title:has(+ .cs-sec__headline),
+.cs-sec__title:has(+ .text-drawer > summary > .cs-sec__headline) { margin-bottom: var(--s2); }
 .cs-sec p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-faint); }
 .cs-sec p:last-child { margin-bottom: 0; }
 /* Hoot/Analysis : le paragraphe qui annonce les deux profils doit coller a
@@ -4909,7 +4913,7 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
    memes classes .figure-drawer.cs-more. */
 .editorial__block .figure-drawer.cs-more summary { font-size: var(--fs-h3); font-weight: var(--w-medium); color: var(--ink); }
 .cs-more__body { margin-top: var(--s5); }
-.cs-more__item + .cs-more__item { margin-top: var(--s7); }
+.cs-more__item + .cs-more__item { margin-top: var(--s8); }
 .cs-more__title { font-size: var(--fs-h3); font-weight: var(--w-medium); margin-bottom: var(--s3); }
 /* Images du tiroir (mapping des 24 contraintes, benchmark) sans le cadre
    standard de .figure__frame (fond, liser, padding) : ce sont deja des
@@ -4925,6 +4929,39 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   background: var(--frame-bg);
 }
 .cs-more__embed iframe { width: 100%; height: 100%; border: none; display: block; }
+
+/* ---- Tiroir dont le declencheur est un titre existant, style inchange ---
+   Utilise a deux endroits (voir app.js) : pageEditorial(), b.collapsed
+   (un h2 entier de bloc devient tiroir — page gap, "What I did instead" /
+   "What it changed about how I work") et pageCase(), s.collapsed (une
+   section entiere, son s.headline comme declencheur — ex. Licence
+   management/Before) ou un sous-titre ##! au fil de s.body (Licence
+   management/Context, "Different types of users and possibilities").
+   Demande utilisateur explicite : la taille/graisse/couleur du titre ne
+   doit PAS changer en devenant declencheur — a la difference de
+   .figure-drawer summary (section precedente), qui impose sa propre
+   typographie, ce tiroir-ci ne touche a rien du titre qu'il enveloppe. Le
+   seul ajout est le chevron a cote, et le triangle natif de <summary> est
+   retire comme partout ailleurs sur le site. */
+.text-drawer summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.text-drawer summary::-webkit-details-marker { display: none; }
+/* Le titre garde sa propre marge quand il est seul (etat replie/ouvert
+   normal hors tiroir) ; ici elle doublonnerait avec .text-drawer__body,
+   donc on la retire une fois a l'interieur du declencheur. */
+.text-drawer summary > :first-child { margin-bottom: 0; }
+.text-drawer__chevron {
+  width: 18px; height: 18px; flex: 0 0 auto;
+  color: var(--ink-faint);
+  transition: transform .25s var(--ease);
+}
+.text-drawer[open] .text-drawer__chevron { transform: rotate(180deg); }
+.text-drawer__body { margin-top: var(--s4); }
 
 /* La vignette video des cartes de projet : par defaut, meme traitement que
    les images/SVG juste au-dessus (100%, object-fit: cover) — le fichier est
@@ -5397,11 +5434,20 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
    marge blanche large comme .draggable-card (autre reference,
    lelezhang.design, section 9 bis) : une photo scotchee a plat, pas une
    carte polaroid. */
+/* .about-photo-row : porte desormais les marges verticales autrefois sur
+   .about-photo directement — l'"french accent" margin-note (voir
+   marginNoteHTML() dans app.js) s'empile juste au-dessus de la photo, en
+   FLUX normal plutot qu'en overlay absolu a la Figma, pour rester visible
+   quelle que soit la largeur d'ecran (demande utilisateur explicite). */
+.about-photo-row {
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: var(--s2);
+  margin: var(--s7) 0 var(--s8);
+}
 .about-photo {
   position: relative;
   width: min(220px, 55vw);
   aspect-ratio: 1 / 1;
-  margin: var(--s7) 0 var(--s8);
   transform: rotate(-6deg);
 }
 .about-photo__img {
@@ -5421,27 +5467,287 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
 .about-photo__tape--1 { left: -12%; top: 10%; transform: rotate(-10deg); }
 .about-photo__tape--2 { right: -12%; bottom: 12%; transform: rotate(16deg); }
 
+/* .editorial__lede-row : meme raisonnement que .about-photo-row juste au-
+   dessus — la "callout" margin-note s'empile avant la lede, en flux normal,
+   pour rester visible sur mobile. La marge basse de la lede (autrefois
+   directement sur .editorial__lede) vit ici pour englober la note. */
+.editorial__lede-row {
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: var(--s2);
+  margin-bottom: var(--s7);
+}
 .editorial__lede {
   font-size: var(--fs-lead); color: var(--ink-soft); font-weight: var(--w-light);
-  max-width: var(--measure); margin-bottom: var(--s7);
+  max-width: var(--measure);
 }
 /* Essai (demande utilisateur) : la lede de About en encart, meme recette que
    .editorial__block .editorial__callout plus bas (fond teinte, filet
-   d'accent, italique) mais SEULEMENT les proprietes qui different d'un
+   d'accent) mais SEULEMENT les proprietes qui different d'un
    .editorial__lede simple — font-size/poids/mesure/marge restent celles du
    lede, aucune regle .editorial__block p a battre ici (la lede vit HORS de
    .editorial__block, voir pageEditorial()) donc pas besoin du meme
    selecteur compose. Coins gauches carres (haut ET bas) : coherent avec le
    filet d'accent qui longe ce bord, meme convention que .todo plus bas. */
 .editorial__lede.editorial__callout {
-  background: var(--veil-strong);
-  border-left: 3px solid var(--accent);
-  padding: var(--s4) var(--s5);
+  border-left: 2px solid white;
+  padding: 0px var(--s5);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   color: var(--ink);
-  font-style: italic;
 }
+
+/* ---- "Margin notes", page About (marginNoteHTML() dans app.js) ----
+   Commentaires laisses par le designer sur la maquette Figma source
+   (fichier "Claude portfolio image generation") integres tels quels comme
+   des apartes manuscrits — DEUX jeux de coordonnees (mobile ci-dessous,
+   desktop plus bas dans le fichier), Figma composant chaque largeur
+   separement plutot qu'une seule mise en page redimensionnee :
+     - mobile (< 1001px, ce bloc) : frames 450:12065 "Hero", 450:12069
+       "Exp", 450:12073 "Education" — chaque note loge a DROITE de sa
+       cible (la colonne occupe toute la largeur, aucune marge laterale
+       disponible a gauche comme sur desktop), fleche courbant vers la
+       gauche.
+     - desktop (>=1001px) : frames 446:12036 "Hero", 446:12050
+       "Experience" — voir plus bas dans ce fichier.
+   Absolu aux DEUX largeurs (jamais en flux) : un aparte hors-cadre
+   n'ajoute donc aucune hauteur a la mise en page et ne peut pas pousser le
+   contenu reel, quelle que soit la largeur d'ecran.
+   Police Caveat (manuscrite, chargee via Google Fonts — voir index.html),
+   --ink-faint pour rester du bruit de marge jamais confondu avec le
+   contenu reel (et lisible dans les deux themes, contrairement au blanc a
+   40% d'opacite de la maquette source, pensee pour un fond bleu fixe). */
+.margin-note {
+  position: absolute;
+  z-index: 1;
+  max-width: none;
+  font-family: 'Caveat', cursive;
+  font-size: 1.3rem; line-height: 1.15;
+  color: var(--ink-faint);
+}
+.margin-note__text { margin: 0; }
+/* Chaque note pointant vers Experience/Education porte deux fleches dans
+   le DOM (mobile puis desktop, voir marginNoteHTML() dans app.js) — Figma
+   dessine une courbe DIFFERENTE a chaque largeur pour ces deux-la (pas
+   juste une rotation/un miroir du meme vecteur, a la difference de
+   "photo" et "lede" qui reutilisent le meme vecteur aux deux largeurs).
+   Seule la fleche pertinente s'affiche ; l'media query desktop plus bas
+   inverse ces deux regles. */
+.margin-note__arrow--desktop { display: none; }
+
+/* ---- Photo ("Strong french accent", node 450:12074/451:12091) : texte
+   en haut-droite (a la hauteur du titre "About", pas de la photo — la
+   fleche fait tout le trajet), fleche EN DESSOUS courbant vers le
+   bas-GAUCHE jusqu'a l'angle haut-droit de la photo. */
+.about-photo-row { position: relative; }
+/* left:0 + largeur = CELLE DE LA PHOTO (meme formule min(220px,55vw) que
+   .about-photo), texte aligne a droite dedans : ancre le mot-cle sur la
+   photo elle-meme plutot que sur .about-photo-row, qui est un conteneur
+   flex pleine largeur (block-level malgre display:flex) et peut donc etre
+   bien plus large que la photo des que la colonne editoriale depasse ~400px
+   (entre les breakpoints mobile et desktop) — sinon right:0 ancrait la note
+   au bord droit de la ROW, loin de la photo, plutot qu'au bord droit de la
+   photo (demande utilisateur : rester proche de la photo a toute largeur). */
+.margin-note--photo {
+  top: -84px; left: 120px; width: min(220px, 55vw); text-align: right;
+}
+@media (max-width: 370px) {
+  .margin-note--photo { left: 80px; }
+}
+.margin-note--photo .margin-note__text { max-width: 130px; margin-left: auto; }
+/* Largeur/hauteur/decalage en min(Xpx, Yvw) — MEME ratio que .about-photo
+   (55vw plafonne a 220px) applique a la taille d'origine de la fleche
+   (58x64, decalage 60px a 220px de photo) : sous ~400px de viewport reel, la
+   photo elle-meme retrecit (vw), donc la fleche doit retrecir avec elle
+   (meme ratio, 58/220=14.5vw etc.) sinon elle reste a taille fixe et finit
+   par recouvrir une bien plus grande partie d'une photo devenue petite
+   (demande utilisateur : jamais "par-dessus" la photo, teste a 295px). */
+.margin-note--photo .margin-note__arrow {
+  position: absolute; top: 90%; right: min(2.88em, 15vw);
+  width: min(58px, 14.5vw); height: min(64px, 16vw);
+  transform: scaleY(-1) rotate(210.77deg);
+}
+
+/* ---- Lede/callout ("Are you really going...", node 450:12087/451:12089) :
+   meme relation qu'en desktop (fleche a GAUCHE du texte, pas dessous) —
+   repris tel quel de la mise en page flex de base, juste repositionne. */
+.editorial__lede-row { position: relative; }
+.margin-note--lede {
+  display: flex; align-items: center; gap: var(--s2);
+  bottom: 100%; right: 0; margin-bottom: var(--s3); width: max-content;
+}
+.margin-note--lede .margin-note__text { max-width: 165px; position: relative; top: -0.96em; }
+.margin-note--lede .margin-note__arrow { width: 44px; height: 31.8px; }
+
+/* ---- Company ("No big tech company", node 450:12079/451:12093) : texte
+   a droite du declencheur "Experience", fleche en dessous courbant vers
+   le bas-gauche jusqu'a "Career break" juste en dessous. */
+.editorial__block .cs-more__item { position: relative; }
+/* width en min(125px, 100% - 145px) : le "100%" d'un enfant position:absolute
+   se resout contre SA propre containing block, ici .cs-more__item (position:
+   relative ci-dessus) — donc contre la largeur reelle de la colonne, pas une
+   valeur fixe. 145px = largeur du declencheur "Experience" (~124px, fixe,
+   c'est un mot) + une marge de secu ~20px : sous les tres petits viewports
+   (teste a 279px reel), 125px fixes deborderaient par-dessus ce mot (demande
+   utilisateur, "jamais par-dessus le texte") — cette formule retrecit la
+   note (et la fait passer sur 3 lignes) juste assez pour rester a cote. */
+.margin-note--company {
+  top: -76px; right: 0; width: min(125px, 100% - 145px);
+}
+.margin-note--company .margin-note__arrow {
+  position: absolute; top: 20%; right: 6.49em;
+  width: 46px; height: 66px;
+}
+
+/* ---- University ("No ivy-league university", node 450:12082/451:12095) :
+   texte a droite, fleche AU-DESSUS (deja retournee dans le vecteur importe,
+   voir figmaArrowUniversityMobileIcon()) courbant vers le haut-gauche. */
+.margin-note--university {
+  top: -2.02em; right: 0; width: 140px;
+}
+.margin-note--university .margin-note__arrow {
+  position: absolute; bottom: -10%; right: 6.97em;
+  width: 34px; height: 20px;
+}
+/* Sous ~380px de large, "Experience"/"Education" (les cibles) prennent une
+   part bien plus grande d'une colonne devenue tres etroite. 318px = seuil
+   ou .margin-note--company elle-meme commence a retrecir (min(125px, 100% -
+   145px) cesse de valoir 125px en dessous d'environ 270px de colonne, soit
+   ~318px de viewport reel avec les gouttieres) : les deux regles s'activent
+   ensemble, sans zone intermediaire ou l'une bouge sans l'autre. Meme sous
+   ce seuil, .margin-note--company retreci deborde encore par la FLECHE
+   (decalage fixe 6.49em, pas relatif a la largeur de la note qui vient de
+   retrecir) sur le mot "Experience" ; la note "university" (top:-2.02em)
+   chevauche carrement le titre "Education", qui occupe TOUTE la largeur de
+   la colonne (un h3, contrairement au <summary> etroit d'Experience) —
+   demande utilisateur explicite, teste a 279px reel, "jamais par-dessus le
+   texte". Compromis : la fleche "company" pointe vers le bas sans plus
+   atteindre tout a fait "Career break" (elle reste proche, juste plus
+   courte horizontalement) ; "university" remonte davantage et sa fleche
+   perd son debord bas (-10% -> 0) pour degager "Education" verticalement. */
+@media (max-width: 318px) {
+  .margin-note--company .margin-note__arrow { right: 1em; }
+  .margin-note--university { top: -2.3em; }
+  .margin-note--university .margin-note__arrow { bottom: 0; }
+}
+
+/* ---- Margin notes, mise en position Figma (>=1001px) ---------------------
+   Reproduction au pixel pres de la position/relation texte<->fleche des 4
+   commentaires sur la maquette source (fichier "Claude portfolio image
+   generation", frames 446:12036 "Hero" et 446:12050 "Experience", mesures
+   via get_metadata puis converties en coordonnees relatives a chaque cible
+   — demande utilisateur explicite, "BE STRICT"). Absolu plutot qu'en flux
+   (regle de base ci-dessus, qui reste le repli < 1001px) : c'est le SEUIL
+   ou .editorial__gapgrid (section 9) repasse a deux colonnes et ouvre la
+   marge laterale (190px de nav + gap) necessaire aux notes "photo" et
+   "company/university", qui debordent a GAUCHE de leur cible comme dans la
+   maquette. La note "lede" n'a pas besoin de cette marge (positionnee
+   AU-DESSUS de l'encart, dans sa propre largeur) : elle reste absolue a
+   toute largeur, voir plus bas.
+   Chaque `.margin-note--x` devient son propre contexte de positionnement
+   (position:absolute) pour sa fleche enfant (position:absolute egalement,
+   .margin-note__arrow) — l'ordre du DOM (icone puis texte, marginNoteHTML()
+   dans app.js) n'a plus d'importance, chacun est place independamment. */
+@media (min-width: 1001px) {
+  .about-photo-row { position: relative; }
+
+  /* Bascule inverse de la regle de base (.margin-note__arrow--desktop
+     plus haut) : a partir d'ici, c'est la fleche DESKTOP qu'on affiche. */
+  .margin-note__arrow--mobile { display: none; }
+  .margin-note__arrow--desktop { display: block; }
+
+  /* Chaque `.margin-note--x` : position:absolute (bloc simple, plus de
+     flex) pour le texte, avec sa fleche en enfant position:absolute —
+     l'ordre du DOM (icone puis texte, marginNoteHTML() dans app.js) n'a
+     plus d'importance, chacun est place independamment. Fleche dimen-
+     sionnee au ratio natif du vecteur Figma importe (111.196 x 60.988,
+     voir figmaArrowDownRightIcon() dans app.js) mais agrandie par rapport
+     a sa taille d'origine dans la maquette : a l'echelle 1:1 de la
+     maquette (cadre 1195px vs notre colonne 760px) elle serait trop
+     petite pour vraiment relier le texte a sa cible dans notre mise en
+     page. */
+  .margin-note--photo, .margin-note--company, .margin-note--university {
+    width: 140px;
+  }
+  .margin-note--photo .margin-note__arrow,
+  .margin-note--company .margin-note__arrow,
+  .margin-note--university .margin-note__arrow {
+    position: absolute; top: auto; right: -13px; margin: 0;
+    width: 70px; height: 38.4px; transform: none;
+  }
+
+  /* Texte au-dessus, fleche EN DESSOUS courbant vers le bas-droite jusqu'a
+     toucher le bord gauche de la photo a mi-hauteur (mesure Figma : fleche
+     x:84->193 / y:233->286 relatifs au cadre, photo a gauche ~x:194 —
+     l'extremite de la fleche affleure donc ce bord). */
+  .margin-note--photo {
+    position: absolute;
+    top: -4px; left: -200px;
+  }
+  .margin-note--photo .margin-note__arrow { top: 52px; }
+
+  /* Texte en haut-droite de l'encart, fleche a SA GAUCHE (pas dessous) —
+     demande utilisateur explicite : la fleche cote-a-cote avec son texte
+     rend plus evident qu'elle designe CE texte (et par sa courbe, l'encart
+     juste en dessous) plutot que de sembler flotter separement. Repris de
+     la mise en page flex de base (.margin-note, icone puis texte) : plus
+     besoin d'override display:block ici, juste le positionnement absolu du
+     groupe entier. */
+  .editorial__lede-row { position: relative; }
+  .margin-note--lede {
+    position: absolute; align-items: center;
+    max-width: none; width: max-content;
+    bottom: 100%; right: 0; margin-bottom: var(--s3); transform: none;
+  }
+  /* position:relative + top negatif sur le TEXTE (pas la fleche) : remonte
+     le texte pour que la pointe de la fleche (fixe) arrive au milieu des 2
+     lignes — demande utilisateur explicite, en em (relatif a la taille de
+     police du texte) plutot qu'en px pour tenir a n'importe quelle largeur
+     d'ecran. */
+  .margin-note--lede .margin-note__text { max-width: 190px; position: relative; top: -1.68em; }
+  .margin-note--lede .margin-note__arrow { width: 52px; height: 37.6px; transform: none; }
+
+  /* Meme relation que .margin-note--photo (texte au-dessus, fleche dessous
+     vers le bas-droite) — chaque note reste ancree a SA PROPRE section
+     (.cs-more__item, position:relative ci-dessous) pour suivre Experience
+     et Education independamment de leur position de defilement. Proche du
+     tout premier item (~ "Career break") plutot que plus bas dans la liste
+     (demande utilisateur : plus haut, pour designer sans ambiguite toute
+     la section Experience des qu'elle apparait, pas une seule entree). */
+  .editorial__block .cs-more__item { position: relative; }
+  .margin-note--company {
+    position: absolute;
+    top: 20px; right: calc(100% + var(--s5));
+  }
+  .margin-note--company .margin-note__arrow { top: 52px; }
+  /* Meme ancrage que --company, meme vecteur (figmaArrowDownRightIcon()),
+     mais retourne verticalement (scaleY) : exactement ce que fait le node
+     Figma d'origine, qui reutilise CE MEME "Vector 2" avec un -scale-y-100
+     plutot que d'en dessiner un troisieme pour University. Descendue a
+     hauteur des entrees CFI/IUT (demande utilisateur : plus bas, pour
+     designer la liste Education elle-meme plutot que seulement son titre
+     juste au-dessus). */
+  .margin-note--university {
+    position: absolute;
+    top: 220px; right: calc(100% + var(--s5));
+  }
+  .margin-note--university .margin-note__arrow { bottom: 52px; transform: scaleY(-1); }
+}
+
 .editorial__block { margin-bottom: var(--s8); }
+/* Le "PS" final (content.js: about.blocks, handwritten:true) reprend le
+   meme traitement manuscrit que les margin-notes ci-dessus (demande
+   utilisateur), applique a un vrai bloc de contenu cette fois (titre ET
+   paragraphe, pas une simple aparte) : meme police, meme leger angle, mais
+   sa propre couleur (--ink, pas --ink-faint) puisqu'il reste du contenu a
+   lire, pas du bruit de marge. */
+.editorial__block--handwritten {
+  transform: rotate(-1.5deg);
+  font-family: 'Caveat', cursive;
+}
+/* Selecteur compose (0,2,1) : bat .editorial__block h2 / .editorial__block p
+   (0,1,1 chacune) quel que soit l'ordre dans le fichier, meme convention que
+   .editorial__lede.editorial__callout plus haut — voir CLAUDE.md. */
+.editorial__block.editorial__block--handwritten h2 { font-size: 2.5rem; font-weight: 600; }
+.editorial__block.editorial__block--handwritten p { font-size: 1.6rem; line-height: 1.3; color: var(--ink); }
 .editorial__block h2 { font-size: var(--fs-h2); margin-bottom: var(--s4); font-weight: var(--w-medium); }
 .editorial__block p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }
 .editorial__block p:last-child { margin-bottom: 0; }
@@ -5508,9 +5814,47 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
 .editorial__block .exp__text { flex: 1 1 100px; min-width: 0; max-width: var(--measure); margin: 0; color: var(--ink-soft); font-size: var(--fs-small); }
 .editorial--gap .editorial__block .exp__text { max-width: var(--measure); }
 @media (max-width: 600px) {
-  .exp-list { gap: var(--s3); }
+  .exp-list { gap: var(--s4); }
   .exp__row { flex-direction: column; gap: var(--s1); }
   .exp__org, .exp__tag { flex-basis: auto; }
+}
+/* Mobile, dans le drawer Experience/Education uniquement (figure-drawer
+   cs-more — pas /gap, qui garde la mise en page ci-dessus) : .exp__org et
+   .exp__tag viennent de deux <div class="exp__row"> differents dans le DOM
+   (expItemMarkup()), donc pas moyen de les mettre sur la meme ligne en
+   flex/colonne seul — display:contents "aplatit" chaque .exp__row pour que
+   ses enfants deviennent des items directs de la grille .exp__item, qu'on
+   replace librement par grid-template-areas (demande utilisateur : tag a
+   cote de org, dates sous le role — sans toucher au markup).
+   2e colonne en 1fr (pas max-content) : .exp__value/.exp__text enjambent
+   les 2 colonnes, et avec 2 colonnes max-content la largeur de piste se
+   base sur leur contribution "max-content" (texte SANS retour a la ligne,
+   potentiellement toute la phrase) plutot que sur leur minimum — colonnes
+   demesurees, org/tag ecartes l'un de l'autre. 1fr absorbe l'espace restant
+   sans etre contraint par ce calcul, .exp__tag reste colle a org via
+   justify-self:start (sinon etire sur toute la piste 1fr). */
+@media (max-width: 600px) {
+  /* .exp-list{gap:s4} (regle generale juste au-dessus) suffisait avec
+     l'ancienne mise en page (2 lignes/entree) ; la grille ci-dessous en
+     tient jusqu'a 3 (org+tag / value / text), donc chaque entree est plus
+     haute — le meme espacement separe moins bien visuellement (demande
+     utilisateur, a deux reprises : encore plus d'air entre les entrees). */
+  .figure-drawer.cs-more .exp-list { gap: var(--s6); }
+  .figure-drawer.cs-more .exp__item {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    column-gap: var(--s2); row-gap: var(--s1);
+    grid-template-areas: "org tag" "value value" "text text";
+  }
+  .figure-drawer.cs-more .exp__row,
+  .figure-drawer.cs-more .exp__row--sub { display: contents; }
+  .figure-drawer.cs-more .exp__org { grid-area: org; align-self: end; }
+  .figure-drawer.cs-more .exp__tag { grid-area: tag; justify-self: start; align-self: end; }
+  .figure-drawer.cs-more .exp__value {
+    grid-area: value;
+    flex-direction: column; align-items: flex-start;
+  }
+  .figure-drawer.cs-more .exp__text { grid-area: text; }
 }
 
 /* ---- Carte "polaroid" glissable (draggableCardMarkup()/setupDraggableCards()

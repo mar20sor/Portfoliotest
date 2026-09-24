@@ -78,7 +78,7 @@ export const UI = {
   gateError: 'Two characters minimum, letters and hyphens only.',
   gateHint: 'Stored in browser only, no database or tracking.',
 
-  navWork: 'Work', navSide: 'Side quests', navAbout: 'About', navContact: 'Email',
+  navWork: 'Work', navSide: 'Playground', navAbout: 'About', navContact: 'Email',
   navHome: 'Home', navMenu: 'Menu', navClose: 'Close',
   navResume: 'Resume',
 
@@ -87,7 +87,7 @@ export const UI = {
   helloAnon: 'Nice to meet you!',
   workTitle: 'Work',
   workIntro: 'Three years of healthcare SaaS, plus a few side quests.',
-  sideTitle: 'Side quests',
+  sideTitle: 'Playground',
   sideIntro: 'The things that don’t fit under “work experience” but still count.',
   aboutTitle: 'About',
 
@@ -709,7 +709,7 @@ export const PROJECTS = [
       {
         id: 'context', label: 'Context', title: 'Context',
         body: [
-          '## Different types of users and possibilities',
+          '##! Different types of users and possibilities',
           'Before, 3 roles existed, which identified permissions and the type of people they can invite:',
           '## The format wasn’t reflecting reality',
           'Only the Administrator role had the right to add new members, when in reality, clinicians HR or cost-management staffer could also need it because part of their job includes provisioning access for clinicians.',
@@ -749,6 +749,7 @@ export const PROJECTS = [
       {
         id: 'before', label: 'Before', title: 'Before',
         headline: 'There was no registration flow',
+        collapsed: true,
         body: [
           'Before this project, registration was operated through an external software with Petal deployment team.',
           'Planners could only go to the detail page of an already-existing member to edit their access, in a multi-page setup, but admins couldn’t.',
@@ -967,6 +968,7 @@ export const PROJECTS = [
       {
         id: 'process', label: 'Process', title: 'Process',
         headline: 'The current website',
+        collapsed: true,
         body: [
           'To understand why the users were ordering by phone instead of online, I first audited the website. I realized that:',
           'I also observed the analytics and proceeded to an exploratory survey to understand their opinion about the website. It made me understand that:'
@@ -1056,6 +1058,7 @@ export const PROJECTS = [
       {
         id: 'test', label: 'Testing', title: 'Testing',
         headline: 'Ensuring the new website is easy to navigate',
+        collapsed: true,
         body: [
           'I conducted two tests remotely with a prototype in order to ensure that the interface was usable.',
           'The following insights were mainly collected from 15 users.'
@@ -1491,6 +1494,7 @@ export const PROJECTS = [
       {
         id: 'explore', label: 'Exploration', title: 'Exploration',
         headline: 'Analysing the competition',
+        collapsed: true,
         body: [
           'Most of the concierge services on the market offer local services mainly related to cleaning, cooking, or delivery, with more or less affordable prices.\nHowever, none of them seem to address the problem of night concierge services.\nWe benchmarked companies such as:'
         ],
@@ -1517,6 +1521,7 @@ export const PROJECTS = [
       {
         id: 'analysis', label: 'Analysis', title: 'Analysis',
         headline: 'From research to app organization',
+        collapsed: true,
         body: [
           'Based on the difficulties experienced by our targets, and also inspired by the features offered by our main competitors, we proposed a list of functionalities responding to their problems.',
           '## Putting a face to our users',
@@ -1603,9 +1608,6 @@ export const PROJECTS = [
           } }
         ]
       }
-    ],
-    extLinks: [
-      { label: 'Project file (Google Slides, French only)', href: 'https://docs.google.com/presentation/d/19j9bNYiIAdAf2K3WXpHOBWLFEReeOjdBYpPc9h0cgXQ/embed?size=l&slide=id.p' }
     ]
   },
 
@@ -2065,6 +2067,7 @@ export const PAGES = {
     lede: 'Since I was a kid, I\'ve always been interested in design and products, usually by disassembling things to upgrade them and then not being able to put them back together afterward, which made my parents furious at the time (but somehow got me working on my communication and problem-solving skills much sooner than expected).',
     photo: { src: 'assets/img/about-photo.webp', alt: 'Portrait of Marvin S.' },
     calloutLede: true,
+    notes: { photo: 'Strong french accent', lede: 'Are you really going\nto read this entirely?' },
     blocks: [
       {
         p: [
@@ -2075,6 +2078,7 @@ export const PAGES = {
           sections: [
             {
               h: 'Experience',
+              note: '(No big tech company)',
               items: [
                 {
                   org: 'Career break', url: null,
@@ -2112,6 +2116,7 @@ export const PAGES = {
             },
             {
               h: 'Education',
+              note: '(No ivy-league university)',
               items: [
                 {
                   org: 'ECV Digital', url: null,
@@ -2158,6 +2163,7 @@ export const PAGES = {
       {
         h: 'PS',
         spacer: true,
+        handwritten: true,
         p: [
           'If you made it this far, you\'re probably looking for the crossword answers on my resume.\nThose I only give out face to face, in an interview ;)'
         ]
@@ -2178,6 +2184,7 @@ export const PAGES = {
       },
       {
         h: 'What I did instead',
+        collapsed: true,
         p: [
           { title: 'Salsa', text: 'I had picked up salsa dancing not long before, and it is what got me through this period. I assisted my instructor in class, ran practice sessions, and spent a lot of time pulling apart the technical side of the dance, [treating it the same way I would a design case](#/side/salsa).',
             cards: [
@@ -2193,6 +2200,7 @@ export const PAGES = {
       },
       {
         h: 'What it changed about how I work',
+        collapsed: true,
         p: [
           'During those two years, I also took time to reflect on my practice as a designer:\nmy skills, what I was doing wrong, and what I enjoyed.',
           { title: 'The junior trap', text: 'Working at Petal, I thought design was mostly craft and visual judgment. Majority of the job turned out to be the parts nobody sees:\ncommunication, decision making, ownership, analyzing data ...\nIn the end, it is all about solving a real user problem in a way the business can measure, but I wasn’t so familiar with the “measuring” part.',

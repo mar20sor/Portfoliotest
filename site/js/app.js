@@ -920,11 +920,41 @@ function pageCase(project, caseId) {
       const brandsAfterList = s.brandsAfter
         ? (Array.isArray(s.brandsAfter) ? s.brandsAfter : [s.brandsAfter]) : [];
 
+      // s.result : encart teinte {title, text} isolant un constat court en
+      // fin de section (ex. Licence management/Context) — meme famille
+      // visuelle que .cs-sec__term/.cs-sec__aside, mais un champ dedie
+      // plutot qu'une rangee. `text` passe par emphasize() : demande
+      // explicite, tel mot precis en gras (**role**/**right**) plutot que la
+      // phrase entiere. Voir .cs-result dans styles.css.
+      // `let`, pas `const` : calcule ICI (avant la boucle de s.body) pour
+      // pouvoir etre avale par le tiroir ##! s'il est encore ouvert a la fin
+      // du corps (voir plus bas) — demande utilisateur explicite (Licence
+      // management/Context : le "Result" et la figure qui suivent doivent
+      // rester DANS "Different types of users and possibilities", pas
+      // apparaitre apres, meme replies). Une fois avale, remis a '' pour ne
+      // pas se rendre une seconde fois a sa place habituelle.
+      let result = s.result
+        ? `<div class="cs-result"><p class="cs-result__title">${escapeAttr(s.result.title)}</p><p class="cs-result__text">${emphasize(s.result.text)}</p></div>` : '';
+
+      // Figure + carrousel cote a cote, meme gabarit (ex. Services
+      // exclusion/Concept, Before + le carrousel des 4 etapes) — voir
+      // .cs-sec__media-pair dans styles.css. Sinon, chacun garde son rendu
+      // normal en pleine largeur. Meme raison que s.result ci-dessus pour le
+      // `let` : peut finir avalee par le tiroir ##!.
+      let mediaBlock = (s.image && s.carousel)
+        ? `<div class="cs-sec__media-pair">${figureFor(s)}${carouselMarkup(s.carousel, s.carouselOpts)}</div>`
+        : `${s.image ? figureFor(s) : ''}${s.carousel ? carouselMarkup(s.carousel, s.carouselOpts) : ''}`;
+
       /* Les paragraphes, avec les medias intercales aux positions indiquees
          par `s.media`. La cle de cet objet est l'index du paragraphe apres
          lequel le groupe doit s'afficher — c'est ce qui permet de reproduire
          l'ordre exact d'une page source sans decouper la section. */
-      const parts = s.body.map((p, i) => {
+      // Etat du tiroir "sous-titre repliable" ouvert par un paragraphe ##!
+      // (voir plus bas) : porte a l'exterieur de la boucle puisqu'il doit
+      // rester ouvert sur plusieurs iterations, jusqu'au prochain titre.
+      let subDrawerOpen = false;
+      let parts = '';
+      s.body.forEach((p, i) => {
         const bulletsAfter = bulletsAfterList.filter(b => b.after === i)
           .map(b => `<ul class="cs-sec__list">${b.items.map(item => `<li>${emphasize(item)}</li>`).join('')}</ul>`).join('');
         const brands = brandsAfterList.filter(b => b.after === i)
@@ -953,19 +983,43 @@ function pageCase(project, caseId) {
            Context, qui enchaine deux sous-parties).
              ##   la grosse ligne, comme s.headline (.cs-sec__headline)
              ###  l'etiquette, comme un titre de section (.cs-sec__title)
+             ##!  comme ##, mais devient en plus le declencheur d'un tiroir
+                  repliable (ferme par defaut, demande utilisateur explicite —
+                  ex. Licence management/Context, "Different types of users
+                  and possibilities") qui avale tout ce qui suit — ## et ###
+                  inclus, ex. "The format wasn't reflecting reality" reste
+                  DANS le meme tiroir (demande utilisateur explicite : ce
+                  sous-titre-la ne rouvre pas la lecture normale) — jusqu'au
+                  PROCHAIN ##! ou la fin de s.body. Voir .text-drawer dans
+                  styles.css.
            Moins de diese = plus gros, comme en Markdown.
            Un prefixe dans le texte plutot qu'une table {index: titre} a cote :
            les cles par index (s.media, s.numbered) se decalent toutes des
            qu'on insere un paragraphe, un prefixe voyage avec sa ligne.
            <h3> dans les deux cas : ce sont de vrais sous-titres de la section,
            et le niveau ne doit pas dependre de la taille choisie. */
-        const heading = p.match(/^(#{2,3})\s+/);
-        const paragraph = heading
-          ? `<h3 class="${heading[1] === '##' ? 'cs-sec__headline' : 'cs-sec__title'}">${
-              emphasize(p.slice(heading[0].length))}</h3>`
-          : num
-            ? `<div class="cs-sec__num-row"><span class="cs-sec__num" aria-hidden="true">${num}</span><p>${emphasize(p)}</p></div>`
-            : `<p>${emphasize(p)}</p>`;
+        const collapsibleHeading = typeof p === 'string' && p.match(/^##!\s+/);
+        const heading = !collapsibleHeading && typeof p === 'string' && p.match(/^(#{2,3})\s+/);
+        // Seul un NOUVEAU ##! referme le tiroir precedent — un ## ou ###
+        // ordinaire continue de s'y rendre (voir la note ci-dessus).
+        if (subDrawerOpen && collapsibleHeading) {
+          parts += '</div></details>';
+          subDrawerOpen = false;
+        }
+        let paragraph;
+        if (collapsibleHeading) {
+          parts += `<details class="text-drawer"><summary><h3 class="cs-sec__headline">${
+            emphasize(p.slice(collapsibleHeading[0].length))}</h3>${chevronIcon('text-drawer__chevron')}</summary><div class="text-drawer__body">`;
+          subDrawerOpen = true;
+          paragraph = '';
+        } else {
+          paragraph = heading
+            ? `<h3 class="${heading[1] === '##' ? 'cs-sec__headline' : 'cs-sec__title'}">${
+                emphasize(p.slice(heading[0].length))}</h3>`
+            : num
+              ? `<div class="cs-sec__num-row"><span class="cs-sec__num" aria-hidden="true">${num}</span><p>${emphasize(p)}</p></div>`
+              : `<p>${emphasize(p)}</p>`;
+        }
         // s.rowMedia : { [paragraphIndex]: true } — au lieu d'empiler le
         // media sous son paragraphe (defaut), les deux se rangent cote a
         // cote, media a gauche, texte a droite cale au milieu de sa hauteur
@@ -975,13 +1029,25 @@ function pageCase(project, caseId) {
         // --media-left en modificateur pour l'ordre et le centrage vertical,
         // propres a ce cas (s.aside reste flex-start, texte en haut).
         if (s.rowMedia && s.rowMedia[i]) {
-          return `<div class="cs-sec__row cs-sec__row--media-left">
+          parts += `<div class="cs-sec__row cs-sec__row--media-left">
               <div class="cs-sec__row-media">${after}</div>
               <div class="cs-sec__row-text">${paragraph}${bulletsAfter}</div>
             </div>${terms}${figure}`;
+        } else {
+          parts += `${paragraph}${bulletsAfter}${brands}${after}${terms}${figure}`;
         }
-        return `${paragraph}${bulletsAfter}${brands}${after}${terms}${figure}`;
-      }).join('');
+      });
+      // Le tiroir ##! encore ouvert a la fin du corps avale s.result puis la
+      // figure de section (meme ordre qu'avant leur passage dans le tiroir —
+      // demande utilisateur explicite : "garder les espaces entre les
+      // elements comme avant l'existence du tiroir") avant de se refermer ;
+      // les deux variables sont videes pour ne pas se rendre une seconde
+      // fois plus bas, a leur position habituelle (hors du tiroir).
+      if (subDrawerOpen) {
+        parts += result + mediaBlock + '</div></details>';
+        result = '';
+        mediaBlock = '';
+      }
 
       const intro = s.intro ? `<p>${s.intro.map(escapeAttr).join('<br>')}</p>` : '';
       // s.list : cartes {title, body} (ex. les 4 principes de conception,
@@ -1113,15 +1179,6 @@ function pageCase(project, caseId) {
       const cta = s.cta
         ? `<div class="cs-sec__cta"><a class="btn btn--ghost" href="${escapeAttr(s.cta.href)}" target="_blank" rel="noopener noreferrer">${escapeAttr(s.cta.label)} ${arrowUpRightIcon('btn__icon')}</a></div>` : '';
 
-      // s.result : encart teinte {title, text} isolant un constat court en
-      // fin de section (ex. Licence management/Context) — meme famille
-      // visuelle que .cs-sec__term/.cs-sec__aside, mais un champ dedie
-      // plutot qu'une rangee. `text` passe par emphasize() : demande
-      // explicite, tel mot precis en gras (**role**/**right**) plutot que la
-      // phrase entiere. Voir .cs-result dans styles.css.
-      const result = s.result
-        ? `<div class="cs-result"><p class="cs-result__title">${escapeAttr(s.result.title)}</p><p class="cs-result__text">${emphasize(s.result.text)}</p></div>` : '';
-
       // s.afterFigure : paragraphe(s) apres la figure de section (ex.
       // Services exclusion/Scoping) — cas normalement couvert par
       // s.media (indexe par paragraphe) mais celui-ci vise une figure
@@ -1129,13 +1186,9 @@ function pageCase(project, caseId) {
       const afterFigure = s.afterFigure
         ? s.afterFigure.map(p => `<p>${emphasize(p)}</p>`).join('') : '';
 
-      // Figure + carrousel cote a cote, meme gabarit (ex. Services
-      // exclusion/Concept, Before + le carrousel des 4 etapes) — voir
-      // .cs-sec__media-pair dans styles.css. Sinon, chacun garde son rendu
-      // normal en pleine largeur.
-      const mediaBlock = (s.image && s.carousel)
-        ? `<div class="cs-sec__media-pair">${figureFor(s)}${carouselMarkup(s.carousel, s.carouselOpts)}</div>`
-        : `${s.image ? figureFor(s) : ''}${s.carousel ? carouselMarkup(s.carousel, s.carouselOpts) : ''}`;
+      // s.result et s.mediaBlock (image/carrousel) sont calcules PLUS HAUT,
+      // avant la boucle de s.body — voir la note a cote de leur declaration
+      // (`let`, pas `const`) : le tiroir ##! peut les avoir deja avales.
 
       // s.headline : une seconde ligne de titre, en grosse typo, sous le
       // .cs-sec__title devenu sur-titre (ex. Services exclusion/Context).
@@ -1146,9 +1199,7 @@ function pageCase(project, caseId) {
       const title = s.title
         ? `<h2 class="cs-sec__title">${escapeAttr(s.title)}</h2>` : '';
 
-      sec.innerHTML = `
-        ${title}
-        ${headline}
+      const sectionBody = `
         ${intro}
         ${list}
         ${bullets}
@@ -1165,7 +1216,22 @@ function pageCase(project, caseId) {
         ${s.builder && s.builder.components ? componentsShowcaseMarkup(s.builder.components, s.builder) : ''}
         ${s.modal ? exclModalMarkup(s.modal) : ''}
         ${lottie}
-        ${after}
+        ${after}`;
+
+      // s.collapsed : toute la section (hors s.title, le sur-titre qui reste
+      // le repere de nav/scroll-spy toujours visible) se replie derriere
+      // s.headline devenu declencheur — demande utilisateur explicite (ex.
+      // Licence management/Before, Fit-Plans/Process et Testing, Hoot/
+      // Exploration et Analysis). Meme <details> que le tiroir de
+      // sous-titre ##! plus haut : .text-drawer, style du h2/s.headline
+      // inchange, juste un chevron ajoute a cote.
+      const main = s.collapsed
+        ? `<details class="text-drawer"><summary>${headline || title}${chevronIcon('text-drawer__chevron')}</summary><div class="text-drawer__body">${sectionBody}</div></details>`
+        : `${headline}${sectionBody}`;
+
+      sec.innerHTML = `
+        ${title}
+        ${main}
         ${s.moreDrawer ? moreDrawerMarkup(s.moreDrawer) : ''}`;
       secs.append(sec);
     });
@@ -1627,12 +1693,15 @@ function draggableCardMarkup(card) {
    independants, plutot que le cadre polaroid arrondi de .draggable-card
    (autre reference, lelezhang.design). Statique, pas glissable : cette
    page n'a qu'une seule photo, pas une pile a eparpiller. */
-function aboutPhotoMarkup(photo) {
+function aboutPhotoMarkup(photo, note) {
   if (!photo) return '';
-  return `<div class="about-photo">
-      <div class="about-photo__tape about-photo__tape--1" aria-hidden="true"></div>
-      <div class="about-photo__tape about-photo__tape--2" aria-hidden="true"></div>
-      <img class="about-photo__img" src="${escapeAttr(photo.src)}" alt="${escapeAttr(photo.alt || '')}" loading="lazy" decoding="async">
+  return `<div class="about-photo-row">
+      ${note ? marginNoteHTML(note, 'margin-note--photo') : ''}
+      <div class="about-photo">
+        <div class="about-photo__tape about-photo__tape--1" aria-hidden="true"></div>
+        <div class="about-photo__tape about-photo__tape--2" aria-hidden="true"></div>
+        <img class="about-photo__img" src="${escapeAttr(photo.src)}" alt="${escapeAttr(photo.alt || '')}" loading="lazy" decoding="async">
+      </div>
     </div>`;
 }
 
@@ -1709,6 +1778,7 @@ function expDrawerMarkup(drawer) {
   const sections = drawer.sections.map(sec => `
     <div class="cs-more__item">
       ${sec.h && sec.h !== drawer.label ? `<h3 class="cs-more__title">${escapeAttr(sec.h)}</h3>` : ''}
+      ${sec.note ? marginNoteHTML(sec.note, sec.h === 'Education' ? 'margin-note--university' : 'margin-note--company') : ''}
       ${expListMarkup(sec.items, { showPlace: sec.h === 'Education' })}
     </div>`).join('');
   return `<details class="figure-drawer cs-more">
@@ -2068,6 +2138,70 @@ function copyIcon(cls) {
   return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
       aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
+}
+// Fleches manuscrites EXACTES de la maquette Figma source (fichier "Claude
+// portfolio image generation") — chemins SVG recuperes via get_design_context
+// sur les nodes 446:12044 ("Vector 2") et 446:12046 ("Vector 3"), reimportes
+// tels quels (juste fill="white" fill-opacity="0.3" remplace par
+// currentColor pour suivre --ink-faint et rester lisible dans les deux
+// themes, la maquette source supposant un fond bleu fixe) plutot que
+// redessinees a la main — demande utilisateur explicite ("import the vector
+// arrow in svg directly from the frames"). Vector 2 pointe bas-droite (sert
+// aussi a .margin-note--university, retournee verticalement en CSS — meme
+// flip que le node Figma d'origine, qui reutilise ce meme vecteur avec un
+// -scale-y-100). Vector 3 pointe bas-gauche, seule .margin-note--lede
+// l'utilise.
+function figmaArrowDownRightIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 111.196 60.9878" fill="none" aria-hidden="true">
+      <path d="M2.19244 0.789061L1.57812 0L0 1.22863L0.614315 2.01769L1.40338 1.40338L2.19244 0.789061ZM18.9234 20.5204L18.2219 21.2331L18.9234 20.5204ZM37.5008 33.5929L36.9904 34.4529L37.5008 33.5929ZM72.5624 47.2268L72.3052 48.1932V48.1932L72.5624 47.2268ZM101.327 52.8971L101.436 51.903L101.43 51.9023L101.327 52.8971ZM110.903 54.3309C111.294 53.9404 111.294 53.3072 110.903 52.9167L104.539 46.5527C104.149 46.1622 103.515 46.1622 103.125 46.5527C102.734 46.9433 102.734 47.5764 103.125 47.967L108.782 53.6238L103.125 59.2807C102.734 59.6712 102.734 60.3044 103.125 60.6949C103.515 61.0854 104.149 61.0854 104.539 60.6949L110.903 54.3309ZM1.40338 1.40338L0.614315 2.01769C2.6632 4.6494 9.04652 12.2018 18.2219 21.2331L18.9234 20.5204L19.6249 19.8077C10.5056 10.8317 4.182 3.34457 2.19244 0.789061L1.40338 1.40338ZM18.9234 20.5204L18.2219 21.2331C24.1371 27.0555 31.6518 31.2843 36.9904 34.4529L37.5008 33.5929L38.0112 32.733C32.601 29.522 25.3293 25.4225 19.6249 19.8077L18.9234 20.5204ZM37.5008 33.5929L36.9904 34.4529C45.0085 39.2118 55.864 43.8164 72.3052 48.1932L72.5624 47.2268L72.8197 46.2605C56.5013 41.9164 45.8287 37.3729 38.0112 32.733L37.5008 33.5929ZM72.5624 47.2268L72.3052 48.1932C84.0163 51.3107 94.0146 53.1497 101.225 53.8918L101.327 52.8971L101.43 51.9023C94.3487 51.1736 84.4566 49.3583 72.8197 46.2605L72.5624 47.2268ZM101.327 52.8971L101.219 53.8912C101.84 53.959 102.424 54.061 103.065 54.1705C103.698 54.2789 104.379 54.393 105.142 54.4707L105.244 53.4759L105.345 52.481C104.655 52.4108 104.034 52.3073 103.402 52.1991C102.776 52.0922 102.129 51.9787 101.436 51.903L101.327 52.8971ZM105.244 53.4759L105.142 54.4707C106.657 54.6249 108.435 54.6238 110.196 54.6238V53.6238V52.6238C108.405 52.6238 106.738 52.6228 105.345 52.481L105.244 53.4759Z" fill="currentColor"/>
+    </svg>`;
+}
+function figmaArrowDownLeftIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 123.256 88.9911" fill="none" aria-hidden="true">
+      <path d="M100.278 8.64236L100.635 9.57645V9.57645L100.278 8.64236ZM57.7758 30.2555L58.2737 31.1227L57.7758 30.2555ZM38.0939 46.0835L37.4264 45.3389V45.3389L38.0939 46.0835ZM20.3213 63.2612L19.6258 62.5427V62.5427L20.3213 63.2612ZM10.2562 75.6928L9.50843 75.0288C9.49721 75.0414 9.48632 75.0543 9.47575 75.0675L10.2562 75.6928ZM7.43241 82.6455L8.42491 82.7677C8.42738 82.7477 8.42924 82.7276 8.43049 82.7074L7.43241 82.6455ZM5.91633 88.6234C6.26555 89.0513 6.8955 89.115 7.32336 88.7658L14.2956 83.0748C14.7235 82.7256 14.7872 82.0956 14.438 81.6678C14.0888 81.2399 13.4588 81.1762 13.031 81.5254L6.83339 86.5841L1.77473 80.3865C1.4255 79.9587 0.795552 79.8949 0.367698 80.2441C-0.0601549 80.5934 -0.123894 81.2233 0.225334 81.6512L5.91633 88.6234ZM123.015 0.970356L122.773 0C120.371 0.598228 113.84 2.38792 99.9212 7.70827L100.278 8.64236L100.635 9.57645C114.501 4.27671 120.952 2.51458 123.256 1.94071L123.015 0.970356ZM100.278 8.64236L99.9212 7.70827C89.4211 11.7217 70.2672 21.9302 57.2778 29.3883L57.7758 30.2555L58.2737 31.1227C71.2662 23.6629 90.2978 13.5277 100.635 9.57645L100.278 8.64236ZM57.7758 30.2555L57.2778 29.3883C51.1943 32.8812 44.5065 38.992 37.4264 45.3389L38.0939 46.0835L38.7614 46.8281C45.9155 40.4149 52.4181 34.4848 58.2737 31.1227L57.7758 30.2555ZM38.0939 46.0835L37.4264 45.3389C28.5865 53.2633 24.0264 58.2826 19.6258 62.5427L20.3213 63.2612L21.0169 63.9797C25.5136 59.6266 29.9505 54.7265 38.7614 46.8281L38.0939 46.0835ZM20.3213 63.2612L19.6258 62.5427C17.6863 64.4203 16.0174 66.585 14.4133 68.7401C12.7948 70.9145 11.25 73.0676 9.50843 75.0288L10.2562 75.6928L11.0039 76.3568C12.8186 74.3132 14.4306 72.0664 16.0176 69.9343C17.6191 67.7828 19.2046 65.7341 21.0169 63.9797L20.3213 63.2612ZM10.2562 75.6928L9.47575 75.0675C7.58556 77.4267 6.59456 80.0002 6.43433 82.5836L7.43241 82.6455L8.43049 82.7074C8.56326 80.5669 9.38373 78.381 11.0366 76.318L10.2562 75.6928ZM7.43241 82.6455L6.4399 82.5233C6.36941 83.0959 6.26715 83.6395 6.13234 84.4889C6.0005 85.3197 5.84919 86.3775 5.6961 87.8904L6.69102 87.9911L7.68594 88.0918C7.83474 86.6212 7.98087 85.6011 8.10762 84.8024C8.23142 84.0224 8.3489 83.3851 8.42491 82.7677L7.43241 82.6455Z" fill="currentColor"/>
+    </svg>`;
+}
+// Fleches SPECIFIQUES aux frames MOBILE de la maquette (nodes 450:12069
+// "Exp" et 450:12073 "Education") : memes commentaires qu'en desktop, mais
+// Figma y dessine des courbes DIFFERENTES (pas juste une rotation/un miroir
+// du meme vecteur) pour relier texte et cible a cette echelle et cette
+// disposition — reimportees telles quelles (node 451:12093 "Vector 3" et
+// 451:12095 "Vector 3"), meme demarche que les fleches desktop plus haut.
+function figmaArrowCompanyMobileIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 75.3689 88.92" fill="none" aria-hidden="true">
+      <path d="M61.6859 8.59019L62.233 9.42721V9.42721L61.6859 8.59019ZM36.8399 30.1982L37.5406 30.9117V30.9117L36.8399 30.1982ZM25.3344 46.0224L24.4968 45.4761L25.3344 46.0224ZM14.945 63.196L14.089 62.679V62.679L14.945 63.196ZM9.06111 75.6246L8.17362 75.1638C8.16735 75.1758 8.16133 75.188 8.15556 75.2004L9.06111 75.6246ZM7.41041 82.5757L8.40783 82.6475C8.40868 82.6357 8.40932 82.6238 8.40975 82.612L7.41041 82.5757ZM6.22938 88.5841C6.59616 88.997 7.22822 89.0344 7.64113 88.6676L14.3698 82.6906C14.7827 82.3239 14.8201 81.6918 14.4533 81.2789C14.0866 80.866 13.4545 80.8286 13.0416 81.1954L7.06054 86.5083L1.74764 80.5272C1.38087 80.1143 0.748806 80.0769 0.335899 80.4437C-0.0770078 80.8105 -0.114401 81.4425 0.252378 81.8554L6.22938 88.5841ZM74.977 0.920015L74.5851 0C73.1394 0.615802 69.2918 2.42344 61.1387 7.75316L61.6859 8.59019L62.233 9.42721C70.3221 4.13938 74.0636 2.39605 75.3689 1.84003L74.977 0.920015ZM61.6859 8.59019L61.1387 7.75316C54.9538 11.7963 43.7271 22.0338 36.1393 29.4846L36.8399 30.1982L37.5406 30.9117C45.1412 23.4482 56.2368 13.347 62.233 9.42721L61.6859 8.59019ZM36.8399 30.1982L36.1393 29.4846C32.5516 33.0076 28.625 39.1471 24.4968 45.4761L25.3344 46.0224L26.172 46.5687C30.3648 40.1406 34.1489 34.2421 37.5406 30.9117L36.8399 30.1982ZM25.3344 46.0224L24.4968 45.4761C19.328 53.4006 16.6589 58.4241 14.089 62.679L14.945 63.196L15.8009 63.713C18.4322 59.3567 21.0226 54.4633 26.172 46.5687L25.3344 46.0224ZM14.945 63.196L14.089 62.679C12.954 64.5581 11.9795 66.7205 11.0433 68.8715C10.0977 71.0441 9.19291 73.2008 8.17362 75.1638L9.06111 75.6246L9.9486 76.0854C11.0083 74.0447 11.9488 71.8026 12.8771 69.6696C13.8148 67.5151 14.7427 65.4651 15.8009 63.713L14.945 63.196ZM9.06111 75.6246L8.15556 75.2004C7.05863 77.5418 6.5012 80.0543 6.41107 82.5395L7.41041 82.5757L8.40975 82.612C8.49091 80.3743 8.99242 78.1284 9.96666 76.0488L9.06111 75.6246ZM7.41041 82.5757L6.41299 82.5039C6.33512 83.5856 6.15311 84.9141 5.97876 87.861L6.97702 87.92L7.97527 87.9791C8.15387 84.9602 8.31442 83.945 8.40783 82.6475L7.41041 82.5757Z" fill="currentColor"/>
+    </svg>`;
+}
+function figmaArrowUniversityMobileIcon(cls) {
+  return `<svg class="${cls}" viewBox="0 0 62.7564 36.9791" fill="none" aria-hidden="true">
+      <path d="M51.6071 4.06473L51.9113 5.01734L51.6071 4.06473ZM31.1457 12.7576L31.5782 13.6592V13.6592L31.1457 12.7576ZM21.6705 19.1237L21.0711 18.3233V18.3233L21.6705 19.1237ZM13.1145 26.0326L12.4857 25.2551H12.4857L13.1145 26.0326ZM8.26902 31.0326L7.5838 30.3043C7.57131 30.316 7.55913 30.3281 7.54727 30.3404L8.26902 31.0326ZM6.90962 33.829L7.89893 33.9748C7.90244 33.951 7.90509 33.9271 7.90687 33.9031L6.90962 33.829ZM5.76571 36.596C6.10645 37.0306 6.73502 37.1068 7.16967 36.766L14.2526 31.2134C14.6872 30.8726 14.7634 30.2441 14.4226 29.8094C14.0819 29.3748 13.4533 29.2986 13.0187 29.6394L6.72273 34.5751L1.78704 28.2791C1.4463 27.8445 0.817725 27.7684 0.383081 28.1091C-0.0515633 28.4498 -0.127688 29.0784 0.21305 29.5131L5.76571 36.596ZM62.5527 0.97903L62.349 0C61.1741 0.244463 58.0148 0.968737 51.3029 3.11212L51.6071 4.06473L51.9113 5.01734C58.5752 2.88929 61.6657 2.18502 62.7564 1.95806L62.5527 0.97903ZM51.6071 4.06473L51.3029 3.11212C46.2141 4.73715 36.9668 8.85619 30.7132 11.856L31.1457 12.7576L31.5782 13.6592C37.8327 10.659 46.9685 6.59576 51.9113 5.01734L51.6071 4.06473ZM31.1457 12.7576L30.7132 11.856C27.7293 13.2873 24.462 15.7837 21.0711 18.3233L21.6705 19.1237L22.27 19.9241C25.7317 17.3315 28.8144 14.985 31.5782 13.6592L31.1457 12.7576ZM21.6705 19.1237L21.0711 18.3233C16.8073 21.5165 14.5765 23.564 12.4857 25.2551L13.1145 26.0326L13.7434 26.8101C15.9359 25.0369 18.0364 23.0948 22.27 19.9241L21.6705 19.1237ZM13.1145 26.0326L12.4857 25.2551C11.5139 26.041 10.6842 26.942 9.90985 27.8112C9.12061 28.697 8.39891 29.5374 7.5838 30.3043L8.26902 31.0326L8.95423 31.7609C9.8512 30.9171 10.6492 29.9879 11.4032 29.1416C12.172 28.2786 12.909 27.485 13.7434 26.8101L13.1145 26.0326ZM8.26902 31.0326L7.54727 30.3404C6.56089 31.369 6.00281 32.5366 5.91236 33.755L6.90962 33.829L7.90687 33.9031C7.95748 33.2214 8.27148 32.4748 8.99076 31.7248L8.26902 31.0326ZM6.90962 33.829L5.9203 33.6832C5.88895 33.896 5.8468 34.0783 5.77678 34.4469C5.71095 34.7934 5.63567 35.2336 5.55996 35.8588L6.5527 35.979L7.54545 36.0993C7.61507 35.5244 7.68299 35.1289 7.74164 34.8201C7.79612 34.5334 7.85976 34.2406 7.89893 33.9748L6.90962 33.829Z" fill="currentColor"/>
+    </svg>`;
+}
+// "Margin note" de la page About : les commentaires du designer laisses sur
+// la maquette Figma source (node-id 446-12036/446-12050 pour desktop,
+// 450:12065/450:12069/450:12073 pour mobile, fichier "Claude portfolio
+// image generation") integres tels quels — voir .margin-note dans
+// styles.css. Chaque note pointant vers Experience/Education porte DEUX
+// fleches (mobile puis desktop) : Figma dessine une courbe differente a
+// chaque echelle pour ces deux-la (pas juste une rotation/un miroir du
+// meme vecteur, a la difference de "photo" et "lede" ci-dessous) — seule
+// la paire pertinente est affichee, l'autre `display:none` (voir la regle
+// ".margin-note__arrow--mobile/--desktop" dans styles.css). aria-hidden :
+// une blague en marge, pas du contenu.
+function marginNoteHTML(text, extraClass = '') {
+  const isLede = extraClass === 'margin-note--lede';
+  const isUniversity = extraClass === 'margin-note--university';
+  const isCompany = extraClass === 'margin-note--company';
+  const mobileArrow = isLede ? figmaArrowDownLeftIcon
+    : isCompany ? figmaArrowCompanyMobileIcon
+    : isUniversity ? figmaArrowUniversityMobileIcon
+    : figmaArrowDownRightIcon; // photo
+  const desktopArrow = isLede ? figmaArrowDownLeftIcon : figmaArrowDownRightIcon;
+  return `<div class="margin-note${extraClass ? ` ${extraClass}` : ''}" aria-hidden="true">
+      ${mobileArrow('margin-note__arrow margin-note__arrow--mobile')}
+      ${desktopArrow('margin-note__arrow margin-note__arrow--desktop')}
+      <p class="margin-note__text">${escapeAttr(text).replace(/\n/g, '<br>')}</p>
+    </div>`;
 }
 
 // Lien externe complet (texte souligne + fleche), voir .u-arrow-link dans
@@ -4414,9 +4548,9 @@ function pageEditorial(key) {
   // (app.js) cherche toujours un id `sec-${ancre}`.
   if (hasGapNav) w.id = 'sec-top';
 
-  const blocks = p.blocks.map(b => `
-    <div class="editorial__block${b.spacer ? ' editorial__block--spaced' : ''}">
-      ${b.h ? `<h2>${escapeAttr(b.h)}</h2>` : ''}
+  const blocks = p.blocks.map(b => {
+    const heading = b.h ? `<h2>${escapeAttr(b.h)}</h2>` : '';
+    const rest = `
       ${b.items ? expListMarkup(b.items) : ''}
       ${!b.p ? '' : b.p.map(par => {
         // Un paragraphe { title, text } porte un petit intitule au-dessus
@@ -4469,14 +4603,30 @@ function pageEditorial(key) {
         const text = isTodo ? trimmed.slice(1, -1) : par;
         return `<p class="${isTodo ? 'todo' : ''}">${emphasize(text)}</p>`;
       }).join('')}
-      ${b.drawer ? expDrawerMarkup(b.drawer) : ''}
-    </div>`).join('');
+      ${b.drawer ? expDrawerMarkup(b.drawer) : ''}`;
+    // `b.collapsed` : le h2 devient le declencheur d'un <details> natif,
+    // ferme par defaut, qui cache tout le corps du bloc (demande
+    // utilisateur explicite, page gap : "What I did instead"/"What it
+    // changed about how I work") — voir .text-drawer dans styles.css,
+    // qui neutralise juste le triangle natif et ajoute un chevron SANS
+    // toucher la taille/graisse/couleur du h2 qu'il enveloppe.
+    const body = b.collapsed
+      ? `<details class="text-drawer"><summary>${heading}${chevronIcon('text-drawer__chevron')}</summary><div class="text-drawer__body">${rest}</div></details>`
+      : `${heading}${rest}`;
+    return `
+    <div class="editorial__block${b.spacer ? ' editorial__block--spaced' : ''}${b.handwritten ? ' editorial__block--handwritten' : ''}">
+      ${body}
+    </div>`;
+  }).join('');
 
   w.insertAdjacentHTML('beforeend', `
     ${p.isDraft ? `<p style="margin-bottom:var(--s4)"><span class="draft-badge">${escapeAttr(d.draftBadge)}</span></p>` : ''}
     <h1 class="editorial__title">${escapeAttr(p.title)}</h1>
-    ${aboutPhotoMarkup(p.photo)}
-    <p class="editorial__lede${p.calloutLede ? ' editorial__callout' : ''}">${escapeAttr(p.lede)}</p>
+    ${aboutPhotoMarkup(p.photo, p.notes && p.notes.photo)}
+    <div class="editorial__lede-row">
+      ${p.notes && p.notes.lede ? marginNoteHTML(p.notes.lede, 'margin-note--lede') : ''}
+      <p class="editorial__lede${p.calloutLede ? ' editorial__callout' : ''}">${escapeAttr(p.lede)}</p>
+    </div>
     ${blocks}`);
 
   if (hasGapNav) {

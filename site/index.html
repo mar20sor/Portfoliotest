@@ -101,11 +101,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600&family=Roboto:wght@400;500&display=swap">
+        href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600&family=Roboto:wght@400;500&family=Caveat:wght@400;600&display=swap">
   <!-- Roboto : uniquement pour le widget "constructeur de contraintes" de
        l'etude de cas Contraintes (.constraint-builder), pour correspondre
        exactement a la police de la maquette Figma d'origine de ce
-       composant precis. Le reste du site reste en Raleway. -->
+       composant precis. Le reste du site reste en Raleway.
+       Caveat : police manuscrite, uniquement pour les "margin notes" et le
+       "PS" de la page About (voir .margin-note / .editorial__block--ps dans
+       styles.css) — annotations Figma du designer, integrees telles quelles
+       (demande utilisateur), jamais utilisee ailleurs sur le site. -->
 
   <!-- Une seule feuille de style pour tout le site -->
   <link rel="stylesheet" href="css/styles.css">
@@ -295,7 +299,7 @@
       <div class="site-nav__links">
         <a id="nav-home" href="#/#hello" data-nav="home" data-spy="sec-hello" data-i18n="navHome">Home</a>
         <a href="#/#work" data-nav="work" data-spy="sec-work" data-i18n="navWork">Work</a>
-        <a href="#/#side" data-nav="side" data-spy="sec-side" data-i18n="navSide">Side quests</a>
+        <a href="#/#side" data-nav="side" data-spy="sec-side" data-i18n="navSide">Playground</a>
         <a href="#/about" data-nav="about" data-i18n="navAbout">About</a>
       </div>
 
