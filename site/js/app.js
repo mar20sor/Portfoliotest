@@ -1601,6 +1601,26 @@ function mediaGroup(list) {
   return `<div class="${cls}">${list.map(mediaMarkup).join('')}</div>`;
 }
 
+/* Carte "polaroid" qu'on attrape a la souris/au doigt pour la deposer
+   ailleurs sur la page — reference explicite de l'utilisateur : la classe
+   .draggable-card et le cadre carre en papier blanc legerement incline des
+   cartes eparpillees de lelezhang.design. setupDraggableCards() (plus bas)
+   pose le geste ; ce balisage ne pose que le decor.
+   `card` EST l'objet media (voir mediaMarkup()) plus un `angle` optionnel :
+   video avec commandes (type:'video', controls:true, comme l'etude de cas
+   salsa) ou simple image, sans dupliquer leur rendu ici — seul `angle` est
+   retire avant de passer le reste tel quel a mediaMarkup(). `--card-angle`
+   est une variable CSS plutot qu'une classe par angle : setupDraggableCards()
+   lit/ecrit la position de glisser-deposer sur les memes variables
+   (--card-x/--card-y), donc tout l'etat visuel de la carte vit au meme
+   endroit. */
+function draggableCardMarkup(card) {
+  const { angle, ...media } = card;
+  return `<div class="draggable-card" style="--card-angle:${angle ?? -4}deg">
+      <div class="draggable-card__inner">${mediaMarkup(media)}</div>
+    </div>`;
+}
+
 /* Classe(s) a poser sur le conteneur direct d'une image pour la rendre
    zoomable (voir .zoomable-media dans styles.css / setupZoomableMedia() plus
    bas). `flag` : true = zoomable partout, 'mobile' = seulement sous 700px
@@ -4247,18 +4267,74 @@ function setupComponentsShowcase() {
 /* ---- 5f. Une page editoriale (A propos, article) ---- */
 function pageEditorial(key) {
   const d = t(), p = PAGES[key];
-  const page = el('div', { class: 'editorial' });
-  const w = el('div', { class: 'wrap wrap--narrow' });
+  const isGap = key === 'gap';
+  const page = el('div', { class: isGap ? 'editorial editorial--gap' : 'editorial' });
+
+  // La page gap reprend la mecanique de .cs__body/.cs-nav (etude de cas avec
+  // nav laterale) plutot que le bouton flottant #back-link partage par tout
+  // le site : une vraie grille a deux colonnes (nav etroite, puis contenu),
+  // align-items:start les alignant naturellement sur la MEME ligne — le
+  // bouton "fait partie de la nav laterale" au sens propre, pas par un
+  // positionnement fixe coincidant par hasard avec le titre. La nav est
+  // position:sticky (comme .cs-nav) : elle reste joignable tout au long du
+  // defilement sans jamais pouvoir chevaucher le contenu, un vrai
+  // position:fixed le pourrait (deux boites independantes, alignees par
+  // coincidence a une seule largeur d'ecran — vu en pratique : le bouton
+  // recouvrait la lede des que le titre passait sous lui). setupBackLink()
+  // masque le bouton flottant sur cette route — meme garde-fou que pour une
+  // etude de cas avec nav laterale.
+  // Sous 1000px, la grille repasse a une colonne (pas de place pour une
+  // colonne separee sur un ecran etroit) : le bouton s'empile au-dessus du
+  // titre, mais reste position:sticky a toute largeur (demande explicite).
+  // Sous 860px la pilule du site (.site-nav, barre d'onglets flottante) est
+  // retiree sur cette route (body.route-gap, voir paint()) : cette page a
+  // deja sa propre navigation retour, les deux se disputeraient le bas de
+  // l'ecran — meme motif que body.is-overlay pour une fiche ouverte.
+  const w = el('div', { class: isGap ? 'editorial__gapcol' : 'wrap wrap--narrow' });
+  // Cible du lien "Back to top" ajoute plus bas — meme convention que
+  // head.id = 'sec-overview' sur une etude de cas (pageCase()) : scrollToSection()
+  // (app.js) cherche toujours un id `sec-${ancre}`.
+  if (isGap) w.id = 'sec-top';
 
   const blocks = p.blocks.map(b => `
     <div class="editorial__block">
       ${b.h ? `<h2>${escapeAttr(b.h)}</h2>` : ''}
       ${b.p.map(par => {
+        // Un paragraphe { title, text } porte un petit intitule au-dessus
+        // (meme convention que .cs-sec__title) — pour un aparte nomme, comme
+        // "Salsa" dans la page gap, sans promouvoir un h2 a part entiere.
+        if (typeof par === 'object') {
+          // `par.callout` : un paragraphe entier mis en avant dans un bloc
+          // teinte — meme recette que .todo (fond, padding, taille) mais SANS
+          // son filet gauche ni son rayon asymetrique (demande utilisateur) :
+          // contrairement a .todo, ce paragraphe reste du contenu publiable,
+          // pas une consigne de redaction. Retourne tot : titre/cartes/media
+          // n'ont pas de sens pour un simple paragraphe mis en avant.
+          if (par.callout) return `<p class="editorial__callout">${emphasize(par.callout)}</p>`;
+          // `par.cards` (voir draggableCardMarkup()) : posees ICI, dans leur
+          // propre paragraphe, pour rester juste EN DESSOUS de lui meme si
+          // d'autres paragraphes suivent dans le meme bloc (ex. "Yabara"
+          // apres "Salsa") — jamais a la fin du bloc entier. Plusieurs
+          // cartes partagent un .draggable-card-group (mise en grappe, voir
+          // styles.css) plutot que de s'empiler chacune sur sa propre ligne.
+          const cards = par.cards
+            ? `<div class="draggable-card-group">${par.cards.map(draggableCardMarkup).join('')}</div>`
+            : '';
+          // `par.media` : images ordinaires cote a cote (pas des cartes
+          // glissables) — mediaGroup() range deja plusieurs entrees en grille
+          // auto-adaptative (.media-grid, meme composant que pageArticle()).
+          const media = par.media ? mediaGroup(par.media) : '';
+          return `<p class="editorial__ptitle">${escapeAttr(par.title)}</p><p>${emphasize(par.text)}</p>${cards}${media}`;
+        }
         // Un paragraphe entierement entre crochets est une consigne de
         // redaction, pas du contenu : on l'affiche en jaune pour qu'il soit
-        // impossible de le publier par distraction.
-        const isTodo = /^\[.*\]$/s.test(par.trim());
-        return `<p class="${isTodo ? 'todo' : ''}">${escapeAttr(par)}</p>`;
+        // impossible de le publier par distraction. Les crochets ne servent
+        // qu'a le REPERER ici — on les retire avant affichage, ils ne font
+        // pas partie du texte a lire.
+        const trimmed = par.trim();
+        const isTodo = /^\[[\s\S]*\]$/.test(trimmed);
+        const text = isTodo ? trimmed.slice(1, -1) : par;
+        return `<p class="${isTodo ? 'todo' : ''}">${emphasize(text)}</p>`;
       }).join('')}
     </div>`).join('');
 
@@ -4267,7 +4343,28 @@ function pageEditorial(key) {
     <h1 class="editorial__title">${escapeAttr(p.title)}</h1>
     <p class="editorial__lede">${escapeAttr(p.lede)}</p>
     ${blocks}`);
-  page.append(w);
+
+  if (isGap) {
+    const nav = el('nav', { class: 'editorial__gapnav', 'aria-label': escapeAttr(d.csBack) });
+    nav.innerHTML = `<a class="back-link" href="#/"><span aria-hidden="true">${arrowLeftIcon('back-link__icon')}</span> <span>${escapeAttr(d.csBack)}</span></a>`;
+    const grid = el('div', { class: 'editorial__gapgrid' });
+    grid.append(nav, w);
+    const outer = el('div', { class: 'wrap' });
+    outer.append(grid);
+    page.append(outer);
+  } else {
+    page.append(w);
+  }
+
+  // Le bouton "Back to top" de cette page vit hors de #main (index.html,
+  // #gap-back-to-top, montre/cache par setupGapBackToTop()) — pas ici comme
+  // pour une etude de cas (.cs-back-to-top en fin de processus, pageCase()) :
+  // #main porte .is-entering pendant toute la duree ou cette page est
+  // affichee, ce qui en aurait fait le referentiel de ce bouton position:fixed
+  // au lieu de la fenetre (voir la note de #gap-back-to-top dans index.html).
+  // MEME RAISON, decouverte plus tard (bug constate seulement sous 1000px,
+  // une seule colonne) : sous 1000px, le bouton Back utilise lui aussi #main
+  // comme sortie plutot que .editorial__gapnav — voir setupBackLink().
   return page;
 }
 
@@ -4576,6 +4673,18 @@ function paint(hash, route, mode) {
   body.classList.remove('is-closing');
   if (!isCase) clearUnderlay();       // on jette la photo : elle a servi
 
+  // La page gap a sa propre navigation retour (pageEditorial()) : la pilule
+  // du site, sous 860px, se retire donc pour elle exactement comme pour une
+  // fiche ouverte (body.is-overlay .site-nav juste au-dessus) — meme motif,
+  // meme raison (deux barres au meme endroit), voir styles.css section 12.
+  body.classList.toggle('route-gap', route.name === 'gap');
+  // Demande utilisateur : le bouton "Back" flottant partage (#back-link)
+  // reprend l'habillage de celui de la page gap SUR CETTE ROUTE SEULEMENT —
+  // les autres pages qui le partagent (etude de cas sans nav laterale)
+  // gardent leur apparence d'origine. Voir setupBackLink() plus bas pour la
+  // fleche, et styles.css pour la bordure/le rayon scopes a cette classe.
+  body.classList.toggle('route-about', route.name === 'about');
+
   /* LA BARRE DU MOBILE REVIENT AVEC LA PAGE.
      Sous 860px, la pilule du site est retiree (display:none) tant qu'une
      fiche est ouverte, parce que l'etude de cas a la sienne au meme endroit.
@@ -4688,6 +4797,7 @@ function paint(hash, route, mode) {
     document.title = title;
     markActiveNav(route);
     setupBackLink(route);
+    setupGapBackToTop(route);
     setupOverlayClose(route);
 
     /* OU SE POSE-T-ON DANS LA PAGE ?
@@ -4727,6 +4837,7 @@ function paint(hash, route, mode) {
     if (route.name === 'home') setupNavContrast();
     if (route.name === 'home') setupMagneticHeroLinks();
     if (route.name === 'home') setupMagneticCards();
+    if (route.name === 'gap') setupMagneticGapLinks();
     /* Sans condition de route : la pastille sert l'accueil ET les etudes de
        cas, et setupCursorPill sort d'elle-meme quand la page n'a aucune cible
        (About, l'article, une 404). */
@@ -4780,6 +4891,9 @@ function paint(hash, route, mode) {
     // Sans condition de route non plus : sort d'elle-meme s'il n'y a pas de
     // .cs-postit-board (c'est-a-dire partout sauf Hoot/Analysis).
     setupPostitBoard();
+    // Sans condition de route non plus : sort d'elle-meme s'il n'y a pas de
+    // .draggable-card (c'est-a-dire partout sauf la page gap pour l'instant).
+    setupDraggableCards();
   };
 
   // Transition de page. startViewTransition est l'API moderne : le navigateur
@@ -5105,12 +5219,43 @@ function setupBackLink(route) {
   /* Depuis que les etudes de cas s'ouvrent en fiche, la croix en haut a
      droite est la sortie de TOUTE etude de cas — y compris celles sans nav
      laterale, qui affichaient jusqu'ici le bouton flottant. Deux sorties
-     pour une meme page, ce serait une de trop. */
-  const hasOwnBackLink = route.name === 'case';
+     pour une meme page, ce serait une de trop.
+     'gap' a, elle aussi, son propre lien retour SUR BUREAU (pageEditorial(),
+     .editorial__gapnav) — sticky dans sa propre colonne plutot que flottant
+     au bord de la fenetre.
+     SOUS 1000px en revanche, elle repasse par CE bouton partage plutot que
+     par le sien : .editorial__gapnav vit dans #main, qui porte .is-entering
+     (et donc un `transform`, meme translateY(0)) EN PERMANENCE tant que la
+     page est affichee (voir la note pres du `return page` de pageEditorial())
+     — exactement la raison documentee pour laquelle #gap-back-to-top vit HORS
+     de #main. .editorial__gapnav n'y avait pas droit faute d'y avoir pense
+     alors, et sous 1000px (une seule colonne, plus de grille pour separer
+     spatialement nav et texte) ce `transform` ancetre cassait sa collant/son
+     empilement au point que le texte de l'article semblait passer PAR-DESSUS
+     le bouton au defilement (constate en pratique, pas seulement en theorie).
+     #back-link, deja hors de #main, n'a pas ce probleme — meme bouton que
+     About/etudes de cas, meme fiabilite. */
+  const isMobile = window.matchMedia('(max-width: 1000px)').matches;
+  const hasOwnBackLink = route.name === 'case' || (route.name === 'gap' && !isMobile);
   const deep = ['case', 'about', 'gap'].includes(route.name) && !hasOwnBackLink;
   link.hidden = !deep;
   if (!deep) return;
   link.href = route.name === 'case' ? `#/#${route.project.kind}` : '#/';
+  /* Demande utilisateur : meme fleche SVG que le bouton "Back" de la page
+     gap, pour About ET gap (sous 1000px) — les autres pages qui partagent ce
+     bouton flottant (etude de cas sans nav laterale) gardent la fleche texte
+     d'origine. .back-link__icon (styles.css) donne deja la bonne taille. */
+  const icon = link.querySelector('span:first-child');
+  icon.innerHTML = (route.name === 'about' || route.name === 'gap') ? arrowLeftIcon('back-link__icon') : '←';
+}
+
+/* Le bouton "Back to top" de la page gap (index.html, #gap-back-to-top) :
+   voir la note qui l'accompagne pour pourquoi il vit hors de #main plutot
+   que d'etre injecte par pageEditorial() comme le reste de la page — ici on
+   ne fait plus que le montrer ou le cacher, jamais le (re)construire. */
+function setupGapBackToTop(route) {
+  const link = $('#gap-back-to-top');
+  link.hidden = route.name !== 'gap';
 }
 
 /* Il y avait ici closeMobileNav(), qui refermait le tiroir de navigation
@@ -5318,6 +5463,54 @@ function setupVideoPlayers() {
     // Une video laissee en lecture apres un changement de page continuerait de
     // jouer sans etre visible (et sans bouton pour l'arreter).
     addCleanup(() => { playBtn.removeEventListener('click', onPlay); video.pause(); });
+  });
+}
+
+/* Glisser-deposer d'une carte "polaroid" (voir draggableCardMarkup() plus
+   haut) : on ne deplace qu'un CALQUE VISUEL (--card-x/--card-y, lues par le
+   transform pose en CSS), jamais la carte dans le DOM — elle reste un bloc
+   normal dans le texte, seule son apparence suit le pointeur, exactement
+   comme le fait la reference (lelezhang.design). Pointer Events unifie
+   souris/tactile en un seul jeu d'ecouteurs ; `setPointerCapture` garde les
+   evenements de deplacement attaches a la carte meme si le pointeur sort
+   d'elle en cours de geste (glisser vite). On ignore un pointerdown qui
+   commence sur .media-btn : cliquer lecture/son ne doit pas AUSSI declencher
+   un glisser-deposer sur la carte qui les porte. */
+function setupDraggableCards() {
+  $$('.draggable-card').forEach(card => {
+    let dragging = false, startX = 0, startY = 0, baseX = 0, baseY = 0;
+
+    const onDown = ev => {
+      if (ev.target.closest('.media-btn')) return;
+      dragging = true;
+      card.classList.add('is-dragging');
+      startX = ev.clientX; startY = ev.clientY;
+      baseX = parseFloat(card.style.getPropertyValue('--card-x')) || 0;
+      baseY = parseFloat(card.style.getPropertyValue('--card-y')) || 0;
+      card.setPointerCapture(ev.pointerId);
+    };
+    const onMove = ev => {
+      if (!dragging) return;
+      card.style.setProperty('--card-x', `${baseX + ev.clientX - startX}px`);
+      card.style.setProperty('--card-y', `${baseY + ev.clientY - startY}px`);
+    };
+    const onUp = ev => {
+      if (!dragging) return;
+      dragging = false;
+      card.classList.remove('is-dragging');
+      card.releasePointerCapture(ev.pointerId);
+    };
+
+    card.addEventListener('pointerdown', onDown);
+    card.addEventListener('pointermove', onMove);
+    card.addEventListener('pointerup', onUp);
+    card.addEventListener('pointercancel', onUp);
+    addCleanup(() => {
+      card.removeEventListener('pointerdown', onDown);
+      card.removeEventListener('pointermove', onMove);
+      card.removeEventListener('pointerup', onUp);
+      card.removeEventListener('pointercancel', onUp);
+    });
   });
 }
 
@@ -6060,6 +6253,26 @@ function setupMagneticFooterLinks() {
   links.forEach(a => attachMagneticTilt(a));
 }
 
+// Essai, retour possible : meme effet magnetique sur le bouton Back et les
+// liens du corps de l'article gap (voir attachMagneticTilt plus haut) —
+// cleanup:true comme setupMagneticHeroLinks() : pageEditorial() reconstruit
+// tout le contenu a chaque visite de /gap, il faut donc redetacher les
+// ecouteurs de la visite precedente avant d'en reposer de nouveaux.
+function setupMagneticGapLinks() {
+  if (prefersReducedMotion()) return;
+  const links = $$('.editorial__gapnav .back-link, .editorial__block a');
+  links.forEach(a => attachMagneticTilt(a, { cleanup: true }));
+}
+
+// #gap-back-to-top vit en permanence hors de #main (index.html, voir sa
+// note plus haut) — jamais reconstruit, contrairement au reste de la page
+// gap : un seul appel au demarrage suffit, meme raisonnement que
+// setupMagneticFooterLinks()/setupMagneticNavLinks() (pas de cleanup).
+function setupMagneticGapBackToTop() {
+  if (prefersReducedMotion()) return;
+  attachMagneticTilt($('#gap-back-to-top'));
+}
+
 // Lien mail du pied de page : interaction "cliquer pour copier" (demande
 // utilisateur, cf. .link-muted.cursor-pointer sur krystianzun.com). Le texte
 // visible passe par trois etats — l'adresse (repos), le rappel d'action (au
@@ -6525,6 +6738,7 @@ function start() {
   buildFooter();
   setupMagneticFooterLinks();
   setupMagneticNavLinks();
+  setupMagneticGapBackToTop();
   setupFootMailCopy();
 
   const gate = setupGate();

@@ -2103,36 +2103,49 @@ export const PAGES = {
 
   gap: {
     title: 'Why I didn’t work for 2 years',
-    lede: 'The question is coming up in the interview anyway. Might as well answer it first.',
-    isDraft: true,
+    lede: 'If you are looking at my CV and wondering about the 2 year gap, this section is dedicated to giving you an answer.',
     blocks: [
-      {
-        p: [
-          'There is a two-year gap in my résumé. A recruiter will spot it in eight seconds, and if there is no explanation to hand, they will invent one. This page exists to save them the trouble.'
-        ]
-      },
       {
         h: 'What happened',
         p: [
-          '[TO REWRITE — the reason, in two or three sentences, no hedging and no apology. Say what happened and stop there. Readers are far more forgiving of a fact stated calmly than of a blank they have to fill in themselves.]'
+          { callout: 'I was laid off in 2024, and my work permit was tied to my employer, so I lost the right to work.\nThe only way out was Permanent Residency, so I applied and had to wait for two years.' },
+          'This period brought a lot of uncertainty, it was difficult to look ahead.\nI doubted whether I was still a designer, and for a while I expected the situation to last forever.'
         ]
       },
       {
-        h: 'What I did with the time',
+        h: 'What I did instead',
         p: [
-          '[TO REWRITE — the part that actually counts. List what is concrete and verifiable: reading, personal projects, things you learned, family responsibilities, caregiving, moving, volunteering. Three specific items beat ten vague ones.]'
+          { title: 'Salsa', text: 'I had picked up salsa dancing not long before, and it is what got me through this period. I assisted my instructor in class, ran practice sessions, and spent a lot of time pulling apart the technical side of the dance, [treating it the same way I would a design case](#/side/salsa).',
+            cards: [
+              { type: 'video', src: 'assets/media/salsa-having-fun.mp4', controls: true, sound: true, caption: 'Having fun', angle: -4 },
+              { src: 'assets/img/salsa-practice.webp', caption: 'Salsa practice', angle: 5 }
+            ] },
+          { title: 'Yabara', text: 'A friend launched an [ATS platform for HR professionals in Ivory Coast](#/work/yabara), and I came in as product designer. I had the chance to dig into and reflect on small parts of the platform, such as the launch and the product identity. It gave me something to work on again.',
+            media: [
+              { src: 'assets/img/yabara-signup.webp', caption: 'Sign-up screen', zoomable: true },
+              { src: 'assets/img/yabara-dashboard.webp', caption: 'Recruiter dashboard', zoomable: true }
+            ] }
         ]
       },
       {
         h: 'What it changed about how I work',
         p: [
-          '[TO REWRITE — an honest link back to the craft, without forcing a life lesson. If the break made you better at one specific thing, name it. If it changed nothing professionally, say that too: it is a credible answer.]'
+          'During those two years, I also took time to reflect on my practice as a designer:\nmy skills, what I was doing wrong, and what I enjoyed.',
+          { title: 'The junior trap', text: 'Working at Petal, I thought design was mostly craft and visual judgment. Majority of the job turned out to be the parts nobody sees:\ncommunication, decision making, ownership, analyzing data ...\nIn the end, it is all about solving a real user problem in a way the business can measure, but I wasn’t so familiar with the “measuring” part.',
+            media: [
+              { src: 'assets/img/the-junior-trap.svg', zoomable: true }
+            ] },
+          { title: 'What I didn’t enjoy, and what I did with it', text: 'In the setting I worked in, processes were not always defined, which I thought was slowing down my delivery.\nAlso, design was sometimes seen as a liability, which pushed me to be a good collaborator, probably at the cost of holding my own ground. In the end, I realized that these experiences are inherent to the practice, and that I have to improve on these aspects.',
+            media: [
+              { src: 'assets/img/what-i-didnt-enjoy.svg', zoomable: true }
+            ] },
+          { title: 'AI, and getting closer to production', text: 'During this time, I decided to build my own tools with Claude to cover my blind spots. I use it to document design decisions, brainstorm, or challenge a solution, but never to decide, doing the thinking myself to avoid [cognitive debt](https://www.linkedin.com/pulse/what-mit-study-ai-cognitive-debt-may-have-missed-ted-kaouk-phd-bjfye/).\nIt allows me to shorten the distance between what I create and what is implemented in a context where design is increasingly seen as a bottleneck.' }
         ]
       },
       {
         h: 'Now',
         p: [
-          'I’m looking for a full-time product or UX design role. This page isn’t an excuse: it’s the context, given once, so we can talk about everything else.'
+          'I come back from that period with more knowledge, and tools I built for myself. My goal is now simple:\nto become a senior designer within two years, by addressing my weaknesses first.'
         ]
       }
     ]
