@@ -5942,10 +5942,18 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
   color: var(--ink);
   font-size: var(--fs-small); font-style: italic;
 }
-/* `par.links` (pageEditorial() dans app.js) : rangee de liens type CV/Email
-   apres un paragraphe — reutilise .u-arrow-link tel quel (extArrowLinkHTML),
-   juste espace en ligne plutot qu'empile comme des paragraphes normaux. */
-.editorial__block .editorial__links { display: flex; flex-wrap: wrap; gap: var(--s5); }
+/* `par.links` (pageEditorial() dans app.js) : deux phrases (Resume/Email),
+   chacune son propre <p> a l'interieur — pas de mise en page propre ici,
+   .editorial__block p (espacement/couleur) suffit deja via le selecteur
+   descendant. `l.noUnderline` : la fleche suffit a signaler le lien
+   (demande utilisateur), meme raisonnement que .exp__org plus haut —
+   compose a 3 classes pour battre .u-arrow-link > span:first-child (0,2,1)
+   sans !important. */
+.editorial__links .about-cta-link.u-arrow-link > span:first-child { text-decoration: none; }
+/* "PS" force un peu de defilement avant d'apparaitre (demande utilisateur) :
+   min() plutot qu'un vh pur, pour ne pas exiger un defilement demesure sur
+   un grand ecran de bureau. */
+.editorial__block--spaced { margin-top: min(50vh, 420px); }
 
 
 /* ==========================================================================

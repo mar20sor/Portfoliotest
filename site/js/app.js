@@ -4384,7 +4384,7 @@ function pageEditorial(key) {
   if (hasGapNav) w.id = 'sec-top';
 
   const blocks = p.blocks.map(b => `
-    <div class="editorial__block">
+    <div class="editorial__block${b.spacer ? ' editorial__block--spaced' : ''}">
       ${b.h ? `<h2>${escapeAttr(b.h)}</h2>` : ''}
       ${b.items ? expListMarkup(b.items) : ''}
       ${b.drawer ? expDrawerMarkup(b.drawer) : ''}
@@ -4400,15 +4400,20 @@ function pageEditorial(key) {
           // pas une consigne de redaction. Retourne tot : titre/cartes/media
           // n'ont pas de sens pour un simple paragraphe mis en avant.
           if (par.callout) return `<p class="editorial__callout">${emphasize(par.callout)}</p>`;
-          // `par.links` : une rangee de liens (Resume, Email...) apres un
-          // paragraphe, sans passer par la syntaxe markdown d'emphasize()
-          // (limitee a https:// et #/ — pas mailto:). Reutilise
-          // extArrowLinkHTML() tel quel, meme composant que le CV du pied de
-          // page et les organisations de expItemMarkup() — SAUF `l.mail`
-          // (le lien Email), qui passe par footMailLinkHTML() pour heriter
-          // du meme comportement "cliquer pour copier" que le pied de page
-          // (voir setupFootMailCopy(), generalise a $$('.foot-mail')).
-          if (par.links) return `<p class="editorial__links">${par.links.map(l => l.mail ? footMailLinkHTML() : extArrowLinkHTML(l.label, l.href)).join('')}</p>`;
+          // `par.links` : une ou deux phrases ("Check my resume", "Contact
+          // me at ...") portant chacune UN lien, sans passer par la syntaxe
+          // markdown d'emphasize() (limitee a https:// et #/ — pas mailto:,
+          // et incapable d'inserer le markup foot-mail). `l.before` est du
+          // texte brut avant le lien ; `l.mail` bascule sur footMailLinkHTML()
+          // (meme comportement "cliquer pour copier" que le pied de page,
+          // voir setupFootMailCopy()) plutot que extArrowLinkHTML(). Chaque
+          // phrase est son propre <p> (styles.css : .editorial__block p),
+          // `l.noUnderline` retire le soulignement d'un lien la ou la fleche
+          // suffit deja (demande utilisateur) — voir la regle .about-cta-link.
+          if (par.links) return `<div class="editorial__links">${par.links.map(l => {
+            const link = l.mail ? footMailLinkHTML() : extArrowLinkHTML(l.label, l.href, l.noUnderline ? 'about-cta-link' : '');
+            return `<p>${l.before ? escapeAttr(l.before) : ''}${link}</p>`;
+          }).join('')}</div>`;
           // `par.cards` (voir draggableCardMarkup()) : posees ICI, dans leur
           // propre paragraphe, pour rester juste EN DESSOUS de lui meme si
           // d'autres paragraphes suivent dans le meme bloc (ex. "Yabara"

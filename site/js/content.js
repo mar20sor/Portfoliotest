@@ -2064,7 +2064,6 @@ export const PAGES = {
     title: 'About',
     lede: 'Since I was a kid, I\'ve always been interested in design and products, usually by disassembling things to upgrade them and then not being able to put them back together afterward, which made my parents furious at the time (but somehow got me working on my communication and problem-solving skills much sooner than expected).',
     photo: { src: 'assets/img/about-photo.webp', alt: 'Portrait of Marvin S.' },
-    isDraft: true,
     calloutLede: true,
     blocks: [
       {
@@ -2145,11 +2144,22 @@ export const PAGES = {
       },
       {
         p: [
-          'Aside from staying aware of new figma releases and AI models, I like to:\n🎨 Fall asleep watching Bob Ross painting mountains on his canvas,\n🎸 Listening to John Mayer and Jacob Collier,\n👽 Rewatching Rick and Morty episodes.',
+          'Aside from staying aware of new figma releases and AI models, I like to:\n🎨 Fall asleep watching Bob Ross painting mountains on his canvas,\n🎸 Listening to John Mayer and Jacob Collier,\n👽 Rewatching Rick and Morty episodes.'
+        ]
+      },
+      {
+        p: [
           { links: [
-            { label: 'Resume', href: SITE.links.resume },
-            { mail: true }
+            { before: 'Check my ', label: 'resume', href: SITE.links.resume, noUnderline: true },
+            { before: 'Contact me at ', mail: true }
           ] }
+        ]
+      },
+      {
+        h: 'PS',
+        spacer: true,
+        p: [
+          'If you made it this far, you\'re probably looking for the crossword answers on my resume.\nThose I only give out face to face, in an interview ;)'
         ]
       }
     ]
