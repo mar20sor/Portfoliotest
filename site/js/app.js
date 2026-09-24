@@ -1650,7 +1650,7 @@ function expItemMarkup(item) {
     ? extArrowLinkHTML(item.org, item.url, 'exp__org')
     : `<span class="exp__org">${escapeAttr(item.org)}</span>`;
   const badge = item.duration ? `<span class="exp__badge">${escapeAttr(item.duration)}</span>` : '';
-  const subLabel = [item.tag, item.place].filter(Boolean).join(' · ');
+  const subLabel = item.tag || '';
   return `<div class="exp__item">
       <div class="exp__row">
         ${orgHTML}
@@ -1676,8 +1676,14 @@ function expListMarkup(items) {
    utilisateur explicite, reutilise donc son CSS tel quel plutot que d'en
    ecrire un nouveau. */
 function expDrawerMarkup(drawer) {
+  // Le titre de section ne reapparait que s'il differe du libelle du tiroir
+  // (demande utilisateur) : "Experience" ferait doublon avec le declencheur
+  // juste au-dessus (qui porte deja ce texte), mais "Education" a besoin de
+  // son propre repere pour se distinguer des entrees d'Experience qui le
+  // precedent dans le meme tiroir.
   const sections = drawer.sections.map(sec => `
     <div class="cs-more__item">
+      ${sec.h && sec.h !== drawer.label ? `<h3 class="cs-more__title">${escapeAttr(sec.h)}</h3>` : ''}
       ${expListMarkup(sec.items)}
     </div>`).join('');
   return `<details class="figure-drawer cs-more">

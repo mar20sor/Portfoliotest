@@ -5386,7 +5386,7 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
 .editorial--gap .editorial__lede,
 .editorial--gap .editorial__block p { max-width: none; }
 
-.editorial__title { font-size: var(--fs-h1); font-weight: var(--w-medium); margin-bottom: var(--s4); }
+.editorial__title { font-size: var(--fs-h1); font-weight: var(--w-medium); margin-bottom: var(--s6); }
 
 /* ---- Photo scotchee, page About (aboutPhotoMarkup() dans app.js) ----
    Reference explicite de l'utilisateur : .column.w-col-6 + .scotch sur
@@ -5401,7 +5401,7 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
   position: relative;
   width: min(220px, 55vw);
   aspect-ratio: 1 / 1;
-  margin: var(--s6) 0 var(--s7);
+  margin: var(--s7) 0 var(--s8);
   transform: rotate(-6deg);
 }
 .about-photo__img {
@@ -5476,8 +5476,8 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
 .exp__org.u-arrow-link > span:first-child { text-decoration: none; }
 .exp__org { font-weight: var(--w-semibold); }
 .exp__tag {
-  font-size: var(--fs-tiny); text-transform: capitalize; letter-spacing: .06em;
-  color: var(--ink-faint); padding-top: 2px;
+  font-size: var(--fs-tiny); text-transform: capitalize;
+  color: var(--ink-faint);
 }
 .exp__value {
   display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
@@ -5511,7 +5511,6 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
   .exp-list { gap: var(--s4); }
   .exp__row { flex-direction: column; gap: var(--s1); }
   .exp__org, .exp__tag { flex-basis: auto; }
-  .exp__tag { padding-top: 0; }
 }
 
 /* ---- Carte "polaroid" glissable (draggableCardMarkup()/setupDraggableCards()
@@ -5960,7 +5959,7 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
 /* "PS" force un peu de defilement avant d'apparaitre (demande utilisateur,
    agrandi une seconde fois) : min() plutot qu'un vh pur, pour ne pas
    exiger un defilement demesure sur un grand ecran de bureau. */
-.editorial__block--spaced { margin-top: min(90vh, 720px); }
+.editorial__block--spaced { margin-top: min(140vh, 1100px); }
 
 
 /* ==========================================================================
