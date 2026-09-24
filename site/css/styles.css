@@ -5425,6 +5425,22 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
   font-size: var(--fs-lead); color: var(--ink-soft); font-weight: var(--w-light);
   max-width: var(--measure); margin-bottom: var(--s7);
 }
+/* Essai (demande utilisateur) : la lede de About en encart, meme recette que
+   .editorial__block .editorial__callout plus bas (fond teinte, filet
+   d'accent, italique) mais SEULEMENT les proprietes qui different d'un
+   .editorial__lede simple — font-size/poids/mesure/marge restent celles du
+   lede, aucune regle .editorial__block p a battre ici (la lede vit HORS de
+   .editorial__block, voir pageEditorial()) donc pas besoin du meme
+   selecteur compose. Coins gauches carres (haut ET bas) : coherent avec le
+   filet d'accent qui longe ce bord, meme convention que .todo plus bas. */
+.editorial__lede.editorial__callout {
+  background: var(--veil-strong);
+  border-left: 3px solid var(--accent);
+  padding: var(--s4) var(--s5);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--ink);
+  font-style: italic;
+}
 .editorial__block { margin-bottom: var(--s7); }
 .editorial__block h2 { font-size: var(--fs-h2); margin-bottom: var(--s4); font-weight: var(--w-medium); }
 .editorial__block p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }

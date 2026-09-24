@@ -2065,6 +2065,7 @@ export const PAGES = {
     lede: 'Since I was a kid, I\'ve always been interested in design and products, usually by disassembling things to upgrade them and then not being able to put them back together afterward, which made my parents furious at the time (but somehow got me working on my communication and problem-solving skills much sooner than expected).',
     photo: { src: 'assets/img/about-photo.webp', alt: 'Portrait of Marvin S.' },
     isDraft: true,
+    calloutLede: true,
     blocks: [
       {
         p: [
@@ -2144,10 +2145,10 @@ export const PAGES = {
       },
       {
         p: [
-          { callout: 'Aside from staying aware of new figma releases and AI models, I like to:\n🎨 Fall asleep watching Bob Ross painting mountains on his canvas,\n🎸 Listening to John Mayer and Jacob Collier,\n👽 Rewatching Rick and Morty episodes.' },
+          'Aside from staying aware of new figma releases and AI models, I like to:\n🎨 Fall asleep watching Bob Ross painting mountains on his canvas,\n🎸 Listening to John Mayer and Jacob Collier,\n👽 Rewatching Rick and Morty episodes.',
           { links: [
             { label: 'Resume', href: SITE.links.resume },
-            { label: 'Email', href: `mailto:${SITE.email}` }
+            { mail: true }
           ] }
         ]
       }

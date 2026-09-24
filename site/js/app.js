@@ -2051,6 +2051,24 @@ function extArrowLinkHTML(label, href, extraClass = '') {
   </a>`;
 }
 
+/* Le lien mail "cliquer pour copier" du pied de page (buildFooter()),
+   factorise pour etre reutilisable ailleurs (page About, voir par.links dans
+   pageEditorial()) — meme trois classes (u-arrow-link foot-magnetic
+   foot-mail), meme double calque .foot-mail__sizer/.foot-mail__visible. Le
+   comportement JS (setupFootMailCopy()) et le CSS (.foot-mail*) matchent
+   deja n'importe quel element portant ces classes, peu importe ou il vit. */
+function footMailLinkHTML(extraClass = '') {
+  return `<a class="u-arrow-link foot-magnetic foot-mail${extraClass ? ` ${extraClass}` : ''}" href="mailto:${escapeAttr(SITE.email)}" data-email="${escapeAttr(SITE.email)}">
+    <span class="foot-mail__sizer" aria-hidden="true">
+      <span>${escapeAttr(SITE.email)}</span><span class="u-arrow-link__icon">${sendIcon('')}</span>
+    </span>
+    <span class="foot-mail__visible">
+      <span class="foot-mail__text-visible">${escapeAttr(SITE.email)}</span>
+      <span class="u-arrow-link__icon" aria-hidden="true">${sendIcon('foot-mail__icon-arrow')}${copyIcon('foot-mail__icon-copy')}</span>
+    </span>
+  </a>`;
+}
+
 /* Les icones du lecteur de .beatsync (Lucide, licence MIT — meme parti pris
    que chevronIcon ci-dessus : le <path> copie plutot qu'une dependance pour
    quatre icones). Les DEUX etats sont toujours dans le bouton ; c'est le CSS
@@ -4386,8 +4404,11 @@ function pageEditorial(key) {
           // paragraphe, sans passer par la syntaxe markdown d'emphasize()
           // (limitee a https:// et #/ — pas mailto:). Reutilise
           // extArrowLinkHTML() tel quel, meme composant que le CV du pied de
-          // page et les organisations de expItemMarkup().
-          if (par.links) return `<p class="editorial__links">${par.links.map(l => extArrowLinkHTML(l.label, l.href)).join('')}</p>`;
+          // page et les organisations de expItemMarkup() — SAUF `l.mail`
+          // (le lien Email), qui passe par footMailLinkHTML() pour heriter
+          // du meme comportement "cliquer pour copier" que le pied de page
+          // (voir setupFootMailCopy(), generalise a $$('.foot-mail')).
+          if (par.links) return `<p class="editorial__links">${par.links.map(l => l.mail ? footMailLinkHTML() : extArrowLinkHTML(l.label, l.href)).join('')}</p>`;
           // `par.cards` (voir draggableCardMarkup()) : posees ICI, dans leur
           // propre paragraphe, pour rester juste EN DESSOUS de lui meme si
           // d'autres paragraphes suivent dans le meme bloc (ex. "Yabara"
@@ -4419,7 +4440,7 @@ function pageEditorial(key) {
     ${p.isDraft ? `<p style="margin-bottom:var(--s4)"><span class="draft-badge">${escapeAttr(d.draftBadge)}</span></p>` : ''}
     <h1 class="editorial__title">${escapeAttr(p.title)}</h1>
     ${aboutPhotoMarkup(p.photo)}
-    <p class="editorial__lede">${escapeAttr(p.lede)}</p>
+    <p class="editorial__lede${p.calloutLede ? ' editorial__callout' : ''}">${escapeAttr(p.lede)}</p>
     ${blocks}`);
 
   if (hasGapNav) {
@@ -4504,48 +4525,12 @@ function buildFooter() {
         <div>
           <h3>${escapeAttr(d.footerContact)}</h3>
           <ul>
-            <!-- .u-arrow-link et non .u-underline : cette ancre porte desormais
-                 une icone (sendIcon), pas seulement du texte — voir la note sur
-                 .u-underline vs .u-arrow-link plus haut dans ce fichier.
-
-                 Interaction "cliquer pour copier" (demande utilisateur, cf.
-                 krystianzun.com) : voir setupFootMailCopy() plus bas dans ce
-                 fichier pour le detail. Deux couches ici, superposees
-                 (voir styles.css) :
-
-                 - .foot-mail__sizer (aria-hidden, visibility:hidden) rejoue
-                   l'etat par defaut (adresse + icone) EN FLUX NORMAL — c'est
-                   elle qui donne sa largeur figee a l'ancre entiere. Sans
-                   elle, un texte plus court ("Click to copy", "Copied")
-                   retrecirait la zone de survol/clic et ferait clignoter
-                   l'etat pile a la frontiere (glitch reproduit sur le site
-                   de reference).
-                 - .foot-mail__visible, superposee dessus en position
-                   absolute, est la seule que JS touche (survol -> "Click to
-                   copy", clic -> "Copied"). Toujours en flex hugging son
-                   propre contenu (justify-content par defaut) : l'icone
-                   colle au texte actuellement affiche avec le meme
-                   ecart qu'au repos, quel que soit l'etat — seul l'espace
-                   INUTILISE (si le texte est plus court que l'adresse) se
-                   retrouve a droite de l'icone, jamais entre le texte et
-                   elle.
-
-                 sendIcon + copyIcon (dans .foot-mail__visible uniquement)
-                 sont tous les deux presents en permanence, empiles en grille
-                 dans .u-arrow-link__icon (voir styles.css) : le CSS choisit
-                 lequel est visible (survol/focus sur desktop, copyIcon en
-                 permanence sur mobile) sans jamais toucher au DOM. -->
-            <li>
-              <a class="u-arrow-link foot-magnetic foot-mail" href="mailto:${escapeAttr(SITE.email)}" data-email="${escapeAttr(SITE.email)}">
-                <span class="foot-mail__sizer" aria-hidden="true">
-                  <span>${escapeAttr(SITE.email)}</span><span class="u-arrow-link__icon">${sendIcon('')}</span>
-                </span>
-                <span class="foot-mail__visible">
-                  <span class="foot-mail__text-visible">${escapeAttr(SITE.email)}</span>
-                  <span class="u-arrow-link__icon" aria-hidden="true">${sendIcon('foot-mail__icon-arrow')}${copyIcon('foot-mail__icon-copy')}</span>
-                </span>
-              </a>
-            </li>
+            <!-- Interaction "cliquer pour copier" (demande utilisateur, cf.
+                 krystianzun.com) : voir footMailLinkHTML() (markup) et
+                 setupFootMailCopy() (logique JS) plus haut/bas dans ce
+                 fichier pour le detail des deux calques .foot-mail__sizer /
+                 .foot-mail__visible. -->
+            <li>${footMailLinkHTML()}</li>
             <li>${extArrowLinkHTML('LinkedIn', SITE.links.linkedin, 'foot-magnetic')}</li>
           </ul>
         </div>
@@ -4916,6 +4901,7 @@ function paint(hash, route, mode) {
     if (route.name === 'home') setupMagneticHeroLinks();
     if (route.name === 'home') setupMagneticCards();
     if (route.name === 'gap' || route.name === 'about') setupMagneticGapLinks();
+    if (route.name === 'about') setupFootMailCopy();
     /* Sans condition de route : la pastille sert l'accueil ET les etudes de
        cas, et setupCursorPill sort d'elle-meme quand la page n'a aucune cible
        (About, l'article, une 404). */
@@ -6355,9 +6341,11 @@ function setupMagneticGapBackToTop() {
   attachMagneticTilt($('#gap-back-to-top'));
 }
 
-// Lien mail du pied de page : interaction "cliquer pour copier" (demande
-// utilisateur, cf. .link-muted.cursor-pointer sur krystianzun.com). Le texte
-// visible passe par trois etats — l'adresse (repos), le rappel d'action (au
+// Lien(s) mail "cliquer pour copier" (demande utilisateur, cf.
+// .link-muted.cursor-pointer sur krystianzun.com) : le pied de page (seul
+// depuis toujours) ET desormais le lien Email de la page About (voir
+// footMailLinkHTML(), par.links dans pageEditorial()). Le texte visible
+// passe par trois etats — l'adresse (repos), le rappel d'action (au
 // survol/focus, desktop uniquement : pas de survol sur mobile) et la
 // confirmation (apres un clic, sur TOUS les appareils) — mais ne touche
 // jamais a .foot-mail__sizer, qui fixe la largeur de toute l'ancre sur
@@ -6366,9 +6354,18 @@ function setupMagneticGapBackToTop() {
 // bouge jamais et ne peut pas clignoter au bord (bug reproduit sur le site
 // de reference, ou un texte plus court que l'adresse retrecit la boite au
 // survol, ce qui fait sortir la souris de la zone et clignoter l'etat).
+//
+// $$('.foot-mail'), pas $() : plusieurs ancres peuvent porter cette classe
+// desormais. dataset.mailBound protege contre un double-attachement du lien
+// du pied de page (jamais reconstruit, cet appel tourne a chaque paint() sur
+// /about) — le lien About, lui, est un element FRAIS a chaque visite (w.innerHTML
+// reconstruit par pageEditorial()) donc n'a jamais ce marqueur.
 function setupFootMailCopy() {
-  const a = $('.foot-mail');
-  if (!a) return;
+  $$('.foot-mail').forEach(setupOneFootMail);
+}
+function setupOneFootMail(a) {
+  if (a.dataset.mailBound) return;
+  a.dataset.mailBound = '1';
   const label = $('.foot-mail__text-visible', a);
   const email = a.dataset.email;
   const hoverCapable = () => window.matchMedia('(hover: hover) and (pointer: fine)').matches;
