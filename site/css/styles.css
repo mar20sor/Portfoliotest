@@ -5441,7 +5441,7 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
   color: var(--ink);
   font-style: italic;
 }
-.editorial__block { margin-bottom: var(--s7); }
+.editorial__block { margin-bottom: var(--s8); }
 .editorial__block h2 { font-size: var(--fs-h2); margin-bottom: var(--s4); font-weight: var(--w-medium); }
 .editorial__block p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }
 .editorial__block p:last-child { margin-bottom: 0; }
@@ -5945,15 +5945,22 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
 /* `par.links` (pageEditorial() dans app.js) : deux phrases (Resume/Email),
    chacune son propre <p> a l'interieur — pas de mise en page propre ici,
    .editorial__block p (espacement/couleur) suffit deja via le selecteur
-   descendant. `l.noUnderline` : la fleche suffit a signaler le lien
-   (demande utilisateur), meme raisonnement que .exp__org plus haut —
-   compose a 3 classes pour battre .u-arrow-link > span:first-child (0,2,1)
-   sans !important. */
+   descendant pour margin-bottom/max-width. `l.noUnderline` : la fleche
+   suffit a signaler le lien (demande utilisateur), meme raisonnement que
+   .exp__org plus haut — compose a 3 classes pour battre
+   .u-arrow-link > span:first-child (0,2,1) sans !important. */
 .editorial__links .about-cta-link.u-arrow-link > span:first-child { text-decoration: none; }
-/* "PS" force un peu de defilement avant d'apparaitre (demande utilisateur) :
-   min() plutot qu'un vh pur, pour ne pas exiger un defilement demesure sur
-   un grand ecran de bureau. */
-.editorial__block--spaced { margin-top: min(50vh, 420px); }
+/* Meme habillage que le declencheur "Experience" (.figure-drawer.cs-more
+   summary plus haut) et le h2 "PS" (.editorial__block h2 plus haut) : pleine
+   couleur ink et graisse medium plutot que le corps de texte estompe
+   (.editorial__block p, ink-soft) — demande utilisateur. Compose a 3
+   classes pour battre .editorial__block p (0,1,1) sans dependre de l'ordre
+   des regles dans la feuille. */
+.editorial__block .editorial__links p { color: var(--ink); font-size: var(--fs-h3); font-weight: var(--w-medium); }
+/* "PS" force un peu de defilement avant d'apparaitre (demande utilisateur,
+   agrandi une seconde fois) : min() plutot qu'un vh pur, pour ne pas
+   exiger un defilement demesure sur un grand ecran de bureau. */
+.editorial__block--spaced { margin-top: min(90vh, 720px); }
 
 
 /* ==========================================================================

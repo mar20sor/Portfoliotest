@@ -4387,7 +4387,6 @@ function pageEditorial(key) {
     <div class="editorial__block${b.spacer ? ' editorial__block--spaced' : ''}">
       ${b.h ? `<h2>${escapeAttr(b.h)}</h2>` : ''}
       ${b.items ? expListMarkup(b.items) : ''}
-      ${b.drawer ? expDrawerMarkup(b.drawer) : ''}
       ${!b.p ? '' : b.p.map(par => {
         // Un paragraphe { title, text } porte un petit intitule au-dessus
         // (meme convention que .cs-sec__title) — pour un aparte nomme, comme
@@ -4439,6 +4438,7 @@ function pageEditorial(key) {
         const text = isTodo ? trimmed.slice(1, -1) : par;
         return `<p class="${isTodo ? 'todo' : ''}">${emphasize(text)}</p>`;
       }).join('')}
+      ${b.drawer ? expDrawerMarkup(b.drawer) : ''}
     </div>`).join('');
 
   w.insertAdjacentHTML('beforeend', `

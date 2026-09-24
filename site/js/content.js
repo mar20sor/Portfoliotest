@@ -2069,9 +2069,7 @@ export const PAGES = {
       {
         p: [
           'Previously at Fit-plans then Petal, I first worked as a web project manager and graphic designer before pivoting to UX design.'
-        ]
-      },
-      {
+        ],
         drawer: {
           label: 'Experience',
           sections: [
