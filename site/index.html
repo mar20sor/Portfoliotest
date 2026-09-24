@@ -307,6 +307,25 @@
   </a>
 
   <!--
+    ===================== 5 bis. "BACK TO TOP" DE LA PAGE GAP ================
+    Meme raison d'etre que #back-link juste au-dessus, sceur de #main plutot
+    qu'injecte par pageEditorial() DANS #main : #main porte .is-entering
+    (l'animation d'entree de page) pendant toute la duree ou cette page est
+    affichee, et un ancetre transforme devient le referentiel de ses
+    descendants en position:fixed (meme piege que documente pour .cs-nav,
+    voir app.js). Un bouton fixe VRAIMENT fixe (colle a la fenetre, pas au
+    document) doit donc vivre ici, hors de #main, et etre simplement montre
+    ou cache par setupGapBackToTop() (app.js) — app.js n'a plus qu'a
+    remplacer l'icone/le libelle, jamais a le (re)creer.
+  -->
+  <a class="cs-back-to-top" id="gap-back-to-top" href="#/gap#top" hidden>
+    <span aria-hidden="true"><svg class="cs-back-to-top__icon" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></span>
+    <span data-i18n="backToTop">Back to top</span>
+  </a>
+
+  <!--
     ===================== 6. LE CONTENU =====================
     Vide au depart. app.js y injecte la page demandee par l'URL.
     tabindex="-1" permet de deplacer le focus ici lors d'un changement de

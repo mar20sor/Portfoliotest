@@ -1041,9 +1041,19 @@ body.is-overlay:has(.cs-nav) .progress { display: none; }
   transition: transform .2s var(--ease), background .2s var(--ease);
 }
 .back-link[hidden] { display: none; }
+/* Demande utilisateur : le bouton "Back" flottant reprend la forme de celui
+   de la page gap (sans filet, squircle var(--radius) plutot que la pilule
+   bordee) — UNIQUEMENT sur la page About (body.route-about, voir paint()
+   dans app.js). Les autres pages qui partagent #back-link (etude de cas sans
+   nav laterale) gardent l'habillage d'origine ci-dessus. */
+body.route-about .back-link { border: none; border-radius: var(--radius); }
 .back-link:hover { transform: translateX(-3px); background: var(--veil-strong); }
 .back-link span:first-child { transition: transform .2s var(--ease); }
 .back-link:hover span:first-child { transform: translateX(-2px); }
+/* Meme raison que .cs-nav__back-icon (section 8b) : un svg inline garde par
+   defaut un espace de descendance sous sa ligne de base, qui le decale vers
+   le bas malgre l'align-items:center du lien. */
+.back-link__icon { display: block; width: 1em; height: 1em; }
 
 
 /* ==========================================================================
@@ -1626,6 +1636,22 @@ body:not(.is-overlay):has(.home) {
   border-radius: var(--radius-tag);
   font-size: var(--fs-body); font-weight: var(--w-semibold);
   line-height: 1.35; white-space: nowrap;
+}
+
+/* Les etiquettes de la grille d'accueil restent cachees au repos et
+   n'apparaissent qu'au survol de la carte — gate (hover: hover) : sur
+   tactile :hover reste accroche apres un tap, la carte resterait sans
+   etiquettes visibles une fois relachee. */
+@media (hover: hover) and (pointer: fine) {
+  #main .home .card .card__tags {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity .22s var(--ease), transform .22s var(--ease);
+  }
+  #main .home .card:hover .card__tags {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 
@@ -4971,6 +4997,12 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   transition: color .18s var(--ease), background .18s var(--ease);
 }
 .cs-back-to-top:hover, .cs-back-to-top:focus-visible { color: var(--ink); background: var(--veil); }
+/* Demande utilisateur : texte plus sombre au repos pour la version flottante
+   des etudes de cas UNIQUEMENT — plein var(--ink) du theme (deja la couleur
+   du survol ci-dessus) plutot que le mix a 82% transparent hors survol.
+   :not(#gap-back-to-top) exclut le bouton de la page gap, ajuste separement
+   (couleur inchangee). */
+.cs-back-to-top:not(#gap-back-to-top) { color: var(--ink); }
 /* DESKTOP SEULEMENT (essai, retour possible) : fixe comme la croix
    (#overlay-close, coin superieur droit) mais en bas a droite — visible en
    permanence plutot que seulement apres la derniere section. Meme verre que
@@ -4999,10 +5031,75 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   body.is-overlay.is-opening .cs-back-to-top,
   body.is-overlay.is-closing .cs-back-to-top { visibility: hidden; }
 }
+/* Le bouton "Back to top" de la page gap (index.html, #gap-back-to-top,
+   voir sa note et setupGapBackToTop() dans app.js) n'a pas la barre
+   flottante mobile des etudes de cas (pas de .cs-nav sous 1000px) : rien
+   n'occupe le coin bas-droit sur cette page a aucune largeur, donc il peut
+   rester fixe partout — contrairement a .cs-back-to-top ci-dessus, qui ne
+   l'est qu'a partir de 1001px pour laisser la place a cette barre. Un id,
+   pas de media query : il l'emporte sur la regle de base a toute largeur,
+   y compris sous 1001px ou seule celle-ci s'applique. */
+#gap-back-to-top {
+  position: fixed;
+  /* z-index : 135, pas 150 comme #loader/.cs-back-to-top — il doit rester
+     au-dessus de l'en-tete/la barre de progression (120/130) mais SOUS
+     .gate (140, portail du prenom). setupGapBackToTop() ne cache ce bouton
+     que par route (hidden si route.name !== 'gap'), pas par etat du
+     portail : sur /gap, il redevenait visible AVANT que le portail soit
+     passe, et a 150 il peignait par-dessus lui (voile #gap-back-to-top vu
+     flotter dans le portail, demande utilisateur). */
+  z-index: 135;
+  bottom: 26px; right: clamp(16px, 2.4vw, 30px);
+  margin: 0;
+  /* Demande utilisateur : meme fond (defaut + survol) que .back-link
+     (var(--veil)/var(--veil-strong)) plutot que --glass, en gardant le flou
+     du verre ci-dessous mais sans son ombre (demande utilisateur). */
+  background: var(--veil);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: none;
+  border-radius: var(--radius);
+  /* Demande utilisateur : meme poids que .back-link (var(--w-semibold)) —
+     .cs-back-to-top (partagee avec la barre flottante des etudes de cas,
+     non touchee ici) reste en var(--w-medium). */
+  font-weight: var(--w-semibold);
+}
+#gap-back-to-top:hover, #gap-back-to-top:focus-visible { background: var(--veil-strong); }
+/* Essai, retour possible : effet magnetique (setupMagneticGapBackToTop()
+   dans app.js), meme rebond que .foot-magnetic/.petal-experiment — voir la
+   note complete pres de .editorial__block a plus haut. Redeclare color et
+   background (herites de .cs-back-to-top, section 8d) pour ne pas les
+   perdre : cette regle, plus specifique (id), les ecraserait sinon. */
+#gap-back-to-top {
+  transition: color .18s var(--ease), background .18s var(--ease), transform .5s cubic-bezier(.34, 1.15, .64, 1);
+}
+/* Demande utilisateur, bureau seulement : fond retire au repos (le verre
+   reste via le blur), garde au survol. :not(:hover):not(:focus-visible)
+   plutot qu'un simple override de fond : specificite (id + 2 pseudo) qui ne
+   s'applique QUE hors survol, donc n'entre jamais en conflit avec la regle
+   de survol juste au-dessus — pas besoin d'y repeter le fond. */
+@media (min-width: 1001px) {
+  #gap-back-to-top:not(:hover):not(:focus-visible) { background: none; }
+}
+/* BUG CORRIGE : .cs-back-to-top { display: flex } (regle auteur) bat la
+   regle [hidden] { display: none } de la feuille UA, MEME specificite
+   (0,1,0 chacune) mais l'origine UA perd toujours face a l'auteur — le
+   bouton restait donc visible sur CHAQUE page, pas seulement /gap, tant que
+   `hidden` seul le pilotait (meme piege que .cbuild__illu-layer[hidden],
+   voir CLAUDE.md). setupGapBackToTop() (app.js) pose toujours l'attribut
+   `hidden`, il ne faisait juste plus rien visuellement sans cette regle. */
+#gap-back-to-top[hidden] { display: none; }
 /* display:block sur le <svg>, meme raison que .cs-nav__back-icon plus haut :
    sans ca l'espace de descendance implicite d'un svg inline l'eloigne du
    texte et le decale sous le centrage de align-items. */
 .cs-back-to-top__icon { display: block; width: 1em; height: 1em; }
+/* Correction optique demande utilisateur, cette page seulement : les deux
+   "p" de "Back to top" ont un jambage qui tire le centre visuel de l'encre
+   du texte ~1px SOUS le centre geometrique de sa boite (mesure : centre de
+   l'encre a 594.2px, centre de l'icone a 593.2px), alors que "Back" (sans
+   jambage) n'a quasi aucun ecart (-0.5px, imperceptible) — d'ou la fleche
+   seule ici. Scope a #gap-back-to-top : la barre flottante des etudes de cas
+   (.cs-back-to-top) n'est pas concernee. */
+#gap-back-to-top .cs-back-to-top__icon { transform: translateY(1px); }
 /* Meme principe que .cs-nav__back : la fleche seule s'eloigne du libelle au
    survol. Elle pointe vers le haut, donc "s'eloigne" = translate vers le
    haut. */
@@ -5058,16 +5155,302 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 
 /* Meme degagement que les etudes de cas : le bouton "Retour" est fixe. */
 .editorial { padding-block: calc(var(--back-h) + var(--s6)) var(--s9); }
+/* La page gap n'a pas besoin de ce padding-top : son bouton retour ne
+   flotte plus PAR-DESSUS l'en-tete, il vit dans une vraie colonne de nav a
+   cote du titre (.editorial__gapgrid plus bas) — meme raisonnement que
+   .cs:has(.cs-nav) .cs__head pour une etude de cas avec nav laterale. */
+.editorial--gap { padding-top: var(--s6); padding-bottom: 0; }
+
+/* ---- Page gap : nav laterale collante, meme mecanique que .cs__body/.cs-nav
+   (section 8b) pour une etude de cas — MEME grille (190px + colonne
+   flexible), MEME position:sticky. Deux colonnes independantes plutot qu'un
+   bouton position:fixed cale a l'oeil sur la colonne du titre : les deux
+   boites etant centrees separement (une pour le bouton, une pour le texte),
+   elles ne coincidaient qu'a certaines largeurs d'ecran et le bouton fini
+   par recouvrir la lede des que le titre passait dessous. align-items:start
+   les aligne ici sur la meme ligne PAR CONSTRUCTION, jamais par coincidence.
+   position:sticky (et non fixed) : le bouton reste joignable tout au long du
+   defilement (demande explicite) exactement comme .cs-nav, sans jamais
+   pouvoir chevaucher le contenu puisqu'il occupe sa propre colonne. */
+.editorial__gapgrid {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: clamp(var(--s6), 5vw, var(--s8));
+  align-items: start;
+}
+/* z-index : sans lui, .editorial__gapnav et la colonne de contenu (`w`,
+   z-index:auto toutes les deux) se departagent par ordre du DOM — `w` vient
+   APRES nav dans .editorial__gapgrid (voir pageEditorial()), elle peint donc
+   par-dessus. Invisible sur bureau (les deux colonnes ne se recouvrent pas,
+   grid-template-columns les separe), mais sous 1000px la grille repasse a
+   une seule piste (plus bas dans ce fichier) et nav se retrouve empilee au
+   MEME endroit que le haut du texte qui suit : le bouton Back passait donc
+   derriere lui des qu'ils se chevauchaient au defilement. Une valeur faible
+   suffit, il n'a besoin de battre qu'un voisin en z-index:auto — pas les
+   elements fixes du site (gate, en-tete...), beaucoup plus haut. */
+/* isolation:isolate : force .editorial__gapnav a creer son PROPRE contexte
+   d'empilement de maniere deterministe, plutot que de dependre de la regle
+   generale (z-index:auto vs positif, etape 6 vs 7 de l'algorithme de
+   peinture CSS2.1) — certains moteurs mobiles (WebKit/iOS notamment) sont
+   connus pour mal gerer position:sticky combine a une grille CSS sans ce
+   coup de pouce explicite. */
+.editorial__gapnav { position: sticky; top: calc(var(--head-h) + var(--s6)); isolation: isolate; z-index: 5; }
+/* Demande utilisateur, bureau seulement : rapprocher le bouton Back de
+   l'en-tete. Un alignement EXACT sur le centre de "Marvin S." a ete essaye
+   et abandonne : la pilule du site couvre toute la largeur a cette hauteur
+   et passe PAR-DESSUS (z-index 120 > 118 ici), le bouton se retrouvait donc
+   entierement cache dessous. top reprend calc(head-h + s3) — meme formule
+   et meme ecart (12px) que .back-link partage (section 1) juste sous
+   l'en-tete — plutot que le s6 (32px) d'origine, pour un "juste en dessous"
+   coherent avec le reste du site. margin-top remonte la position de repos
+   d'autant (align-items:start la place sinon ~30px plus bas que ce seuil ;
+   mesure en direct) pour que collage et repos tombent au meme endroit, sans
+   a-coup au defilement. */
+@media (min-width: 1001px) {
+  .editorial__gapnav { margin-top: -30px; top: calc(var(--head-h) + var(--s3)); }
+}
+/* .back-link est normalement position:fixed (bouton flottant partage par le
+   site) — ici il vit dans une nav position:sticky (ci-dessus), donc en flux
+   normal : static rend inertes son top/left/z-index. Selecteur compose
+   (.editorial__gapnav .back-link, 0,2,0) et pas .editorial__back seul : DEUX
+   regles de section 12 ciblent .back-link (0,1,0, mais plus bas dans le
+   fichier donc gagnantes a egalite de specificite) pour le bouton flottant
+   PARTAGE, hors de tout .wrap :
+     - sous 1000px, un margin qui doublerait le retrait deja fourni par le
+       .wrap qui entoure notre grille ;
+     - sous 560px, left:50%+transform:translateX(-50%) pour le centrer en bas
+       d'un ECRAN FIXE — sur un element position:static ceci ne centre rien
+       (left est ignore) mais le transform, lui, s'applique quand meme et le
+       decale hors champ d'une demi-largeur (vu en pratique : le bouton
+       sortait a gauche du wrap).
+   Le compose l'emporte sur les deux, quelle que soit sa position dans le
+   fichier. */
+.editorial__gapnav .back-link {
+  position: static; margin: 0; left: auto; bottom: auto; transform: none;
+  /* Demande utilisateur : meme forme que #gap-back-to-top (squircle, pas la
+     pilule bordee partagee par le bouton flottant), sans filet. */
+  border: none; border-radius: var(--radius);
+  /* Demande utilisateur : meme flou que #gap-back-to-top (var(--glass-blur),
+     14px) plutot que le blur(20px) du bouton flottant partage ci-dessus —
+     meme materiau verre/transparent que le bouton "Back to top" de cette
+     page. Le fond (var(--veil)) est deja identique via la regle de base. */
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+}
+/* Restaure le SEUL hover normal (translateX(-3px), section 1) par-dessus
+   celui du 560px : meme specificite que lui (0,2,0 vs 0,2,0, mais plus bas
+   dans le fichier), ce compose (0,3,0) l'emporte dans tous les cas — sans
+   quoi le bouton se serait aussi decale au survol. */
+.editorial__gapnav .back-link:hover { transform: translateX(-3px); }
+/* Demande utilisateur, bureau seulement : meme traitement que
+   #gap-back-to-top ci-dessus — fond (var(--veil), herite de .back-link)
+   retire au repos, garde au survol (.back-link:hover pose deja son propre
+   fond, section 1 : cette regle ne le touche pas puisqu'elle ne s'applique
+   jamais pendant :hover). */
+@media (min-width: 1001px) {
+  .editorial__gapnav .back-link:not(:hover):not(:focus-visible) { background: none; }
+}
+/* Demande utilisateur, mobile seulement : le meme verre transparent
+   (fond var(--veil) + flou var(--glass-blur)) que ci-dessus, repose ici de
+   maniere explicite plutot que suppose herite — .editorial__gapnav
+   .back-link (0,2,0) bat deja la regle partagee de la section 12
+   (.back-link, 0,1,0, backdrop-filter:none) par specificite, mais une
+   assertion directe evite tout doute sur la cascade a cette largeur. */
+@media (max-width: 1000px) {
+  .editorial__gapnav .back-link {
+    background: var(--veil);
+    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  }
+}
+/* Essai, retour possible : effet magnetique (setupMagneticGapLinks() dans
+   app.js, qui pose `transform` en ligne au pointeur) sur le bouton Back et
+   les liens du corps de l'article — meme rebond ("damped spring") que
+   .foot-magnetic/.petal-experiment, voir attachMagneticTilt(). Redeclare le
+   raccourci `transition` en entier (pas juste transform) : .back-link pose
+   deja background dedans (section 1), et .editorial__gapnav .back-link
+   (0,2,0, plus specifique) ecraserait sinon toute la liste. */
+.editorial__gapnav .back-link {
+  transition: transform .5s cubic-bezier(.34, 1.15, .64, 1), background .2s var(--ease);
+}
+/* Meme effet sur les liens (Salsa, Yabara, cognitive debt) rendus par
+   pageEditorial() — .u-underline et .u-arrow-link partagent tous deux ce
+   selecteur, aucun des deux n'a de transition sur l'ancre elle-meme (celle
+   de .u-underline porte sur text-decoration-color, redeclaree ici pour ne
+   pas la perdre — voir la note juste au-dessus sur le raccourci complet). */
+.editorial__block a {
+  transition: text-decoration-color .2s ease-out, transform .5s cubic-bezier(.34, 1.15, .64, 1);
+}
+/* Le lien "cognitive debt" (.u-arrow-link, inline-flex) bougeait deja au
+   survol magnetique, mais pas "treating it the same way..."/l'ATS Yabara
+   (.u-underline, display:inline par defaut) : `transform` n'a AUCUN effet
+   sur une boite inline non remplacee (CSS Transforms), seulement sur un
+   inline-block/inline-flex/etc. inline-block reste un mot au fil de la
+   phrase (peut passer a la ligne comme un tout) mais devient transformable,
+   et son contenu continue de s'enrouler normalement si le lien est long. Ne
+   touche pas .u-arrow-link (deja inline-flex) : cible .u-underline seule. */
+@media (min-width: 1001px) {
+  /* inline-block reste ici un choix bureau uniquement : un survol/magnetique
+     n'a de sens qu'au pointeur. Sous 1000px (colonne etroite), le lien redevient
+     inline pour que les mots wrappent normalement avec le reste de la phrase —
+     sans quoi "treating it the same way..."/l'ATS Yabara, traites comme un bloc
+     atomique par l'algorithme de coupure de ligne, sautaient une ligne entiere
+     avant ET apres au lieu de se fondre dans le paragraphe (constate en
+     pratique). */
+  .editorial__block a.u-underline { display: inline-block; }
+}
+
+/* Sous 1000px, pas de place pour une colonne separee sur un ecran etroit :
+   la grille repasse a une seule piste. Le bouton Back de cette colonne
+   (.editorial__gapnav) est CACHE ici plutot que laisse empile au-dessus du
+   titre : il restait position:sticky (herite de .editorial__gapnav) DANS
+   #main, qui porte .is-entering (donc un `transform`) en permanence tant que
+   la page est affichee — exactement pourquoi #gap-back-to-top vit hors de
+   #main (voir sa note dans index.html). Sans grille pour separer nav et
+   texte spatialement, ce `transform` ancetre cassait assez le collant/
+   l'empilement du bouton pour que le texte de l'article semble passer
+   PAR-DESSUS lui au defilement (constate en pratique). setupBackLink()
+   (app.js) bascule vers #back-link — le bouton partage, deja hors de #main,
+   deja fiable pour About et les etudes de cas — des que la largeur passe
+   sous ce seuil. */
+@media (max-width: 1000px) {
+  .editorial__gapgrid { grid-template-columns: minmax(0, 1fr); }
+  .editorial__gapnav { display: none; }
+}
+/* Demande utilisateur : #back-link reprend la forme squircle sans filet de
+   .editorial__gapnav .back-link (voir plus haut) quand il fait office de
+   bouton Back de la page gap sous 1000px — meme traitement que
+   body.route-about ci-dessus. Sans effet sur bureau : #back-link reste
+   hidden pour /gap tant que setupBackLink() ne bascule pas (voir sa note). */
+body.route-gap .back-link { border: none; border-radius: var(--radius); }
+/* La regle generique sous 1000px (section 12, .back-link { position: static;
+   ... }) a ete ecrite pour les etudes de cas : sur ces fiches, une barre de
+   sections vient se coller sous l'en-tete, et un bouton fixe la recouvrirait
+   — d'ou le choix de le laisser defiler avec la page. La page gap n'a pas
+   cette barre, et #gap-back-to-top y reste fixe sans probleme : le bouton
+   Back doit garder les memes caracteristiques (demande utilisateur), pas
+   heriter d'une contrainte qui ne s'applique pas ici. On retablit donc
+   position:fixed et le flou pour /gap specifiquement, sans toucher a la
+   regle partagee (About et etudes de cas la gardent telle quelle). */
+@media (max-width: 1000px) {
+  body.route-gap .back-link {
+    position: fixed;
+    margin: 0;
+    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  }
+}
+
+/* .editorial__lede et .editorial__block p sont cappees a --measure (68ch)
+   partout ailleurs (meme convention que .cs-sec p) : une colonne de lecture
+   confortable. La colonne de la page gap est elle-meme deja bornee par
+   .wrap (1280px) moins la nav — demande explicite : que le texte remplisse
+   cette colonne plutot que de laisser un vide a droite. Compound selector
+   (0,2,0 / 0,2,1) : bat les regles de base (0,1,0 / 0,1,1) quel que soit
+   l'ordre dans le fichier. */
+.editorial--gap .editorial__lede,
+.editorial--gap .editorial__block p { max-width: none; }
+
 .editorial__title { font-size: var(--fs-h1); font-weight: var(--w-medium); margin-bottom: var(--s4); }
 .editorial__lede {
   font-size: var(--fs-lead); color: var(--ink-soft); font-weight: var(--w-light);
   max-width: var(--measure); margin-bottom: var(--s7);
-  padding-bottom: var(--s6); border-bottom: 1px solid var(--line);
 }
 .editorial__block { margin-bottom: var(--s7); }
 .editorial__block h2 { font-size: var(--fs-h2); margin-bottom: var(--s4); font-weight: var(--w-medium); }
 .editorial__block p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }
 .editorial__block p:last-child { margin-bottom: 0; }
+/* Intitule au-dessus d'un paragraphe nomme (ex. "Salsa") — meme habillage
+   que .cs-sec__title, pour un aparte sans promouvoir un h2 a part entiere.
+   Selecteur compose : .editorial__block p (0,1,1) battrait une classe seule
+   (0,1,0), meme piege que .cs-sec p documente dans CLAUDE.md. */
+.editorial__block .editorial__ptitle {
+  font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: .1em;
+  color: var(--ink-faint); font-weight: var(--w-semibold);
+  margin-bottom: var(--s2);
+}
+
+/* ---- Carte "polaroid" glissable (draggableCardMarkup()/setupDraggableCards()
+   dans app.js) ----
+   Reference explicite de l'utilisateur : les cartes eparpillees de
+   lelezhang.design (classe .draggable-card telle quelle, cadre carre en
+   papier blanc legerement incline, qu'on attrape a la souris/au doigt).
+   Papier TOUJOURS blanc et texte TOUJOURS sombre, quel que soit le theme de
+   la page qui l'accueille (ici le theme de marque/bleu de la page gap) :
+   une photo scotchee sur la page ne change pas de teinte avec elle — d'ou
+   des couleurs en dur plutot que des jetons de theme ici, seule exception du
+   fichier.
+   Le deplacement est un transform (--card-x/--card-y, poses par
+   setupDraggableCards()) et non un repositionnement dans le flux : la carte
+   reste un bloc normal entre les paragraphes, seule son APPARENCE suit le
+   pointeur, donc elle ne peut jamais rompre la mise en page autour d'elle. */
+.draggable-card {
+  --card-x: 0px; --card-y: 0px;
+  display: block; width: fit-content;
+  margin: var(--s7) auto;
+  transform: translate(var(--card-x), var(--card-y)) rotate(var(--card-angle, -4deg));
+  cursor: grab; touch-action: none; user-select: none;
+  transition: transform .2s var(--ease);
+}
+.draggable-card.is-dragging { cursor: grabbing; transition: none; }
+/* Plusieurs cartes (par.cards, voir app.js) : en grappe cote a cote plutot
+   qu'empilees chacune sur sa propre ligne — meme esprit que la pile de
+   cartes qui se chevauchent sur le site de reference. flex-wrap : sous une
+   largeur qui ne peut pas accueillir les deux cote a cote, elles retombent
+   proprement l'une sous l'autre plutot que de deborder. */
+.draggable-card-group {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end;
+  margin: var(--s7) auto;
+}
+.draggable-card-group .draggable-card { margin: 0; }
+.draggable-card-group .draggable-card:not(:first-child) { margin-left: -48px; }
+/* Le "papier" : meme recette que .card-container sur le site de reference
+   (fond blanc, coins tres arrondis, liser quasi invisible, ombre douce en
+   deux passes — une large et diffuse, une fine et serree, pour un lift qui
+   ne bascule jamais dans le pose-sur-une-table trop appuye). width en min()
+   plutot qu'une valeur fixe : deux cartes de 280px cote a cote debordent un
+   ecran etroit (voir la balayage de largeurs dans CLAUDE.md) — 78vw laisse
+   quand meme deviner la seconde carte derriere sur la plus petite largeur
+   testee (320px). */
+.draggable-card__inner {
+  width: min(280px, 78vw); padding: 8px; border-radius: 24px;
+  background: #fff; border: .8px solid rgba(16,35,63,.08);
+  box-shadow: 0 4px 12px rgba(16,35,63,.18), 0 1px 2px rgba(16,35,63,.1);
+}
+.draggable-card .figure { margin: 0; }
+/* Cadre CARRE, quel que soit le ratio du media source (video 16:9 ou photo
+   3:4 ici) : les cartes de reference sont toutes carrees elles aussi,
+   object-fit:cover recadre le media au lieu de l'ecraser ou de laisser des
+   bandes vides. */
+.draggable-card .figure--remote .figure__frame,
+.draggable-card .vplayer { aspect-ratio: 1 / 1; border-radius: 16px 16px 2px 2px; }
+.draggable-card .figure--remote video,
+.draggable-card .figure--remote img {
+  height: 100%; object-fit: cover; border-radius: 16px 16px 2px 2px;
+}
+.draggable-card figcaption {
+  padding-inline: 2px; text-align: center; color: #10233F;
+}
+/* Demande utilisateur : le bouton son du lecteur video seul (celui de la
+   video "Having fun") passe au coin haut-droit, pas au coin bas-gauche avec
+   lecture/pause — scope a .draggable-card, jamais a .media-controls/
+   .media-btn de base (partages par TOUT le site, voir la note au-dessus de
+   .media-controls dans le fichier). .media-controls s'etend au cadre entier
+   (inset:0) pour que ses DEUX boutons se positionnent chacun independamment
+   en absolute, plutot que de rester alignes cote a cote par le flex de base. */
+.draggable-card .media-controls { inset: 0; }
+.draggable-card .media-controls [data-act="play"] {
+  position: absolute; left: var(--s3); bottom: var(--s3);
+}
+.draggable-card .media-controls [data-act="sound"] {
+  position: absolute; top: var(--s3); right: var(--s3);
+}
+/* Essai verre blanc tente puis annule (demande utilisateur) : retour au
+   verre sombre partage par le reste du site (.media-btn de base), juste un
+   peu plus transparent ici (.4/.18 au lieu de .55/.22) — scope a
+   .draggable-card uniquement, .media-btn de base inchangee. */
+.draggable-card .media-btn {
+  background: rgba(12,18,28,.4);
+  border-color: rgba(255,255,255,.18);
+}
+.draggable-card .media-btn:hover { background: rgba(12,18,28,.6); }
 
 /* --- 9 bis. UN PROJET RENDU COMME UN ARTICLE (pageArticle, app.js 5e ter) --
    "Documenting salsa dance" est une side quest, donc une fiche : elle garde
@@ -5400,6 +5783,19 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   font-size: var(--fs-small); font-style: italic;
 }
 
+/* Meme recette que .todo (fond, padding, taille) pour un paragraphe mis en
+   avant, mais sans filet gauche ni rayon asymetrique : ce texte est du
+   contenu fini, pas une consigne de redaction. Selectionneur compose pour
+   battre `.editorial__block p` sans !important. */
+.editorial__block .editorial__callout {
+  background: var(--veil-strong);
+  border-left: 3px solid var(--accent);
+  padding: var(--s4) var(--s5);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-size: var(--fs-small); font-style: italic;
+}
+
 
 /* ==========================================================================
    10. PIED DE PAGE
@@ -5440,6 +5836,10 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
      remonte par l'utilisateur — elementFromPoint renvoyait .ligne-footer._4
      au lieu du lien mailto). */
   pointer-events: none;
+  /* Derive continue, jamais deux fois le meme trajet (demande utilisateur :
+     "bouger de facon aleatoire sans s'arreter") — voir la note groupee sous
+     .grand-cercle plus bas pour le principe d'ensemble. */
+  animation: footDrift1 27s ease-in-out infinite;
 }
 .ligne-footer._2 {
   inset: 0 auto auto 0;
@@ -5447,6 +5847,8 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   border-style: dashed none none;
   border-color: rgba(255, 255, 255, .1) transparent transparent;
   transform: rotate(45deg); transform-origin: 0% 0%;
+  animation-name: footDrift2;
+  animation-duration: 33s;
 }
 .ligne-footer._3 {
   /* Le bord bas dessine par .ligne-footer de base n'est pas retire ici (le
@@ -5457,6 +5859,8 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   border-style: dashed none dashed none;
   border-color: rgba(255, 255, 255, .1) transparent rgba(255, 255, 255, .1) transparent;
   transform: none;
+  animation-name: footDrift3;
+  animation-duration: 24s;
 }
 .ligne-footer._4 {
   left: auto; right: 0; bottom: 0;
@@ -5464,6 +5868,8 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   border-style: none none none dashed;
   border-color: transparent transparent transparent rgba(255, 255, 255, .1);
   transform: none;
+  animation-name: footDrift4;
+  animation-duration: 30s;
 }
 .ligne-footer._6 {
   /* Meme remarque que ._3 : le bord bas de base reste actif, ._6 AJOUTE un
@@ -5474,12 +5880,15 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   border-style: none none dashed dashed;
   border-color: transparent transparent rgba(255, 255, 255, .1) rgba(255, 255, 255, .1);
   transform: none;
+  animation-name: footDrift5;
+  animation-duration: 21s;
 }
 .carre {
   position: absolute; top: 36%; right: 37%;
   width: 60px; height: 60px;
   border: 2px dashed rgba(255, 255, 255, .1);
   pointer-events: none;
+  animation: footDrift6 19s ease-in-out infinite;
 }
 .grand-cercle {
   position: absolute; left: 0; bottom: 0;
@@ -5487,6 +5896,74 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
   border: 2px dashed rgba(255, 255, 255, .1);
   border-radius: 150px;
   pointer-events: none;
+  animation: footDrift7 36s ease-in-out infinite;
+}
+
+/* Sept trajets distincts plutot qu'un seul reutilise : des points de passage
+   irreguliers (pourcentages non equidistants, amplitudes qui varient d'une
+   etape a l'autre) evitent le va-et-vient trop lisible d'un aller-retour
+   simple, et SEPT DUREES SANS DIVISEUR COMMUN EVIDENT (19 a 36s) desynchronisent
+   les sept formes les unes des autres — leurs cycles ne se realignent plus
+   jamais de facon perceptible, ce qui lit comme un mouvement continu et
+   sans repetition plutot que comme une boucle. ease-in-out (pas linear) :
+   chaque trajet ralentit a l'approche de chaque point, evitant les angles
+   mecaniques d'une derive a vitesse constante. Les formes deja tournees
+   (.ligne-footer, ._2) gardent leur rotate() de base dans CHAQUE keyframe —
+   remplacer `transform` l'ecraserait sinon et les redresserait a l'horizontale
+   pendant l'animation. footDrift6/7 n'ajoutent qu'un translate (une rotation
+   sur .grand-cercle, symetrique, ne se verrait pas ; sur .carre, dont le
+   carre reste toujours un carre, un tout petit rotate suffit a se voir sans
+   distraire). La regle globale de la section 13 (animation-duration: .01ms
+   sous prefers-reduced-motion, sur *,*::before,*::after) couvre deja ces
+   sept animations : aucun garde-fou supplementaire n'est necessaire ici. */
+@keyframes footDrift1 {
+  0%   { transform: rotate(-45deg) translate(0, 0); }
+  18%  { transform: rotate(-45deg) translate(16px, -9px); }
+  46%  { transform: rotate(-45deg) translate(-10px, 14px); }
+  72%  { transform: rotate(-45deg) translate(9px, 7px); }
+  100% { transform: rotate(-45deg) translate(0, 0); }
+}
+@keyframes footDrift2 {
+  0%   { transform: rotate(45deg) translate(0, 0); }
+  22%  { transform: rotate(45deg) translate(-13px, 11px); }
+  55%  { transform: rotate(45deg) translate(15px, -8px); }
+  81%  { transform: rotate(45deg) translate(-6px, -12px); }
+  100% { transform: rotate(45deg) translate(0, 0); }
+}
+@keyframes footDrift3 {
+  0%   { transform: translate(0, 0); }
+  28%  { transform: translate(-12px, -10px); }
+  53%  { transform: translate(8px, 13px); }
+  79%  { transform: translate(11px, -7px); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes footDrift4 {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(10px, 9px); }
+  49%  { transform: translate(-9px, -13px); }
+  77%  { transform: translate(-13px, 8px); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes footDrift5 {
+  0%   { transform: translate(0, 0); }
+  24%  { transform: translate(9px, -11px); }
+  58%  { transform: translate(-11px, 6px); }
+  83%  { transform: translate(6px, 12px); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes footDrift6 {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  26%  { transform: translate(-11px, 9px) rotate(6deg); }
+  54%  { transform: translate(13px, 12px) rotate(-5deg); }
+  80%  { transform: translate(8px, -10px) rotate(3deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+@keyframes footDrift7 {
+  0%   { transform: translate(0, 0); }
+  30%  { transform: translate(14px, -12px); }
+  60%  { transform: translate(-9px, -16px); }
+  85%  { transform: translate(-14px, 9px); }
+  100% { transform: translate(0, 0); }
 }
 /* Plus de margin-bottom ici (demande utilisateur) : .foot__bottom vivait
    juste en dessous, pleine largeur — maintenant qu'il est retourne dans la
@@ -6073,6 +6550,15 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
     -webkit-backdrop-filter: none; backdrop-filter: none;
   }
   .cs__head, .editorial { padding-top: var(--s6); }
+  /* .editorial--gap (section 9) reduit deja ce padding-top a --s6 en
+     permanence, en supposant que le bouton Back vit dans sa propre colonne de
+     nav (.editorial__gapgrid) qui ne recouvre jamais le titre. Sous 1000px
+     cette colonne disparait (section 9, .editorial__gapnav { display: none })
+     et le bouton redevient flottant par-dessus le contenu (meme
+     body.route-gap .back-link, position: fixed, section 9) — il lui faut donc
+     le meme degagement que .editorial de base (calc(--back-h + --s6)),
+     sans quoi il atterrit sur le titre. */
+  body.route-gap .editorial--gap { padding-top: calc(var(--back-h) + var(--s6)); }
 
   /* --- LA BARRE FLOTTANTE DU BAS (maquette Figma, noeud 284:2290) --------
      Sous 1000px, le sommaire quittait le flux pour se coller EN HAUT de la
@@ -6622,6 +7108,10 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
      y compris sur une etude sans sommaire, ou c'est la croix qui sert de
      sortie et ou une barre de site par-dessus le texte serait un contresens. */
   body.is-overlay .site-nav { display: none; }
+  /* Meme motif pour la page gap : elle a sa propre navigation retour
+     (.editorial__gapnav, section 9) — la pilule du site par-dessus son texte
+     serait le meme contresens que sur une etude de cas. */
+  body.route-gap .site-nav { display: none; }
 
   /* ...ET ELLE REVIENT COMME LA BARRE DE LA FICHE ETAIT ARRIVEE.
      Le display:none ci-dessus tombe d'un seul coup, au moment ou paint()
@@ -6683,25 +7173,41 @@ body.is-overlay.is-closing .veil { animation: veilOut .38s cubic-bezier(.3, 0, .
      860px : on lui reapplique --head-was, avec le retrait plus serre qui est
      celui de ce palier. */
   .hero { min-height: 0; padding-block: calc(var(--s6) + var(--head-was)) var(--s7); }
-  .foot__grid { grid-template-columns: 1fr; }
-  /* Essai, retour possible : la premiere colonne (Marvin S., Download my
-     resume, copyright/note) passe en dernier, echangee avec "Get in touch" —
-     la grille reste en ordre DOM normal partout ailleurs (Sitemap intact au
-     milieu), seul l'empilement 1 colonne de ce palier est concerne. */
-  .foot__grid > div:first-child { order: 3; }
-  .foot__grid > div:nth-child(2) { order: 2; }
-  .foot__grid > div:nth-child(3) { order: 1; }
-  /* .foot__bottom (copyright + note) colle a .foot__name/"Resume" sans cet
-     ecart : son margin-top: auto (styles.css, section 11) compte sur
+  .foot__grid { grid-template-columns: 1fr; gap: 0; }
+  /* Demande utilisateur : Marvin S. et le lien Resume seuls tout en haut de
+     l'empilement mobile — pas le copyright ni la mention "vibe-coded"
+     (.foot__bottom), qui restaient colles a Resume puisque les trois vivent
+     dans le meme <div> (premiere colonne de .foot__grid, voir buildFooter()
+     dans app.js). display:contents efface la boite de ce <div> ICI SEULEMENT
+     (uniquement sous 560px : le bureau garde sa colonne flex intacte) — ses
+     trois enfants deviennent alors des items de grille a part entiere, donc
+     individuellement reordonnables. gap ci-dessus passe a 0 (le var(--s6) du
+     bureau s'appliquerait sinon entre Marvin S. et Resume aussi, qui doivent
+     rester colles — seul foot__name { margin-bottom } les espace) ; chaque
+     bloc reprend son propre ecart via margin-top ci-dessous. */
+  .foot__grid > div:first-child { display: contents; }
+  .foot__grid > div:nth-child(2) { order: 3; margin-top: var(--s6); }
+  .foot__grid > div:nth-child(3) { order: 2; margin-top: var(--s6); }
+  /* .foot__bottom (copyright + note) passe en dernier (order: 4), apres
+     Sitemap et Get in touch. Son margin-top: auto (section 11) comptait sur
      la colonne ETIREE par la grille (align-items: stretch, calquee sur la
      plus haute des trois) pour avoir de la hauteur en trop a pousser dedans —
-     or en 1 colonne chaque bloc n'occupe plus que sa hauteur propre, il n'y a
-     donc plus rien a pousser et l'auto retombe a 0. Une valeur fixe reprend
-     le relais ici. */
-  .foot__bottom { margin-top: var(--s6); }
+     ici chaque item n'occupe que sa hauteur propre (et n'est meme plus dans
+     la meme colonne), donc l'auto retomberait a 0 : une valeur fixe reprend
+     le relais. */
+  .foot__bottom { order: 4; margin-top: var(--s6); }
   .gist { grid-template-columns: 1fr 1fr; }
   .back-link { left: 50%; transform: translateX(-50%); bottom: var(--s4); }
   .back-link:hover { transform: translateX(-50%) translateY(-2px); }
+  /* Meme raison que la section 9 (max-width: 1000px, body.route-gap
+     .back-link) : cette regle centre le bouton en pastille au bas de l'ecran,
+     pensee pour les fiches qui le laissent defiler avec la page. Sur /gap le
+     bouton reste fixe en haut a gauche (section 9) — sans cette exception, le
+     centrage horizontal s'appliquait quand meme ici (height fixe sur
+     .back-link, donc bottom est ignore face a top, mais left/transform ne le
+     sont pas), le bouton restait en haut mais glissait au centre. */
+  body.route-gap .back-link { left: var(--gutter); transform: none; }
+  body.route-gap .back-link:hover { transform: translateX(-3px); }
   .figure__frame { padding: var(--s2); }
   .cards { gap: var(--s7); }
 }
