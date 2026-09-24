@@ -1636,6 +1636,39 @@ function aboutPhotoMarkup(photo) {
     </div>`;
 }
 
+/* Bloc "Experience"/"Education" de la page About (pageEditorial(), via
+   b.items) : deux lignes par entree, reference explicite de l'utilisateur —
+   #experience sur antonioso.ng (colonne label a gauche, valeur a droite ;
+   une ligne role/dates puis une ligne tag/description). `item.url` absent
+   (diplomes, ou la periode de pause) : nom en texte simple, pas de lien
+   externe factice. `item.duration` absent (education, un seul millesime) :
+   pas de pastille — elle est reservee a une DUREE, jamais une simple date.
+   `text` passe par emphasize() : un item peut se terminer par un lien
+   interne ([label](#/gap)) ou externe ([label](https://...)). */
+function expItemMarkup(item) {
+  const orgHTML = item.url
+    ? extArrowLinkHTML(item.org, item.url, 'exp__org')
+    : `<span class="exp__org">${escapeAttr(item.org)}</span>`;
+  const badge = item.duration ? `<span class="exp__badge">${escapeAttr(item.duration)}</span>` : '';
+  const subLabel = [item.tag, item.place].filter(Boolean).join(' · ');
+  return `<div class="exp__item">
+      <div class="exp__row">
+        ${orgHTML}
+        <div class="exp__value">
+          <span class="exp__role">${escapeAttr(item.role)}</span>
+          <span class="exp__meta"><span class="exp__dates">${escapeAttr(item.dates)}</span>${badge}</span>
+        </div>
+      </div>
+      <div class="exp__row exp__row--sub">
+        <span class="exp__tag">${escapeAttr(subLabel)}</span>
+        <p class="exp__text">${emphasize(item.text)}</p>
+      </div>
+    </div>`;
+}
+function expListMarkup(items) {
+  return `<div class="exp-list">${items.map(expItemMarkup).join('')}</div>`;
+}
+
 /* Classe(s) a poser sur le conteneur direct d'une image pour la rendre
    zoomable (voir .zoomable-media dans styles.css / setupZoomableMedia() plus
    bas). `flag` : true = zoomable partout, 'mobile' = seulement sous 700px
@@ -4318,7 +4351,8 @@ function pageEditorial(key) {
   const blocks = p.blocks.map(b => `
     <div class="editorial__block">
       ${b.h ? `<h2>${escapeAttr(b.h)}</h2>` : ''}
-      ${b.p.map(par => {
+      ${b.items ? expListMarkup(b.items) : ''}
+      ${!b.p ? '' : b.p.map(par => {
         // Un paragraphe { title, text } porte un petit intitule au-dessus
         // (meme convention que .cs-sec__title) — pour un aparte nomme, comme
         // "Salsa" dans la page gap, sans promouvoir un h2 a part entiere.

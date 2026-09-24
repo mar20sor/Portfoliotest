@@ -2067,9 +2067,72 @@ export const PAGES = {
     isDraft: true,
     blocks: [
       {
-        h: 'Now',
         p: [
           'Previously at Fit-plans then Petal, I first worked as a web project manager and graphic designer before pivoting to UX design.'
+        ]
+      },
+      {
+        h: 'Experience',
+        items: [
+          {
+            org: 'Petal Solutions', url: 'https://www.petal-health.com/',
+            role: 'Product Designer', dates: 'Mar 2021 → July 2024', duration: '3 years',
+            tag: 'Health', place: 'Montréal',
+            text: 'Worked on the Quebec orchestrator platform and the Scheduling tool in collaboration with stakeholders, PO and Devs. Participated in improving the design team workflow and assisted on interviews and usertesting workshops. [See projects →](https://drive.google.com/drive/folders/1UIMvwYL_MlQDqfZCE8qLk-u62KDuM4Ml?usp=sharing)'
+          },
+          {
+            org: 'Fit-Plans', url: 'https://www.fit-plans.com/en',
+            role: 'UX Designer', dates: 'Mar 2020 → Aug 2020', duration: '6 months',
+            tag: 'Food', place: 'Montréal',
+            text: 'Redesign of the website: audit, collection and analysis of user needs, usertesting, QA sessions with developers. Design of the new product page, checkout, calorie calculator and landing page.'
+          },
+          {
+            org: 'Gekko Holding', url: 'https://group.accor.com/en/brands/business-boosters/Gekko',
+            role: 'Project Manager, Product Designer', dates: 'Oct 2017 → Sep 2019', duration: '2 years',
+            tag: 'Travel', place: 'Levallois',
+            text: 'Process analysis, collection of customer needs, and drafting of technical specifications: implementation of a gamification and travelers review collection system, offer comparator, and cross selling workflow.'
+          },
+          {
+            org: 'Eurokera', url: 'https://eurokera.com/',
+            role: 'Project Manager, Designer', dates: 'Sep 2016 → Sep 2017', duration: '1 year',
+            tag: 'Industry', place: 'Bagneaux',
+            text: 'Redesign project in relationship with the agency in charge. Redesign of the intranet and creation of a UI design kit.'
+          },
+          {
+            org: 'Career break', url: null,
+            role: 'Laid off, work permit on hold', dates: 'Aug 2024 → Mar 2026', duration: '1.5 years',
+            tag: 'Personal', place: null,
+            text: 'Laid off, and my work permit was tied to the job — I lost the right to work while my Permanent Residency application was pending. [The full story →](#/gap)'
+          }
+        ]
+      },
+      {
+        h: 'Education',
+        items: [
+          {
+            org: 'ECV Digital', url: null,
+            role: 'Master degree in UX Design', dates: '2019', duration: null,
+            tag: null, place: 'Paris',
+            text: 'Design Sprint, Usability testing, Comparative analysis, Interviews and surveys, Wireframing, Prototyping.'
+          },
+          {
+            org: 'Campus Fonderie de l’Image', url: null,
+            role: 'Bachelor degree in Web Project Management', dates: '2017', duration: null,
+            tag: null, place: 'Bagnolet',
+            text: 'UI/UX Design, Content Marketing, SEO, Coding (HTML/CSS, PHP, JS), and Project Management.'
+          },
+          {
+            org: 'Campus Fonderie de l’Image', url: null,
+            role: 'Preparatory class', dates: '2016', duration: null,
+            tag: null, place: 'Bagnolet',
+            text: 'HTML/CSS & JS, graphic design, video editing and content marketing.'
+          },
+          {
+            org: 'IUT de Fontainebleau', url: null,
+            role: 'DUT Technological degree in Company Management', dates: '2015', duration: null,
+            tag: null, place: 'Fontainebleau',
+            text: 'Business Management, Communication, Accounting or Law.'
+          }
         ]
       },
       {
