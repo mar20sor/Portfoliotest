@@ -5508,7 +5508,7 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
 .editorial__block .exp__text { flex: 1 1 260px; min-width: 0; max-width: var(--measure); margin: 0; color: var(--ink-soft); font-size: var(--fs-small); }
 .editorial--gap .editorial__block .exp__text { max-width: var(--measure); }
 @media (max-width: 600px) {
-  .exp-list { gap: var(--s4); }
+  .exp-list { gap: var(--s3); }
   .exp__row { flex-direction: column; gap: var(--s1); }
   .exp__org, .exp__tag { flex-basis: auto; }
 }
@@ -5954,6 +5954,15 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
    contexte, .exp__text ou .editorial__links p, jamais d'ici). */
 .editorial__links .about-cta-link.u-arrow-link > span:first-child,
 .exp__text .about-cta-link.u-arrow-link > span:first-child { text-decoration: none; }
+/* "See projects" (Petal) en semibold (demande utilisateur) — la taille reste
+   celle de .exp__text (aucune regle ici ne la touche, voir plus haut). */
+.exp__text .about-cta-link { font-weight: var(--w-semibold); }
+/* "The full story" (career break, .hero__gap reutilise tel quel — voir
+   gapCtaLinkHTML()) : demande utilisateur, meme taille que la phrase
+   .exp__text qui le porte (inherit plutot que --fs-small en dur, au cas ou
+   .exp__text change de taille un jour) et semibold plutot que le medium de
+   .hero__gap sur l'accueil. */
+.exp__text .hero__gap { font-size: inherit; font-weight: var(--w-semibold); }
 /* Meme habillage que le declencheur "Experience" (.figure-drawer.cs-more
    summary plus haut) et le h2 "PS" (.editorial__block h2 plus haut) : pleine
    couleur ink et graisse medium plutot que le corps de texte estompe
