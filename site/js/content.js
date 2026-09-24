@@ -2080,13 +2080,15 @@ export const PAGES = {
                   org: 'Career break', url: null,
                   role: '...', dates: 'Aug 2024 → Mar 2026', duration: '1.5 years',
                   tag: 'personal', place: null,
-                  text: 'After a layoff, I was unable to work for 2 years. [The full story →](#/gap)'
+                  text: 'After a layoff, I was unable to work for 2 years.',
+                  linkAfter: { style: 'gap', label: 'The full story', href: '#/gap' }
                 },
                 {
                   org: 'Petal', url: 'https://www.petal-health.com/',
                   role: 'Product Designer', dates: 'Mar 2021 → July 2024', duration: '3 years',
                   tag: 'health', place: 'Montréal',
-                  text: 'Quebec orchestrator platform (HUB), Scheduling tool. [See projects →](https://drive.google.com/drive/folders/1UIMvwYL_MlQDqfZCE8qLk-u62KDuM4Ml?usp=sharing)'
+                  text: 'Quebec orchestrator platform (HUB), Scheduling tool.',
+                  linkAfter: { label: 'See projects', href: 'https://drive.google.com/drive/folders/1UIMvwYL_MlQDqfZCE8qLk-u62KDuM4Ml?usp=sharing' }
                 },
                 {
                   org: 'Fit-Plans', url: 'https://www.fit-plans.com/en',

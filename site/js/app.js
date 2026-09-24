@@ -1645,12 +1645,25 @@ function aboutPhotoMarkup(photo) {
    pas de pastille — elle est reservee a une DUREE, jamais une simple date.
    `text` passe par emphasize() : un item peut se terminer par un lien
    interne ([label](#/gap)) ou externe ([label](https://...)). */
-function expItemMarkup(item) {
+// `showPlace` (voir expListMarkup/expDrawerMarkup) : les villes ne sont
+// affichees que dans la section Education (demande utilisateur) — elles
+// restent dans les donnees de chaque item d'Experience, juste pas montrees.
+// `item.linkAfter` : un lien qui suit le texte (au lieu de passer par la
+// syntaxe markdown d'emphasize(), incapable de poser une classe/un ordre
+// icone different) — `style: 'gap'` reutilise tel quel le lien "2 ans"
+// du heros (meme classe .hero__gap, meme fleche AVANT le texte, memes
+// couleurs att att/survol, voir gapCtaLinkHTML()) ; sinon extArrowLinkHTML()
+// standard avec la classe about-cta-link (pas de soulignement, meme recette
+// que "Check my resume").
+function expItemMarkup(item, { showPlace = false } = {}) {
   const orgHTML = item.url
     ? extArrowLinkHTML(item.org, item.url, 'exp__org')
     : `<span class="exp__org">${escapeAttr(item.org)}</span>`;
   const badge = item.duration ? `<span class="exp__badge">${escapeAttr(item.duration)}</span>` : '';
-  const subLabel = item.tag || '';
+  const subLabel = showPlace ? [item.tag, item.place].filter(Boolean).join(' · ') : (item.tag || '');
+  const linkAfter = !item.linkAfter ? '' : (item.linkAfter.style === 'gap'
+    ? gapCtaLinkHTML(item.linkAfter.label, item.linkAfter.href)
+    : extArrowLinkHTML(item.linkAfter.label, item.linkAfter.href, 'about-cta-link'));
   return `<div class="exp__item">
       <div class="exp__row">
         ${orgHTML}
@@ -1661,12 +1674,24 @@ function expItemMarkup(item) {
       </div>
       <div class="exp__row exp__row--sub">
         <span class="exp__tag">${escapeAttr(subLabel)}</span>
-        <p class="exp__text">${emphasize(item.text)}</p>
+        <p class="exp__text">${emphasize(item.text)}${linkAfter ? ` ${linkAfter}` : ''}</p>
       </div>
     </div>`;
 }
-function expListMarkup(items) {
-  return `<div class="exp-list">${items.map(expItemMarkup).join('')}</div>`;
+function expListMarkup(items, opts) {
+  return `<div class="exp-list">${items.map(it => expItemMarkup(it, opts)).join('')}</div>`;
+}
+
+/* Meme lien que .hero__gap sur l'accueil (renderHero(), app.js) : classe
+   identique donc meme CSS repris tel quel (couleur estompee -> pleine au
+   survol, pas de soulignement, fleche AVANT le texte) — demande utilisateur
+   explicite ("meme fleche, memes conditions d'interaction, memes couleurs").
+   Le tilt magnetique vient deja de setupMagneticGapLinks() (`.editorial__block a`),
+   pas besoin de la classe gap-experiment (reservee au heros/route home). */
+function gapCtaLinkHTML(label, href) {
+  return `<a class="hero__gap u-arrow-link" href="${escapeAttr(href)}">
+    <span class="u-arrow-link__icon" aria-hidden="true">${arrowRightIcon('')}</span><span>${escapeAttr(label)}</span>
+  </a>`;
 }
 
 /* Tiroir "Experience" de la page About (pageEditorial(), via b.drawer) :
@@ -1684,7 +1709,7 @@ function expDrawerMarkup(drawer) {
   const sections = drawer.sections.map(sec => `
     <div class="cs-more__item">
       ${sec.h && sec.h !== drawer.label ? `<h3 class="cs-more__title">${escapeAttr(sec.h)}</h3>` : ''}
-      ${expListMarkup(sec.items)}
+      ${expListMarkup(sec.items, { showPlace: sec.h === 'Education' })}
     </div>`).join('');
   return `<details class="figure-drawer cs-more">
       <summary>${escapeAttr(drawer.label)}${chevronIcon('figure-drawer__chevron')}</summary>

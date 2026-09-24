@@ -5948,7 +5948,12 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
    suffit a signaler le lien (demande utilisateur), meme raisonnement que
    .exp__org plus haut — compose a 3 classes pour battre
    .u-arrow-link > span:first-child (0,2,1) sans !important. */
-.editorial__links .about-cta-link.u-arrow-link > span:first-child { text-decoration: none; }
+/* Meme classe, deux contextes : la rangee de liens ci-dessus, ET "See
+   projects" dans .exp__text (item.linkAfter, expItemMarkup()) — reutilise
+   telle quelle, sans ajouter de taille de police (celle-ci vient de son
+   contexte, .exp__text ou .editorial__links p, jamais d'ici). */
+.editorial__links .about-cta-link.u-arrow-link > span:first-child,
+.exp__text .about-cta-link.u-arrow-link > span:first-child { text-decoration: none; }
 /* Meme habillage que le declencheur "Experience" (.figure-drawer.cs-more
    summary plus haut) et le h2 "PS" (.editorial__block h2 plus haut) : pleine
    couleur ink et graisse medium plutot que le corps de texte estompe
