@@ -4382,6 +4382,12 @@ function pageEditorial(key) {
           // pas une consigne de redaction. Retourne tot : titre/cartes/media
           // n'ont pas de sens pour un simple paragraphe mis en avant.
           if (par.callout) return `<p class="editorial__callout">${emphasize(par.callout)}</p>`;
+          // `par.links` : une rangee de liens (Resume, Email...) apres un
+          // paragraphe, sans passer par la syntaxe markdown d'emphasize()
+          // (limitee a https:// et #/ — pas mailto:). Reutilise
+          // extArrowLinkHTML() tel quel, meme composant que le CV du pied de
+          // page et les organisations de expItemMarkup().
+          if (par.links) return `<p class="editorial__links">${par.links.map(l => extArrowLinkHTML(l.label, l.href)).join('')}</p>`;
           // `par.cards` (voir draggableCardMarkup()) : posees ICI, dans leur
           // propre paragraphe, pour rester juste EN DESSOUS de lui meme si
           // d'autres paragraphes suivent dans le meme bloc (ex. "Yabara"

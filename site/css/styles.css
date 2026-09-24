@@ -5926,6 +5926,10 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
   color: var(--ink);
   font-size: var(--fs-small); font-style: italic;
 }
+/* `par.links` (pageEditorial() dans app.js) : rangee de liens type CV/Email
+   apres un paragraphe — reutilise .u-arrow-link tel quel (extArrowLinkHTML),
+   juste espace en ligne plutot qu'empile comme des paragraphes normaux. */
+.editorial__block .editorial__links { display: flex; flex-wrap: wrap; gap: var(--s5); }
 
 
 /* ==========================================================================

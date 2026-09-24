@@ -2144,7 +2144,11 @@ export const PAGES = {
       },
       {
         p: [
-          'Aside from staying aware of new figma releases and AI models, I like to:\n🎨 Fall asleep watching Bob Ross painting mountains on his canvas,\n🎸 Listening to John Mayer and Jacob Collier,\n👽 Rewatching Rick and Morty episodes.'
+          { callout: 'Aside from staying aware of new figma releases and AI models, I like to:\n🎨 Fall asleep watching Bob Ross painting mountains on his canvas,\n🎸 Listening to John Mayer and Jacob Collier,\n👽 Rewatching Rick and Morty episodes.' },
+          { links: [
+            { label: 'Resume', href: SITE.links.resume },
+            { label: 'Email', href: `mailto:${SITE.email}` }
+          ] }
         ]
       }
     ]
