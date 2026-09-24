@@ -2062,14 +2062,14 @@ export const PAGES = {
 
   about: {
     title: 'About',
-    lede: 'Since I was a kid I\'ve been interested in design and products, usually by disassembling things to upgrade them, and then not being able to put them back together afterward, which made my parents furious at the time (but somehow got me working on my communication and problem-solving skills much sooner than expected).',
+    lede: 'Since I was a kid, I\'ve always been interested in design and products, usually by disassembling things to upgrade them and then not being able to put them back together afterward, which made my parents furious at the time (but somehow got me working on my communication and problem-solving skills much sooner than expected).',
     photo: { src: 'assets/img/about-photo.webp', alt: 'Portrait of Marvin S.' },
     isDraft: true,
     blocks: [
       {
         h: 'Now',
         p: [
-          'Since I was a kid I\'ve been interested in design and products, usually by disassembling things to upgrade them, and then not being able to put them back together afterward, which made my parents furious at the time (but somehow got me working on my communication and problem-solving skills much sooner than expected).'
+          'Since I was a kid, I\'ve always been interested in design and products, usually by disassembling things to upgrade them and then not being able to put them back together afterward, which made my parents furious at the time (but somehow got me working on my communication and problem-solving skills much sooner than expected).'
         ]
       },
       {
