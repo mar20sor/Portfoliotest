@@ -1678,7 +1678,6 @@ function expListMarkup(items) {
 function expDrawerMarkup(drawer) {
   const sections = drawer.sections.map(sec => `
     <div class="cs-more__item">
-      <h3 class="cs-more__title">${escapeAttr(sec.h)}</h3>
       ${expListMarkup(sec.items)}
     </div>`).join('');
   return `<details class="figure-drawer cs-more">

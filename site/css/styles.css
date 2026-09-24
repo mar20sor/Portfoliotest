@@ -4901,6 +4901,13 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 .figure-drawer.cs-more summary:focus-visible .figure-drawer__chevron { transform: translateX(3px); }
 .figure-drawer.cs-more[open] summary:hover .figure-drawer__chevron,
 .figure-drawer.cs-more[open] summary:focus-visible .figure-drawer__chevron { transform: rotate(180deg) translateX(3px); }
+/* Tiroir "Experience" de la page About (expDrawerMarkup() dans app.js) :
+   son declencheur reprend le style du h3 .cs-more__title qu'il remplace —
+   ce tiroir n'a plus de titre par section a l'interieur, voir ce fichier.
+   Scope a .editorial__block (About uniquement) pour ne pas toucher le
+   tiroir "See more of the process" des etudes de cas, qui partage les
+   memes classes .figure-drawer.cs-more. */
+.editorial__block .figure-drawer.cs-more summary { font-size: var(--fs-h3); font-weight: var(--w-medium); color: var(--ink); }
 .cs-more__body { margin-top: var(--s5); }
 .cs-more__item + .cs-more__item { margin-top: var(--s7); }
 .cs-more__title { font-size: var(--fs-h3); font-weight: var(--w-medium); margin-bottom: var(--s3); }

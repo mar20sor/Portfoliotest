@@ -2144,33 +2144,7 @@ export const PAGES = {
       },
       {
         p: [
-          'Aside from doodling and staying aware of new figma releases and AI models, I like to:\n🎨 Fall asleep watching Bob Ross painting mountains on his canvas,\n🎸 Listening to John Mayer and Jacob Collier,\n👽 Rewatching Rick and Morty episodes.'
-        ]
-      },
-      {
-        h: 'How I work',
-        p: [
-          'I start by counting. How many rules, how many steps, how long, how often. The numbers from scoping are often the real deliverable: on the Constraints project, finding out half the rules were never used mattered more than any mockup.',
-          'Then I simplify before I draw. Reducing twenty-four rules to nine is modelling work, not interface work. Drawing a beautiful screen for twenty-four redundant rules would have solved nothing.',
-          'And I try to stay in the room after release. On services exclusion, our first version was misread by most managers. We only found out by retesting after deployment. A design that hasn’t been watched in real use is just a well-presented hypothesis.'
-        ]
-      },
-      {
-        h: 'Before',
-        p: [
-          'Digital design training at ECV Digital in Paris, closed out with a dissertation and a few team projects — including a La Poste hackathon where we came second. Then Montréal, a full redesign for Fit-Plans, and the move into healthcare SaaS.'
-        ]
-      },
-      {
-        h: 'Otherwise',
-        p: [
-          '[TO FILL IN — two or three personal sentences: what you listen to, make, collect, practise. This is the section recruiters read last and remember first. Avoid “passionate about”; go for one precise, verifiable detail.]'
-        ]
-      },
-      {
-        h: 'Let’s talk',
-        p: [
-          'I’m looking for a product or UX design role. If you have a system nobody understands anymore, get in touch.'
+          'Aside from staying aware of new figma releases and AI models, I like to:\n🎨 Fall asleep watching Bob Ross painting mountains on his canvas,\n🎸 Listening to John Mayer and Jacob Collier,\n👽 Rewatching Rick and Morty episodes.'
         ]
       }
     ]
