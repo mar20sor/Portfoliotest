@@ -2080,21 +2080,21 @@ export const PAGES = {
               items: [
                 {
                   org: 'Career break', url: null,
-                  role: 'Laid off, work permit on hold', dates: 'Aug 2024 → Mar 2026', duration: '1.5 years',
+                  role: '...', dates: 'Aug 2024 → Mar 2026', duration: '1.5 years',
                   tag: 'personal', place: null,
-                  text: 'Laid off, and my work permit was tied to the job — I lost the right to work while my Permanent Residency application was pending. [The full story →](#/gap)'
+                  text: 'After a layoff, I was unable to work for 2 years. [The full story →](#/gap)'
                 },
                 {
                   org: 'Petal', url: 'https://www.petal-health.com/',
                   role: 'Product Designer', dates: 'Mar 2021 → July 2024', duration: '3 years',
                   tag: 'health', place: 'Montréal',
-                  text: 'Worked on the Quebec orchestrator platform and the Scheduling tool in collaboration with stakeholders, PO and Devs. Participated in improving the design team workflow and assisted on interviews and usertesting workshops. [See projects →](https://drive.google.com/drive/folders/1UIMvwYL_MlQDqfZCE8qLk-u62KDuM4Ml?usp=sharing)'
+                  text: 'Worked on the Quebec orchestrator platform (HUB) and the Scheduling tool. [See projects →](https://drive.google.com/drive/folders/1UIMvwYL_MlQDqfZCE8qLk-u62KDuM4Ml?usp=sharing)'
                 },
                 {
                   org: 'Fit-Plans', url: 'https://www.fit-plans.com/en',
                   role: 'UX Designer', dates: 'Mar 2020 → Aug 2020', duration: '6 months',
                   tag: 'food', place: 'Montréal',
-                  text: 'Redesign of the website: audit, collection and analysis of user needs, usertesting, QA sessions with developers. Design of the new product page, checkout, calorie calculator and landing page.'
+                  text: 'Redesign of the website: landing and product page, checkout, calorie calculator.'
                 },
                 {
                   org: 'Gekko', url: 'https://group.accor.com/en/brands/business-boosters/Gekko',
@@ -2106,7 +2106,7 @@ export const PAGES = {
                   org: 'Eurokera', url: 'https://eurokera.com/',
                   role: 'Project Manager, Designer', dates: 'Sep 2016 → Sep 2017', duration: '1 year',
                   tag: 'industry', place: 'Bagneaux',
-                  text: 'Redesign project in relationship with the agency in charge. Redesign of the intranet and creation of a UI design kit.'
+                  text: 'Management of the website and intranet redesign projects.'
                 }
               ]
             },
@@ -2117,13 +2117,13 @@ export const PAGES = {
                   org: 'ECV Digital', url: null,
                   role: 'Master degree in UX Design', dates: '2019', duration: null,
                   tag: null, place: 'Paris',
-                  text: 'Design Sprint, Usability testing, Comparative analysis, Interviews and surveys, Wireframing, Prototyping.'
+                  text: 'Design Sprint, Usability testing, Interviews and surveys, Prototyping.'
                 },
                 {
                   org: 'CFI', url: null,
                   role: 'Bachelor degree in Web Project Management', dates: '2017', duration: null,
                   tag: null, place: 'Bagnolet',
-                  text: 'UI/UX Design, Content Marketing, SEO, Coding (HTML/CSS, PHP, JS), and Project Management.'
+                  text: 'Project Management, UI/UX, SEO, Coding.'
                 },
                 {
                   org: 'CFI', url: null,
@@ -2135,7 +2135,7 @@ export const PAGES = {
                   org: 'IUT Sénart', url: null,
                   role: 'DUT Technological degree in Company Management', dates: '2015', duration: null,
                   tag: null, place: 'Fontainebleau',
-                  text: 'Business Management, Communication, Accounting or Law.'
+                  text: 'Business Management, Marketing, Communication, Accounting, Law.'
                 }
               ]
             }

@@ -5436,11 +5436,15 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
 .exp-list { display: flex; flex-direction: column; gap: var(--s6); margin-top: var(--s4); }
 .exp__item { display: flex; flex-direction: column; gap: var(--s1); }
 .exp__row { display: flex; gap: var(--s4); }
-.exp__row--sub { margin-top: var(--s1); }
 .exp__org, .exp__tag {
   flex: 0 0 120px;
   font-size: var(--fs-small);
 }
+/* Fleche seule suffit a signaler un lien ici (demande utilisateur) : pas de
+   soulignement sur l'organisation, contrairement a .u-arrow-link ailleurs
+   sur le site (etudes de cas comprises) — meme recette que .foot/.site-nav__end
+   plus haut, restreinte a cette page via la classe exp__org. */
+.exp__org.u-arrow-link > span:first-child { text-decoration: none; }
 .exp__org { font-weight: var(--w-semibold); }
 .exp__tag {
   font-size: var(--fs-tiny); text-transform: capitalize; letter-spacing: .06em;
@@ -5474,9 +5478,6 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
    ailleurs. */
 .editorial__block .exp__text { flex: 1 1 260px; min-width: 0; max-width: var(--measure); margin: 0; color: var(--ink-soft); font-size: var(--fs-small); }
 .editorial--gap .editorial__block .exp__text { max-width: var(--measure); }
-/* Essai sans description (demande utilisateur, reversible) : cachee plutot
-   que retiree du markup, meme recette que .exp__badge ci-dessus. */
-.exp__text { display: none; }
 @media (max-width: 600px) {
   .exp-list { gap: var(--s4); }
   .exp__row { flex-direction: column; gap: var(--s1); }
