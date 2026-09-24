@@ -4268,7 +4268,11 @@ function setupComponentsShowcase() {
 function pageEditorial(key) {
   const d = t(), p = PAGES[key];
   const isGap = key === 'gap';
-  const page = el('div', { class: isGap ? 'editorial editorial--gap' : 'editorial' });
+  // About reuses gap's sticky side-nav back link + fixed back-to-top button
+  // (user request: same buttons, same position, mobile and desktop) rather
+  // than the shared floating #back-link alone.
+  const hasGapNav = isGap || key === 'about';
+  const page = el('div', { class: hasGapNav ? 'editorial editorial--gap' : 'editorial' });
 
   // La page gap reprend la mecanique de .cs__body/.cs-nav (etude de cas avec
   // nav laterale) plutot que le bouton flottant #back-link partage par tout
@@ -4290,11 +4294,11 @@ function pageEditorial(key) {
   // retiree sur cette route (body.route-gap, voir paint()) : cette page a
   // deja sa propre navigation retour, les deux se disputeraient le bas de
   // l'ecran — meme motif que body.is-overlay pour une fiche ouverte.
-  const w = el('div', { class: isGap ? 'editorial__gapcol' : 'wrap wrap--narrow' });
+  const w = el('div', { class: hasGapNav ? 'editorial__gapcol' : 'wrap wrap--narrow' });
   // Cible du lien "Back to top" ajoute plus bas — meme convention que
   // head.id = 'sec-overview' sur une etude de cas (pageCase()) : scrollToSection()
   // (app.js) cherche toujours un id `sec-${ancre}`.
-  if (isGap) w.id = 'sec-top';
+  if (hasGapNav) w.id = 'sec-top';
 
   const blocks = p.blocks.map(b => `
     <div class="editorial__block">
@@ -4344,7 +4348,7 @@ function pageEditorial(key) {
     <p class="editorial__lede">${escapeAttr(p.lede)}</p>
     ${blocks}`);
 
-  if (isGap) {
+  if (hasGapNav) {
     const nav = el('nav', { class: 'editorial__gapnav', 'aria-label': escapeAttr(d.csBack) });
     nav.innerHTML = `<a class="back-link" href="#/"><span aria-hidden="true">${arrowLeftIcon('back-link__icon')}</span> <span>${escapeAttr(d.csBack)}</span></a>`;
     const grid = el('div', { class: 'editorial__gapgrid' });
@@ -4677,7 +4681,7 @@ function paint(hash, route, mode) {
   // du site, sous 860px, se retire donc pour elle exactement comme pour une
   // fiche ouverte (body.is-overlay .site-nav juste au-dessus) — meme motif,
   // meme raison (deux barres au meme endroit), voir styles.css section 12.
-  body.classList.toggle('route-gap', route.name === 'gap');
+  body.classList.toggle('route-gap', route.name === 'gap' || route.name === 'about');
   // Demande utilisateur : le bouton "Back" flottant partage (#back-link)
   // reprend l'habillage de celui de la page gap SUR CETTE ROUTE SEULEMENT —
   // les autres pages qui le partagent (etude de cas sans nav laterale)
@@ -4837,7 +4841,7 @@ function paint(hash, route, mode) {
     if (route.name === 'home') setupNavContrast();
     if (route.name === 'home') setupMagneticHeroLinks();
     if (route.name === 'home') setupMagneticCards();
-    if (route.name === 'gap') setupMagneticGapLinks();
+    if (route.name === 'gap' || route.name === 'about') setupMagneticGapLinks();
     /* Sans condition de route : la pastille sert l'accueil ET les etudes de
        cas, et setupCursorPill sort d'elle-meme quand la page n'a aucune cible
        (About, l'article, une 404). */
@@ -5236,7 +5240,7 @@ function setupBackLink(route) {
      #back-link, deja hors de #main, n'a pas ce probleme — meme bouton que
      About/etudes de cas, meme fiabilite. */
   const isMobile = window.matchMedia('(max-width: 1000px)').matches;
-  const hasOwnBackLink = route.name === 'case' || (route.name === 'gap' && !isMobile);
+  const hasOwnBackLink = route.name === 'case' || ((route.name === 'gap' || route.name === 'about') && !isMobile);
   const deep = ['case', 'about', 'gap'].includes(route.name) && !hasOwnBackLink;
   link.hidden = !deep;
   if (!deep) return;
@@ -5255,7 +5259,11 @@ function setupBackLink(route) {
    ne fait plus que le montrer ou le cacher, jamais le (re)construire. */
 function setupGapBackToTop(route) {
   const link = $('#gap-back-to-top');
-  link.hidden = route.name !== 'gap';
+  const show = route.name === 'gap' || route.name === 'about';
+  link.hidden = !show;
+  // About shares this button with gap (user request) — href must follow the
+  // current route or it would jump away to /gap instead of scrolling in place.
+  if (show) link.href = `#/${route.name}#top`;
 }
 
 /* Il y avait ici closeMobileNav(), qui refermait le tiroir de navigation
