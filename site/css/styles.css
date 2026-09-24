@@ -5203,11 +5203,12 @@ body.route-about .about-grid { display: block; }
   gap: clamp(var(--s6), 5vw, var(--s8));
   align-items: start;
 }
-/* Colonne de contenu un peu resserree (demande utilisateur) : sans max-width
-   elle remplissait tout l'espace restant de la grille jusqu'a --wrap-max,
-   sur une largeur d'ecran genereuse — meme mesure que .wrap--narrow (860px)
-   deja etablie ailleurs sur le site plutot qu'un nouveau chiffre. */
-.editorial__gapcol { max-width: 860px; }
+/* Colonne de contenu resserree (demande utilisateur, resserree une seconde
+   fois) : sans max-width elle remplissait tout l'espace restant de la
+   grille jusqu'a --wrap-max, sur une largeur d'ecran genereuse. Partie de
+   .wrap--narrow (860px, deja etablie ailleurs sur le site), reduite encore
+   d'un cran. */
+.editorial__gapcol { max-width: 760px; }
 /* z-index : sans lui, .editorial__gapnav et la colonne de contenu (`w`,
    z-index:auto toutes les deux) se departagent par ordre du DOM — `w` vient
    APRES nav dans .editorial__gapgrid (voir pageEditorial()), elle peint donc
