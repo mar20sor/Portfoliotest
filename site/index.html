@@ -140,15 +140,19 @@
   <!--
     ================ 0 bis. TRAME DE FOND (page About) ================
     Reference explicite de l'utilisateur : les divs .background-grid /
-    ._2 / ._3 de l'ancien marvinsrd.com/fr/accueil — trois colonnes egales
-    plein ecran, separees par un filet pointille presque invisible. Hors de
-    #main, meme raison que #back-link/#gap-back-to-top (voir leurs notes
-    plus bas) : #main porte .is-entering (un transform) pendant toute la
-    duree d'une page, ce qui casserait un position:fixed pose a l'interieur.
-    Montree/masquee uniquement par CSS (body.route-about, deja pose par
-    paint() pour le lien retour de cette page) — aucun JS supplementaire.
+    ._2 / ._3 de l'ancien marvinsrd.com/fr/accueil (trois colonnes) — mais
+    resserree a six colonnes (demande utilisateur : "plus de lignes"), plein
+    ecran, separees par un filet pointille presque invisible. Hors de #main,
+    meme raison que #back-link/#gap-back-to-top (voir leurs notes plus bas) :
+    #main porte .is-entering (un transform) pendant toute la duree d'une
+    page, ce qui casserait un position:fixed pose a l'interieur. Montree/
+    masquee uniquement par CSS (body.route-about, deja pose par paint() pour
+    le lien retour de cette page) — aucun JS supplementaire.
   -->
   <div class="about-grid" aria-hidden="true">
+    <div class="about-grid__col"></div>
+    <div class="about-grid__col"></div>
+    <div class="about-grid__col"></div>
     <div class="about-grid__col"></div>
     <div class="about-grid__col"></div>
     <div class="about-grid__col"></div>

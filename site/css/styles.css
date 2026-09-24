@@ -5155,23 +5155,28 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 
 /* ---- Trame de fond, page About (index.html, .about-grid) ----
    Reference explicite de l'utilisateur : .background-grid/._2/._3 sur
-   l'ancien marvinsrd.com/fr/accueil — trois colonnes plein ecran, memes
-   proportions (33.3vw), separees par un filet pointille presque invisible.
-   display:none par defaut, montree uniquement par body.route-about (deja
-   pose par paint() pour le lien retour de cette page, voir app.js) :
-   purement decorative, jamais besoin ailleurs qu'ici. z-index:0, meme
-   plan que .underlay (section 11 bis) — les deux ne sont jamais visibles
-   en meme temps (About n'ouvre pas de fiche par-dessus elle). */
+   l'ancien marvinsrd.com/fr/accueil — trois colonnes plein ecran a
+   l'origine, resserrees a SIX (demande utilisateur : "plus de lignes de
+   trame"), memes proportions relatives, separees par un filet pointille
+   presque invisible. display:none par defaut, montree uniquement par
+   body.route-about (deja pose par paint() pour le lien retour de cette
+   page, voir app.js) : purement decorative, jamais besoin ailleurs qu'ici.
+   z-index:0, meme plan que .underlay (section 11 bis) — les deux ne sont
+   jamais visibles en meme temps (About n'ouvre pas de fiche par-dessus
+   elle). */
 .about-grid { display: none; }
 body.route-about .about-grid { display: block; }
 .about-grid__col {
   position: fixed; z-index: 0; top: 0;
-  width: 33.34vw; height: 100%;
+  width: 16.67vw; height: 100%;
   border-right: 3px dashed rgba(255, 255, 255, .05);
 }
 .about-grid__col:nth-child(1) { left: 0; }
-.about-grid__col:nth-child(2) { left: 33.33vw; }
-.about-grid__col:nth-child(3) { left: 66.66vw; }
+.about-grid__col:nth-child(2) { left: 16.67vw; }
+.about-grid__col:nth-child(3) { left: 33.33vw; }
+.about-grid__col:nth-child(4) { left: 50vw; }
+.about-grid__col:nth-child(5) { left: 66.67vw; }
+.about-grid__col:nth-child(6) { left: 83.33vw; }
 
 /* Meme degagement que les etudes de cas : le bouton "Retour" est fixe. */
 .editorial { padding-block: calc(var(--back-h) + var(--s6)) var(--s9); }
