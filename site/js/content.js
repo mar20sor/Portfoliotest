@@ -2069,7 +2069,7 @@ export const PAGES = {
       {
         h: 'Now',
         p: [
-          'Since I was a kid, I\'ve always been interested in design and products, usually by disassembling things to upgrade them and then not being able to put them back together afterward, which made my parents furious at the time (but somehow got me working on my communication and problem-solving skills much sooner than expected).'
+          'Previously at Fit-plans then Petal, I first worked as a web project manager and graphic designer before pivoting to UX design.'
         ]
       },
       {
