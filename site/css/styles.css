@@ -5443,20 +5443,24 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
 }
 .exp__org { font-weight: var(--w-semibold); }
 .exp__tag {
-  font-size: var(--fs-tiny); text-transform: uppercase; letter-spacing: .06em;
+  font-size: var(--fs-tiny); text-transform: lowercase; letter-spacing: .06em;
   color: var(--ink-faint); padding-top: 2px;
 }
 .exp__value {
-  display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--s3); row-gap: var(--s1);
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+  column-gap: var(--s3); row-gap: var(--s1);
   flex: 1 1 0%; min-width: 0;
 }
 .exp__role { font-weight: var(--w-semibold); }
 .exp__meta { display: inline-flex; align-items: center; gap: var(--s2); color: var(--ink-faint); font-size: var(--fs-small); }
 /* Pastille de DUREE seulement (pas une simple date) — meme recette que
    .draft-badge (fond accent, texte --accent-ink) pour rester sur la palette
-   deja etablie plutot qu'une nouvelle couleur. */
+   deja etablie plutot qu'une nouvelle couleur. Cachee (demande utilisateur) :
+   markup et regles gardees intactes pour pouvoir la reactiver d'un coup en
+   retirant juste ce display:none. */
 .exp__badge {
-  display: inline-flex; align-items: center;
+  display: none;
+  align-items: center;
   background: var(--accent); color: var(--accent-ink);
   font-size: var(--fs-tiny); font-weight: var(--w-semibold);
   border-radius: var(--radius-tag); padding: 1px var(--s2);

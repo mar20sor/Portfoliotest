@@ -1669,6 +1669,24 @@ function expListMarkup(items) {
   return `<div class="exp-list">${items.map(expItemMarkup).join('')}</div>`;
 }
 
+/* Tiroir "Experience" de la page About (pageEditorial(), via b.drawer) :
+   regroupe les blocs Experience et Education, fermes par defaut, derriere le
+   meme <details class="figure-drawer cs-more"> que "See more of the process"
+   sur une etude de cas (voir moreDrawerMarkup() plus haut) — demande
+   utilisateur explicite, reutilise donc son CSS tel quel plutot que d'en
+   ecrire un nouveau. */
+function expDrawerMarkup(drawer) {
+  const sections = drawer.sections.map(sec => `
+    <div class="cs-more__item">
+      <h3 class="cs-more__title">${escapeAttr(sec.h)}</h3>
+      ${expListMarkup(sec.items)}
+    </div>`).join('');
+  return `<details class="figure-drawer cs-more">
+      <summary>${escapeAttr(drawer.label)}${chevronIcon('figure-drawer__chevron')}</summary>
+      <div class="cs-more__body">${sections}</div>
+    </details>`;
+}
+
 /* Classe(s) a poser sur le conteneur direct d'une image pour la rendre
    zoomable (voir .zoomable-media dans styles.css / setupZoomableMedia() plus
    bas). `flag` : true = zoomable partout, 'mobile' = seulement sous 700px
@@ -4352,6 +4370,7 @@ function pageEditorial(key) {
     <div class="editorial__block">
       ${b.h ? `<h2>${escapeAttr(b.h)}</h2>` : ''}
       ${b.items ? expListMarkup(b.items) : ''}
+      ${b.drawer ? expDrawerMarkup(b.drawer) : ''}
       ${!b.p ? '' : b.p.map(par => {
         // Un paragraphe { title, text } porte un petit intitule au-dessus
         // (meme convention que .cs-sec__title) — pour un aparte nomme, comme
