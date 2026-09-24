@@ -1621,6 +1621,21 @@ function draggableCardMarkup(card) {
     </div>`;
 }
 
+/* Photo scotchee de la page About (pageEditorial()) : reference explicite de
+   l'utilisateur, .column.w-col-6 + .scotch sur l'ancien marvinsrd.com/fr/accueil
+   — carre incline avec deux bandes de scotch rectangulaires a des angles
+   independants, plutot que le cadre polaroid arrondi de .draggable-card
+   (autre reference, lelezhang.design). Statique, pas glissable : cette
+   page n'a qu'une seule photo, pas une pile a eparpiller. */
+function aboutPhotoMarkup(photo) {
+  if (!photo) return '';
+  return `<div class="about-photo">
+      <div class="about-photo__tape about-photo__tape--1" aria-hidden="true"></div>
+      <div class="about-photo__tape about-photo__tape--2" aria-hidden="true"></div>
+      <img class="about-photo__img" src="${escapeAttr(photo.src)}" alt="${escapeAttr(photo.alt || '')}" loading="lazy" decoding="async">
+    </div>`;
+}
+
 /* Classe(s) a poser sur le conteneur direct d'une image pour la rendre
    zoomable (voir .zoomable-media dans styles.css / setupZoomableMedia() plus
    bas). `flag` : true = zoomable partout, 'mobile' = seulement sous 700px
@@ -4345,6 +4360,7 @@ function pageEditorial(key) {
   w.insertAdjacentHTML('beforeend', `
     ${p.isDraft ? `<p style="margin-bottom:var(--s4)"><span class="draft-badge">${escapeAttr(d.draftBadge)}</span></p>` : ''}
     <h1 class="editorial__title">${escapeAttr(p.title)}</h1>
+    ${aboutPhotoMarkup(p.photo)}
     <p class="editorial__lede">${escapeAttr(p.lede)}</p>
     ${blocks}`);
 

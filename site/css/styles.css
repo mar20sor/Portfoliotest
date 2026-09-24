@@ -5349,6 +5349,41 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
 .editorial--gap .editorial__block p { max-width: none; }
 
 .editorial__title { font-size: var(--fs-h1); font-weight: var(--w-medium); margin-bottom: var(--s4); }
+
+/* ---- Photo scotchee, page About (aboutPhotoMarkup() dans app.js) ----
+   Reference explicite de l'utilisateur : .column.w-col-6 + .scotch sur
+   l'ancien marvinsrd.com/fr/accueil — un carre legerement incline, deux
+   bandes de scotch rectangulaires a des angles INDEPENDANTS du carre (pas
+   alignees dessus), qui donnent l'illusion de deux morceaux colles a la
+   main plutot qu'un decor symetrique. Pas de coins tres arrondis ni de
+   marge blanche large comme .draggable-card (autre reference,
+   lelezhang.design, section 9 bis) : une photo scotchee a plat, pas une
+   carte polaroid. */
+.about-photo {
+  position: relative;
+  width: min(220px, 55vw);
+  aspect-ratio: 1 / 1;
+  margin: var(--s6) auto var(--s7);
+  transform: rotate(-6deg);
+}
+.about-photo__img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+  border-radius: 4px;
+  box-shadow: 0 10px 24px rgba(6, 22, 43, .28);
+}
+/* Gris quasi-opaque (proche du rgb(196,196,196) de la reference), jamais un
+   jeton de theme : un morceau de scotch ne change pas de teinte avec la
+   page, meme raison que le papier de .draggable-card. */
+.about-photo__tape {
+  position: absolute;
+  width: 42%; height: 15%;
+  background: rgba(214, 214, 214, .82);
+  box-shadow: 0 1px 3px rgba(6, 22, 43, .2);
+}
+.about-photo__tape--1 { left: -12%; top: 10%; transform: rotate(-10deg); }
+.about-photo__tape--2 { right: -12%; bottom: 12%; transform: rotate(16deg); }
+
 .editorial__lede {
   font-size: var(--fs-lead); color: var(--ink-soft); font-weight: var(--w-light);
   max-width: var(--measure); margin-bottom: var(--s7);

@@ -2062,14 +2062,14 @@ export const PAGES = {
 
   about: {
     title: 'About',
-    lede: 'Product designer, based in Montréal. Three years on healthcare tools where an interface mistake has real consequences.',
+    lede: 'Since I was a kid I\'ve been interested in design and products, usually by tearing things apart to upgrade them, and then not being able to fix it afterward, which made my parents furious at the time (but somehow got me working on my communication and problem-solving skills much sooner than expected).',
+    photo: { src: 'assets/img/about-photo.webp', alt: 'Portrait of Marvin S.' },
     isDraft: true,
     blocks: [
       {
         h: 'Now',
         p: [
-          'I design interfaces for enterprise software — the kind of product nobody uses for fun, but because their job requires it, eight hours a day. At Petal I worked on hospital scheduling and on the HUB, the platform that synchronises clinics and hospitals across Québec.',
-          'That domain taught me something consumer projects teach badly: when your user is a hospital manager who has to finish a schedule before their shift ends, they do not explore your interface. They look for the shortest path, and if you signposted it poorly, they tick the wrong box.'
+          'Since I was a kid I\'ve been interested in design and products, usually by tearing things apart to upgrade them, and then not being able to fix it afterward, which made my parents furious at the time (but somehow got me working on my communication and problem-solving skills much sooner than expected).'
         ]
       },
       {
