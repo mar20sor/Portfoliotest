@@ -2088,7 +2088,7 @@ export const PAGES = {
                   org: 'Petal', url: 'https://www.petal-health.com/',
                   role: 'Product Designer', dates: 'Mar 2021 → July 2024', duration: '3 years',
                   tag: 'health', place: 'Montréal',
-                  text: 'Worked on the Quebec orchestrator platform (HUB) and the Scheduling tool. [See projects →](https://drive.google.com/drive/folders/1UIMvwYL_MlQDqfZCE8qLk-u62KDuM4Ml?usp=sharing)'
+                  text: 'Quebec orchestrator platform (HUB), Scheduling tool. [See projects →](https://drive.google.com/drive/folders/1UIMvwYL_MlQDqfZCE8qLk-u62KDuM4Ml?usp=sharing)'
                 },
                 {
                   org: 'Fit-Plans', url: 'https://www.fit-plans.com/en',
@@ -2100,7 +2100,7 @@ export const PAGES = {
                   org: 'Gekko', url: 'https://group.accor.com/en/brands/business-boosters/Gekko',
                   role: 'Project Manager, Product Designer', dates: 'Oct 2017 → Sep 2019', duration: '2 years',
                   tag: 'travel', place: 'Levallois',
-                  text: 'Process analysis, collection of customer needs, and drafting of technical specifications: implementation of a gamification and travelers review collection system, offer comparator, and cross selling workflow.'
+                  text: 'Gamification and travelers review collection system, offer comparator, cross selling workflow.'
                 },
                 {
                   org: 'Eurokera', url: 'https://eurokera.com/',
@@ -2141,6 +2141,11 @@ export const PAGES = {
             }
           ]
         }
+      },
+      {
+        p: [
+          'Aside from doodling and staying aware of new figma releases and AI models, I like to:\n🎨 Fall asleep watching Bob Ross painting mountains on his canva,\n🎸 Listening to John Mayer and Jacob Collier,\n👽 Rewatching Rick and Morty episodes.'
+        ]
       },
       {
         h: 'How I work',
