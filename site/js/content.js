@@ -76,7 +76,7 @@ export const UI = {
   gateSubmit: 'Submit',
   gateSkip: 'Skip',
   gateError: 'Two characters minimum, letters and hyphens only.',
-  gateHint: 'Stored in browser only, no database or tracking.',
+  gateHint: 'Stored in browser, no database or tracking.',
 
   navWork: 'Work', navSide: 'Playground', navAbout: 'About', navContact: 'Email',
   navHome: 'Home', navMenu: 'Menu', navClose: 'Close',
@@ -86,9 +86,9 @@ export const UI = {
   helloAfter: '!',
   helloAnon: 'Nice to meet you!',
   workTitle: 'Work',
-  workIntro: 'Three years of healthcare SaaS, plus a few side quests.',
+  workIntro: 'Four years of SaaS in healthcare and foodtech.',
   sideTitle: 'Playground',
-  sideIntro: 'The things that don’t fit under “work experience” but still count.',
+  sideIntro: 'A mix of school projects and things built for fun.',
   aboutTitle: 'About',
 
   /* La pastille qui remplace le pointeur au survol d'une vignette d'accueil
@@ -188,16 +188,16 @@ export const HERO = {
   name: 'I’m Marvin,',
   statement: [
     [
-      { t: 'I like to “decipher” ' },
-      { t: 'complex workflows', accent: true }
+      { t: 'Scale-up B2B', accent: true },
+      { t: ' products are my focus,' }
     ],
     [
-      { t: 'when working on ' },
-      { t: 'B2B', accent: true },
-      { t: ' product in scale-ups.' }
+      { t: 'I enjoy making sense of ' },
+      { t: 'complex systems', accent: true },
+      { t: '.' }
     ],
     [
-      { t: 'I previously worked at ' },
+      { t: 'Previously at ' },
       { t: 'Petal', to: '#/work/constraints', class: 'petal-experiment' },
       { t: ', ' },
       { t: 'Fit-Plans', to: '#/work/fit-plans', class: 'fitplans-experiment' },
@@ -2064,14 +2064,14 @@ export const PAGES = {
 
   about: {
     title: 'About',
-    lede: 'Since I was a kid, I\'ve always been interested in design and products, usually by disassembling things to upgrade them and then not being able to put them back together afterward, which made my parents furious at the time (but somehow got me working on my communication and problem-solving skills much sooner than expected).',
+    lede: 'As a kid, I was always interested in design and products, mostly by taking things apart to upgrade them and (very rarely) putting them back together.\nMy parents weren’t thrilled, which somehow built my communication and problem-solving skills early.',
     photo: { src: 'assets/img/about-photo.webp', alt: 'Portrait of Marvin S.' },
     calloutLede: true,
     notes: { photo: 'Strong french accent', lede: 'Are you really going\nto read this entirely?' },
     blocks: [
       {
         p: [
-          'Previously at Fit-plans then Petal, I first worked as a web project manager and graphic designer before pivoting to UX design.'
+          'Originally from Paris, I first worked as a web project manager and graphic designer before joining Fit-plans and Petal as a UX designer in Montreal. I’m now based in Toronto.'
         ],
         drawer: {
           label: 'Experience',
@@ -2149,7 +2149,12 @@ export const PAGES = {
       },
       {
         p: [
-          'Aside from staying aware of new figma releases and AI models, I like to:\n🎨 Fall asleep watching Bob Ross painting mountains on his canvas,\n🎸 Listening to John Mayer and Jacob Collier,\n👽 Rewatching Rick and Morty episodes.'
+          'Aside from staying aware of new figma releases and AI models, I like to:',
+          { emojiList: [
+            { emoji: '🎨', text: 'Fall asleep watching Bob Ross painting mountains on his canvas,' },
+            { emoji: '🎸', text: 'Listening to John Mayer and Jacob Collier,' },
+            { emoji: '👽', text: 'Rewatching Rick and Morty episodes.' }
+          ] }
         ]
       },
       {

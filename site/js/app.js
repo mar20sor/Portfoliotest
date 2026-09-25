@@ -4564,6 +4564,12 @@ function pageEditorial(key) {
           // pas une consigne de redaction. Retourne tot : titre/cartes/media
           // n'ont pas de sens pour un simple paragraphe mis en avant.
           if (par.callout) return `<p class="editorial__callout">${emphasize(par.callout)}</p>`;
+          // `par.emojiList` : liste a puces dont chaque emoji REMPLACE la puce
+          // (demande utilisateur) — list-style:none sur le <ul>, l'emoji rendu
+          // dans son propre span sert de marqueur visuel. Texte en semibold,
+          // toujours demande utilisateur.
+          if (par.emojiList) return `<ul class="editorial__emoji-list">${par.emojiList.map(li => `
+            <li><span class="editorial__emoji-list-icon" aria-hidden="true">${escapeAttr(li.emoji)}</span><span class="editorial__emoji-list-text">${escapeAttr(li.text)}</span></li>`).join('')}</ul>`;
           // `par.links` : une ou deux phrases ("Check my resume", "Contact
           // me at ...") portant chacune UN lien, sans passer par la syntaxe
           // markdown d'emphasize() (limitee a https:// et #/ — pas mailto:,
