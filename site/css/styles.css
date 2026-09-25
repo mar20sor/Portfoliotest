@@ -610,11 +610,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* Le portail reprend la typographie du heros : meme accueil, meme voix. */
 .gate__hi {
-  font-size: var(--fs-h2); font-weight: var(--w-regular);
+  font-size: var(--fs-h2); font-weight: var(--w-light);
   margin-bottom: var(--s2);
 }
 .gate__q {
-  font-size: var(--fs-hero); font-weight: var(--w-light);
+  font-size: var(--fs-hero); font-weight: var(--w-regular);
   margin-bottom: var(--s7);
   white-space: pre-line;   /* respecte le \n present dans content.js */
 }
@@ -4962,6 +4962,12 @@ li[aria-selected="true"] .cbuild__opt-check { opacity: 1; }
 }
 .text-drawer[open] .text-drawer__chevron { transform: rotate(180deg); }
 .text-drawer__body { margin-top: var(--s4); }
+/* Mobile (demande utilisateur) : le chevron rejoint le bord droit du
+   declencheur au lieu de coller au titre — space-between fonctionne ici
+   puisque summary n'a que deux enfants flex (titre + chevron). */
+@media (max-width: 700px) {
+  .text-drawer summary { justify-content: space-between; }
+}
 
 /* La vignette video des cartes de projet : par defaut, meme traitement que
    les images/SVG juste au-dessus (100%, object-fit: cover) — le fichier est
@@ -5479,6 +5485,7 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
 .editorial__lede {
   font-size: var(--fs-lead); color: var(--ink-soft); font-weight: var(--w-light);
   max-width: var(--measure);
+  white-space: pre-line;   /* respecte le \n present dans content.js */
 }
 /* Essai (demande utilisateur) : la lede de About en encart, meme recette que
    .editorial__block .editorial__callout plus bas (fond teinte, filet
@@ -5571,7 +5578,7 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
    repris tel quel de la mise en page flex de base, juste repositionne. */
 .editorial__lede-row { position: relative; }
 .margin-note--lede {
-  display: flex; align-items: center; gap: var(--s2);
+  display: none; align-items: center; gap: var(--s2);
   bottom: 100%; right: 0; margin-bottom: var(--s3); width: max-content;
 }
 .margin-note--lede .margin-note__text { max-width: 165px; position: relative; top: -0.96em; }
@@ -5590,6 +5597,7 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
    utilisateur, "jamais par-dessus le texte") — cette formule retrecit la
    note (et la fait passer sur 3 lignes) juste assez pour rester a cote. */
 .margin-note--company {
+  display: none;
   top: -76px; right: 0; width: min(125px, 100% - 145px);
 }
 .margin-note--company .margin-note__arrow {
@@ -5601,6 +5609,7 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
    texte a droite, fleche AU-DESSUS (deja retournee dans le vecteur importe,
    voir figmaArrowUniversityMobileIcon()) courbant vers le haut-gauche. */
 .margin-note--university {
+  display: none;
   top: -2.02em; right: 0; width: 140px;
 }
 .margin-note--university .margin-note__arrow {
@@ -5751,6 +5760,20 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
 .editorial__block h2 { font-size: var(--fs-h2); margin-bottom: var(--s4); font-weight: var(--w-medium); }
 .editorial__block p { max-width: var(--measure); margin-bottom: var(--s4); color: var(--ink-soft); }
 .editorial__block p:last-child { margin-bottom: 0; }
+/* par.emojiList (app.js) : liste a puces dont l'emoji remplace la puce
+   native (demande utilisateur) — list-style:none sur le <ul>, l'emoji est un
+   enfant flex normal plutot qu'un ::marker, pour rester aligne avec le texte
+   sur plusieurs lignes. Texte en semibold, demande utilisateur egalement. */
+.editorial__block .editorial__emoji-list {
+  list-style: none; max-width: var(--measure); margin: 0 0 var(--s4);
+}
+.editorial__block .editorial__emoji-list li {
+  display: flex; align-items: flex-start; gap: var(--s2);
+  margin-bottom: var(--s2);
+}
+.editorial__block .editorial__emoji-list li:last-child { margin-bottom: 0; }
+.editorial__emoji-list-icon { flex: none; }
+.editorial__emoji-list-text { font-weight: var(--w-regular); color: var(--ink-soft); }
 /* Intitule au-dessus d'un paragraphe nomme (ex. "Salsa") — meme habillage
    que .cs-sec__title, pour un aparte sans promouvoir un h2 a part entiere.
    Selecteur compose : .editorial__block p (0,1,1) battrait une classe seule
@@ -6279,11 +6302,11 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
    battre `.editorial__block p` sans !important. */
 .editorial__block .editorial__callout {
   background: var(--veil-strong);
-  border-left: 3px solid var(--accent);
+  border-left: 2px solid white;
   padding: var(--s4) var(--s5);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   color: var(--ink);
-  font-size: var(--fs-small); font-style: italic;
+  font-size: var(--fs-small);
 }
 /* `par.links` (pageEditorial() dans app.js) : deux phrases (Resume/Email),
    chacune son propre <p> a l'interieur — pas de mise en page propre ici,
