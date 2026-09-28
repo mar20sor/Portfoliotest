@@ -2081,8 +2081,8 @@ export const PAGES = {
               note: '(No big tech company)',
               items: [
                 {
-                  org: 'Career break', url: null,
-                  role: '...', dates: 'Aug 2024 → Mar 2026', duration: '1.5 years',
+                  org: '/', url: null,
+                  role: 'Employment gap', dates: 'Aug 2024 → Mar 2026', duration: '1.5 years',
                   tag: 'personal', place: null,
                   text: 'After a layoff, I was unable to work for 2 years.',
                   linkAfter: { style: 'gap', label: 'The full story', href: '#/gap' }
@@ -2198,8 +2198,8 @@ export const PAGES = {
             ] },
           { title: 'Yabara', text: 'A friend launched an [ATS platform for HR professionals in Ivory Coast](#/work/yabara), and I came in as product designer. I had the chance to dig into and reflect on small parts of the platform, such as the launch and the product identity. It gave me something to work on again.',
             media: [
-              { src: 'assets/img/yabara-signup.webp', caption: 'Sign-up screen', zoomable: true },
-              { src: 'assets/img/yabara-dashboard.webp', caption: 'Recruiter dashboard', zoomable: true }
+              { src: 'assets/img/yabara-signup.webp', caption: 'Sign-up screen' },
+              { src: 'assets/img/yabara-dashboard.webp', caption: 'Recruiter dashboard' }
             ] }
         ]
       },
@@ -2210,11 +2210,11 @@ export const PAGES = {
           'During those two years, I also took time to reflect on my practice as a designer:\nmy skills, what I was doing wrong, and what I enjoyed.',
           { title: 'The junior trap', text: 'Working at Petal, I thought design was mostly craft and visual judgment. Majority of the job turned out to be the parts nobody sees:\ncommunication, decision making, ownership, analyzing data ...\nIn the end, it is all about solving a real user problem in a way the business can measure, but I wasn’t so familiar with the “measuring” part.',
             media: [
-              { src: 'assets/img/the-junior-trap.svg', zoomable: true }
+              { src: 'assets/img/the-junior-trap.svg', zoomable: true, zoomGrows: true }
             ] },
           { title: 'What I didn’t enjoy, and what I did with it', text: 'In the setting I worked in, processes were not always defined, which I thought was slowing down my delivery.\nAlso, design was sometimes seen as a liability, which pushed me to be a good collaborator, probably at the cost of holding my own ground. In the end, I realized that these experiences are inherent to the practice, and that I have to improve on these aspects.',
             media: [
-              { src: 'assets/img/what-i-didnt-enjoy.svg', zoomable: true }
+              { src: 'assets/img/what-i-didnt-enjoy.svg', zoomable: true, zoomGrows: true }
             ] },
           { title: 'AI, and getting closer to production', text: 'During this time, I decided to build my own tools with Claude to cover my blind spots. I use it to document design decisions, brainstorm, or challenge a solution, but never to decide, doing the thinking myself to avoid [cognitive debt](https://www.linkedin.com/pulse/what-mit-study-ai-cognitive-debt-may-have-missed-ted-kaouk-phd-bjfye/).\nIt allows me to shorten the distance between what I create and what is implemented in a context where design is increasingly seen as a bottleneck.' }
         ]

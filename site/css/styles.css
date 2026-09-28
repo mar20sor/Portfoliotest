@@ -2728,14 +2728,26 @@ body:not(.is-overlay):has(.home) {
    deborde), donc pas besoin de scoper plus large que .is-zoomed. Mobile
    (hors de ce media query) garde le comportement d'origine : le cadre suit
    l'image et grandit avec elle — pas de mise en page a proteger la, le
-   visiteur scrolle deja toute la page verticalement au doigt. */
+   visiteur scrolle deja toute la page verticalement au doigt.
+
+   `.zoomable-media--grows` (voir mediaMarkup()/m.zoomGrows dans app.js) :
+   contre-exception demandee pour les deux schemas de la page gap ("What it
+   changed about how I work" — the-junior-trap.svg, what-i-didnt-enjoy.svg) —
+   la comparaison utilisateur etait .cs-timeline__thumb (licence management,
+   imageAfterZoomable), qui n'a jamais eu ce gel de hauteur et grandit deja
+   normalement au zoom. Pour ces deux figures isolees (.media-single, rien en
+   dessous dans le meme bloc qui devrait rester stable), le cadre reprend donc
+   son `height: auto` d'origine : la largeur ne bouge toujours pas (regle
+   au-dessus, .zoomable-media.is-zoomed img reste a 230%), seule la hauteur
+   suit l'image agrandie — d'ou aucun scroll vertical necessaire, seulement le
+   defilement horizontal deja permis par `overflow: auto` (ligne au-dessus). */
 @media (min-width: 701px) {
-  .figure__frame.zoomable-media.is-zoomed {
+  .figure__frame.zoomable-media.is-zoomed:not(.zoomable-media--grows) {
     height: var(--zoom-h0, auto);
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
-  .figure__frame.zoomable-media.is-zoomed::-webkit-scrollbar { display: none; }
+  .figure__frame.zoomable-media.is-zoomed:not(.zoomable-media--grows)::-webkit-scrollbar { display: none; }
 }
 /* .zoomable-media--mobile-only (voir zoomableClass() dans app.js, flag
    'mobile') : juste un curseur "pas cliquable" hors mobile — le gel du clic
@@ -3693,12 +3705,17 @@ body:not(.is-overlay):has(.home) {
    ~416px (illustration) + 24px de gap = ~682px, sous les 700px. L'illustration
    est exportee en 2x (1014x670) pour rester nette a cette taille affichee
    (retrecissement depuis le fichier, jamais un agrandissement). Si l'une des
-   deux images change de format, refaire ce calcul et ajuster 275px ici. */
-.article__block .media-grid {
+   deux images change de format, refaire ce calcul et ajuster 275px ici.
+   Scope a [data-slug="salsa"] (et non .article__block generique) : sans ce
+   scope la regle attrapait aussi la paire Yabara de l'article "2 years gap"
+   (memes classes .article__block .media-grid .figure__frame), ou sa hauteur
+   fixe (0,3,1) l'emportait sur .zoomable-media.is-zoomed img (0,2,1) — le
+   zoom desktop restait donc inerte sur ces deux images. */
+.cs--article[data-slug="salsa"] .media-grid {
   display: flex; flex-wrap: wrap; align-items: flex-start;
 }
-.article__block .media-grid .figure { flex: 0 0 auto; max-width: 100%; }
-.article__block .media-grid .figure__frame img {
+.cs--article[data-slug="salsa"] .media-grid .figure { flex: 0 0 auto; max-width: 100%; }
+.cs--article[data-slug="salsa"] .media-grid .figure__frame img {
   width: auto; height: 275px; max-width: 100%;
 }
 /* Sous 700px, `flex-wrap` fait deja retomber les deux figures chacune sur sa
@@ -3715,8 +3732,8 @@ body:not(.is-overlay):has(.home) {
      .figure, et l'img remplit le frame a 100% — donc le frame (fond + liseré
      de .figure--remote) colle exactement au bord de l'image reduite, au lieu
      de deborder a la largeur pleine colonne. */
-  .article__block .media-grid .figure { flex: 0 0 auto; width: 80%; }
-  .article__block .media-grid .figure__frame img { width: 100%; height: auto; }
+  .cs--article[data-slug="salsa"] .media-grid .figure { flex: 0 0 auto; width: 80%; }
+  .cs--article[data-slug="salsa"] .media-grid .figure__frame img { width: 100%; height: auto; }
 }
 
 /* ---- Services exclusion, section "Fixes" : demo interactif "modal
@@ -5859,24 +5876,54 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
 @media (max-width: 600px) {
   /* .exp-list{gap:s4} (regle generale juste au-dessus) suffisait avec
      l'ancienne mise en page (2 lignes/entree) ; la grille ci-dessous en
-     tient jusqu'a 3 (org+tag / value / text), donc chaque entree est plus
-     haute — le meme espacement separe moins bien visuellement (demande
-     utilisateur, a deux reprises : encore plus d'air entre les entrees). */
+     tient jusqu'a 3 (org+meta / role / text — tag masque sur mobile, voir
+     plus bas), donc chaque entree est plus haute — le meme espacement
+     separe moins bien visuellement (demande utilisateur, a deux reprises :
+     encore plus d'air entre les entrees). */
   .figure-drawer.cs-more .exp-list { gap: var(--s6); }
+  /* Carte (demande utilisateur) : chaque entree se detache du fond bleu de
+     marque (cette page n'est jamais en theme clair, voir isCase dans
+     paint()) — memes jetons que .figure__frame/.editorial__callout pour
+     rester dans la meme famille visuelle que le reste du site plutot que
+     d'inventer une nouvelle valeur. --radius le rayon standard d'un panneau
+     (figure__frame, cartes projet), --s4 son padding usuel.
+     Fond : --veil-strong (rgba(0,0,0,.12) — le "bloc mis en avant" du theme
+     de marque, voir .todo/.editorial__callout) essaye d'abord, juge trop
+     sombre (demande utilisateur) — --veil (rgba(0,0,0,.05), le second et
+     dernier jeton de voile noir du theme de marque, deja utilise pour la
+     pilule de nav/les survols) le remplace ici. */
   .figure-drawer.cs-more .exp__item {
     display: grid;
     grid-template-columns: max-content 1fr;
     column-gap: var(--s2); row-gap: var(--s1);
-    grid-template-areas: "org tag" "value value" "text text";
+    grid-template-areas: "org meta" "role role" "text text";
+    background: var(--veil);
+    border-radius: var(--radius);
+    padding: var(--s4);
   }
   .figure-drawer.cs-more .exp__row,
   .figure-drawer.cs-more .exp__row--sub { display: contents; }
-  .figure-drawer.cs-more .exp__org { grid-area: org; align-self: end; }
-  .figure-drawer.cs-more .exp__tag { grid-area: tag; justify-self: start; align-self: end; }
-  .figure-drawer.cs-more .exp__value {
-    grid-area: value;
-    flex-direction: column; align-items: flex-start;
-  }
+  /* .exp__value n'a plus besoin de porter role+meta ensemble ici (c'etait sa
+     seule raison d'etre sur mobile — role au-dessus de meta, tous deux
+     detaches de la ligne org) : demande utilisateur, meta rejoint desormais
+     la ligne d'org, et role descend seul sous tag. display:contents
+     l'aplatit donc a son tour, meme mecanisme que .exp__row/--sub juste
+     au-dessus, pour que role et meta redeviennent des enfants directs de la
+     grille .exp__item et soient placables independamment. */
+  .figure-drawer.cs-more .exp__value { display: contents; }
+  /* org/meta sur la meme ligne, alignes sur leur ligne de base commune (les
+     deux partagent --fs-small) plutot que sur le bas de leur boite — align-
+     self:end suffisait quand meta etait absent de cette ligne, mais un badge
+     de duree (s'il est un jour reactive, voir .exp__badge plus haut) grandit
+     la boite de meta sans deplacer son texte, et end desalignerait alors le
+     texte des deux. baseline reste correct dans les deux cas. */
+  .figure-drawer.cs-more .exp__org { grid-area: org; align-self: baseline; }
+  .figure-drawer.cs-more .exp__meta { grid-area: meta; justify-self: end; align-self: baseline; }
+  /* Categorie retiree ici (demande utilisateur) : "org" seul (souvent "/"
+     pour l'entree gap, sans lien ni categorie) suffit sur mobile — pas de
+     grid-area "tag" pour ne pas reserver une ligne/un gap vide. */
+  .figure-drawer.cs-more .exp__tag { display: none; }
+  .figure-drawer.cs-more .exp__role { grid-area: role; }
   .figure-drawer.cs-more .exp__text { grid-area: text; }
 }
 
@@ -6296,17 +6343,19 @@ body.route-gap .back-link { border: none; border-radius: var(--radius); }
   font-size: var(--fs-small); font-style: italic;
 }
 
-/* Meme recette que .todo (fond, padding, taille) pour un paragraphe mis en
-   avant, mais sans filet gauche ni rayon asymetrique : ce texte est du
-   contenu fini, pas une consigne de redaction. Selectionneur compose pour
-   battre `.editorial__block p` sans !important. */
+/* Paragraphe mis en avant (par.callout, gap uniquement — voir plus haut) :
+   plus de fond ni de rayon (demande utilisateur, retires) — le filet gauche
+   et l'italique suffisent a le distinguer du corps de texte. Marges 24px =
+   --s5, comme le padding inline, pour rester sur l'echelle du theme plutot
+   qu'un px en dur. Selectionneur compose pour battre `.editorial__block p`
+   sans !important. */
 .editorial__block .editorial__callout {
-  background: var(--veil-strong);
   border-left: 2px solid white;
-  padding: var(--s4) var(--s5);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 0 var(--s5);
+  margin: var(--s5) 0;
   color: var(--ink);
   font-size: var(--fs-small);
+  font-style: italic;
 }
 /* `par.links` (pageEditorial() dans app.js) : deux phrases (Resume/Email),
    chacune son propre <p> a l'interieur — pas de mise en page propre ici,

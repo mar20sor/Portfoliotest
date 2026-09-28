@@ -1343,7 +1343,7 @@ function nextProjectsFooter(project) {
    le texte, on ecrit simplement un bloc qui n'a que `media`. */
 function pageArticle(project) {
   const d = t(), c = project;
-  const page = el('article', { class: 'cs cs--article' });
+  const page = el('article', { class: 'cs cs--article', 'data-slug': c.slug });
 
   /* --- En-tete : client, titre, accroche, media d'ouverture --- */
   const head = el('header', { class: 'cs__head' });
@@ -1625,8 +1625,11 @@ function mediaMarkup(m) {
   // les etudes de cas — true = zoomable partout, 'mobile' = seulement sous
   // 700px (schemas d'article deja assez grands sur desktop, illisibles une
   // fois retreecis a la colonne mobile).
+  // `m.zoomGrows` : voir .zoomable-media--grows dans styles.css — desactive le
+  // gel de hauteur desktop pour cette figure precise, le cadre grandit alors
+  // avec l'image zoomee au lieu de rester fige et pannable.
   return `<figure class="${kind}"${bound}>
-      <div class="figure__frame${zoomableClass(m.zoomable)}">${inner}</div>
+      <div class="figure__frame${zoomableClass(m.zoomable)}${m.zoomGrows ? ' zoomable-media--grows' : ''}">${inner}</div>
       ${cap && !m.hideCaption ? `<figcaption>${cap}</figcaption>` : ''}
     </figure>`;
 }
