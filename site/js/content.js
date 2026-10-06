@@ -24,43 +24,17 @@
    Un seul endroit a changer si une adresse evolue.
    -------------------------------------------------------------------------- */
 export const SITE = {
-  name: 'Marvin Sorhaindo',
+  name: 'Marvin S.',
   short: 'mrv srd',                       // le petit logo textuel en haut a gauche
   email: 'hello@marvinsrd.com',
   links: {
     linkedin: 'https://www.linkedin.com/in/marvinsorhaindo',
-    dribbble: 'https://dribbble.com/Mar200',
-    resume: 'https://marvinsrd.com/documents/marvin_resumee.pdf',
+    // Fichier du depot (demande utilisateur) : la version visuelle, pas la minimale.
+    resume: 'assets/documents/marvin-resume-visual.pdf',
     essay: 'https://mar20.notion.site/a996a8ffb4234bb0a1c29682b55abe7b?v=cdd45c6f826b4b7a932d117112be5432&p=2f47efebd8db430ba6c7c9b424fd471c&pm=c'
   }
 };
 
-/* --------------------------------------------------------------------------
-   1 bis) LES MEDIAS HEBERGES SUR CONTRA
-   --------------------------------------------------------------------------
-   Les vidéos et images du projet Contraintes viennent de la page Contra de
-   Marvin. Elles ne sont PAS dans ce dépôt : le code pointe vers le CDN de
-   Contra.
-
-   >>> CE QUE ÇA IMPLIQUE <<<
-   Si le projet est supprimé, renommé, ou si Contra change ses URLs, ces
-   médias disparaissent du site sans prévenir. C'est la contrepartie assumée
-   de ne pas avoir à héberger les fichiers.
-
-   >>> POUR PASSER EN LOCAL PLUS TARD <<<
-   1. Télécharger les fichiers depuis Contra.
-   2. Les poser dans site/assets/media/ en gardant les identifiants ci-dessous
-      comme noms de fichier (ex : fwfmk99wycaup34crhb4.mp4).
-   3. Remplacer les deux bases ci-dessous par 'assets/media/'.
-   4. Retirer media.contra.com de la CSP dans index.html.
-   Rien d'autre à changer : tout le site passe par ces deux constantes.
-   -------------------------------------------------------------------------- */
-export const MEDIA = {
-  videoBase: 'https://media.contra.com/video/upload/fl_progressive/q_auto:best,w_900/',
-  imageBase: 'https://media.contra.com/image/upload/fl_progressive/q_auto:best/',
-  videoExt: '.mp4',
-  imageExt: '.webp'
-};
 
 /* --------------------------------------------------------------------------
    2) LIBELLES D'INTERFACE — tous les mots qui ne sont pas du "contenu"
@@ -1111,7 +1085,6 @@ export const PROJECTS = [
                         les medias des etudes de cas :
                           { type: 'image' | 'video' | 'lottie',
                             src: 'assets/media/xxx.mp4',  // fichier du depot
-                            // ... ou bien id: '...' pour le CDN (voir MEDIA)
                             caption: 'la legende affichee',
                             poster: 'assets/img/xxx.jpg', // video seulement
                             hideCaption: true }           // garde l'aria-label
@@ -1675,7 +1648,9 @@ export const PROJECTS = [
         body: [
           'Unfortunately, the book is only available in French for the moment.'
         ],
-        cta: { label: 'Read the essay', href: 'https://file.notion.so/f/f/3e2361f2-6db2-4852-94d9-ba89c20b4dfe/9f6e8cb3-295b-4c8f-af8a-5edf2bef0571/Affordance_et_intuitivit_SORHAINDO_mini.pdf?table=block&id=091b2776-6c82-42b9-8769-f23b8d339206&spaceId=3e2361f2-6db2-4852-94d9-ba89c20b4dfe&expirationTimestamp=1790028000000&signature=EIuxuKibBtazLDPSki5lHeH491_o9sfZhn90nYd70og&downloadName=Affordance_et_intuitivité_SORHAINDO_mini.pdf' }
+        // Fichier du depot (demande utilisateur) : plus de lien Notion signe,
+        // donc plus d'expiration a surveiller.
+        cta: { label: 'Read the essay', href: 'assets/documents/affordance-et-intuitivite-sorhaindo-mini.pdf' }
       }
     ]
   },
@@ -2091,8 +2066,7 @@ export const PAGES = {
                   org: 'Petal', url: 'https://www.petal-health.com/',
                   role: 'Product Designer', dates: 'Mar 2021 → July 2024', duration: '3 years',
                   tag: 'health', place: 'Montréal',
-                  text: 'Quebec orchestrator platform (HUB), Scheduling tool.',
-                  linkAfter: { label: 'See projects', href: 'https://drive.google.com/drive/folders/1UIMvwYL_MlQDqfZCE8qLk-u62KDuM4Ml?usp=sharing' }
+                  text: 'Quebec orchestrator platform (HUB), Scheduling tool.'
                 },
                 {
                   org: 'Fit-Plans', url: 'https://www.fit-plans.com/en',

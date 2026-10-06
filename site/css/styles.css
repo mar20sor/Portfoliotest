@@ -573,7 +573,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
      pas d'animation infinie qui mentirait sur la progression. */
   transition: width .3s var(--ease);
 }
-/* Lueur inspiree de https://dribbble.com/shots/27639250-Loading-State-Animation
+/* Lueur inspiree d'une reference Dribbble
    (demande utilisateur) : la reference fait courir un point lumineux flou le
    long d'un contour, plutot qu'illuminer toute la forme d'un coup — transpose
    ici en un halo colle a la pointe d'avancement de la barre (right:0), et non
@@ -2120,8 +2120,8 @@ body:not(.is-overlay):has(.home) {
    mais en flux normal, pas fixe : il defile et colle avec le reste de
    .cs-nav plutot que de rester plaque en haut de l'ecran. */
 /* Lien discret, pas un bouton/pilule : une nette separation avec la liste
-   qui suit (marge genereuse) suffit a le distinguer, sans chrome propre —
-   cf. https://www.rachelchen.tech/projects/openai (demande explicite).
+   qui suit (marge genereuse) suffit a le distinguer, sans chrome propre
+   (demande explicite).
    Il occupe la rangee du haut, a cheval sur les deux colonnes : le rail ne
    commence qu'avec la liste. justify-self l'empeche d'etre etire sur toute la
    largeur de la grille — il doit rester de la largeur de son texte, sinon sa

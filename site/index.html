@@ -25,13 +25,36 @@
   <!-- theme-color colore la barre d'adresse du navigateur sur mobile -->
   <meta name="theme-color" content="#2078F0">
 
-  <title>Marvin Sorhaindo — Product designer</title>
-  <meta name="description" content="Portfolio of Marvin Sorhaindo, product designer based in Montréal. Three years of healthcare SaaS: hospital scheduling, clinical data sync, web redesigns.">
+  <!-- Description alignee sur marvinsrd.com (demande utilisateur, 2026-10-06) ;
+       titre/og:title/twitter:title restent "Marvin S." (pas marvinsrd.com's
+       "Marvin's portfolio") pour rester coherents avec SITE.name, voir app.js.
+       Ancienne description, gardee au cas ou elle doive revenir :
+       "Portfolio of Marvin S., product designer based in Montréal. Three years
+       of healthcare SaaS: hospital scheduling, clinical data sync, web redesigns." -->
+  <title>Marvin S. — Product designer</title>
+  <meta name="description" content="My name is Marvin, and I'm a product designer. I'm curious about how interactions can solve SaaS issues to give users a better experience">
 
-  <!-- Open Graph : ce qui s'affiche quand le lien est partage sur LinkedIn -->
+  <!-- Open Graph / Twitter : description/image alignees sur marvinsrd.com ; titre reste "Marvin S." -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Marvin Sorhaindo — Product designer">
-  <meta property="og:description" content="Three years of healthcare SaaS. Twenty-four scheduling rules reduced to nine.">
+  <meta property="og:title" content="Marvin S. — Product designer">
+  <meta property="og:description" content="My name is Marvin, and I'm a product designer. I'm curious about how interactions can solve SaaS issues to give users a better experience">
+  <meta property="og:image" content="https://marvinsrd.com/assets/img/og-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Marvin S. — Product designer">
+  <meta name="twitter:description" content="My name is Marvin, and I'm a product designer. I'm curious about how interactions can solve SaaS issues to give users a better experience">
+  <meta name="twitter:image" content="https://marvinsrd.com/assets/img/og-preview.png">
+
+  <!-- Favicon / apple-touch-icon : copies de marvinsrd.com (images/favicon.ico, images/webclip.png) -->
+  <link rel="icon" href="assets/icons/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+
+  <!-- Canonical + hreflang : une seule URL reelle (site hash-route, pas de
+       version FR pour l'instant — "fr" a ete retire, voir CLAUDE.md). Les deux
+       tags sont auto-reference, ce qui est la pratique recommandee quand il
+       n'existe qu'une seule langue/version de la page. -->
+  <link rel="canonical" href="https://marvinsrd.com/">
+  <link rel="alternate" hreflang="en" href="https://marvinsrd.com/">
+  <link rel="alternate" hreflang="x-default" href="https://marvinsrd.com/">
 
   <!--
     SECURITE — Content Security Policy.
@@ -49,12 +72,6 @@
     origines externes autorisees par tout le site.
   -->
   <!--
-    media.contra.com est autorise pour les images et les videos du projet
-    Contraintes, hebergees sur Contra. C'est une DEPENDANCE EXTERNE assumee :
-    si le projet est supprime ou renomme sur Contra, ces medias disparaissent
-    du site. Pour s'en affranchir, voir MEDIA dans js/content.js.
-  -->
-  <!--
     dotlottie-wc (voir plus bas, avant </head>) charge son moteur WASM depuis
     jsdelivr, avec unpkg en repli : les deux origines doivent donc etre
     autorisees en script-src (le <script type="module"> lui-meme) ET en
@@ -63,8 +80,8 @@
   -->
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self';
-                 img-src 'self' data: https://media.contra.com;
-                 media-src 'self' https://media.contra.com;
+                 img-src 'self' data:;
+                 media-src 'self';
                  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
                  font-src 'self' https://fonts.gstatic.com;
                  script-src 'self' 'wasm-unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net;
@@ -275,7 +292,7 @@
            qu'on vienne d'une autre page ou du bas de celle-ci.
            Il est masque sous 860px avec le reste de l'en-tete : c'est
            #nav-home, dans la barre du bas, qui reprend son role la-bas. -->
-      <a class="brand" href="#/#hello" aria-label="Marvin Sorhaindo, home">Marvin S.</a>
+      <a class="brand" href="#/#hello" aria-label="Marvin S., home">Marvin S.</a>
 
       <!-- LES DEUX GROUPES SONT LA POUR LA GRILLE DU BUREAU, pas pour le
            sens : ils donnent au centre et a la droite chacun leur colonne,
@@ -439,7 +456,7 @@
   -->
   <noscript>
     <div class="noscript">
-      <h1>Marvin Sorhaindo — Product designer</h1>
+      <h1>Marvin S. — Product designer</h1>
       <p>This portfolio needs JavaScript to work. You can reach me directly:</p>
       <p>
         <a href="mailto:hello@marvinsrd.com">hello@marvinsrd.com</a> ·

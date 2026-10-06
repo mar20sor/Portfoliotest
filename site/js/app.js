@@ -29,7 +29,7 @@
    0. IMPORTS ET OUTILS
    ========================================================================== */
 
-import { SITE, UI, HERO, PROJECTS, PAGES, MEDIA } from './content.js';
+import { SITE, UI, HERO, PROJECTS, PAGES } from './content.js';
 
 /* Raccourcis vers querySelector. Ecrire $('#main') au lieu de
    document.querySelector('#main') rend le reste du fichier bien plus lisible.
@@ -755,8 +755,7 @@ function pageCase(project, caseId) {
     // La nav laterale couvre TOUTE la page, pas seulement le processus :
     // "Overview" (l'en-tete lui-meme) en est la premiere entree, au meme
     // titre que les etapes suivantes, plutot qu'un bloc separe au-dessus
-    // d'une nav qui ne couvrirait que le processus. Repris de
-    // https://www.rachelchen.tech/projects/openai (demande explicite) —
+    // d'une nav qui ne couvrirait que le processus (demande explicite) —
     // c'est aussi ce qui permet a l'en-tete et aux sections de partager
     // exactement la meme largeur de colonne (voir hw.classList.remove plus
     // bas : sans son propre .wrap, l'en-tete herite de la largeur de
@@ -1538,18 +1537,8 @@ function beatSyncMarkup(s) {
     </div>`;
 }
 
-/* ---- 5e bis. LES MEDIAS HEBERGES (Contra) -------------------------------
-   Deux fonctions seulement : une pour fabriquer l'URL, une pour le balisage.
-   Tout passe par MEDIA (content.js), donc basculer du CDN vers des fichiers
-   locaux ne demande de toucher a aucune de ces lignes. */
-
 function mediaUrl(m) {
-  // `src` l'emporte : c'est un fichier du depot, servi depuis assets/media.
-  // Sans lui, on retombe sur l'identifiant et les bases distantes de MEDIA.
-  if (m.src) return m.src;
-  return m.type === 'video'
-    ? MEDIA.videoBase + m.id + MEDIA.videoExt
-    : MEDIA.imageBase + m.id + MEDIA.imageExt;
+  return m.src;
 }
 
 /* Balisage d'un media distant.
@@ -4689,9 +4678,9 @@ function buildFooter() {
       <div class="foot__grid">
         <div>
           <!-- "Marvin S." en dur (comme .brand dans index.html), pas
-               SITE.name : le pied de page reste court, SITE.name garde le
-               nom complet pour <title> et les aria-label (voir plus bas dans
-               ce fichier). -->
+               SITE.name : les deux valent la meme chose aujourd'hui, mais le
+               pied de page ne doit pas dependre de SITE.name (utilise pour
+               <title> et les aria-label, voir plus bas dans ce fichier). -->
           <p class="foot__name">Marvin S.</p>
           <!-- .u-arrow-link, pas .btn (demande utilisateur) : meme composant
                et meme fleche estompee -> pleine au survol que les liens de
@@ -5220,9 +5209,10 @@ function snapClone(node) {
    milieu de la photo.
 
    On dessine donc leur image ACTUELLE dans un <canvas> de meme taille. Le
-   dessin depuis une video d'une autre origine (media.contra.com) "souille"
-   le canvas : cela interdit d'en RELIRE les pixels (toDataURL), pas de
-   l'afficher — et nous n'avons besoin que de l'afficher.
+   dessin depuis une video d'une origine externe "souille" le canvas : cela
+   interdit d'en RELIRE les pixels (toDataURL), pas de l'afficher — et nous
+   n'avons besoin que de l'afficher. (Tous les medias du site sont locaux
+   aujourd'hui, mais le code reste defensif si une origine externe revient.)
 
    Les tailles sont reprises au pixel pres sur les elements d'origine :
    .card__media video fait 92% de son cadre, un Lottie a son propre ratio...
